@@ -1,5 +1,6 @@
 $Id$
 
+
 - dynamically extensible parser for modules
 
 - modularize channel, network code etc (not just commands)
