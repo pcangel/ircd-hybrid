@@ -13,15 +13,13 @@ LD		= @LD@
 
 IRCDLIBS        = @LIBS@ $(SSL_LIBS)
 
-INCLUDES	= -Istring -I../include
+INCLUDES	= -Inet -Istring -I../include
 CPPFLAGS	= ${INCLUDES} @CPPFLAGS@
 
 IO_SRCS = \
   comm/comm.c \
   comm/fdlist.c \
   comm/fileio.c \
-  comm/res.c \
-  comm/reslib.c \
   comm/@SELECT_TYPE@.c \
   mem/dbuf.c \
   mem/memory.c \
@@ -29,6 +27,8 @@ IO_SRCS = \
   @INET_MISC@ \
   net/irc_getaddrinfo.c \
   net/irc_getnameinfo.c \
+  net/res.c \
+  net/reslib.c \
   string/match.c \
   string/pcre_chartables.c \
   string/pcre_compile.c \

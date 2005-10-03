@@ -37,7 +37,7 @@
 #include "send.h"
 #include "memory.h"
 #include "irc_res.h"
-#include "irc_reslib.h"
+#include "reslib.h"
 #include "irc_getnameinfo.h"
 
 #if (CHAR_BIT != 8)

@@ -47,7 +47,6 @@ struct DNSQuery;
 typedef void PF(struct _fde *, void *);
 
 /* Callback for completed connections */
-/* int fd, int status, void * */
 typedef void CNCB(struct _fde *, int, void *);
 
 typedef struct _fde {
