@@ -28,10 +28,12 @@ struct DNSQuery
   void (*callback)(void* vptr, struct DNSReply *reply); /* callback to call */
 };
 
+extern struct irc_ssaddr irc_nsaddr_list[];
+extern int irc_nscount;
+
 extern void init_resolver(void);
 extern void restart_resolver(void);
 extern void delete_resolver_queries(const struct DNSQuery *);
-extern void report_dns_servers(struct Client *);
 extern void gethost_byname_type(const char *, struct DNSQuery *, int);
 extern void gethost_byname(const char *, struct DNSQuery *);
 extern void gethost_byaddr(const struct irc_ssaddr *, struct DNSQuery *);
