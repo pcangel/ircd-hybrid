@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "balloc.h"
 #include "tools.h"
 #include "s_conf.h"
 #include "channel.h"
@@ -42,7 +43,6 @@
 #include "memory.h"
 #include "dbuf.h"
 #include "s_user.h"
-
 
 static BlockHeap *userhost_heap = NULL;
 static BlockHeap *namehost_heap = NULL;

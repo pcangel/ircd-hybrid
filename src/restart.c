@@ -90,3 +90,9 @@ server_die(const char *mesg, int rboot)
   else
     exit(0);
 }
+
+void
+ircd_outofmemory(void)
+{
+  restart("Out of memory");
+}

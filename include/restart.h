@@ -27,5 +27,6 @@
 
 extern void restart(const char *);
 extern void server_die(const char *, int);
+extern void ircd_outofmemory(void);
 
 #endif

@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "balloc.h"
 #include "tools.h"	 /* dlink_node/dlink_list */
 #include "handlers.h"    /* m_pass prototype */
 #include "client.h"      /* Client */
@@ -376,6 +377,7 @@ send_usage(struct Client *source_p)
 static void
 count_memory(struct Client *source_p)
 {
+  BlockHeap *bh;
   const dlink_node *gptr = NULL;
   const dlink_node *dlink = NULL;
 
@@ -651,7 +653,15 @@ count_memory(struct Client *source_p)
              me.name, RPL_STATSDEBUG, source_p->name, remote_client_count,
              remote_client_memory_used);
 
-  block_heap_report_stats(source_p);
+  for (bh = heap_list; bh != NULL; bh = bh->next)
+    sendto_one(source_p, ":%s %d %s z :%s mempool: used %u/%u free %u/%u (size %u/%u)",
+               me.name, RPL_STATSDEBUG, source_p->name, bh->name,
+               block_heap_get_used_elm(bh),
+               block_heap_get_used_mem(bh),
+               block_heap_get_free_elm(bh),
+               block_heap_get_free_mem(bh),
+               block_heap_get_size_elm(bh),
+               block_heap_get_size_mem(bh));
 
   sendto_one(source_p,
              ":%s %d %s z :TOTAL: %d Available:  Current max RSS: %lu",

@@ -55,10 +55,6 @@
 
 #define USERHOST_REPLYLEN       (NICKLEN+HOSTLEN+USERLEN+5)
 #define MAX_DATE_STRING 32      /* maximum string length for a date string */
-#define IRCD_MAXNS      2       /* Maximum number of nameservers in 
-                                   /etc/resolv.conf we care about */
-
-#define LOWEST_SAFE_FD  4	/* skip stdin, stdout, stderr, and profiler */
 
 #define PLATFORMLEN     200     /* platform string used in info response */
 
@@ -84,16 +80,6 @@ struct utsname
 };
 int uname (struct utsname *);
 #endif
-
-/* This is to get around the fact that some implementations have ss_len and
- * others do not
- */
-struct irc_ssaddr
-{
-  struct sockaddr_storage ss;
-  unsigned char   ss_len;
-  in_port_t       ss_port;
-};
 
 #define REJECT_HOLD_TIME GlobalSetOptions.rejecttime
 

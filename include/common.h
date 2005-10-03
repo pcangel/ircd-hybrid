@@ -54,4 +54,5 @@
 
 #define IRCD_MAX(a, b)  ((a) > (b) ? (a) : (b))
 #define IRCD_MIN(a, b)  ((a) < (b) ? (a) : (b))
+
 #endif /* INCLUDED_common_h */

@@ -25,21 +25,7 @@
 #ifndef _I_MEMORY_H
 #define _I_MEMORY_H
 
-#include "ircd_defs.h"
-#include "setup.h"
-#include "balloc.h"
-
-/* Needed to use uintptr_t for some pointer manipulation. */
-
-#ifdef HAVE_INTTYPES_H
-# include <inttypes.h>
-#else /* No inttypes.h */
-# ifndef HAVE_UINTPTR_T
-typedef unsigned long uintptr_t;
-# endif
-#endif
-
-extern void outofmemory(void);
+extern void (* outofmemory) (void);
 
 extern void *MyMalloc(size_t size);
 extern void *MyRealloc(void *x, size_t y);
@@ -89,4 +75,5 @@ _DupString(char **x, const char *y)
 #endif /* __GNUC__ */
 
 #define DupString(x,y) _DupString(&x, y)
+
 #endif /* _I_MEMORY_H */

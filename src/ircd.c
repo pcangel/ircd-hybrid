@@ -545,7 +545,7 @@ main(int argc, char *argv[])
   if (geteuid() == 0)
   {
     fprintf(stderr, "Don't run ircd as root!!!\n");
-    return(-1);
+    return 1;
   }
 
   /* Setup corefile size immediately after boot -kre */
@@ -558,7 +558,9 @@ main(int argc, char *argv[])
   /* save server boot time right away, so getrusage works correctly */
   set_time();
 
-    /* It ain't random, but it ought to be a little harder to guess */
+  outofmemory = ircd_outofmemory;
+
+  /* It ain't random, but it ought to be a little harder to guess */
   srand(SystemTime.tv_sec ^ (SystemTime.tv_usec | (getpid() << 20)));
   memset(&me, 0, sizeof(me));
   memset(&meLocalUser, 0, sizeof(meLocalUser));

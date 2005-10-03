@@ -26,8 +26,8 @@
 #define INCLUDED_fdlist_h
 #define FILEIO_V2
 
-#include "ircd_defs.h"
-#define FD_DESC_SZ 128  /* hostlen + comment */
+#define FD_DESC_SZ      128  /* hostlen + comment */
+#define LOWEST_SAFE_FD  4    /* skip stdin, stdout, stderr, and profiler */
 
 enum {
     COMM_OK,
@@ -40,7 +40,6 @@ enum {
 };
 
 struct _fde;
-struct Client;
 struct DNSQuery;
 
 /* Callback for completed IO events */
@@ -48,6 +47,16 @@ typedef void PF(struct _fde *, void *);
 
 /* Callback for completed connections */
 typedef void CNCB(struct _fde *, int, void *);
+
+/* This is to get around the fact that some implementations have ss_len and
+ * others do not
+ */
+struct irc_ssaddr
+{
+  struct sockaddr_storage ss;
+  unsigned char ss_len;
+  in_port_t ss_port;
+};
 
 typedef struct _fde {
   /* New-school stuff, again pretty much ripped from squid */
@@ -104,7 +113,6 @@ extern void fdlist_init(void);
 extern fde_t *lookup_fd(int);
 extern void fd_open(fde_t *, int, int, const char *);
 extern void fd_close(fde_t *);
-extern void fd_dump(struct Client *);
 #ifndef __GNUC__
 extern void fd_note(fde_t *, const char *format, ...);
 #else
@@ -114,5 +122,9 @@ extern void  fd_note(fde_t *, const char *format, ...)
 extern void close_standard_fds(void);
 extern void close_fds(fde_t *);
 extern void recalc_fdlimit(void *);
+
+/* TODO: get rid of this */
+struct Client;
+extern void fd_dump(struct Client *);
 
 #endif /* INCLUDED_fdlist_h */

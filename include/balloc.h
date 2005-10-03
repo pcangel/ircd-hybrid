@@ -31,10 +31,8 @@
 #include "setup.h"
 
 #ifndef NOBALLOC
-#include "client.h"
 #include "tools.h"
 #include "memory.h"
-#include "ircd_defs.h"
 
 
 /*! \brief Block contains status information for
@@ -79,7 +77,14 @@ extern void *     BlockHeapAlloc(BlockHeap *);
 extern BlockHeap* BlockHeapCreate(const char *const, size_t, int);
 extern int        BlockHeapDestroy(BlockHeap *);
 extern void	  initBlockHeap(void);
-extern void block_heap_report_stats(struct Client *);
+
+extern size_t block_heap_get_used_mem(const BlockHeap *);
+extern size_t block_heap_get_free_mem(const BlockHeap *);
+extern size_t block_heap_get_size_mem(const BlockHeap *);
+extern unsigned int block_heap_get_used_elm(const BlockHeap *);
+extern unsigned int block_heap_get_free_elm(const BlockHeap *);
+extern unsigned int block_heap_get_size_elm(const BlockHeap *);
+
 #else /* NOBALLOC */
 
 typedef struct BlockHeap BlockHeap;
@@ -87,5 +92,9 @@ typedef struct BlockHeap BlockHeap;
 #define BlockHeapCreate(blah, es, epb) ((BlockHeap*)(es))
 #define BlockHeapAlloc(x) MyMalloc((int)x)
 #define BlockHeapFree(x,y) MyFree(y)
+
 #endif /* NOBALLOC */
+
+extern BlockHeap *heap_list;
+
 #endif /* INCLUDED_balloc_h */
