@@ -650,6 +650,7 @@ main(int argc, char *argv[])
   initialize_server_capabs();   /* Set up default_server_capabs */
   initialize_global_set_options();
   init_channels();
+  init_channel_modes();
 
   if (ServerInfo.name == NULL)
   {
