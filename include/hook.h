@@ -39,8 +39,6 @@ struct Callback
   time_t last;
 };
 
-struct Client;
-
 extern dlink_list callback_list;  /* listing/debugging purposes */
 
 extern struct Callback *register_callback(const char *, CBFUNC *);
@@ -49,7 +47,6 @@ extern struct Callback *find_callback(const char *);
 extern dlink_node *install_hook(struct Callback *, CBFUNC *);
 extern void uninstall_hook(struct Callback *, CBFUNC *);
 extern void *pass_callback(dlink_node *, ...);
-extern void stats_hooks(struct Client *);
 
 #define is_callback_present(c) (!!dlink_list_length(&c->chain))
 

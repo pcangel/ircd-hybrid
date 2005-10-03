@@ -560,5 +560,7 @@ extern struct Client *make_client(struct Client *);
 extern struct Client *find_chasing(struct Client *, struct Client *, const char *, int *);
 extern struct Client *find_person(const struct Client *const, const char *);
 extern const char *get_client_name(struct Client *, int);
+extern void log_user_exit(struct Client *);
+extern void log_oper_action(int type, const struct Client *, const char *, ...);
 
 #endif /* INCLUDED_client_h */

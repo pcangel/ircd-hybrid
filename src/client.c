@@ -1442,3 +1442,172 @@ change_local_nick(struct Client *client_p, struct Client *source_p, const char *
   /* fd_desc is long enough */
   fd_note(&client_p->localClient->fd, "Nick: %s", nick);
 }
+
+/* log_user_exit()
+ *
+ * inputs       - pointer to connecting client
+ * output       - NONE
+ * side effects - Current exiting client is logged to
+ *                either SYSLOG or to file.
+ */
+void
+log_user_exit(struct Client *source_p)
+{
+  time_t on_for = CurrentTime - source_p->firsttime;
+#ifdef SYSLOG_USERS
+  if (IsClient(source_p))
+  {
+    ilog(L_INFO, "%s (%3ld:%02ld:%02ld): %s!%s@%s %llu/%llu\n",
+         myctime(source_p->firsttime),
+          (signed long) on_for / 3600,
+          (signed long) (on_for % 3600)/60,
+          (signed long) on_for % 60,
+          source_p->name, source_p->username, source_p->host,
+          source_p->localClient->send.bytes>>10,
+          source_p->localClient->recv.bytes>>10);
+    }
+#else
+  {
+    char linebuf[BUFSIZ];
+
+    /*
+     * This conditional makes the logfile active only after
+     * it's been created - thus logging can be turned off by
+     * removing the file.
+     * -Taner
+     */
+    if (IsClient(source_p))
+    {
+      if (user_log_fb == NULL)
+      {
+        if ((ConfigLoggingEntry.userlog[0] != '\0') &&
+           (user_log_fb = fbopen(ConfigLoggingEntry.userlog, "r")) != NULL)
+        {
+          fbclose(user_log_fb);
+          user_log_fb = fbopen(ConfigLoggingEntry.userlog, "a");
+        }
+      }
+
+      if (user_log_fb != NULL)
+      {
+        size_t nbytes = ircsprintf(linebuf,
+                   "%s (%3ld:%02ld:%02ld): %s!%s@%s %llu/%llu\n",
+                   myctime(source_p->firsttime),
+                   (signed long) on_for / 3600,
+                   (signed long) (on_for % 3600)/60,
+                   (signed long) on_for % 60,
+                   source_p->name, source_p->username, source_p->host,
+                   source_p->localClient->send.bytes>>10,
+                   source_p->localClient->recv.bytes>>10);
+        fbputs(linebuf, user_log_fb, nbytes);
+      }
+    }
+  }
+#endif
+}
+
+
+/* log_oper_action()
+ *
+ * inputs       - type of oper log entry
+ *              - pointer to oper
+ *              - const char *pattern == format string
+ *              - var args for format string
+ * output       - none
+ * side effects - corresponding log is written to, if its present.
+ *
+ * rewritten sept 5 2005 - Dianora
+ */
+void
+log_oper_action(int log_type, const struct Client *source_p,
+                const char *pattern, ...)
+{
+  va_list args;
+  char linebuf[IRCD_BUFSIZE];
+  FBFILE *log_fb;
+  char *logfile;
+  const char *log_message;
+  size_t nbytes;
+  size_t n_preamble;
+  char *p;
+
+  switch(log_type)
+  {
+  case LOG_OPER_TYPE:
+    logfile = ConfigLoggingEntry.operlog;
+    log_message = "OPER";
+    break;
+  case LOG_FAILED_OPER_TYPE:
+    logfile = ConfigLoggingEntry.failed_operlog;
+    log_message = "FAILED OPER";
+    break;
+  case LOG_KLINE_TYPE:
+    logfile = ConfigLoggingEntry.klinelog;
+    log_message = "KLINE";
+    break;
+  case LOG_RKLINE_TYPE:
+    logfile = ConfigLoggingEntry.klinelog;
+    log_message = "RKLINE";
+    break;
+  case LOG_DLINE_TYPE:
+    logfile = ConfigLoggingEntry.klinelog;
+    log_message = "DLINE";
+    break;
+  case LOG_TEMP_DLINE_TYPE:
+    logfile = ConfigLoggingEntry.klinelog;
+    log_message = "TEMP DLINE";
+    break;
+  case LOG_TEMP_KLINE_TYPE:
+    logfile = ConfigLoggingEntry.klinelog;
+    log_message = "TEMP KLINE";
+    break;
+  case LOG_GLINE_TYPE:
+    logfile = ConfigLoggingEntry.glinelog;
+    log_message = "GLINE";
+    break;
+  case LOG_KILL_TYPE:
+    logfile = ConfigLoggingEntry.killlog;
+    log_message = "KILL";
+    break;
+  case LOG_IOERR_TYPE:
+    logfile = ConfigLoggingEntry.ioerrlog;
+    log_message = "IO ERR";
+    break;
+  default:
+    return;
+  }
+
+  if (*logfile == '\0')
+    return;
+
+  p = linebuf;
+  if (source_p != NULL)
+  {
+    n_preamble = ircsprintf(linebuf, "%s %s by (%s!%s@%s) :",
+                            myctime(CurrentTime), log_message,
+                            source_p->name, source_p->username, source_p->host);
+
+  }
+  else
+  {
+    n_preamble = ircsprintf(linebuf, "%s %s :",
+                            myctime(CurrentTime), log_message);
+  }
+
+  p += n_preamble;
+
+  if ((log_fb = fbopen(logfile, "r")) != NULL)
+  {
+    fbclose(log_fb);
+    log_fb = fbopen(logfile, "a");
+    if (log_fb == NULL)
+      return;
+    va_start(args, pattern);
+    /* XXX add check for IRCD_BUFSIZE-(n_preamble+1) < 0 ? -db */
+    nbytes = vsnprintf(p, IRCD_BUFSIZE-(n_preamble+1), pattern, args);
+    nbytes += n_preamble;
+    va_end(args);
+    fbputs(linebuf, log_fb, nbytes);
+    fbclose(log_fb);
+  }
+}

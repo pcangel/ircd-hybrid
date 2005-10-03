@@ -25,7 +25,7 @@
 #ifndef INCLUDED_s_log_h
 #define INCLUDED_s_log_h
 
-struct Client;
+#include "fileio.h"
 
 #define L_CRIT   0
 #define L_ERROR  1
@@ -35,18 +35,21 @@ struct Client;
 #define L_INFO   5
 #define L_DEBUG  6
 
+#ifndef SYSLOG_USERS
+extern FBFILE *user_log_fb;
+#endif
+
 extern void init_log(const char *);
 extern void reopen_log(const char *);
 extern void set_log_level(const int);
 extern int get_log_level(void);
 #ifdef __GNUC__
-extern void ilog(const int, const char *, ...) __attribute__((format(printf, 2, 3)));
+extern void ilog(const int, const char *, ...)
+  __attribute__((format(printf, 2, 3)));
 #else
 extern void ilog(const int, const char *, ...);
 #endif
 extern const char *get_log_level_as_string(int);
-extern void log_user_exit(struct Client *);
-extern void log_oper_action(int type, const struct Client *, const char *, ...);
 
 enum {
   LOG_OPER_TYPE,

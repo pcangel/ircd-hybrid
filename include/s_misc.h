@@ -25,6 +25,11 @@
 #ifndef INCLUDED_s_misc_h
 #define INCLUDED_s_misc_h
 
+#define MAX_DATE_STRING 32  /* maximum string length for a date string */
+
+extern struct timeval SystemTime;
+#define CurrentTime SystemTime.tv_sec
+
 extern char *date(time_t);
 extern char *small_file_date(time_t);
 extern const char *smalldate(time_t);
