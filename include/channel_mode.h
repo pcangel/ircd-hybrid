@@ -95,6 +95,9 @@ struct ChCapCombo
   int cap_no;
 };
 
+extern struct Callback *channel_access_cb;
+
+extern void init_channel_modes(void);
 extern int add_id(struct Client *, struct Channel *, char *, int);
 extern void set_channel_mode(struct Client *, struct Client *, struct Channel *,
                              struct Membership *, int, char **, char *);
