@@ -4443,7 +4443,7 @@ fi
 
 
 if test "$inet_misc" = 1; then
-	INET_MISC=inet_misc.c
+	INET_MISC=net/inet_misc.c
 
 fi
 
@@ -9517,7 +9517,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 else
-	BALLOC_C=balloc.c
+	BALLOC_C=mem/balloc.c
 
 fi
 
@@ -10813,7 +10813,7 @@ _ACEOF
 
 fi
 
-                                                                                                                                  ac_config_files="$ac_config_files Makefile etc/Makefile servlink/Makefile contrib/Makefile contrib/help/Makefile src/Makefile messages/Makefile modules/Makefile tools/Makefile doc/Makefile help/Makefile lib/Makefile lib/pcre/Makefile"
+                                                                                                                        ac_config_files="$ac_config_files Makefile etc/Makefile servlink/Makefile contrib/Makefile contrib/help/Makefile src/Makefile messages/Makefile modules/Makefile tools/Makefile doc/Makefile help/Makefile libio/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -11352,8 +11352,7 @@ do
   "tools/Makefile" ) CONFIG_FILES="$CONFIG_FILES tools/Makefile" ;;
   "doc/Makefile" ) CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
   "help/Makefile" ) CONFIG_FILES="$CONFIG_FILES help/Makefile" ;;
-  "lib/Makefile" ) CONFIG_FILES="$CONFIG_FILES lib/Makefile" ;;
-  "lib/pcre/Makefile" ) CONFIG_FILES="$CONFIG_FILES lib/pcre/Makefile" ;;
+  "libio/Makefile" ) CONFIG_FILES="$CONFIG_FILES libio/Makefile" ;;
   "include/setup.h" ) CONFIG_HEADERS="$CONFIG_HEADERS include/setup.h" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
