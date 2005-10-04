@@ -1,6 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  dbuf.h: A header for the dynamic buffers functions.
+ *  list.h: A header for the code in list.c.
  *
  *  Copyright (C) 2002 by the past and present ircd coders, and others.
  *
@@ -19,33 +19,9 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
  *
- *  $Id$
+ *  $Id: list.h 33 2005-10-02 20:50:00Z knight $
  */
 
-#ifndef __DBUF_H_INCLUDED
-#define __DBUF_H_INCLUDED
-
-#include "tools.h"
-
-#define DBUF_BLOCK_SIZE 1024  /* this is also our MTU used for sending */
-
-#define dbuf_length(x) ((x)->total_size)
-#define dbuf_clear(x) dbuf_delete(x, dbuf_length(x))
-
-struct dbuf_block
-{
-  size_t size;
-  char data[DBUF_BLOCK_SIZE];
-};
-
-struct dbuf_queue
-{
-  dlink_list blocks;
-  size_t total_size;
-};
-
-extern void dbuf_init(void);
-extern void dbuf_put(struct dbuf_queue *, char *, size_t);
-extern void dbuf_delete(struct dbuf_queue *, size_t);
-
-#endif
+extern void init_dlink_nodes(void);
+extern void free_dlink_node(dlink_node *);
+extern dlink_node *make_dlink_node(void);

@@ -22,12 +22,6 @@
  *  $Id$
  */
 
-#ifndef INCLUDED_fileio_h
-#define INCLUDED_fileio_h
-
-
-#include "fdlist.h"
-
 #define FB_EOF  0x01
 #define FB_FAIL 0x02
 
@@ -76,5 +70,3 @@ extern int fbputs(const char *, FBFILE *, size_t);
 extern int file_open(fde_t *, const char *, int, int);
 extern void file_close(fde_t *);
 extern int save_spare_fd(const char *);
-
-#endif /* INCLUDED_fileio_h */

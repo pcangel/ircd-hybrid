@@ -29,13 +29,9 @@
 
 %{
 #include "stdinc.h"
-#include "tools.h"
-#include "irc_string.h"
 #include "common.h"
 #include "s_conf.h"
-#include "memory.h"
 #include "hostmask.h"
-#include "s_log.h"
 
 #include "y.tab.h"
 

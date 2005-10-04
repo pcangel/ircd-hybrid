@@ -22,9 +22,6 @@
  *  $Id$
  */
 
-#ifndef _I_MEMORY_H
-#define _I_MEMORY_H
-
 extern void (* outofmemory) (void);
 
 extern void *MyMalloc(size_t size);
@@ -75,5 +72,3 @@ _DupString(char **x, const char *y)
 #endif /* __GNUC__ */
 
 #define DupString(x,y) _DupString(&x, y)
-
-#endif /* _I_MEMORY_H */

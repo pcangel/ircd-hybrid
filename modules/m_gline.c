@@ -23,30 +23,21 @@
  */
 
 #include "stdinc.h"
-#include "tools.h"
 #include "handlers.h"
 #include "s_gline.h"
 #include "channel.h"
 #include "client.h"
 #include "common.h"
-#include "irc_string.h"
-#include "sprintf_irc.h"
 #include "ircd.h"
 #include "hostmask.h"
 #include "numeric.h"
-#include "fdlist.h"
-#include "s_bsd.h"
 #include "s_conf.h"
-#include "s_misc.h"
 #include "send.h"
 #include "msg.h"
-#include "fileio.h"
 #include "s_serv.h"
 #include "hash.h"
 #include "parse.h"
 #include "modules.h"
-#include "list.h"
-#include "s_log.h"
 
 #define GLINE_NOT_PLACED     0
 #ifdef GLINE_VOTING

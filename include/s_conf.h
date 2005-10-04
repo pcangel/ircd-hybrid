@@ -28,12 +28,9 @@
 #ifdef HAVE_LIBCRYPTO
 #include <openssl/rsa.h>
 #endif
-#include "fileio.h"             /* FBFILE */
 #include "ircd_defs.h"
 #include "motd.h"               /* MessageFile */
 #include "client.h"
-#include "hook.h"
-#include "pcre.h"
 
 struct Client;
 struct DNSReply;

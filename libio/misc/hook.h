@@ -1,6 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  event.h: The ircd event header.
+ *  hook.h: A header for the hooks into parts of ircd.
  *
  *  Copyright (C) 2002 by the past and present ircd coders, and others.
  *
@@ -22,37 +22,26 @@
  *  $Id$
  */
 
-#ifndef INCLUDED_event_h
-#define INCLUDED_event_h
+#define HOOK_V2
 
-/*
- * How many event entries we need to allocate at a time in the block
- * allocator. 16 should be plenty at a time.
- */
-#define	MAX_EVENTS	50
+typedef void *CBFUNC(va_list);
 
-typedef void EVH(void *);
-
-/* The list of event processes */
-struct ev_entry
+struct Callback
 {
-  EVH *func;
-  void *arg;
-  const char *name;
-  time_t frequency;
-  time_t when;
-  int active;
+  char *name;
+  dlink_list chain;
+  dlink_node node;
+  unsigned int called;
+  time_t last;
 };
 
-extern const char *last_event_ran;
-extern struct ev_entry event_table[];
+extern dlink_list callback_list;  /* listing/debugging purposes */
 
-extern void eventAdd(const char *, EVH *, void *, time_t);
-extern void eventAddIsh(const char *, EVH *, void *, time_t);
-extern void eventRun(void);
-extern time_t eventNextTime(void);
-extern void eventInit(void);
-extern void eventDelete(EVH *, void *);
-extern void set_back_events(time_t);
+extern struct Callback *register_callback(const char *, CBFUNC *);
+extern void *execute_callback(struct Callback *, ...);
+extern struct Callback *find_callback(const char *);
+extern dlink_node *install_hook(struct Callback *, CBFUNC *);
+extern void uninstall_hook(struct Callback *, CBFUNC *);
+extern void *pass_callback(dlink_node *, ...);
 
-#endif /* INCLUDED_event_h */
+#define is_callback_present(c) (!!dlink_list_length(&c->chain))

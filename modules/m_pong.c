@@ -31,7 +31,6 @@
 #include "numeric.h"
 #include "s_conf.h"
 #include "send.h"
-#include "irc_string.h"
 #include "msg.h"
 #include "parse.h"
 #include "modules.h"

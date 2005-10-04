@@ -25,12 +25,10 @@
 #include "handlers.h"
 #include "client.h"
 #include "common.h"     /* TRUE bleah */
-#include "irc_string.h"
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
 #include "s_conf.h"
-#include "s_log.h"
 #include "msg.h"
 #include "parse.h"
 #include "modules.h"

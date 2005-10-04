@@ -1,6 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  s_log.h: A header for the logger functions.
+ *  sprintf_irc.h: The irc sprintf header.
  *
  *  Copyright (C) 2002 by the past and present ircd coders, and others.
  *
@@ -22,47 +22,25 @@
  *  $Id$
  */
 
-#ifndef INCLUDED_s_log_h
-#define INCLUDED_s_log_h
+/*=============================================================================
+ * Prototypes
+ */
 
-#include "fileio.h"
+extern int vsprintf_irc(char *str, const char *format, va_list);
 
-#define L_CRIT   0
-#define L_ERROR  1
-#define L_WARN   2
-#define L_NOTICE 3
-#define L_TRACE  4
-#define L_INFO   5
-#define L_DEBUG  6
+/* XXX NOT USED AND NOT DEFINED */
+extern int vsnprintf_irc(char *, int, const char*, va_list);
 
-#ifndef SYSLOG_USERS
-extern FBFILE *user_log_fb;
-#endif
+/* old */
+/* extern int ircsprintf(char *str, char *format, ...); */
+/* */
 
-extern void init_log(const char *);
-extern void reopen_log(const char *);
-extern void set_log_level(const int);
-extern int get_log_level(void);
+/*
+ * ircsprintf - optimized sprintf
+ */
 #ifdef __GNUC__
-extern void ilog(const int, const char *, ...)
-  __attribute__((format(printf, 2, 3)));
+extern int ircsprintf(char*, const char*, ...)
+               __attribute__ ((format(printf, 2, 3)));
 #else
-extern void ilog(const int, const char *, ...);
+extern int ircsprintf(char *str, const char *format, ...);
 #endif
-extern const char *get_log_level_as_string(int);
-
-enum {
-  LOG_OPER_TYPE,
-  LOG_FAILED_OPER_TYPE,
-  LOG_KLINE_TYPE,
-  LOG_RKLINE_TYPE,
-  LOG_TEMP_KLINE_TYPE,
-  LOG_DLINE_TYPE,
-  LOG_TEMP_DLINE_TYPE,
-  LOG_GLINE_TYPE,
-  LOG_KILL_TYPE,
-  LOG_OPERSPY_TYPE,
-  LOG_IOERR_TYPE
-};
-
-#endif /* INCLUDED_s_log_h */

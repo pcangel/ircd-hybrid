@@ -1,6 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  sprintf_irc.h: The irc sprintf header.
+ *  dbuf.h: A header for the dynamic buffers functions.
  *
  *  Copyright (C) 2002 by the past and present ircd coders, and others.
  *
@@ -22,31 +22,23 @@
  *  $Id$
  */
 
-#ifndef SPRINTF_IRC
-#define SPRINTF_IRC
+#define DBUF_BLOCK_SIZE 1024  /* this is also our MTU used for sending */
 
+#define dbuf_length(x) ((x)->total_size)
+#define dbuf_clear(x) dbuf_delete(x, dbuf_length(x))
 
-/*=============================================================================
- * Proto types
- */
+struct dbuf_block
+{
+  size_t size;
+  char data[DBUF_BLOCK_SIZE];
+};
 
-extern int vsprintf_irc(char *str, const char *format, va_list);
+struct dbuf_queue
+{
+  dlink_list blocks;
+  size_t total_size;
+};
 
-/* XXX NOT USED AND NOT DEFINED */
-extern int vsnprintf_irc(char *, int, const char*, va_list);
-
-/* old */
-/* extern int ircsprintf(char *str, char *format, ...); */
-/* */
-
-/*
- * ircsprintf - optimized sprintf
- */
-#ifdef __GNUC__
-extern int ircsprintf(char*, const char*, ...)
-               __attribute__ ((format(printf, 2, 3)));
-#else
-extern int ircsprintf(char *str, const char *format, ...);
-#endif
-
-#endif /* SPRINTF_IRC */
+extern void dbuf_init(void);
+extern void dbuf_put(struct dbuf_queue *, char *, size_t);
+extern void dbuf_delete(struct dbuf_queue *, size_t);

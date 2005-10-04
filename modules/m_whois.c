@@ -23,8 +23,6 @@
  */
 
 #include "stdinc.h"
-#include "fdlist.h"
-#include "tools.h"
 #include "common.h"  
 #include "handlers.h"
 #include "client.h"
@@ -34,16 +32,11 @@
 #include "ircd.h"
 #include "numeric.h"
 #include "s_conf.h"
-#include "s_misc.h"
 #include "s_serv.h"
 #include "send.h"
-#include "list.h"
-#include "irc_string.h"
-#include "sprintf_irc.h"
 #include "msg.h"
 #include "parse.h"
 #include "modules.h"
-#include "hook.h"
 
 static void do_whois(struct Client *, int, char **);
 static int single_whois(struct Client *, struct Client *);

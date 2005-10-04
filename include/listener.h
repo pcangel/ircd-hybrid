@@ -29,8 +29,6 @@
 #define LISTENER_HIDDEN 0x2
 
 #include "ircd_defs.h"  
-#include "tools.h"
-#include "fdlist.h"
 
 struct Client;
 

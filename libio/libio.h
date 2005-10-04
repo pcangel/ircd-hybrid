@@ -1,6 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  hook.h: A header for the hooks into parts of ircd.
+ *  libio.h: libio interface specification.
  *
  *  Copyright (C) 2002 by the past and present ircd coders, and others.
  *
@@ -22,32 +22,27 @@
  *  $Id$
  */
 
-#ifndef __HOOK_H_INCLUDED
-#define __HOOK_H_INCLUDED
+#include "misc/event.h"
+#include "misc/tools.h"
+#include "misc/list.h"
+#include "misc/log.h"
+#include "misc/misc.h"
+#include "misc/hook.h"
 
-#include "tools.h"
-#define HOOK_V2
+#include "comm/fdlist.h"
+#include "comm/fileio.h"
+#include "comm/comm.h"
 
-typedef void *CBFUNC(va_list);
+#include "mem/balloc.h"
+#include "mem/dalloca.h"
+#include "mem/dbuf.h"
+#include "mem/memory.h"
 
-struct Callback
-{
-  char *name;
-  dlink_list chain;
-  dlink_node node;
-  unsigned int called;
-  time_t last;
-};
+#include "net/inet_misc.h"
+#include "net/irc_getaddrinfo.h"
+#include "net/irc_getnameinfo.h"
+#include "net/res.h"
 
-extern dlink_list callback_list;  /* listing/debugging purposes */
-
-extern struct Callback *register_callback(const char *, CBFUNC *);
-extern void *execute_callback(struct Callback *, ...);
-extern struct Callback *find_callback(const char *);
-extern dlink_node *install_hook(struct Callback *, CBFUNC *);
-extern void uninstall_hook(struct Callback *, CBFUNC *);
-extern void *pass_callback(dlink_node *, ...);
-
-#define is_callback_present(c) (!!dlink_list_length(&c->chain))
-
-#endif
+#include "string/sprintf_irc.h"
+#include "string/pcre.h"
+#include "string/irc_string.h"

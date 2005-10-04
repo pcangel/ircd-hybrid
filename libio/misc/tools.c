@@ -26,7 +26,6 @@
  */
 
 #include "stdinc.h"
-#include "tools.h"
 
 
 #ifndef NDEBUG

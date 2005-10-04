@@ -10,15 +10,9 @@
  */
 
 #include "stdinc.h"
-#include "tools.h"
-#include "s_log.h"
 #include "s_conf.h"
 #include "hostmask.h"
 #include "client.h"
-#include "pcre.h"
-#include "irc_string.h"
-#include "sprintf_irc.h"
-#include "memory.h"
 #include "send.h"
 #include "resv.h"
 #include "s_serv.h"

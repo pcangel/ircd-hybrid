@@ -27,8 +27,6 @@
 
 #include "ircd_defs.h"
 #include "setup.h"
-#include "tools.h"
-#include "memory.h"
 
 struct Client;
 struct dlink_list;

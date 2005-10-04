@@ -19,13 +19,8 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
  *
- *  $Id$
+ *  $Id: tools.h 62 2005-10-03 22:23:39Z adx $
  */
-
-#ifndef __TOOLS_H__
-#define __TOOLS_H__
-
-#include "stdinc.h"
 
 /*
  * double-linked-list and single-linked-list stuff
@@ -262,5 +257,3 @@ dlinkFindDelete(dlink_list *list, void *data)
 }
 
 #endif /* __GNUC__ */
-
-#endif /* __TOOLS_H__ */

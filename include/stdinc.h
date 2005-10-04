@@ -135,6 +135,6 @@
 extern int errno;
 #endif
 
-#include "inet_misc.h"
+#include "libio.h"
 
 #endif

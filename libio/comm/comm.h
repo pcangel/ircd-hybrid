@@ -1,6 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  s_bsd.h: A header for the network subsystem.
+ *  comm.h: A header for the network subsystem.
  *
  *  Copyright (C) 2002 by the past and present ircd coders, and others.
  *
@@ -21,12 +21,6 @@
  *
  *  $Id$
  */
-
-#ifndef INCLUDED_s_bsd_h
-#define INCLUDED_s_bsd_h
-
-#include "fdlist.h"
-#include "hook.h"
 
 /* Type of IO */
 #define	COMM_SELECT_READ  1
@@ -62,5 +56,3 @@ extern int check_can_use_v6(void);
 #ifdef IPV6
 extern void remove_ipv6_mapping(struct irc_ssaddr *);
 #endif
-
-#endif /* INCLUDED_s_bsd_h */

@@ -24,13 +24,10 @@
 
 #include "stdinc.h"
 #include <iphlpapi.h>
-#include "fdlist.h"
-#include "s_bsd.h"
 #include "common.h"
 #include "client.h"
 #include "numeric.h"
 #include "restart.h"
-#include "s_misc.h"
 
 #define WM_SOCKET  (WM_USER + 0)
 #define WM_DNS     (WM_USER + 1)

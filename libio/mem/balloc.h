@@ -25,15 +25,7 @@
  * \todo Get rid of all typedefs in this file
  */
 
-#ifndef INCLUDED_balloc_h
-#define INCLUDED_balloc_h
-
-#include "setup.h"
-
 #ifndef NOBALLOC
-#include "tools.h"
-#include "memory.h"
-
 
 /*! \brief Block contains status information for
  *         an allocated block in our heap.
@@ -96,5 +88,3 @@ typedef struct BlockHeap BlockHeap;
 #endif /* NOBALLOC */
 
 extern BlockHeap *heap_list;
-
-#endif /* INCLUDED_balloc_h */

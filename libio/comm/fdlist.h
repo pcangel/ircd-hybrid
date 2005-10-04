@@ -22,8 +22,6 @@
  *  $Id$
  */
 
-#ifndef INCLUDED_fdlist_h
-#define INCLUDED_fdlist_h
 #define FILEIO_V2
 
 #define FD_DESC_SZ      128  /* hostlen + comment */
@@ -122,5 +120,3 @@ extern void  fd_note(fde_t *, const char *format, ...)
 extern void close_standard_fds(void);
 extern void close_fds(fde_t *);
 extern void recalc_fdlimit(void *);
-
-#endif /* INCLUDED_fdlist_h */

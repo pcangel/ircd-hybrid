@@ -32,9 +32,7 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "hook.h"
 #include "modules.h"
-#include "irc_string.h"
 
 static void m_admin(struct Client *, struct Client *, int, char **);
 static void mr_admin(struct Client *, struct Client *, int, char **);

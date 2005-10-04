@@ -28,7 +28,6 @@
 #include "client.h"
 #include "common.h"
 #include "hash.h"
-#include "irc_string.h"
 #include "ircd.h"
 #include "ircd_defs.h"
 #include "numeric.h"

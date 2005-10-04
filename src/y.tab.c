@@ -573,19 +573,9 @@
 #include <sys/types.h>
 
 #include "stdinc.h"
-#include "dalloca.h"
 #include "ircd.h"
-#include "tools.h"
-#include "list.h"
 #include "s_conf.h"
-#include "event.h"
-#include "s_log.h"
 #include "client.h"	/* for UMODE_ALL only */
-#include "pcre.h"
-#include "irc_string.h"
-#include "irc_getaddrinfo.h"
-#include "sprintf_irc.h"
-#include "memory.h"
 #include "modules.h"
 #include "s_serv.h" /* for CAP_LL / IsCapable */
 #include "hostmask.h"

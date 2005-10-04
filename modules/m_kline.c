@@ -23,21 +23,13 @@
  */
 
 #include "stdinc.h"
-#include "tools.h"
 #include "channel.h"
 #include "client.h"
 #include "common.h"
-#include "irc_string.h"
-#include "sprintf_irc.h"
 #include "ircd.h"
 #include "hostmask.h"
 #include "numeric.h"
-#include "list.h"
-#include "fdlist.h"
-#include "s_bsd.h"
 #include "s_conf.h"
-#include "s_log.h"
-#include "s_misc.h"
 #include "send.h"
 #include "hash.h"
 #include "handlers.h"
@@ -46,7 +38,6 @@
 #include "s_gline.h"
 #include "parse.h"
 #include "modules.h"
-#include "tools.h"
 
 static void me_kline(struct Client *, struct Client *, int, char **);
 static void mo_kline(struct Client *, struct Client *, int, char **);

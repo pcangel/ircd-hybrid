@@ -23,18 +23,13 @@
  */
 
 #include "stdinc.h"
-#include "tools.h"
 #include "handlers.h"    /* m_server prototype */
 #include "client.h"      /* client struct */
 #include "common.h"      /* TRUE bleah */
-#include "event.h"
 #include "hash.h"        /* add_to_client_hash_table */
-#include "irc_string.h" 
 #include "ircd.h"        /* me */
-#include "list.h"        /* make_server */
 #include "numeric.h"     /* ERR_xxx */
 #include "s_conf.h"      /* struct AccessItem */
-#include "s_log.h"       /* log level defines */
 #include "s_serv.h"      /* server_estab, check_server, my_name_for_link */
 #include "s_stats.h"     /* ServerStats */
 #include "send.h"        /* sendto_one */

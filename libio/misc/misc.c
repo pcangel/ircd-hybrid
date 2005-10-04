@@ -23,12 +23,6 @@
  */
 
 #include "stdinc.h"
-#include "s_misc.h"
-#include "irc_string.h"
-#include "sprintf_irc.h"
-#include "memory.h"
-#include "s_log.h"
-#include "event.h"
 
 struct timeval SystemTime;
 

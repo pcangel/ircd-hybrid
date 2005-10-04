@@ -25,7 +25,6 @@
 #include "stdinc.h"
 #include "handlers.h"
 #include "client.h"
-#include "irc_string.h"
 #include "ircd.h"
 #include "numeric.h"
 #include "s_serv.h"
@@ -35,7 +34,6 @@
 #include "motd.h"
 #include "parse.h"
 #include "modules.h"
-#include "hook.h"
 
 static void do_links(struct Client *, int, char **);
 static void m_links(struct Client*, struct Client*, int, char**);

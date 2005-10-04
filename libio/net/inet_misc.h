@@ -57,11 +57,6 @@
  * --Copyright--
  */
 
-#ifndef INCLUDED_inet_misc_h
-#define INCLUDED_inet_misc_h
-
-#include "stdinc.h"
-
 #ifndef AI_PASSIVE
 #define AI_PASSIVE      0x00000001 /* get address to use bind() */
 #endif /* AI_PASSIVE */
@@ -161,5 +156,3 @@ int inet_pton(int af, const char *src, void *dst);
 #ifdef NO_INET_ATON
 int inet_aton(const char *cp, struct in_addr * addr);
 #endif /* NO_INET_ATON */
-
-#endif /* INCLUDED_inet_misc_h */

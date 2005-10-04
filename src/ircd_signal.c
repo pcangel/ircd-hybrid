@@ -27,9 +27,6 @@
 #include "ircd_signal.h"
 #include "ircd.h"         /* dorehash */
 #include "restart.h"      /* server_reboot */
-#include "s_log.h"
-#include "memory.h"
-#include "s_bsd.h"
 
 /*
  * sigterm_handler - exit the server

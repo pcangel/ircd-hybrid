@@ -22,12 +22,6 @@
  *  $Id$
  */
 
-#ifndef INCLUDED_irc_string_h
-#define INCLUDED_irc_string_h
-
-#include "setup.h"
-#include "pcre.h"
-
 extern int ircd_pcre_exec(const pcre *, const char *);
 extern pcre *ircd_pcre_compile(const char *, const char **);
 extern char *xstrldup(const char *, size_t);
@@ -174,5 +168,3 @@ extern const unsigned int CharAttrs[];
 
 #define IsNonEOS(c) (CharAttrs[(unsigned char)(c)] & NONEOS_C)
 #define IsEol(c) (CharAttrs[(unsigned char)(c)] & EOL_C)
-
-#endif /* INCLUDED_irc_string_h */

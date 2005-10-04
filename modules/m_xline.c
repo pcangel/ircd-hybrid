@@ -23,20 +23,13 @@
  */
 
 #include "stdinc.h"
-#include "tools.h"
 #include "channel.h"
 #include "client.h"
 #include "common.h"
-#include "irc_string.h"
-#include "sprintf_irc.h"
 #include "ircd.h"
 #include "hostmask.h"
 #include "numeric.h"
-#include "fdlist.h"
-#include "s_bsd.h"
 #include "s_conf.h"
-#include "s_log.h"
-#include "s_misc.h"
 #include "send.h"
 #include "hash.h"
 #include "handlers.h"
@@ -45,7 +38,6 @@
 #include "parse.h"
 #include "modules.h"
 #include "resv.h"
-#include "list.h"
 
 static void mo_xline(struct Client *, struct Client *, int, char *[]);
 static void ms_xline(struct Client *, struct Client *, int, char *[]);

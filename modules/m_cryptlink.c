@@ -40,15 +40,9 @@
 #include "rsa.h"
 #include "msg.h"
 #include "parse.h"
-#include "irc_string.h"  /* strncpy_irc */
-#include "tools.h"
-#include "memory.h"
 #include "common.h"      /* TRUE bleah */
-#include "event.h"
 #include "hash.h"        /* add_to_client_hash_table */
-#include "list.h"        /* make_server */
 #include "s_conf.h"      /* struct AccessItem */
-#include "s_log.h"       /* log level defines */
 #include "s_serv.h"      /* server_estab, check_server, my_name_for_link */
 #include "s_stats.h"     /* ServerStats */
 #include "motd.h"

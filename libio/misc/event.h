@@ -1,6 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  list.h: A header for the code in list.c.
+ *  event.h: The ircd event header.
  *
  *  Copyright (C) 2002 by the past and present ircd coders, and others.
  *
@@ -22,11 +22,32 @@
  *  $Id$
  */
 
-#ifndef INCLUDED_list_h
-#define INCLUDED_list_h
+/*
+ * How many event entries we need to allocate at a time in the block
+ * allocator. 16 should be plenty at a time.
+ */
+#define	MAX_EVENTS	50
 
-extern void init_dlink_nodes(void);
-extern void free_dlink_node(dlink_node *);
-extern dlink_node *make_dlink_node(void);
+typedef void EVH(void *);
 
-#endif
+/* The list of event processes */
+struct ev_entry
+{
+  EVH *func;
+  void *arg;
+  const char *name;
+  time_t frequency;
+  time_t when;
+  int active;
+};
+
+extern const char *last_event_ran;
+extern struct ev_entry event_table[];
+
+extern void eventAdd(const char *, EVH *, void *, time_t);
+extern void eventAddIsh(const char *, EVH *, void *, time_t);
+extern void eventRun(void);
+extern time_t eventNextTime(void);
+extern void eventInit(void);
+extern void eventDelete(EVH *, void *);
+extern void set_back_events(time_t);
