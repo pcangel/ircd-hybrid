@@ -19,7 +19,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
  *
- *  $Id: tools.h 62 2005-10-03 22:23:39Z adx $
+ *  $Id$
  */
 
 /*
