@@ -100,6 +100,5 @@ extern dlink_list oper_list;          /* our opers, duplicated in local_client_l
 extern dlink_list lazylink_channels;  /* known about lazylink channels on HUB       */
 extern int rehashed_klines;
 extern unsigned long get_maxrss(void);
-extern void set_time(void);
 
 #endif

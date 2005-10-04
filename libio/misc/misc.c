@@ -27,6 +27,8 @@
 #include "irc_string.h"
 #include "sprintf_irc.h"
 #include "memory.h"
+#include "s_log.h"
+#include "event.h"
 
 struct timeval SystemTime;
 
@@ -159,3 +161,35 @@ ssl_get_cipher(SSL *ssl)
   return buffer;
 }
 #endif
+
+void
+set_time(void)
+{
+  struct timeval newtime;
+#ifdef _WIN32
+  FILETIME ft;
+
+  GetSystemTimeAsFileTime(&ft);
+  if (ft.dwLowDateTime < 0xd53e8000)
+    ft.dwHighDateTime--;
+  ft.dwLowDateTime -= 0xd53e8000;
+  ft.dwHighDateTime -= 0x19db1de;
+
+  newtime.tv_sec  = (*(uint64_t *) &ft) / 10000000;
+  newtime.tv_usec = (*(uint64_t *) &ft) / 10 % 1000000;
+#else
+  newtime.tv_sec  = 0;
+  newtime.tv_usec = 0;
+  gettimeofday(&newtime, NULL);
+#endif
+
+  if (newtime.tv_sec < CurrentTime)
+  {
+    ilog(L_CRIT, "System clock is running backwards - (%lu < %lu)",
+         (unsigned long)newtime.tv_sec, (unsigned long)CurrentTime);
+    set_back_events(CurrentTime - newtime.tv_sec);
+  }
+
+  SystemTime.tv_sec  = newtime.tv_sec;
+  SystemTime.tv_usec = newtime.tv_usec;
+}
