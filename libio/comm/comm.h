@@ -33,7 +33,19 @@
 #define HOSTIPLEN   53
 #define PORTNAMELEN 6  /* ":31337" */
 
+#ifdef _WIN32
+#define EAFNOSUPPORT WSAEAFNOSUPPORT
+#define EALREADY     WSAEALREADY
+#define EINPROGRESS  WSAEINPROGRESS
+#define EISCONN      WSAEISCONN
+#define EMSGSIZE     WSAEMSGSIZE
+#define EWOULDBLOCK  WSAEWOULDBLOCK
+#endif
+
 extern struct Callback *setup_socket_cb;
+#ifdef _WIN32
+extern void (* handle_wm_signal) (WPARAM, LPARAM);
+#endif
 
 extern int get_sockerr(int);
 extern int ignoreErrno(int);
