@@ -3,7 +3,6 @@ o) Fixed broken operwall = yes;
 o) Added 'umode' directive to oper{}.  List of modes to get on /OPER.
 
 
-
 -- ircd-hybrid-7.2rc1 RELNOTES
 o) ircd can now dynamically change all its client/fd limits at runtime
 o) Added epoll as the primary I/O engine under Linux
