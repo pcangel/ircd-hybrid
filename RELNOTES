@@ -4,7 +4,7 @@ o) Added 'umode' directive to oper{}.  List of modes to get on /OPER.
 
 
 -- ircd-hybrid-7.2rc1 RELNOTES
-o) ircd can dynamically change all its client/fd limits at runtime
+o) ircd can now dynamically change all its client/fd limits at runtime
 o) Added epoll as the primary I/O engine under Linux
 o) Local channels will not show up in remote /WHOIS
 o) Added hidden_name which allows customized hidden server names
