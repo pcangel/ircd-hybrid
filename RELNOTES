@@ -38,7 +38,7 @@ o) Native win32 build
 
 --------------------------------------------------------------------------------
 
-This is a beta version of ircd-hybrid-7.2.
+This is a releasce candidate of ircd-hybrid-7.2.
 
 NOTE: This is still BETA code.  Run it at your own risk.  By running this
  code you assume FULL responsibility for any problems it may cause.  We do
