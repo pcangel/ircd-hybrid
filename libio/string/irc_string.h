@@ -101,6 +101,8 @@ extern char *basename(char *);
  */
 extern char *clean_string(char *, const unsigned char *, size_t);
 
+extern char *stripws(char *);
+
 /*
  * strip_tabs - convert tabs to spaces
  * - jdc
