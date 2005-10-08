@@ -99,7 +99,7 @@ m_whois(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if (parc > 2)
+  if (parc > 2 && !EmptyString(parv[2]))
   {
     /* seeing as this is going across servers, we should limit it */
     if ((last_used + ConfigFileEntry.pace_wait_simple) > CurrentTime)
@@ -148,7 +148,7 @@ mo_whois(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if (parc > 2)
+  if (parc > 2 && !EmptyString(parv[2]))
   {
     if (hunt_server(client_p, source_p, ":%s WHOIS %s :%s", 1,
                     parc, parv) != HUNTED_ISME)
@@ -196,12 +196,12 @@ do_whois(struct Client *source_p, int parc, char **parv)
     if ((target_p = find_client(nick)) != NULL)
     {
       if (IsServer(source_p->from))
-	client_burst_if_needed(source_p->from, target_p);
+        client_burst_if_needed(source_p->from, target_p);
 
       if (IsClient(target_p))
       {
-	whois_person(source_p, target_p);
-	found = 1;
+        whois_person(source_p, target_p);
+        found = 1;
       }
     }
     else if (!ServerInfo.hub && uplink && IsCapable(uplink, CAP_LL))
@@ -230,7 +230,7 @@ do_whois(struct Client *source_p, int parc, char **parv)
   {
     if (!IsDigit(*nick))
       sendto_one(source_p, form_str(ERR_NOSUCHNICK),
-		 me.name, source_p->name, nick);
+                 me.name, source_p->name, nick);
   }
 
   sendto_one(source_p, form_str(RPL_ENDOFWHOIS),
@@ -248,8 +248,8 @@ do_whois(struct Client *source_p, int parc, char **parv)
 static int
 global_whois(struct Client *source_p, const char *nick)
 {
-  dlink_node *ptr;
-  struct Client *target_p;
+  dlink_node *ptr = NULL;
+  struct Client *target_p = NULL;
   int found = 0;
 
   DLINK_FOREACH(ptr, global_client_list.head)
@@ -279,7 +279,7 @@ global_whois(struct Client *source_p, const char *nick)
     found |= single_whois(source_p, target_p);
   }
 
-  return (found);
+  return found;
 }
 
 /* single_whois()
@@ -293,8 +293,8 @@ global_whois(struct Client *source_p, const char *nick)
 static int
 single_whois(struct Client *source_p, struct Client *target_p)
 {
-  dlink_node *ptr;
-  struct Channel *chptr;
+  dlink_node *ptr = NULL;
+  struct Channel *chptr = NULL;
 
   if (!IsInvisible(target_p) || target_p == source_p)
   {
@@ -357,14 +357,14 @@ whois_person(struct Client *source_p, struct Client *target_p)
     {
       /* Don't show local channels if user is doing a remote whois */
       if (!MyConnect(source_p) && (chptr->chname[0] == '&'))
-	continue;
+        continue;
 
       if ((cur_len + 3 + strlen(chptr->chname) + 1) > (IRCD_BUFSIZE - 2))
       {
-	*(t - 1) = '\0';
-	sendto_one(source_p, "%s", buf);
-	cur_len = mlen;
-	t = buf + mlen;
+        *(t - 1) = '\0';
+        sendto_one(source_p, "%s", buf);
+        cur_len = mlen;
+        t = buf + mlen;
       }
 
       tlen = ircsprintf(t, "%s%s ", get_member_status(ms, YES), chptr->chname);
@@ -386,9 +386,9 @@ whois_person(struct Client *source_p, struct Client *target_p)
                server_p->name, server_p->info);
   else
     sendto_one(source_p, form_str(RPL_WHOISSERVER),
-	       me.name, source_p->name, target_p->name,
+               me.name, source_p->name, target_p->name,
                ConfigServerHide.hidden_name,
-	       ServerInfo.network_desc);
+               ServerInfo.network_desc);
 
   if (target_p->away != NULL)
     sendto_one(source_p, form_str(RPL_AWAY),
@@ -415,7 +415,7 @@ whois_person(struct Client *source_p, struct Client *target_p)
       sendto_one(source_p, form_str(RPL_WHOISACTUALLY),
                  me.name, source_p->name, target_p->name,
                  IsIPSpoof(target_p) || IsOper(target_p) ?
-		 "255.255.255.255" : target_p->sockhost);
+                 "255.255.255.255" : target_p->sockhost);
   }
 
   if (MyConnect(target_p)) /* Can't do any of this if not local! db */
