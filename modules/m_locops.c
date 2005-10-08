@@ -29,6 +29,7 @@
 #include "numeric.h"
 #include "send.h"
 #include "s_conf.h"
+#include "parse_aline.h"
 #include "s_user.h"
 #include "s_serv.h"
 #include "hash.h"

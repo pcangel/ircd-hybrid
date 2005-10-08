@@ -34,6 +34,7 @@
 #include "parse.h"
 #include "modules.h"
 #include "s_conf.h"
+#include "parse_aline.h"
 #include "resv.h"
 #include "hash.h"
 

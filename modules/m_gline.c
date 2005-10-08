@@ -32,6 +32,7 @@
 #include "hostmask.h"
 #include "numeric.h"
 #include "s_conf.h"
+#include "parse_aline.h"
 #include "send.h"
 #include "msg.h"
 #include "s_serv.h"

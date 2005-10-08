@@ -457,22 +457,14 @@ extern dlink_list class_items;
 extern dlink_list server_items;
 extern dlink_list cluster_items;
 extern dlink_list hub_items;
-extern dlink_list rxconf_items;
-extern dlink_list rkconf_items;
 extern dlink_list leaf_items;
-extern dlink_list temporary_klines;
-extern dlink_list temporary_dlines;
-extern dlink_list temporary_glines;
-extern dlink_list temporary_xlines;
-extern dlink_list temporary_rxlines;
-extern dlink_list temporary_rklines;
 extern struct logging_entry ConfigLoggingEntry;
 extern struct config_file_entry ConfigFileEntry;/* defined in ircd.c*/
 extern struct config_channel_entry ConfigChannel;/* defined in channel.c*/
 extern struct config_server_hide ConfigServerHide; /* defined in s_conf.c */
 extern struct server_info ServerInfo;       /* defined in ircd.c */
 extern struct admin_info AdminInfo;        /* defined in ircd.c */
-extern int valid_wild_card(struct Client *, int, int, ...);
+
 /* End GLOBAL section */
 
 extern unsigned long get_sendq(struct Client *);
@@ -489,7 +481,6 @@ extern void free_access_item(struct AccessItem *);
 extern void read_conf_files(int);
 extern int attach_conf(struct Client *, struct ConfItem *);
 extern int attach_connect_block(struct Client *, const char *, const char *);
-
 extern int detach_conf(struct Client *, ConfType);
 
 extern struct ConfItem *find_conf_name(dlink_list *, const char *, ConfType);
@@ -512,8 +503,7 @@ extern void write_conf_line(struct Client *, struct ConfItem *,
                             const char *, time_t);
 extern int remove_conf_line(ConfType, struct Client *, const char *,
                             const char *);
-extern void add_temp_line(struct ConfItem *);
-extern void cleanup_tklines(void *);
+
 extern const char *get_conf_name(ConfType);
 extern int rehash(int);
 extern int conf_add_server(struct ConfItem *, unsigned int, const char *);
@@ -527,19 +517,8 @@ extern char *get_oper_name(const struct Client *);
 
 extern void *map_to_conf(struct ConfItem *);
 extern struct ConfItem *unmap_conf_item(void *);
-/* XXX should the parse_aline stuff go into another file ?? */
-#define AWILD 0x1		/* check wild cards */
-#define NOUSERLOOKUP 0x2 /* Don't lookup the user@host on /rkline nick */
-extern int parse_aline(const char *, struct Client *, int, char **,
-		       int, char **, char **, time_t *, char **, char **);
-extern int valid_comment(struct Client *, char *, int);
-
-/* XXX */
 extern int yylex(void);
 
-#define TK_SECONDS 0
-#define TK_MINUTES 1
-extern time_t valid_tkline(char *, int);
 extern int match_conf_password(const char *, const struct AccessItem *);
 
 #define NOT_AUTHORIZED    (-1)
@@ -549,10 +528,6 @@ extern int match_conf_password(const char *, const struct AccessItem *);
 #define BANNED_CLIENT     (-5)
 #define TOO_FAST          (-6)
 
-#define CLEANUP_TKLINES_TIME 60
-
-extern void cluster_a_line(struct Client *,
-			   const char *, int, int, const char *,...);
 extern void rebuild_cidr_class(struct ConfItem *, struct ClassItem *);
 
 #endif /* INCLUDED_s_conf_h */
