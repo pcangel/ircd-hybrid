@@ -104,13 +104,14 @@ ms_llnick(struct Client *client_p, struct Client *source_p,
     /* New user -- find them */
     DLINK_FOREACH(ptr, unknown_list.head)
     {
-      if( !strcmp(nick_old, ((struct Client *)ptr->data)->llname) )
+      if (!strcmp(nick_old, ((struct Client *)ptr->data)->localClient->llname))
       {
         target_p = ptr->data;
-        *target_p->llname = '\0'; /* unset their temp-nick */
+        target_p->localClient->llname[0] = '\0'; /* unset their temp-nick */
         break;
       }
     }
+
     if (!target_p) /* Can't find them -- maybe they got a different nick */
       return;
   }

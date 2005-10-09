@@ -147,7 +147,7 @@ mr_nick(struct Client *client_p, struct Client *source_p,
       {
         uclient_p = ptr->data;
 
-	if (!strcmp(nick, uclient_p->llname))
+	if (!strcmp(nick, uclient_p->localClient->llname))
 	{
 	
 	  /* We're already waiting for a reply about this nick
@@ -159,7 +159,7 @@ mr_nick(struct Client *client_p, struct Client *source_p,
       }
 
       /* Set their llname so we can find them later */
-      strcpy(source_p->llname, nick);
+      strcpy(source_p->localClient->llname, nick);
 
       /* Ask the hub about their requested name */
       sendto_one(uplink, ":%s NBURST %s %s !%s", me.name, nick,
