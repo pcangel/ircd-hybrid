@@ -631,7 +631,7 @@ check_server(const char *name, struct Client *client_p, int cryptlink)
   if (server_conf == NULL)
     return(error);
 
-  attach_conf(client_p, server_conf);
+  attach_iline(client_p, server_conf);
 
   /* Now find all leaf or hub config items for this server */
   DLINK_FOREACH(ptr, hub_items.head)
@@ -640,7 +640,7 @@ check_server(const char *name, struct Client *client_p, int cryptlink)
 
     if (!match(name, conf->name))
       continue;
-    attach_conf(client_p, conf);
+    attach_leaf_hub(client_p, conf);
   }
 
   DLINK_FOREACH(ptr, leaf_items.head)
@@ -649,7 +649,7 @@ check_server(const char *name, struct Client *client_p, int cryptlink)
 
     if (!match(name, conf->name))
       continue;
-    attach_conf(client_p, conf);
+    attach_leaf_hub(client_p, conf);
   }
 
   server_aconf = (struct AccessItem *)map_to_conf(server_conf);
@@ -993,8 +993,7 @@ server_estab(struct Client *client_p)
   inpath = get_client_name(client_p, MASK_IP); /* "refresh" inpath with host */
   host   = client_p->name;
 
-  if ((conf = find_conf_name(&client_p->localClient->confs, host, SERVER_TYPE))
-      == NULL)
+  if ((conf = client_p->localClient->iline) == NULL)
   {
     /* This shouldn't happen, better tell the ops... -A1kmm */
     sendto_realops_flags(UMODE_ALL, L_ALL, "Warning: Lost connect{} block "
@@ -2082,8 +2081,7 @@ serv_connect_callback(fde_t *fd, int status, void *data)
 
   /* COMM_OK, so continue the connection procedure */
   /* Get the C/N lines */
-  conf = find_conf_name(&client_p->localClient->confs,
-			client_p->name, SERVER_TYPE); 
+  conf = client_p->localClient->iline;
   if (conf == NULL)
   {
     sendto_realops_flags(UMODE_ALL, L_ADMIN,

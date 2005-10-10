@@ -102,16 +102,7 @@ m_oper(struct Client *client_p, struct Client *source_p,
 
   if (match_conf_password(password, aconf))
   {
-    if (attach_conf(source_p, conf) != 0)
-    {
-      sendto_one(source_p, ":%s NOTICE %s :Can't attach conf!",
-                 me.name, source_p->name);
-      failed_oper_notice(source_p, name, "can't attach conf!");
-      log_oper_action(LOG_FAILED_OPER_TYPE, source_p, "%s\n", name);
-      return;
-    }
-
-    oper_up(source_p);
+    oper_up(source_p, conf);
 
     ilog(L_TRACE, "OPER %s by %s!%s@%s",
          name, source_p->name, source_p->username, source_p->host);

@@ -218,8 +218,7 @@ cryptlink_auth(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  conf = find_conf_name(&client_p->localClient->confs,
-                         client_p->name, SERVER_TYPE);
+  conf = client_p->localClient->iline;
 
   if (conf == NULL)
   {
@@ -378,8 +377,8 @@ cryptlink_serv(struct Client *client_p, struct Client *source_p,
       }
   }
 
-  conf = find_conf_name(&client_p->localClient->confs,
-			name, SERVER_TYPE);
+  conf = client_p->localClient->iline;
+
   if (conf == NULL)
   {
     cryptlink_error(client_p, "AUTH",
