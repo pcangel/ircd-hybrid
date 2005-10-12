@@ -31,6 +31,7 @@
 
 struct Client;
 struct AccessItem;
+struct ConfItem;
 
 extern int MaxClientCount;     /* GLOBAL - highest number of clients     */
 extern int MaxConnectionCount; /* GLOBAL - highest number of connections */
