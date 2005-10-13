@@ -56,7 +56,6 @@ void
 _modinit(void)
 {
   mod_add_cmd(&tburst_msgtab);
-  hook_add_hook("burst_channel", (hookfn *)send_tburst);
   add_capability("TBURST", CAP_TBURST, 1);
 }
 
@@ -64,7 +63,6 @@ void
 _moddeinit(void)
 {
   mod_del_cmd(&tburst_msgtab);
-  hook_del_hook("burst_channel", (hookfn *)send_tburst);
   delete_capability("TBURST");
 }
 
@@ -92,10 +90,6 @@ ms_tburst(struct Client *client_p, struct Client *source_p,
   if ((chptr = hash_find_channel(parv[2])) == NULL)
     return;
 
-  /* If the topics are the same (due to lag) ignore it */
-  if ((chptr->topic != NULL) && !strcmp(chptr->topic, parv[5]))
-    return;
-
   /* Only allow topic change if we are the newer TS and server
    * sending TBURST has older TS and topicTS on older TS is
    * newer than current topicTS. -metalrock
@@ -111,9 +105,11 @@ set_topic(struct Client *source_p, struct Channel *chptr,
 {
   set_channel_topic(chptr, topic, topicwho, oldtopicts);
 
-  sendto_channel_local(ALL_MEMBERS, chptr, ":%s TOPIC %s :%s",
-		       ConfigServerHide.hide_servers ? me.name : source_p->name,
-		       chptr->chname, chptr->topic == NULL ? "" : chptr->topic);
+  /* Only send TOPIC to channel if it's different */
+  if (chptr->topic == NULL || strcmp(chptr->topic, topic))
+    sendto_channel_local(ALL_MEMBERS, chptr, ":%s TOPIC %s :%s",
+                         ConfigServerHide.hide_servers ? me.name : source_p->name,
+                         chptr->chname, chptr->topic == NULL ? "" : chptr->topic);
 
   sendto_server(source_p, NULL, chptr, CAP_TBURST, NOCAPS, NOFLAGS,
 		":%s TBURST %lu %s %lu %s :%s",
