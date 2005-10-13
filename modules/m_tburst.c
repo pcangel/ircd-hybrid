@@ -1,4 +1,4 @@
-/*  contrib/m_tburst.c
+/*  modules/m_tburst.c
  *  Copyright (C) 2002, 2003, 2004, 2005 Hybrid Development Team
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -42,14 +42,6 @@
 #include "s_conf.h"
 
 
-/* TBURST_PROPAGATE
- *
- * If this is defined, when we receive a TBURST thats successful
- * (ie: our topic changes), the TBURST will be propagated to other
- * servers that support TBURST
- */
-#define TBURST_PROPAGATE
-
 static void ms_tburst(struct Client *, struct Client *, int, char *[]);
 static void set_topic(struct Client *, struct Channel *, time_t, char *, char *);
 int send_tburst(struct hook_burst_channel *);
@@ -60,7 +52,6 @@ struct Message tburst_msgtab = {
 };
 
 #ifndef STATIC_MODULES
-
 void
 _modinit(void)
 {
@@ -78,8 +69,8 @@ _moddeinit(void)
 }
 
 const char *_version = "$Revision: 1.25 $";
-
 #endif /* !STATIC_MODULES */
+
 
 /* ms_tburst()
  * 
@@ -124,14 +115,12 @@ set_topic(struct Client *source_p, struct Channel *chptr,
 		       ConfigServerHide.hide_servers ? me.name : source_p->name,
 		       chptr->chname, chptr->topic == NULL ? "" : chptr->topic);
 
-#ifdef TBURST_PROPAGATE
   sendto_server(source_p, NULL, chptr, CAP_TBURST, NOCAPS, NOFLAGS,
 		":%s TBURST %lu %s %lu %s :%s",
 		me.name, (unsigned long)chptr->channelts, chptr->chname,
 		(unsigned long)chptr->topic_time, 
                 chptr->topic_info == NULL ? "" : chptr->topic_info,
                 chptr->topic == NULL ? "" : chptr->topic);
-#endif
 }
 
 int
