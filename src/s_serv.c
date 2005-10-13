@@ -668,14 +668,6 @@ check_server(const char *name, struct Client *client_p, int cryptlink)
     ClearCap(client_p, CAP_TBURST);
   }
 
-  /*
-   * Make sure to unset CAP_TB if server is capable of TBURST.
-   * This is to prevent sending both TB and TBURST messages to
-   * the same server in m_tb:set_topic
-   */
-  if (IsCapable(client_p, CAP_TBURST))
-    ClearCap(client_p, CAP_TB);
-
   /* Don't unset CAP_HUB here even if the server isn't a hub,
    * it only indicates if the server thinks it's lazylinks are
    * leafs or not.. if you unset it, bad things will happen

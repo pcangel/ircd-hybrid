@@ -176,7 +176,7 @@ set_topic(struct Client *source_p, struct Channel *chptr,
                 (unsigned long)chptr->topic_time,
                 chptr->topic_info == NULL ? "" : chptr->topic_info,
                 chptr->topic == NULL ? "" : chptr->topic);
-  sendto_server(source_p, NULL, chptr, CAP_TB, NOCAPS, NOFLAGS,
+  sendto_server(source_p, NULL, chptr, CAP_TB, CAP_TBURST, NOFLAGS,
                 ":%s TB %s %lu %s :%s",
                 me.name, chptr->chname,
                 (unsigned long)chptr->topic_time, 
