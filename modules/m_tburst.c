@@ -44,7 +44,6 @@
 
 static void ms_tburst(struct Client *, struct Client *, int, char *[]);
 static void set_topic(struct Client *, struct Channel *, time_t, char *, char *);
-int send_tburst(struct hook_burst_channel *);
 
 struct Message tburst_msgtab = {
   "TBURST", 0, 0, 6, 0, MFLG_SLOW, 0,
@@ -83,7 +82,7 @@ static void
 ms_tburst(struct Client *client_p, struct Client *source_p,
           int parc, char *parv[])
 {
-  struct Channel *chptr;
+  struct Channel *chptr = NULL;
   time_t oldchannelts = atol(parv[1]);
   time_t oldtopicts = atol(parv[3]);
 
@@ -93,6 +92,7 @@ ms_tburst(struct Client *client_p, struct Client *source_p,
   /* Only allow topic change if we are the newer TS and server
    * sending TBURST has older TS and topicTS on older TS is
    * newer than current topicTS. -metalrock
+   * XXX - Incorrect logic here as discussed on IRC
    */
   if ((oldchannelts <= chptr->channelts) &&
       ((chptr->topic == NULL) || (oldtopicts > chptr->topic_time)))
@@ -117,15 +117,4 @@ set_topic(struct Client *source_p, struct Channel *chptr,
 		(unsigned long)chptr->topic_time, 
                 chptr->topic_info == NULL ? "" : chptr->topic_info,
                 chptr->topic == NULL ? "" : chptr->topic);
-}
-
-int
-send_tburst(struct hook_burst_channel *data)
-{
-  if (data->chptr->topic != NULL && IsCapable(data->client, CAP_TBURST))
-    sendto_one(data->client, ":%s TBURST %lu %s %lu %s :%s",
-               me.name, (unsigned long)data->chptr->channelts, data->chptr->chname,
-	       (unsigned long)data->chptr->topic_time, data->chptr->topic_info, 
-	       data->chptr->topic);
-  return(0);
 }
