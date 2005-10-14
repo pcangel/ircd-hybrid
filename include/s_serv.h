@@ -239,7 +239,7 @@ extern struct Client *uplink; /* NON NULL if leaf and is this servers uplink */
 extern int check_server(const char *, struct Client *, int);
 extern int hunt_server(struct Client *, struct Client *,
                        const char *, int, int, char **);
-extern const char *my_name_for_link(struct ConfItem *);
+extern const char *my_name_for_link(struct AccessItem *);
 extern void add_capability(const char *, int, int);
 extern int delete_capability(const char *);
 extern int find_capability(const char *);
@@ -256,7 +256,7 @@ extern void sendnick_TS(struct Client *, struct Client *);
 extern int serv_connect(struct AccessItem *, struct Client *);
 extern struct Client *find_servconn_in_progress(const char *);
 extern unsigned long nextFreeMask(void);
-extern void cryptlink_init(struct Client *, struct ConfItem *, fde_t *);
+extern void cryptlink_init(struct Client *, struct AccessItem *, fde_t *);
 extern void cryptlink_regen_key(void *);
 extern void cryptlink_error(struct Client *, const char *,
                             const char *, const char *);

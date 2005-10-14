@@ -121,7 +121,7 @@ mr_server(struct Client *client_p, struct Client *source_p,
   }
 
   /* Now we just have to call check_server and everything should
-   * be check for us... -A1kmm.
+   * be checked for us... -A1kmm.
    */
   switch (check_server(name, client_p, CHECK_SERVER_NOCRYPTLINK))
   {
@@ -531,7 +531,7 @@ ms_server(struct Client *client_p, struct Client *source_p,
       continue;
     }
 
-    if (match(my_name_for_link(conf), target_p->name))
+    if (match(my_name_for_link(map_to_conf(conf)), target_p->name))
       continue;
 
     sendto_one(bclient_p, ":%s SERVER %s %d :%s%s",
@@ -788,7 +788,7 @@ ms_sid(struct Client *client_p, struct Client *source_p,
       continue;
     }
 
-    if (match(my_name_for_link(conf), target_p->name))
+    if (match(my_name_for_link(map_to_conf(conf)), target_p->name))
       continue;
     
     if (IsCapable(bclient_p, CAP_TS6))

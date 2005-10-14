@@ -312,7 +312,7 @@ register_local_user(struct Client *client_p, struct Client *source_p,
             sizeof(source_p->host));
   }
 
-  aconf = map_to_conf(source_p->localClient->iline);
+  aconf = source_p->localClient->iline;
 
   if (!IsGotId(source_p))
   {
@@ -1282,7 +1282,7 @@ oper_up(struct Client *source_p, struct ConfItem *conf)
   struct AccessItem *aconf = NULL;
 
   assert(source_p->localClient->iline);
-  aconf = map_to_conf(source_p->localClient->iline);
+  aconf = source_p->localClient->iline;
   oconf = map_to_conf(conf);
 
   ++Count.oper;

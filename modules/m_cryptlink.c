@@ -218,17 +218,16 @@ cryptlink_auth(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  conf = client_p->localClient->iline;
+  conf = client_p->serv->sconf;
 
   if (conf == NULL)
   {
     cryptlink_error(client_p, "AUTH",
-                    "Lost C-line for server",
-                    "Lost C-line");
+                    "Lost connect block for server",
+                    "Lost connect block");
     return;
   }
-
-  aconf = (struct AccessItem *)map_to_conf(conf);
+  aconf = map_to_conf(conf);
 
   if (!(client_p->localClient->out_cipher ||
       (client_p->localClient->out_cipher = check_cipher(client_p, aconf))))
@@ -377,15 +376,16 @@ cryptlink_serv(struct Client *client_p, struct Client *source_p,
       }
   }
 
-  conf = client_p->localClient->iline;
+  conf = client_p->serv->sconf;
 
   if (conf == NULL)
   {
     cryptlink_error(client_p, "AUTH",
-                    "Lost C-line for server",
-                    "Lost C-line" );
+                    "Lost connect block for server",
+                    "Lost connect block" );
     return;
   }
+  aconf = map_to_conf(conf);
 
   /*
    * if we are connecting (Handshake), we already have the name from the
@@ -411,8 +411,6 @@ cryptlink_serv(struct Client *client_p, struct Client *source_p,
 
   strlcpy(client_p->info, p, sizeof(client_p->info));
   client_p->hopcount = 0;
-
-  aconf = (struct AccessItem *)map_to_conf(conf);
 
   if (!(client_p->localClient->out_cipher ||
       (client_p->localClient->out_cipher = check_cipher(client_p, aconf))))
@@ -446,7 +444,7 @@ cryptlink_serv(struct Client *client_p, struct Client *source_p,
 
   if (!IsWaitAuth(client_p))
   {
-    cryptlink_init(client_p, conf, NULL);
+    cryptlink_init(client_p, aconf, NULL);
   }
 
   sendto_one(client_p, "CRYPTLINK AUTH %s %s",
