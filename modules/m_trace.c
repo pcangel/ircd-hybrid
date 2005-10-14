@@ -228,7 +228,7 @@ do_actual_trace(struct Client *source_p, int parc, char **parv)
 		      target_p->localClient->ip.ss_len, ipaddr, HOSTIPLEN, NULL, 0,
 		      NI_NUMERICHOST);
 
-      class_name = get_client_class(target_p);
+      class_name = get_client_className(target_p);
 
       if (IsOper(target_p))
       {
@@ -358,7 +358,7 @@ report_this_status(struct Client *source_p, struct Client *target_p,
         target_p->localClient->ip.ss_len, ip, HOSTIPLEN, NULL, 0, 
         NI_NUMERICHOST);
   name = get_client_name(target_p, HIDE_IP);
-  class_name = get_client_class(target_p);
+  class_name = get_client_className(target_p);
 
   set_time();
 
