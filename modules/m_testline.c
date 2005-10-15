@@ -122,13 +122,7 @@ mo_testline(struct Client *client_p, struct Client *source_p,
     }
   }
 
-  if ((p = strchr(given_name, '@')) != NULL)
-  {
-    *p++ = '\0';
-    given_host = p;
-  }
-  else
-    given_host = "*";
+  split_nuh(given_name, NULL, &given_name, &given_host);
 
   t = parse_netmask(given_host, &ip, &host_mask);
 
