@@ -130,7 +130,7 @@ mo_testline(struct Client *client_p, struct Client *source_p,
   else
     given_host = "*";
 
-  t = parse_netmask(given_name, &ip, &host_mask);
+  t = parse_netmask(given_host, &ip, &host_mask);
 
   if (t != HM_HOST)
   {
