@@ -61,55 +61,6 @@ dlink_list nresv_items   = { NULL, NULL, 0 };
 dlink_list class_items   = { NULL, NULL, 0 };
 dlink_list gdeny_items	 = { NULL, NULL, 0 };
 
-struct conf_item_table_type conf_item_table[] = 
-  {
-    /* CONF_TYPE */
-    { 0, 0 , 0},
-    /* CLASS_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct ClassItem), 0, &class_items },
-    /* OPER_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_OPERATOR,
-      &oconf_items },
-    /* CLIENT_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_CLIENT, NULL },
-    /* SERVER_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_SERVER, 
-      &server_items },
-    /* HUB_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct MatchItem), 0, &hub_items },
-    /* LEAF_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct MatchItem), 0, &leaf_items },
-    /* KLINE_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_KLINE, NULL },
-    /* DLINE_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_DLINE, NULL },
-    /* EXEMPTDLINE_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_EXEMPTDLINE,
-      NULL },
-    /* CLUSTER_TYPE */
-    { sizeof(struct ConfItem) , 0, &cluster_items },
-    /* RKLINE_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_KLINE,
-      &rkconf_items },
-    /* RXLINE_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct MatchItem), CONF_KLINE, 
-      &rxconf_items },
-    /* XLINE_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct AccessItem), 0, &xconf_items },
-    /* ULINE_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct AccessItem), 0, &uconf_items },
-    /* GLINE_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_GLINE, NULL },
-    /* CRESV_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct MatchItem), 0, NULL },
-    /* NRESV_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct MatchItem), 0, &nresv_items },
-    /* GDENY_TYPE */
-    { sizeof(struct ConfItem) + sizeof(struct AccessItem), 0, &gdeny_items },
-    { 0, 0, 0}
-  };
-
-
 extern unsigned int lineno;
 extern char linebuf[];
 extern char conffilebuf[IRCD_BUFSIZE];
@@ -132,8 +83,69 @@ static struct ip_entry *find_or_add_ip(struct irc_ssaddr *);
 static void parse_conf_file(int, int);
 static int check_class_limits(struct Client *, int ,struct ClassItem *);
 static int attach_class(struct Client *client_p, struct ClassItem *aclass);
-static void free_aconf_items(struct AccessItem *);
-static void free_match_items(struct MatchItem *);
+static void free_aconf_items(struct ConfItem *, dlink_list *);
+static void free_match_items(struct ConfItem *, dlink_list *);
+static void delete_link(struct ConfItem *, dlink_list *);
+
+struct conf_item_table_type conf_item_table[] = 
+  {
+    /* CONF_TYPE */
+    { 0, 0 , 0, 0},
+    /* CLASS_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct ClassItem), 0,
+      &class_items, delete_link},
+    /* OPER_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_OPERATOR,
+      &oconf_items, free_aconf_items },
+    /* CLIENT_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_CLIENT,
+      NULL, free_aconf_items },
+    /* SERVER_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_SERVER, 
+      &server_items, free_aconf_items },
+    /* HUB_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct MatchItem), 0,
+      &hub_items, free_match_items },
+    /* LEAF_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct MatchItem), 0,
+      &leaf_items, free_match_items },
+    /* KLINE_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_KLINE,
+      NULL, free_aconf_items },
+    /* DLINE_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_DLINE,
+      NULL, free_aconf_items },
+    /* EXEMPTDLINE_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_EXEMPTDLINE,
+      NULL, free_aconf_items },
+    /* CLUSTER_TYPE */
+    { sizeof(struct ConfItem) , 0,
+      &cluster_items, delete_link },
+    /* RKLINE_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_KLINE,
+      &rkconf_items, free_aconf_items },
+    /* RXLINE_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct MatchItem), CONF_KLINE, 
+      &rxconf_items, free_match_items },
+    /* XLINE_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct AccessItem), 0,
+      &xconf_items, free_match_items },
+    /* ULINE_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct AccessItem), 0,
+      &uconf_items, free_match_items },
+    /* GLINE_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct AccessItem), CONF_GLINE,
+      NULL, free_aconf_items },
+    /* CRESV_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct MatchItem), 0, NULL },
+    /* NRESV_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct MatchItem), 0,
+      &nresv_items, free_match_items },
+    /* GDENY_TYPE */
+    { sizeof(struct ConfItem) + sizeof(struct AccessItem), 0,
+      &gdeny_items, free_aconf_items },
+    { 0, 0, 0}
+  };
 
 /*
  * bit_len
@@ -208,7 +220,8 @@ conf_dns_callback(void *vptr, struct DNSReply *reply)
 
   if (reply != NULL)
     memcpy(&aconf->ipnum, &reply->addr, sizeof(reply->addr));
-  else {
+  else
+  {
     ilog(L_NOTICE, "Host not found: %s, ignoring connect{} block",
          aconf->host);
     conf = unmap_conf_item(aconf);
@@ -269,11 +282,16 @@ make_conf_item(ConfType type)
   return conf;
 }
 
+/*
+ * delete_conf_item
+ *
+ * inputs	- pointer to struct ConfItem
+ * output	- NONE
+ * side effects	- Take given conf and delete it.
+ */
 void
 delete_conf_item(struct ConfItem *conf)
 {
-  struct MatchItem *match_item;
-  struct AccessItem *aconf;
   ConfType type = conf->type;
   dlink_list *list;
 
@@ -281,82 +299,31 @@ delete_conf_item(struct ConfItem *conf)
 
   MyFree(conf->name);
   conf->name = NULL;
+  MyFree(conf->regexpname);
+  conf->regexpname = NULL;
 
-  switch(type)
-  {
-  case DLINE_TYPE:
-  case EXEMPTDLINE_TYPE:
-  case GLINE_TYPE:
-  case KLINE_TYPE:
-  case CLIENT_TYPE:
-  case OPER_TYPE:
-  case SERVER_TYPE:
-    aconf = map_to_conf(conf);
-    free_aconf_items(aconf);
+  if (conf_item_table[type].freer != NULL)
+    conf_item_table[type].freer(conf, list);
 
-    /* Yes, sigh. switch on type again */
-    switch(type)
-    {
-    case OPER_TYPE:
-    case SERVER_TYPE:
-      aconf = map_to_conf(conf);
-      if (!IsConfIllegal(aconf))
-	dlinkDelete(&conf->node, list);
-    case EXEMPTDLINE_TYPE:
-    case DLINE_TYPE:
-    case GLINE_TYPE:
-    case KLINE_TYPE:
-    case CLIENT_TYPE:
-      MyFree(conf);
-    default:
-      break;
-    }
-    break;
-
-  case HUB_TYPE:
-  case LEAF_TYPE:
-  case ULINE_TYPE:
-  case XLINE_TYPE:
-  case RKLINE_TYPE:
-  case RXLINE_TYPE:
-  case NRESV_TYPE:
-    match_item = map_to_conf(conf);
-    free_match_items(match_item);
-    /* If marked illegal, its already been pulled off of the hub_items list */
-    if (!match_item->illegal)
-      dlinkDelete(&conf->node, list);
-    MyFree(conf);
-    break;
-
-  case GDENY_TYPE:
-    aconf = map_to_conf(conf);
-    free_aconf_items(aconf);
-    dlinkDelete(&conf->node, &gdeny_items);
-    MyFree(conf);
-    break;
-
-  case CLASS_TYPE:
-  case CLUSTER_TYPE:
-    dlinkDelete(&conf->node, list);
-  case CRESV_TYPE:
-    MyFree(conf);
-    break;
-
-  default:
-    break;
-  }
+  MyFree(conf);
 }
 
 /*
  * free_aconf_items
  *
- * inputs	- pointer to struct AccessItem
+ * inputs       - pointer to struct ConfItem
+ *              - pointer to list to delink from, if NULL nothing to do
  * output	- NONE
- * side effects	- free all AcessItem entries
+ * side effects	- free all AcessItem entries, optionally delink from
+ *                given list
  */
 static void
-free_aconf_items(struct AccessItem *aconf)
+free_aconf_items(struct ConfItem *conf, dlink_list *list)
 {
+  struct AccessItem *aconf;
+
+  aconf = map_to_conf(conf);
+
   if (aconf->dns_query != NULL)
   {
     delete_resolver_queries(aconf->dns_query);
@@ -382,22 +349,54 @@ free_aconf_items(struct AccessItem *aconf)
     RSA_free(aconf->rsa_public_key);
   MyFree(aconf->rsa_public_key_file);
 #endif
+
+  if (list != NULL && !IsConfIllegal(aconf))
+    dlinkDelete(&conf->node, list);
 }
 
-static
-void
-free_match_items(struct MatchItem *match_item)
+/*
+ * delete_link
+ *
+ * inputs       - pointer to struct ConfItem
+ *              - pointer to list
+ * output	- NONE
+ * side effects	- Simply unhook given ConfItem from given list
+ */
+static void
+delete_link(struct ConfItem *conf, dlink_list *list)
 {
+  if (list != NULL)
+    dlinkDelete(&conf->node, list);
+}
+
+
+/*
+ * free_match_items
+ *
+ * inputs       - pointer to struct ConfItem
+ *              - pointer to list to delink from, if NULL nothing to do
+ * output       - NONE
+ * side effects	- free all MatchItem entries, optionally delink from
+ *                given list
+ */
+static void
+free_match_items(struct ConfItem *conf, dlink_list *list)
+{
+  struct MatchItem *match_item;
+
+  match_item = map_to_conf(conf);
   MyFree(match_item->user);
   MyFree(match_item->host);
   MyFree(match_item->reason);
   MyFree(match_item->oper_reason);
+  if ((list != NULL) && !match_item->illegal)
+    dlinkDelete(&conf->node, list);
 }
 
 /* free_access_item()
  *
- * inputs	- pointer to conf to free
- * output	- none
+ * inputs       - pointer to conf to free
+ * output       - none
  * side effects	- crucial password fields are zeroed, conf is freed
  */
 void
@@ -416,10 +415,10 @@ static const unsigned int shared_bit_table[] =
 
 /* report_confitem_types()
  *
- * inputs	- pointer to client requesting confitem report
- *		- ConfType to report
- * output	- none
- * side effects	-
+ * inputs       - pointer to client requesting confitem report
+ *              - ConfType to report
+ * output       - none
+ * side effects	- report conf items to source_p
  */
 void
 report_confitem_types(struct Client *source_p, ConfType type, int temp)
@@ -651,16 +650,16 @@ report_confitem_types(struct Client *source_p, ConfType type, int temp)
 
 /* check_client()
  *
- * inputs	- pointer to client
- * output	- 0 = Success
- * 		  NOT_AUTHORIZED    (-1) = Access denied (no I line match)
- * 		  IRCD_SOCKET_ERROR (-2) = Bad socket.
- * 		  I_LINE_FULL       (-3) = I-line is full
- *		  TOO_MANY          (-4) = Too many connections from hostname
- * 		  BANNED_CLIENT     (-5) = K-lined
+ * inputs       - pointer to client
+ * output       - 0 = Success
+ *                NOT_AUTHORIZED    (-1) = Access denied (no I line match)
+ *                IRCD_SOCKET_ERROR (-2) = Bad socket.
+ *                I_LINE_FULL       (-3) = I-line is full
+ *                TOO_MANY          (-4) = Too many connections from hostname
+ *                BANNED_CLIENT     (-5) = K-lined
  * side effects - Ordinary client access check.
- *		  Look for conf lines which have the same
- * 		  status as the flags passed.
+ *                Look for conf lines which have the same
+ *                status as the flags passed.
  */
 static void *
 check_client(va_list args)
@@ -765,10 +764,10 @@ check_client(va_list args)
 
 /* verify_access()
  *
- * inputs	- pointer to client to verify
- *		- pointer to proposed username
- * output	- 0 if success -'ve if not
- * side effect	- find the first (best) I line to attach.
+ * inputs       - pointer to client to verify
+ *              - pointer to proposed username
+ * output       - 0 if success -'ve if not
+ * side effect  - find the first (best) I line to attach.
  */
 static int
 verify_access(struct Client *client_p, const char *username, struct AccessItem **aptr)
@@ -861,10 +860,10 @@ verify_access(struct Client *client_p, const char *username, struct AccessItem *
 
 /* check_class_limits()
  *
- * inputs	- client pointer
- *		- int exempt or not to limits
- *		- class pointer
- * output	- 0 if limits ok, non 0 if limits not ok
+ * inputs       - client pointer
+ *              - int exempt or not to limits
+ *              - class pointer
+ * output       - 0 if limits ok, non 0 if limits not ok
  * side effects	- NONE
  */
 static int
