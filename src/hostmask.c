@@ -722,7 +722,7 @@ delete_one_address_conf(const char *address, struct AccessItem *aconf)
         atable[hv] = arec->next;
       aconf->status |= CONF_ILLEGAL;
       if (aconf->clients == 0)
-        delete_conf_item(aconf->conf);
+        delete_conf_item(aconf->conf_ptr);
       MyFree(arec);
       return;
     }
@@ -774,7 +774,7 @@ clear_out_address_conf(void)
 
         arec->aconf->status |= CONF_ILLEGAL;
         if (arec->aconf->clients == 0)
-          delete_conf_item(arec->aconf->conf);
+          delete_conf_item(arec->aconf->conf_ptr);
         MyFree(arec);
       }
     }
@@ -851,7 +851,7 @@ report_auth(struct Client *client_p)
         if (!MyOper(client_p) && IsConfDoSpoofIp(aconf))
           continue;
 
-	conf = aconf->conf;
+	conf = aconf->conf_ptr;
 
         /* We are doing a partial list, based on what matches the u@h of the
          * sender, so prepare the strings for comparing --fl_
