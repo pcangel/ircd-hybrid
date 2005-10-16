@@ -181,7 +181,7 @@ mo_kline(struct Client *client_p, struct Client *source_p,
   cur_time = CurrentTime;
   current_date = smalldate(cur_time);
   conf = make_conf_item(KLINE_TYPE);
-  aconf = map_to_conf(conf);
+  aconf = &conf->conf.AccessItem;
 
   DupString(aconf->host, host);
   DupString(aconf->user, user);
@@ -245,7 +245,7 @@ me_kline(struct Client *client_p, struct Client *source_p,
       return;
 
     conf = make_conf_item(KLINE_TYPE);
-    aconf = map_to_conf(conf);
+    aconf = &conf->conf.AccessItem;
     DupString(aconf->host, khost);
     DupString(aconf->user, kuser);
 
@@ -298,7 +298,7 @@ static void
 apply_kline(struct Client *source_p, struct ConfItem *conf,
 	    const char *current_date, time_t cur_time)
 {
-  struct AccessItem *aconf = map_to_conf(conf);
+  struct AccessItem *aconf = &conf->conf.AccessItem;
 
   add_conf_by_address(CONF_KILL, aconf);
   write_conf_line(source_p, conf, current_date, cur_time);
@@ -318,7 +318,7 @@ apply_tkline(struct Client *source_p, struct ConfItem *conf,
 {
   struct AccessItem *aconf;
 
-  aconf = (struct AccessItem *)map_to_conf(conf);
+  aconf = &conf->conf.AccessItem;
   aconf->hold = CurrentTime + tkline_time;
   add_temp_line(conf);
   sendto_realops_flags(UMODE_ALL, L_ALL,
@@ -349,7 +349,7 @@ apply_tdline(struct Client *source_p, struct ConfItem *conf,
 {
   struct AccessItem *aconf;
 
-  aconf = map_to_conf(conf);
+  aconf = &conf->conf.AccessItem;
   aconf->hold = CurrentTime + tkline_time;
 
   add_temp_line(conf);
@@ -492,7 +492,7 @@ mo_dline(struct Client *client_p, struct Client *source_p,
     return;
 
   conf = make_conf_item(DLINE_TYPE);
-  aconf = map_to_conf(conf);
+  aconf = &conf->conf.AccessItem;
   DupString(aconf->host, dlhost);
 
   if (tkline_time != 0)
@@ -771,7 +771,7 @@ remove_tkline_match(const char *host, const char *user)
 
   DLINK_FOREACH(tk_n, temporary_klines.head)
   {
-    tk_c = map_to_conf(tk_n->data);
+    tk_c = &((struct ConfItem *)(tk_n->data))->conf.AccessItem;
     cnm_t = parse_netmask(tk_c->host, &caddr, &cbits);
     if (cnm_t != nm_t || irccmp(user, tk_c->user))
       continue;
@@ -807,7 +807,7 @@ remove_tdline_match(const char *cidr)
 
   DLINK_FOREACH(td_node, temporary_dlines.head)
   {
-    td_conf = map_to_conf(td_node->data);
+    td_conf = &((struct ConfItem *)(td_node->data))->conf.AccessItem;
     cnm_t   = parse_netmask(td_conf->host, &caddr, &cbits);
 
     if (cnm_t != nm_t)

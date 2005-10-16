@@ -60,7 +60,7 @@ create_channel_resv(char *name, char *reason, int in_conf)
     reason[REASONLEN] = '\0';
 
   conf = make_conf_item(CRESV_TYPE);
-  resv_p = map_to_conf(conf);
+  resv_p = &conf->conf.ResvChannel;
 
   strlcpy(resv_p->name, name, sizeof(resv_p->name));
   DupString(resv_p->reason, reason);
@@ -96,7 +96,7 @@ create_nick_resv(char *name, char *reason, int in_conf)
     reason[REASONLEN] = '\0';
 
   conf = make_conf_item(NRESV_TYPE);
-  resv_p = map_to_conf(conf);
+  resv_p = &conf->conf.MatchItem;
 
   DupString(conf->name, name);
   DupString(resv_p->reason, reason);
@@ -140,7 +140,7 @@ delete_channel_resv(struct ResvChannel *resv_p)
   hash_del_resv(resv_p);
   dlinkDelete(&resv_p->node, &resv_channel_list);
   MyFree(resv_p->reason);
-  conf = unmap_conf_item(resv_p);
+  conf = resv_p->conf;
   delete_conf_item(conf);
 
   return 1;
@@ -198,7 +198,7 @@ report_resv(struct Client *source_p)
   DLINK_FOREACH(ptr, nresv_items.head)
   {
     conf = ptr->data;
-    resv_np = map_to_conf(conf);
+    resv_np = &conf->conf.MatchItem;
 
     sendto_one(source_p, form_str(RPL_STATSQLINE),
                me.name, source_p->name,

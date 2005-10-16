@@ -151,7 +151,7 @@ mo_xline(struct Client *client_p, struct Client *source_p,
   if ((conf = find_matching_name_conf(XLINE_TYPE, gecos,
                                       NULL, NULL, 0)) != NULL)
   {
-    match_item = map_to_conf(conf);
+    match_item = &conf->conf.MatchItem;
 
     sendto_one(source_p, ":%s NOTICE %s :[%s] already X-Lined by [%s] - %s",
                me.name, source_p->name, gecos,
@@ -238,7 +238,7 @@ relay_xline(struct Client *source_p, char *parv[])
     if ((conf = find_matching_name_conf(XLINE_TYPE, parv[2],
 					NULL, NULL, 0)) != NULL)
     {
-      match_item = map_to_conf(conf);
+      match_item = &conf->conf.MatchItem;
       sendto_one(source_p, ":%s NOTICE %s :[%s] already X-Lined by [%s] - %s",
                  ID_or_name(&me, source_p->from),
                  ID_or_name(source_p, source_p->from),
@@ -374,7 +374,7 @@ write_xline(struct Client *source_p, char *gecos, char *reason,
   time_t cur_time;
 
   conf = make_conf_item(XLINE_TYPE);
-  match_item = map_to_conf(conf);
+  match_item = &conf->conf.MatchItem;
 
   collapse(gecos);
   DupString(conf->name, gecos);

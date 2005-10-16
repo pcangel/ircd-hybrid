@@ -390,7 +390,7 @@ ms_server(struct Client *client_p, struct Client *source_p,
 
     if (match(conf->name, client_p->name))
     {
-      match_item = (struct MatchItem *)map_to_conf(conf);
+      match_item = &conf->conf.MatchItem;
       if (match(match_item->host, name))
 	llined++;
     }
@@ -402,7 +402,7 @@ ms_server(struct Client *client_p, struct Client *source_p,
 
     if (match(conf->name, client_p->name))
     {
-      match_item = (struct MatchItem *)map_to_conf(conf);
+      match_item = &conf->conf.MatchItem;
 
       if (match(match_item->host, name))
 	hlined++;
@@ -531,7 +531,7 @@ ms_server(struct Client *client_p, struct Client *source_p,
       continue;
     }
 
-    if (match(my_name_for_link(map_to_conf(conf)), target_p->name))
+    if (match(my_name_for_link(&conf->conf.AccessItem), target_p->name))
       continue;
 
     sendto_one(bclient_p, ":%s SERVER %s %d :%s%s",
@@ -655,7 +655,7 @@ ms_sid(struct Client *client_p, struct Client *source_p,
 
     if (match(conf->name, client_p->name))
     {
-      match_item = (struct MatchItem *)map_to_conf(conf);
+      match_item = &conf->conf.MatchItem;
       if (match(match_item->host, SID_NAME))
 	llined++;
     }
@@ -667,7 +667,7 @@ ms_sid(struct Client *client_p, struct Client *source_p,
 
     if (match(conf->name, client_p->name))
     {
-      match_item = (struct MatchItem *)map_to_conf(conf);
+      match_item = &conf->conf.MatchItem;
 
       if (match(match_item->host, SID_NAME))
 	hlined++;
@@ -788,7 +788,7 @@ ms_sid(struct Client *client_p, struct Client *source_p,
       continue;
     }
 
-    if (match(my_name_for_link(map_to_conf(conf)), target_p->name))
+    if (match(my_name_for_link(&conf->conf.AccessItem), target_p->name))
       continue;
     
     if (IsCapable(bclient_p, CAP_TS6))

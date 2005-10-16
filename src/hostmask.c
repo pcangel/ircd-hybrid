@@ -851,7 +851,7 @@ report_auth(struct Client *client_p)
         if (!MyOper(client_p) && IsConfDoSpoofIp(aconf))
           continue;
 
-	conf = unmap_conf_item(aconf);
+	conf = aconf->conf;
 
         /* We are doing a partial list, based on what matches the u@h of the
          * sender, so prepare the strings for comparing --fl_

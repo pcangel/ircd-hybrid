@@ -2893,7 +2893,7 @@ case 117:
   if (ypass == 2)
   {
     yy_conf = make_conf_item(OPER_TYPE);
-    yy_aconf = map_to_conf(yy_conf);
+    yy_aconf = &yy_conf->conf.AccessItem;
     SetConfEncrypted(yy_aconf); /* Yes, the default is encrypted */
   }
   else
@@ -2925,7 +2925,7 @@ case 118:
       yy_tmp = ptr->data;
 
       new_conf = make_conf_item(OPER_TYPE);
-      new_aconf = (struct AccessItem *)map_to_conf(new_conf);
+      new_aconf = &new_conf->conf.AccessItem;
 
       new_aconf->flags = yy_aconf->flags;
 
@@ -3570,7 +3570,7 @@ case 213:
   if (ypass == 1)
   {
     yy_conf = make_conf_item(CLASS_TYPE);
-    yy_class = (struct ClassItem *)map_to_conf(yy_conf);
+    yy_class = &yy_conf->conf.ClassItem;
   }
 }
 break;
@@ -3592,7 +3592,7 @@ case 214:
 
       if (cconf != NULL)		/* The class existed already */
       {
-        class = (struct ClassItem *) map_to_conf(cconf);
+        class = &cconf->conf.ClassItem;
         rebuild_cidr_class(class, yy_class);
         *class = *yy_class;
         delete_conf_item(yy_conf);
@@ -3820,7 +3820,7 @@ case 269:
   if (ypass == 2)
   {
     yy_conf = make_conf_item(CLIENT_TYPE);
-    yy_aconf = map_to_conf(yy_conf);
+    yy_aconf = &yy_conf->conf.AccessItem;
   }
   else
   {
@@ -3852,7 +3852,7 @@ case 270:
       struct ConfItem *new_conf;
 
       new_conf = make_conf_item(CLIENT_TYPE);
-      new_aconf = map_to_conf(new_conf);
+      new_aconf = &new_conf->conf.AccessItem;
 
       yy_tmp = ptr->data;
 
@@ -4255,7 +4255,7 @@ case 334:
   if (ypass == 2)
   {
     yy_conf = make_conf_item(ULINE_TYPE);
-    yy_match_item = map_to_conf(yy_conf);
+    yy_match_item = &yy_conf->conf.MatchItem;
     yy_match_item->action = SHARED_ALL;
   }
 }
@@ -4490,7 +4490,7 @@ case 382:
   if (ypass == 2)
   {
     yy_conf = make_conf_item(SERVER_TYPE);
-    yy_aconf = (struct AccessItem *)map_to_conf(yy_conf);
+    yy_aconf = &yy_conf->conf.AccessItem;
     yy_aconf->passwd = NULL;
     /* defaults */
     yy_aconf->port = PORTNUM;
@@ -4590,7 +4590,7 @@ case 383:
 	if ((yy_conf != NULL) && (yy_conf->name != NULL))
 	{
 	  new_hub_conf = make_conf_item(HUB_TYPE);
-	  match_item = (struct MatchItem *)map_to_conf(new_hub_conf);
+	  match_item = &new_hub_conf->conf.MatchItem;
 	  DupString(new_hub_conf->name, yy_conf->name);
 	  if (yy_hconf->user != NULL)
 	    DupString(match_item->user, yy_hconf->user);
@@ -4617,7 +4617,7 @@ case 383:
 	if ((yy_conf != NULL) && (yy_conf->name != NULL))
 	{
 	  new_leaf_conf = make_conf_item(LEAF_TYPE);
-	  match_item = (struct MatchItem *)map_to_conf(new_leaf_conf);
+	  match_item = &new_leaf_conf->conf.MatchItem;
 	  DupString(new_leaf_conf->name, yy_conf->name);
 	  if (yy_lconf->user != NULL)
 	    DupString(match_item->user, yy_lconf->user);
@@ -5059,7 +5059,7 @@ case 441:
       else
       {
         yy_conf = make_conf_item(KLINE_TYPE);
-        yy_aconf = map_to_conf(yy_conf);
+        yy_aconf = &yy_conf->conf.AccessItem;
 
         DupString(yy_aconf->user, userbuf);
         DupString(yy_aconf->host, hostbuf);
@@ -5121,7 +5121,7 @@ case 455:
   if (ypass == 2)
   {
     yy_conf = make_conf_item(DLINE_TYPE);
-    yy_aconf = map_to_conf(yy_conf);
+    yy_aconf = &yy_conf->conf.AccessItem;
     /* default reason */
     DupString(yy_aconf->reason, "No reason");
   }
@@ -5169,7 +5169,7 @@ case 469:
     if (yylval.string[0] && parse_netmask(yylval.string, NULL, NULL) != HM_HOST)
     {
       yy_conf = make_conf_item(EXEMPTDLINE_TYPE);
-      yy_aconf = map_to_conf(yy_conf);
+      yy_aconf = &yy_conf->conf.AccessItem;
       DupString(yy_aconf->host, yylval.string);
 
       add_conf_by_address(CONF_EXEMPTDLINE, yy_aconf);
@@ -5214,7 +5214,7 @@ case 471:
       else
         yy_conf = make_conf_item(XLINE_TYPE);
 
-      yy_match_item = map_to_conf(yy_conf);
+      yy_match_item = &yy_conf->conf.MatchItem;
       DupString(yy_conf->name, gecos_name);
 
       if (reasonbuf[0])
@@ -5874,7 +5874,7 @@ case 641:
   if (ypass == 2)
   {
     yy_conf = make_conf_item(GDENY_TYPE);
-    yy_aconf = map_to_conf(yy_conf);
+    yy_aconf = &yy_conf->conf.AccessItem;
   }
 }
 break;
@@ -5981,7 +5981,7 @@ case 663:
 
       yy_tmp = ptr->data;
       new_conf = make_conf_item(GDENY_TYPE);
-      new_aconf = map_to_conf(new_conf);
+      new_aconf = &new_conf->conf.AccessItem;
 
       new_aconf->flags = yy_aconf->flags;
 
@@ -6009,7 +6009,7 @@ case 663:
       delete_conf_item(yy_conf);
 
     yy_conf = make_conf_item(GDENY_TYPE);
-    yy_aconf = map_to_conf(yy_conf);
+    yy_aconf = &yy_conf->conf.AccessItem;
   }
 }
 break;

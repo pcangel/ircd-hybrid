@@ -290,7 +290,7 @@ do_sgline(struct Client *client_p, struct Client *source_p,
   DLINK_FOREACH(ptr, gdeny_items.head)
   {
     conf = ptr->data;
-    aconf = (struct AccessItem *)map_to_conf(conf);
+    aconf = &conf->conf.AccessItem;
 
     if (match(conf->name, source_p->servptr->name) &&
         match(aconf->user, source_p->username) &&
@@ -410,7 +410,7 @@ set_local_gline(const struct Client *source_p, const char *user,
 
   current_date = smalldate(cur_time);
   conf = make_conf_item(GLINE_TYPE);
-  aconf = (struct AccessItem *)map_to_conf(conf);
+  aconf = &conf->conf.AccessItem;
 
   ircsprintf(buffer, "%s (%s)", reason, current_date);
   DupString(aconf->reason, buffer);
@@ -572,7 +572,7 @@ remove_gline_match(const char *user, const char *host)
 
   DLINK_FOREACH(ptr, temporary_glines.head)
   {
-    aconf = map_to_conf(ptr->data);
+    aconf = &((struct ConfItem *)(ptr->data))->conf.AccessItem;
     cnm_t = parse_netmask(aconf->host, &caddr, &cbits);
 
     if (cnm_t != nm_t || irccmp(user, aconf->user))

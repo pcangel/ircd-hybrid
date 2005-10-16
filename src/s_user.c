@@ -1200,7 +1200,7 @@ check_xline(struct Client *source_p)
   if ((conf = find_matching_name_conf(XLINE_TYPE, source_p->info,
                                       NULL, NULL, 0)) != NULL)
   {
-    xconf = map_to_conf(conf);
+    xconf = &conf->conf.MatchItem;
     xconf->count++;
 
     if (xconf->reason != NULL)
@@ -1238,7 +1238,7 @@ check_regexp_xline(struct Client *source_p)
 
   if ((conf = find_matching_name_conf(RXLINE_TYPE, source_p->info, NULL, NULL, 0)))
   {
-    struct MatchItem *reg = map_to_conf(conf);
+    struct MatchItem *reg = &conf->conf.MatchItem;
 
     ++reg->count;
 
@@ -1277,7 +1277,7 @@ oper_up(struct Client *source_p, struct ConfItem *conf)
   const char *operprivs = "";
   struct AccessItem *aconf;
 
-  aconf = map_to_conf(conf);
+  aconf = &conf->conf.AccessItem;
   ++Count.oper;
   SetOper(source_p);
 
