@@ -41,32 +41,32 @@ typedef struct FileBuf {
 } FBFILE;
 
 /* open a file and return a FBFILE*, see fopen(3) */
-extern FBFILE *fbopen(const char *, const char *);
+LIBIO_EXTERN FBFILE *fbopen(const char *, const char *);
 
 /* Positions the file pointer at the beginning of the file */
-extern int fbrewind(FBFILE *);
+LIBIO_EXTERN int fbrewind(FBFILE *);
 
 /* close a file opened with fbopen, see fclose(3) */
-extern void fbclose(FBFILE *);
+LIBIO_EXTERN void fbclose(FBFILE *);
 
 /* 
  * return the next character from the file, EOF on end of file
  * see fgetc(3)
  */
-extern int fbgetc(FBFILE *);
+LIBIO_EXTERN int fbgetc(FBFILE *);
 
 /*
  * return next string in a file up to and including the newline character
  * see fgets(3)
  */
-extern char *fbgets(char *, size_t, FBFILE *);
+LIBIO_EXTERN char *fbgets(char *, size_t, FBFILE *);
 
 /* ungets c to fb see ungetc(3) */
-extern void fbungetc(char, FBFILE *);
+LIBIO_EXTERN void fbungetc(char, FBFILE *);
 
 /* write a null terminated string to a file, see fputs(3) */
-extern int fbputs(const char *, FBFILE *, size_t);
+LIBIO_EXTERN int fbputs(const char *, FBFILE *, size_t);
 
-extern int file_open(fde_t *, const char *, int, int);
-extern void file_close(fde_t *);
-extern int save_spare_fd(const char *);
+LIBIO_EXTERN int file_open(fde_t *, const char *, int, int);
+LIBIO_EXTERN void file_close(fde_t *);
+LIBIO_EXTERN int save_spare_fd(const char *);

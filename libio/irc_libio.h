@@ -22,6 +22,16 @@
  *  $Id: libio.h 86 2005-10-05 20:36:04Z adx $
  */
 
+#ifndef _WIN32
+#define LIBIO_EXTERN extern
+#else
+#ifdef IN_LIBIO
+#define LIBIO_EXTERN extern __declspec(dllexport)
+#else
+#define LIBIO_EXTERN extern __declspec(dllimport)
+#endif
+#endif
+
 #include "misc/event.h"
 #include "misc/list.h"
 #include "misc/log.h"

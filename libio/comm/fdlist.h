@@ -101,26 +101,26 @@ typedef struct _fde {
 
 #define FD_HASH_SIZE CLIENT_HEAP_SIZE
 
-extern int number_fd;
-extern int hard_fdlimit;
-extern fde_t *fd_hash[];
-extern fde_t *fd_next_in_loop;
-extern struct Callback *fdlimit_cb;
+LIBIO_EXTERN int number_fd;
+LIBIO_EXTERN int hard_fdlimit;
+LIBIO_EXTERN fde_t *fd_hash[];
+LIBIO_EXTERN fde_t *fd_next_in_loop;
+LIBIO_EXTERN struct Callback *fdlimit_cb;
 
 #ifdef IN_MISC_C
 extern void fdlist_init(void);
 #endif
-extern fde_t *lookup_fd(int);
-extern void fd_open(fde_t *, int, int, const char *);
-extern void fd_close(fde_t *);
+LIBIO_EXTERN fde_t *lookup_fd(int);
+LIBIO_EXTERN void fd_open(fde_t *, int, int, const char *);
+LIBIO_EXTERN void fd_close(fde_t *);
 #ifndef __GNUC__
-extern void fd_note(fde_t *, const char *format, ...);
+LIBIO_EXTERN void fd_note(fde_t *, const char *format, ...);
 #else
-extern void  fd_note(fde_t *, const char *format, ...)
+LIBIO_EXTERN void  fd_note(fde_t *, const char *format, ...)
   __attribute__((format (printf, 2, 3)));
 #endif
 #ifdef IN_MISC_C
 extern void close_standard_fds(void);
 #endif
-extern void close_fds(fde_t *);
-extern void recalc_fdlimit(void *);
+LIBIO_EXTERN void close_fds(fde_t *);
+LIBIO_EXTERN void recalc_fdlimit(void *);

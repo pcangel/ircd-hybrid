@@ -41,15 +41,15 @@ struct ev_entry
   int active;
 };
 
-extern const char *last_event_ran;
-extern struct ev_entry event_table[];
+LIBIO_EXTERN const char *last_event_ran;
+LIBIO_EXTERN struct ev_entry event_table[];
 
-extern void eventAdd(const char *, EVH *, void *, time_t);
-extern void eventAddIsh(const char *, EVH *, void *, time_t);
-extern void eventRun(void);
-extern time_t eventNextTime(void);
+LIBIO_EXTERN void eventAdd(const char *, EVH *, void *, time_t);
+LIBIO_EXTERN void eventAddIsh(const char *, EVH *, void *, time_t);
+LIBIO_EXTERN void eventRun(void);
+LIBIO_EXTERN time_t eventNextTime(void);
 #ifdef IN_MISC_C
 extern void eventInit(void);
 #endif
-extern void eventDelete(EVH *, void *);
-extern void set_back_events(time_t);
+LIBIO_EXTERN void eventDelete(EVH *, void *);
+LIBIO_EXTERN void set_back_events(time_t);

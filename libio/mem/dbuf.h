@@ -42,5 +42,5 @@ struct dbuf_queue
 #ifdef IN_MISC_C
 extern void dbuf_init(void);
 #endif
-extern void dbuf_put(struct dbuf_queue *, char *, size_t);
-extern void dbuf_delete(struct dbuf_queue *, size_t);
+LIBIO_EXTERN void dbuf_put(struct dbuf_queue *, char *, size_t);
+LIBIO_EXTERN void dbuf_delete(struct dbuf_queue *, size_t);

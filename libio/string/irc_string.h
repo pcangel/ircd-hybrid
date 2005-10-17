@@ -22,9 +22,9 @@
  *  $Id$
  */
 
-extern int ircd_pcre_exec(const pcre *, const char *);
-extern pcre *ircd_pcre_compile(const char *, const char **);
-extern char *xstrldup(const char *, size_t);
+LIBIO_EXTERN int ircd_pcre_exec(const pcre *, const char *);
+LIBIO_EXTERN pcre *ircd_pcre_compile(const char *, const char **);
+LIBIO_EXTERN char *xstrldup(const char *, size_t);
 
 /*
  * match - compare name with mask, mask may contain * and ? as wildcards
@@ -34,10 +34,10 @@ extern char *xstrldup(const char *, size_t);
  * match_chan - like match_esc with first character auto-escaped
  * match_cidr - compares u!h@addr with u!h@addr/cidr
  */
-extern int match(const char *, const char *);
-extern int match_esc(const char *, const char *);
-extern int match_chan(const char *, const char *);
-extern int match_cidr(const char *, const char *);
+LIBIO_EXTERN int match(const char *, const char *);
+LIBIO_EXTERN int match_esc(const char *, const char *);
+LIBIO_EXTERN int match_chan(const char *, const char *);
+LIBIO_EXTERN int match_cidr(const char *, const char *);
 
 /*
  * collapse - collapse a string in place, converts multiple adjacent *'s 
@@ -46,8 +46,8 @@ extern int match_cidr(const char *, const char *);
  *
  * collapse_esc() - collapse with support for escaping chars
  */
-extern char *collapse(char *);
-extern char *collapse_esc(char *);
+LIBIO_EXTERN char *collapse(char *);
+LIBIO_EXTERN char *collapse_esc(char *);
 
 /*
  * NOTE: The following functions are NOT the same as strcasecmp
@@ -56,77 +56,77 @@ extern char *collapse_esc(char *);
  * 
  * irccmp - case insensitive comparison of s1 and s2
  */
-extern int irccmp(const char *, const char *);
+LIBIO_EXTERN int irccmp(const char *, const char *);
 
 /*
  * ircncmp - counted case insensitive comparison of s1 and s2
  */
-extern int ircncmp(const char *, const char *, size_t);
+LIBIO_EXTERN int ircncmp(const char *, const char *, size_t);
 
 /*
  * inetntoa - optimized inet_ntoa
  */
-extern const char *inetntoa(const char *);
+LIBIO_EXTERN const char *inetntoa(const char *);
 
 /* XXX
  * inetntop() 
  * portable interface for inet_ntop(), kludge; please use inet_ntop if possible
  * since inet_misc has a more conformant one
  */
-extern const char *inetntop(int, const void *, char *, unsigned int);
+LIBIO_EXTERN const char *inetntop(int, const void *, char *, unsigned int);
    
 #ifndef HAVE_STRLCPY
-extern size_t strlcpy(char *, const char *, size_t);
+LIBIO_EXTERN size_t strlcpy(char *, const char *, size_t);
 #endif
 
 #ifndef HAVE_STRLCAT
-extern size_t strlcat(char *, const char *, size_t);
+LIBIO_EXTERN size_t strlcat(char *, const char *, size_t);
 #endif
 
 #ifndef HAVE_SNPRINTF
-extern int snprintf(char *, size_t, const char *,...);
+LIBIO_EXTERN int snprintf(char *, size_t, const char *,...);
 #endif
 
 #ifndef HAVE_VSNPRINTF
-extern int vsnprintf(char *, size_t, const char *, va_list);
+LIBIO_EXTERN int vsnprintf(char *, size_t, const char *, va_list);
 #endif
 
 #ifndef HAVE_BASENAME
-extern char *basename(char *);
+LIBIO_EXTERN char *basename(char *);
 #endif
 
 /*
  * clean_string - cleanup control and high ascii characters
  * -Dianora
  */
-extern char *clean_string(char *, const unsigned char *, size_t);
+LIBIO_EXTERN char *clean_string(char *, const unsigned char *, size_t);
 
-extern char *stripws(char *);
+LIBIO_EXTERN char *stripws(char *);
 
 /*
  * strip_tabs - convert tabs to spaces
  * - jdc
  */
-extern void strip_tabs(char *, const char *, size_t);
+LIBIO_EXTERN void strip_tabs(char *, const char *, size_t);
 
 const char *myctime(time_t);
 
 #define EmptyString(x) (!(x) || (*(x) == '\0'))
 
 #ifndef HAVE_STRTOK_R
-extern char *strtoken(char **, char *, const char *);
+LIBIO_EXTERN char *strtoken(char **, char *, const char *);
 #endif
 
 /*
  * character macros
  */
-extern const unsigned char ToLowerTab[];
+LIBIO_EXTERN const unsigned char ToLowerTab[];
 #define ToLower(c) (ToLowerTab[(unsigned char)(c)])
 
-extern const unsigned char ToUpperTab[];
+LIBIO_EXTERN const unsigned char ToUpperTab[];
 #define ToUpper(c) (ToUpperTab[(unsigned char)(c)])
 
-extern const unsigned int CharAttrs[];
+LIBIO_EXTERN const unsigned int CharAttrs[];
 
 #define PRINT_C   0x001
 #define CNTRL_C   0x002
