@@ -234,9 +234,16 @@ unload_one_module(char *name, int warn)
  * output	- -1 if error 0 if success
  * side effects - loads a module if successful
  */
+#ifdef HAVE_DLOPEN
+#include <link.h>
+#endif
 int
 load_a_module(char *path, int warn, int core)
 {
+  /* XXX probably should have a HAVE_DLINFO */
+#ifdef HAVE_DLOPEN
+  Link_map *map;
+#endif
 #ifdef HAVE_SHL_LOAD
   shl_t tmpptr;
 #else
@@ -341,8 +348,17 @@ load_a_module(char *path, int warn, int core)
     ver = *verp;
 #endif
 
+  
   modp            = MyMalloc(sizeof(struct module));
+#ifdef HAVE_DLOPEN
+  dlinfo(tmpptr, RTLD_DI_LINKMAP, &map);
+  if (map != NULL)
+    modp->address = map->l_addr;
+  else
+    modp->address   = tmpptr;	/* Best that can be done if map is NULL */
+#else
   modp->address   = tmpptr;
+#endif
   modp->version   = ver;
   modp->core      = core;
   modp->modremove = mod_deinit;
