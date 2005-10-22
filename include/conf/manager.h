@@ -1,6 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  conf.h: A header for the configuration manager.
+ *  manager.h: A header for the configuration manager.
  *
  *  Copyright (C) 2003 by Piotr Nizynski, Advanced IRC Services Project
  *  Copyright (C) 2005 by the Hybrid Development Team.
@@ -22,9 +22,6 @@
  *
  *  $Id: conf.h 69 2005-10-04 16:09:51Z adx $
  */
-
-#ifndef INCLUDED_CONF_H
-#define INCLUDED_CONF_H
 
 #define CONF_BUFSIZE 512
 
@@ -68,18 +65,16 @@ extern int conf_include_sptr;
 extern struct Callback *reset_conf;
 extern struct Callback *verify_conf;
 
-void init_conf(void);
-void parse_error(const char *, ...);
-void yyerror(const char *);
-int conf_yy_input(char *, int);
-int yylex(void);
-void conf_clear_ident_list(void);
-struct ConfSection *find_conf_section(const char *);
-struct ConfSection *add_conf_section(const char *, int);
-void delete_conf_section(struct ConfSection *);
-struct ConfField *find_conf_field(struct ConfSection *, char *);
-void conf_assign(int, struct ConfField *, void *);
-void add_conf_field(struct ConfSection *, const char *, int,
-                    CONFF_HANDLER *);
-
-#endif
+extern void init_conf(void);
+extern void parse_error(const char *, ...);
+extern void yyerror(const char *);
+extern int conf_yy_input(char *, int);
+extern int yylex(void);
+extern void conf_clear_ident_list(void);
+extern struct ConfSection *find_conf_section(const char *);
+extern struct ConfSection *add_conf_section(const char *, int);
+extern void delete_conf_section(struct ConfSection *);
+extern struct ConfField *find_conf_field(struct ConfSection *, char *);
+extern void conf_assign(int, struct ConfField *, void *);
+extern void add_conf_field(struct ConfSection *, const char *, int,
+                           CONFF_HANDLER *);
