@@ -27,5 +27,6 @@
 #define INCLUDED_CONF_H
 
 #include "conf/manager.h"
+#include "conf/general.h"
 
 #endif

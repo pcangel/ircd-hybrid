@@ -49,6 +49,8 @@ init_conf(void)
 {
   reset_conf = register_callback("reset_conf", NULL);
   verify_conf = register_callback("verify_conf", NULL);
+
+  init_general();
 }
 
 /*
@@ -106,7 +108,7 @@ _yyerror(const char *msg)
 int
 conf_yy_input(char *buf, int siz)
 {
-  return (fbgets(buf, siz, conf_curctx.f) == NULL ? 0 : strlen(buf));
+  return fbgets(buf, siz, conf_curctx.f) == NULL ? 0 : strlen(buf);
 }
 
 /*
