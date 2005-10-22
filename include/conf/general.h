@@ -73,6 +73,9 @@ struct GeneralConf
   char ignore_bogus_ts;
   int ts_warn_delta, ts_max_delta;
   char *servlink_path;
+#ifdef HAVE_LIBCRYPTO
+  struct EncCapability *default_cipher_preference;
+#endif
   char use_egd, *egdpool_path;
   int compression_level;
 };

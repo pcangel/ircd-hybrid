@@ -227,9 +227,38 @@ conf_assign(int type, struct ConfField *field, void *value)
     return;
   if ((type == CT_NUMBER && (field->type == CT_TIME || field->type == CT_SIZE))
       || type == field->type)
-    field->handler(value);
+    field->handler(value, field->param);
   else
     parse_error("type mismatch, expected %s", field_types[type]);
+}
+
+/*
+ * conf_assign_*()
+ *
+ * Simple field handlers which just write a variable.
+ *
+ * inputs:
+ *   value    - address of data
+ *   var      - where to write it
+ * output: none
+ */
+void
+conf_assign_bool(void *value, void *var)
+{
+  *(char *) var = *(int *) value;
+}
+
+void
+conf_assign_number(void *value, void *var)
+{
+  *(int *) var = *(int *) value;
+}
+
+void
+conf_assign_string(void *value, void *var)
+{
+  MyFree(*(char **) var);
+  DupString(*(char **) var, (char *) value);
 }
 
 /*
@@ -247,12 +276,31 @@ conf_assign(int type, struct ConfField *field, void *value)
  */
 void
 add_conf_field(struct ConfSection *section, const char *name, int type,
-               CONFF_HANDLER *handler)
+               CONFF_HANDLER *handler, void *param)
 {
   struct ConfField *field = MyMalloc(sizeof(struct ConfField));
+
+  if (handler == NULL)
+    switch (type)
+    {
+      case CT_NUMBER:
+      case CT_TIME:
+      case CT_SIZE:
+        handler = conf_assign_number;
+        break;
+      case CT_BOOL:
+        handler = conf_assign_bool;
+        break;
+      case CT_STRING:
+        handler = conf_assign_string;
+        break;
+      default:
+        assert(0);
+    }
 
   field->name = name;
   field->type = type;
   field->handler = handler;
+  field->param = param;
   dlinkAdd(field, &field->node, &section->fields);
 }

@@ -161,5 +161,5 @@ value: QSTRING {
          conf_assign(CT_SIZE, conf_field, &$1);
        } | ident_list {
          conf_assign(CT_LIST, conf_field, $1);
-	 conf_clear_ident_list();
+         conf_clear_ident_list();
        };

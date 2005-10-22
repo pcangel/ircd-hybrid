@@ -33,7 +33,7 @@
 #define CT_LIST   5
 
 typedef void CONFS_HANDLER(void);
-typedef void CONFF_HANDLER(void *);
+typedef void CONFF_HANDLER(void *, void *);
 
 struct ConfParserContext {
   FBFILE *f;
@@ -54,6 +54,7 @@ struct ConfField {
   const char *name;
   int type;
   CONFF_HANDLER *handler;
+  void *param;
   dlink_node node;
 };
 
@@ -76,5 +77,8 @@ extern struct ConfSection *add_conf_section(const char *, int);
 extern void delete_conf_section(struct ConfSection *);
 extern struct ConfField *find_conf_field(struct ConfSection *, char *);
 extern void conf_assign(int, struct ConfField *, void *);
+extern CONFF_HANDLER conf_assign_bool;
+extern CONFF_HANDLER conf_assign_number;
+extern CONFF_HANDLER conf_assign_string;
 extern void add_conf_field(struct ConfSection *, const char *, int,
-                           CONFF_HANDLER *);
+                           CONFF_HANDLER *, void *);
