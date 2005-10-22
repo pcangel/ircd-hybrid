@@ -23,6 +23,7 @@
  *  $Id: conf.c 69 2005-10-04 16:09:51Z adx $
  */
 
+#define IN_CONF_C
 #include "stdinc.h"
 #include "conf/conf.h"
 #include "client.h"
