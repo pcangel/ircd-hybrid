@@ -50,7 +50,7 @@ _crypt_to64(s, v, n)
  * UNIX password
  */
 
-char *
+LIBIO_EXTERN char *
 crypt(const char *pw, const char *salt)
 {
 	static char	*magic = "$1$";	/*

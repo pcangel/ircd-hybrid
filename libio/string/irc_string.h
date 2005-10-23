@@ -109,7 +109,7 @@ LIBIO_EXTERN char *stripws(char *);
  */
 LIBIO_EXTERN void strip_tabs(char *, const char *, size_t);
 
-const char *myctime(time_t);
+LIBIO_EXTERN const char *myctime(time_t);
 
 #define EmptyString(x) (!(x) || (*(x) == '\0'))
 

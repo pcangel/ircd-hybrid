@@ -64,7 +64,10 @@ set COMPILER=BCC
 bcc32 -tWD -6 -O -w- -elibio.dll -DIN_LIBIO -I"include" -I"libio" libio\comm\comm.c libio\comm\fdlist.c libio\comm\fileio.c libio\comm\win32.c libio\mem\*.c libio\misc\*.c libio\net\*.c libio\string\*.c
 if errorlevel 1 goto error
 if not exist libio.dll goto error
-bcc32 -tW -6 -O -w- -eircd.exe -I"include" -I"libio" src\*.c modules\*.c modules\core\*.c contrib\*.c
+implib libio.lib libio.dll
+if errorlevel 1 goto error
+if not exist libio.lib goto error
+bcc32 -tW -6 -O -w- -eircd.exe -I"include" -I"libio" src\*.c modules\*.c modules\core\*.c contrib\*.c libio.lib
 if errorlevel 1 goto error
 if not exist ircd.exe goto error
 for %%a in (rehash remotd kill) do bcc32 -tW -6 -O -w- -e%%a.exe -I"include" tools\win32\%%a.c
@@ -75,20 +78,14 @@ set COMPILER=MSVC
 cl /nologo /O2 /w /Felibio.dll /I"include" /I"libio" /DIN_LIBIO libio\comm\comm.c libio\comm\fdlist.c libio\comm\fileio.c libio\comm\win32.c libio\mem\*.c libio\misc\*.c libio\net\*.c libio\string\*.c user32.lib wsock32.lib /link /dll /subsystem:windows
 if errorlevel 1 goto error
 if not exist libio.dll goto error
-cl /nologo /O2 /w /Feircd.exe /I"include" /I"libio" src\*.c modules\*.c modules\core\*.c contrib\*.c user32.lib wsock32.lib /link /subsystem:windows
+if not exist libio.lib goto error
+cl /nologo /O2 /w /Feircd.exe /I"include" /I"libio" src\*.c modules\*.c modules\core\*.c contrib\*.c user32.lib wsock32.lib libio.lib /link /subsystem:windows
 if errorlevel 1 goto error
 if not exist ircd.exe goto error
 for %%a in (rehash remotd kill) do cl /nologo /O2 /w /Fe%%a.exe /I"include" tools\win32\%%a.c user32.lib /link /subsystem:windows
 
 :built
 if errorlevel 1 goto error
-for %%a in (rehash.exe remotd.exe kill.exe) do if not exist %%a goto error
-for %%a in (src\*.obj) do del %%a
-for %%a in (modules\*.obj) do del %%a
-for %%a in (modules\core\*.obj) do del %%a
-for %%a in (lib\pcre\*.obj) do del %%a
-for %%a in (*.obj) do del %%a
-
 echo.
 echo *** Installing ircd-hybrid into %IRCD_PREFIX% ...
 echo.
@@ -109,12 +106,6 @@ echo Remember to create the 'ircd.conf' file before actually starting the IRCD.
 goto end
 
 :error
-for %%a in (libio.dll ircd.exe rehash.exe remotd.exe kill.exe) do if exist %%a del %%a
-for %%a in (src\*.obj) do del %%a
-for %%a in (modules\*.obj) do del %%a
-for %%a in (modules\core\*.obj) do del %%a
-for %%a in (lib\pcre\*.obj) do del %%a
-for %%a in (*.obj) do del %%a
 echo.
 echo The compilation has failed. Make sure the %COMPILER% compiler you choose 
 echo is actually installed, and that you haven't accidentally corrupted
@@ -127,6 +118,7 @@ echo in your C:\BCC\BIN directory (or wherever you installed it)!
 echo It should contain two lines like -IC:\BCC\INCLUDE and -LC:\BCC\LIB.
 
 :end
+for %%a in (*.obj *.lib *.tds *.dll *.exp *.exe) do del %%a
 echo.
 pause
 :end2

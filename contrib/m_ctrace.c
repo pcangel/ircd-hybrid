@@ -94,7 +94,7 @@ mo_ctrace(struct Client *client_p, struct Client *source_p,
   }
 
 #ifdef STATIC_MODULES
-  do_ctrace(source_p, parv);
+  do_ctrace(source_p, parc, parv);
 #else
   execute_callback(ctrace_cb, source_p, parc, parv);
 #endif
