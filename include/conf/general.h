@@ -2,7 +2,6 @@
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
  *  general.h: Defines general{} conf section.
  *
- *  Copyright (C) 2003 by Piotr Nizynski, Advanced IRC Services Project
  *  Copyright (C) 2005 by the Hybrid Development Team.
  *
  *  This program is free software; you can redistribute it and/or modify
