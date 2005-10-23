@@ -141,4 +141,14 @@ extern int errno;
 
 #include "irc_libio.h"
 
+#ifndef _WIN32
+# define EXTERN extern
+#else
+# ifdef IN_IRCD
+#  define EXTERN extern __declspec(dllexport)
+# else
+#  define EXTERN extern __declspec(dllimport)
+# endif
+#endif
+
 #endif

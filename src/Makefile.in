@@ -33,8 +33,8 @@ SSL_LIBS	= @SSL_LIBS@
 SSL_INCLUDES	= @SSL_INCLUDES@
 IRCDLIBS	= @MODULES_LIBS@ @LIBS@ ../libio/libio.a $(SSL_LIBS)
 INCLUDES	= -I../include -I../libio $(SSL_INCLUDES)
-CPPFLAGS	= ${INCLUDES} @CPPFLAGS@
- 
+CPPFLAGS	= ${INCLUDES} -DIN_IRCD @CPPFLAGS@
+
 default:	all
 
 y.tab.o:	y.tab.c ircd_parser.y

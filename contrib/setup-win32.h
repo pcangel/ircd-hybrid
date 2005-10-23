@@ -20,10 +20,6 @@
  * uncomment the following line. */
 /* #define HALFOPS 1 */
 
-/* If you need additional non standard features provided in
- * contrib/ modules, uncomment the following line. */
-/* #define BUILD_CONTRIB 1 */
-
 
 /*** END OF STANDARD CONFIGURATION SETTINGS ***/
 
@@ -117,7 +113,7 @@
 /* #undef HAVE_SHL_LOAD */
 
 /* Define to 1 if you have the `snprintf' function. */
-/* #undef HAVE_SNPRINTF */
+#define HAVE_SNPRINTF 1
 
 /* Define to 1 if you have the `socketpair' function. */
 /* #undef HAVE_SOCKETPAIR */
@@ -183,7 +179,7 @@
 /* #undef HAVE_UNISTD_H */
 
 /* Define to 1 if you have the `vsnprintf' function. */
-/* #undef HAVE_VSNPRINTF */
+#define HAVE_VSNPRINTF 1
 
 /* Define to 1 if you have the <wait.h> header file. */
 /* #undef HAVE_WAIT_H */
@@ -234,13 +230,13 @@
 #define PACKAGE_NAME "ircd-hybrid"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "ircd-hybrid 7.2"
+#define PACKAGE_STRING "ircd-hybrid 7.3"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "ircd-hybrid"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "7.2"
+#define PACKAGE_VERSION "7.3"
 
 /* Path to /dev/null */
 #define PATH_DEVNULL "nul"
@@ -249,7 +245,7 @@
 #define SELECT_TYPE "WSAAsyncSelect"
 
 /* Suffix for shared libraries on this platform. */
-/* #undef SHARED_SUFFIX */
+#define SHARED_SUFFIX ".dll"
 
 /* The size of a `int64_t', as computed by sizeof. */
 #define SIZEOF_INT64_T 8
@@ -261,7 +257,7 @@
 /* #undef SOCKADDR_IN_HAS_LEN */
 
 /* Define to 1 if dynamic modules can't be used. */
-#define STATIC_MODULES 1
+/* #undef STATIC_MODULES */
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1

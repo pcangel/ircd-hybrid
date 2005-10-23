@@ -23,13 +23,13 @@
  */
 
 #ifndef _WIN32
-#define LIBIO_EXTERN extern
+# define LIBIO_EXTERN extern
 #else
-#ifdef IN_LIBIO
-#define LIBIO_EXTERN extern __declspec(dllexport)
-#else
-#define LIBIO_EXTERN extern __declspec(dllimport)
-#endif
+# ifdef IN_LIBIO
+#  define LIBIO_EXTERN extern __declspec(dllexport)
+# else
+#  define LIBIO_EXTERN extern __declspec(dllimport)
+# endif
 #endif
 
 #include "misc/event.h"

@@ -59,6 +59,41 @@ dlfunc(void *myHandle, const char *functionName)
 }
 #endif
 
+#ifdef _WIN32
+/*
+ * jmallett's dl*(3) stubs for DLL management.
+ */
+
+char *
+dlerror(void)
+{
+  static char errbuf[IRCD_BUFSIZE];
+
+  FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
+    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), errbuf, sizeof(errbuf), NULL);
+
+  return errbuf;
+}
+
+void *
+dlopen(char *filename, int unused)
+{
+  return LoadLibrary(filename);
+}
+
+int
+dlclose(void *module)
+{
+  return FreeLibrary((HMODULE) module) ? 0 : -1;
+}
+
+void *
+dlsym(void *module, char *sym)
+{
+  return GetProcAddress((HMODULE) module, sym);
+}
+#endif
+
 #ifdef HAVE_MACH_O_DYLD_H
 /*
 ** jmallett's dl*(3) shims for NSModule(3) systems.
@@ -97,7 +132,6 @@ undefinedErrorHandler(const char *symbolName)
 {
   sendto_realops_flags(UMODE_ALL, L_ALL, "Undefined symbol: %s", symbolName);
   ilog(L_WARN, "Undefined symbol: %s", symbolName);
-  return;
 }
 
 NSModule
@@ -112,7 +146,7 @@ multipleErrorHandler(NSSymbol s, NSModule old, NSModule new)
   ilog(L_WARN, "Symbol `%s' found in `%s' and `%s'", NSNameOfSymbol(s),
        NSNameOfModule(old), NSNameOfModule(new));
   /* We return which module should be considered valid, I believe */
-  return(new);
+  return new;
 }
 
 void
