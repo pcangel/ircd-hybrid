@@ -787,6 +787,8 @@ sendto_channel_remote(struct Client *one, struct Client *from, int type, int cap
   len = send_format(buffer, IRCD_BUFSIZE, pattern, args);
   va_end(args);
 
+  ++current_serial;
+
   DLINK_FOREACH(ptr, chptr->members.head)
   {
     ms = ptr->data;
@@ -803,8 +805,11 @@ sendto_channel_remote(struct Client *one, struct Client *from, int type, int cap
         ((target_p->from->localClient->caps & caps) != caps) ||
         ((target_p->from->localClient->caps & nocaps) != 0))
       continue;
-
-    send_message(target_p, buffer, len);
+    if (target_p->from->serial != current_serial)
+    {
+      send_message(target_p, buffer, len);
+      target_p->from->serial = current_serial;
+    }
   } 
 }
 
