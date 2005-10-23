@@ -392,8 +392,8 @@ load_a_module(char *path, int warn, int core)
   if (map != NULL)
     addr = map->l_addr;
   else
-    addr = tmpptr;
 #endif
+    addr = tmpptr;
 
   modp->handle    = tmpptr;
   modp->address   = addr;

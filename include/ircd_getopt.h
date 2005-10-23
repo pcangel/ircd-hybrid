@@ -33,6 +33,6 @@ struct lgetopt {
 };
 
 extern struct lgetopt myopts[];
-extern void parseargs(int *, char ***, struct lgetopt *);
+void parseargs(int *, char ***, struct lgetopt *);
 
 #endif /* __GETOPT_H_INCLUDED__ */

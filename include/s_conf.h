@@ -470,69 +470,70 @@ struct logging_entry
   char failed_operlog[PATH_MAX + 1];
 };
 
-extern unsigned int scount;
-extern int ypass;
-extern dlink_list class_items;
-extern dlink_list server_items;
-extern dlink_list cluster_items;
-extern dlink_list hub_items;
-extern dlink_list leaf_items;
-extern struct logging_entry ConfigLoggingEntry;
-extern struct config_file_entry ConfigFileEntry;/* defined in ircd.c*/
-extern struct config_channel_entry ConfigChannel;/* defined in channel.c*/
-extern struct config_server_hide ConfigServerHide; /* defined in s_conf.c */
-extern struct server_info ServerInfo;       /* defined in ircd.c */
-extern struct admin_info AdminInfo;        /* defined in ircd.c */
+void init_class(void);
+void check_class(void);
+void init_ip_hash_table(void);
+void yyerror(const char *);
+int conf_yy_fatal_error(const char *);
+void read_conf_files(int);
+int yylex(void);
+void rebuild_cidr_class(struct ClassItem *, struct ClassItem *);
+
+EXTERN unsigned int scount;
+EXTERN int ypass;
+EXTERN dlink_list class_items;
+EXTERN dlink_list server_items;
+EXTERN dlink_list cluster_items;
+EXTERN dlink_list hub_items;
+EXTERN dlink_list leaf_items;
+EXTERN struct logging_entry ConfigLoggingEntry;
+EXTERN struct config_file_entry ConfigFileEntry;/* defined in ircd.c*/
+EXTERN struct config_channel_entry ConfigChannel;/* defined in channel.c*/
+EXTERN struct config_server_hide ConfigServerHide; /* defined in s_conf.c */
+EXTERN struct server_info ServerInfo;       /* defined in ircd.c */
+EXTERN struct admin_info AdminInfo;        /* defined in ircd.c */
 
 /* End GLOBAL section */
 
-extern unsigned long get_sendq(struct Client *);
-extern const char *get_client_className(struct Client *);
-extern int get_client_ping(struct Client *, int *);
-extern void check_class(void);
-extern void init_class(void);
-extern struct ConfItem *find_class(const char *);
-extern void init_ip_hash_table(void);
-extern void count_ip_hash(int *, unsigned long *);
-extern void remove_one_ip(struct irc_ssaddr *);
-extern struct ConfItem *make_conf_item(ConfType type);
-extern void read_conf_files(int);
-extern int attach_connect_block(struct Client *, const char *, const char *);
-extern int attach_server_conf(struct Client *, struct ConfItem *);
-extern int attach_leaf_hub(struct Client *, struct ConfItem *);
-extern int detach_conf(struct Client *, ConfType);
+EXTERN unsigned long get_sendq(struct Client *);
+EXTERN const char *get_client_className(struct Client *);
+EXTERN int get_client_ping(struct Client *, int *);
+EXTERN struct ConfItem *find_class(const char *);
+EXTERN void count_ip_hash(int *, unsigned long *);
+EXTERN void remove_one_ip(struct irc_ssaddr *);
+EXTERN struct ConfItem *make_conf_item(ConfType type);
+EXTERN int attach_connect_block(struct Client *, const char *, const char *);
+EXTERN int attach_server_conf(struct Client *, struct ConfItem *);
+EXTERN int attach_leaf_hub(struct Client *, struct ConfItem *);
+EXTERN int detach_conf(struct Client *, ConfType);
 
-extern int conf_connect_allowed(struct irc_ssaddr *, int);
-extern char *oper_privs_as_string(const unsigned int);
-extern void split_nuh(char *mask, char **nick, char **user, char **host);
-extern struct ConfItem *find_matching_name_conf(ConfType, const char *,
+EXTERN int conf_connect_allowed(struct irc_ssaddr *, int);
+EXTERN char *oper_privs_as_string(const unsigned int);
+EXTERN void split_nuh(char *mask, char **nick, char **user, char **host);
+EXTERN struct ConfItem *find_matching_name_conf(ConfType, const char *,
                                                 const char *, const char *, int);
-extern struct ConfItem *find_exact_name_conf(ConfType, const char *,
+EXTERN struct ConfItem *find_exact_name_conf(ConfType, const char *,
                                              const char *, const char *);
-extern void delete_conf_item(struct ConfItem *);
-extern void report_confitem_types(struct Client *, ConfType, int);
-extern void yyerror(const char *);
-extern int conf_yy_fatal_error(const char *);
-extern int conf_fbgets(char *, unsigned int, FBFILE *);
-extern void write_conf_line(struct Client *, struct ConfItem *,
+EXTERN void delete_conf_item(struct ConfItem *);
+EXTERN void report_confitem_types(struct Client *, ConfType, int);
+EXTERN int conf_fbgets(char *, unsigned int, FBFILE *);
+EXTERN void write_conf_line(struct Client *, struct ConfItem *,
                             const char *, time_t);
-extern int remove_conf_line(ConfType, struct Client *, const char *,
+EXTERN int remove_conf_line(ConfType, struct Client *, const char *,
                             const char *);
 
-extern const char *get_conf_name(ConfType);
-extern int rehash(int);
-extern int conf_add_server(struct ConfItem *, unsigned int, const char *);
-extern void conf_add_class_to_conf(struct ConfItem *, const char *);
-extern void conf_add_d_conf(struct AccessItem *);
+EXTERN const char *get_conf_name(ConfType);
+EXTERN int rehash(int);
+EXTERN int conf_add_server(struct ConfItem *, unsigned int, const char *);
+EXTERN void conf_add_class_to_conf(struct ConfItem *, const char *);
+EXTERN void conf_add_d_conf(struct AccessItem *);
 
 /* XXX consider moving these into csvlib.h */
-extern void parse_csv_file(FBFILE *, ConfType);
+EXTERN void parse_csv_file(FBFILE *, ConfType);
 
-extern char *get_oper_name(const struct Client *);
+EXTERN char *get_oper_name(const struct Client *);
 
-extern int yylex(void);
-
-extern int match_conf_password(const char *, const struct AccessItem *);
+EXTERN int match_conf_password(const char *, const struct AccessItem *);
 
 #define NOT_AUTHORIZED    (-1)
 #define IRCD_SOCKET_ERROR (-2)
@@ -540,7 +541,5 @@ extern int match_conf_password(const char *, const struct AccessItem *);
 #define TOO_MANY          (-4)
 #define BANNED_CLIENT     (-5)
 #define TOO_FAST          (-6)
-
-extern void rebuild_cidr_class(struct ClassItem *, struct ClassItem *);
 
 #endif /* INCLUDED_s_conf_h */

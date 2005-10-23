@@ -63,7 +63,7 @@ static char hostbuf[IRCD_BUFSIZE];
 static char reasonbuf[REASONLEN + 1];
 static char gecos_name[REALLEN * 4];
 
-extern dlink_list gdeny_items; /* XXX */
+EXTERN dlink_list gdeny_items; /* XXX */
 
 static char *resv_reason = NULL;
 static char *listener_address = NULL;

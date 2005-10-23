@@ -50,9 +50,9 @@ struct Listener
   unsigned int      flags;
 };
 
-extern void add_listener(int, const char *, unsigned int);
-extern void close_listeners(void);
-extern const char *get_listener_name(const struct Listener *);
-extern void show_ports(struct Client *);
-extern void free_listener(struct Listener *);
+EXTERN void add_listener(int, const char *, unsigned int);
+EXTERN void close_listeners(void);
+EXTERN const char *get_listener_name(const struct Listener *);
+EXTERN void show_ports(struct Client *);
+EXTERN void free_listener(struct Listener *);
 #endif /* INCLUDED_listener_h */

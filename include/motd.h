@@ -56,11 +56,11 @@ typedef struct MessageFile MessageFile;
 
 struct Client;
 
-extern void init_message_file(MotdType, const char *, struct MessageFile *);
-extern int send_message_file(struct Client *, struct MessageFile *);
-extern int read_message_file(MessageFile *);
-extern MessageFile *init_MessageLine(void);
-extern void addto_MessageLine(MessageFile *, const char *);
-extern void destroy_MessageLine(MessageFile *);
+EXTERN void init_message_file(MotdType, const char *, struct MessageFile *);
+EXTERN int send_message_file(struct Client *, struct MessageFile *);
+EXTERN int read_message_file(MessageFile *);
+EXTERN MessageFile *init_MessageLine(void);
+EXTERN void addto_MessageLine(MessageFile *, const char *);
+EXTERN void destroy_MessageLine(MessageFile *);
 
 #endif /* INCLUDED_motd_h */

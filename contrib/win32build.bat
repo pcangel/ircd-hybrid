@@ -67,7 +67,7 @@ if not exist libio.dll goto error
 implib libio.lib libio.dll
 if errorlevel 1 goto error
 if not exist libio.lib goto error
-bcc32 -q -tWD -6 -O -w- -eircd.dll -DIN_IRCD -I"include" -I"libio" src\*.c libio.lib
+bcc32 -q -tWD -6 -O -w- -eircd.dll -DIN_IRCD -I"include" -I"libio" src\*.c modules\m_info.c libio.lib
 if errorlevel 1 goto error
 if not exist ircd.dll goto error
 implib ircd.lib ircd.dll
@@ -76,7 +76,7 @@ if not exist ircd.lib goto error
 bcc32 -q -tW -6 -O -w- -eircd.exe src\ircd.c ircd.lib
 if errorlevel 1 goto error
 if not exist ircd.exe goto error
-for %%a in (modules\*.c) do bcc32 -q -tWD -6 -O -w- -nmodules -I"include" -I"libio" %%a libio.lib ircd.lib
+for %%a in (modules\*.c) do if not %%a==modules\m_info.c bcc32 -q -tWD -6 -O -w- -nmodules -I"include" -I"libio" %%a libio.lib ircd.lib
 if errorlevel 1 goto error
 for %%a in (modules\core\*.c contrib\*.c) do bcc32 -q -tWD -6 -O -w- -I"include" -I"libio" %%a libio.lib ircd.lib
 if errorlevel 1 goto error
@@ -89,7 +89,7 @@ cl /nologo /O2 /Oy /GD /w /Felibio.dll /DIN_LIBIO /I"include" /I"libio" libio\co
 if errorlevel 1 goto error
 if not exist libio.dll goto error
 if not exist libio.lib goto error
-cl /nologo /O2 /Oy /GD /w /Feircd.dll /DIN_IRCD /I"include" /I"libio" src\*.c user32.lib wsock32.lib libio.lib /link /dll /subsystem:windows
+cl /nologo /O2 /Oy /GD /w /Feircd.dll /DIN_IRCD /I"include" /I"libio" src\*.c modules\m_info.c user32.lib wsock32.lib libio.lib /link /dll /subsystem:windows
 if errorlevel 1 goto error
 if not exist ircd.dll goto error
 if not exist ircd.lib goto error
@@ -97,7 +97,7 @@ cl /nologo /O2 /Oy /GA /w /Feircd.exe src\ircd.c ircd.lib /link /subsystem:windo
 if errorlevel 1 goto error
 if not exist ircd.exe goto error
 cd modules
-for %%a in (*.c) do cl /nologo /O2 /Oy /GD /w /I"..\include" /I"..\libio" %%a libio.lib ircd.lib /link /dll /subsystem:windows
+for %%a in (*.c) do if not %%a==m_info.c cl /nologo /O2 /Oy /GD /w /I"..\include" /I"..\libio" %%a libio.lib ircd.lib /link /dll /subsystem:windows
 cd ..
 if errorlevel 1 goto error
 for %%a in (modules\core\*.c contrib\*.c) do cl /nologo /O2 /Oy /GD /w /I"include" /I"libio" %%a libio.lib ircd.lib /link /dll /subsystem:windows

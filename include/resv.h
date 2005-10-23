@@ -37,17 +37,15 @@ struct ResvChannel
   int	conf;		/* 1 if set from ircd.conf, 0 if from elsewhere */
 };
 
-extern dlink_list nresv_items;
-extern dlink_list resv_channel_list;
+void clear_conf_resv(void);
 
-extern struct ConfItem *create_channel_resv(char *, char *, int);
-extern struct ConfItem *create_nick_resv(char *, char *, int);
+EXTERN dlink_list nresv_items;
+EXTERN dlink_list resv_channel_list;
 
-extern int delete_channel_resv(struct ResvChannel *);
-
-extern void clear_conf_resv(void);
-extern void report_resv(struct Client *);
-
-extern int valid_wild_card_simple(const char *);
-extern struct ResvChannel *match_find_resv(const char *);
+EXTERN struct ConfItem *create_channel_resv(char *, char *, int);
+EXTERN struct ConfItem *create_nick_resv(char *, char *, int);
+EXTERN int delete_channel_resv(struct ResvChannel *);
+EXTERN void report_resv(struct Client *);
+EXTERN int valid_wild_card_simple(const char *);
+EXTERN struct ResvChannel *match_find_resv(const char *);
 #endif  /* INCLUDED_resv_h */

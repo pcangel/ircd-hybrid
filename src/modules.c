@@ -118,6 +118,11 @@ modules_init(void)
   mod_add_cmd(&modlist_msgtab);
   mod_add_cmd(&modrestart_msgtab);
   mod_add_cmd(&error_msgtab);
+#ifdef _WIN32
+  /* m_info cannot be linked dynamically at present (uses references
+   * inside imported structures like &ServerInfo.something) */
+  info_modinit();
+#endif
 }
 
 /* mod_find_path()

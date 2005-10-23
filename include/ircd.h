@@ -58,45 +58,44 @@ struct Counter
   unsigned long totalrestartcount; /* Total client count ever */
 };
 
-extern struct SetOptions GlobalSetOptions; /* defined in ircd.c */
-extern unsigned long connect_id;	/* unique connect ID */
-
 struct ServerState_t
 {
   int foreground;
 };
 
-extern struct ServerState_t server_state;
+char *get_ircd_platform(char *);
 
-extern char **myargv;
-extern char ircd_platform[PLATFORMLEN];
-extern char *get_ircd_platform(char *);
-extern const char *infotext[];
-extern const char *serno;
-extern const char *ircd_version;
-extern const char *logFileName;
-extern const char *pidFileName;
-extern int dorehash;
-extern int doremotd;
-extern struct Counter Count;
-extern time_t nextconnect;
-extern int default_server_capabs;
+EXTERN struct SetOptions GlobalSetOptions; /* defined in ircd.c */
+EXTERN unsigned long connect_id;	/* unique connect ID */
+EXTERN struct ServerState_t server_state;
+EXTERN char **myargv;
+EXTERN char ircd_platform[PLATFORMLEN];
+EXTERN const char *infotext[];
+EXTERN const char *serno;
+EXTERN const char *ircd_version;
+EXTERN const char *logFileName;
+EXTERN const char *pidFileName;
+EXTERN int dorehash;
+EXTERN int doremotd;
+EXTERN struct Counter Count;
+EXTERN time_t nextconnect;
+EXTERN int default_server_capabs;
 #ifdef HAVE_LIBCRYPTO
-extern int bio_spare_fd;
+EXTERN int bio_spare_fd;
 #endif /* HAVE_LIBCRYPTO */
 
-extern int splitmode;
-extern int splitchecking;
-extern int split_users;
-extern unsigned int split_servers;
+EXTERN int splitmode;
+EXTERN int splitchecking;
+EXTERN int split_users;
+EXTERN unsigned int split_servers;
 
-extern dlink_list unknown_list;       /* unknown clients ON this server only        */
-extern dlink_list local_client_list;  /* local clients only ON this server          */
-extern dlink_list serv_list;          /* local servers to this server ONLY          */
-extern dlink_list global_serv_list;   /* global servers on the network              */
-extern dlink_list oper_list;          /* our opers, duplicated in local_client_list */
-extern dlink_list lazylink_channels;  /* known about lazylink channels on HUB       */
-extern int rehashed_klines;
-extern unsigned long get_maxrss(void);
+EXTERN dlink_list unknown_list;       /* unknown clients ON this server only        */
+EXTERN dlink_list local_client_list;  /* local clients only ON this server          */
+EXTERN dlink_list serv_list;          /* local servers to this server ONLY          */
+EXTERN dlink_list global_serv_list;   /* global servers on the network              */
+EXTERN dlink_list oper_list;          /* our opers, duplicated in local_client_list */
+EXTERN dlink_list lazylink_channels;  /* known about lazylink channels on HUB       */
+EXTERN int rehashed_klines;
+EXTERN unsigned long get_maxrss(void);
 
 #endif

@@ -95,14 +95,16 @@ struct ChCapCombo
   int cap_no;
 };
 
-extern struct Callback *channel_access_cb;
+EXTERN struct Callback *channel_access_cb;
 
-extern void init_channel_modes(void);
-extern int add_id(struct Client *, struct Channel *, char *, int);
-extern void set_channel_mode(struct Client *, struct Client *, struct Channel *,
+void init_channel_modes(void);
+void init_chcap_usage_counts(void);
+void set_chcap_usage_counts(struct Client *);
+void unset_chcap_usage_counts(struct Client *);
+
+EXTERN int add_id(struct Client *, struct Channel *, char *, int);
+EXTERN void set_channel_mode(struct Client *, struct Client *, struct Channel *,
                              struct Membership *, int, char **, char *);
-extern void clear_ban_cache(struct Channel *);
-extern void init_chcap_usage_counts(void);
-extern void set_chcap_usage_counts(struct Client *);
-extern void unset_chcap_usage_counts(struct Client *);
+EXTERN void clear_ban_cache(struct Channel *);
+
 #endif /* INCLUDED_channel_mode_h */

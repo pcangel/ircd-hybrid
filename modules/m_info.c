@@ -63,18 +63,24 @@ va_send_info_text(va_list args)
 }
 
 void
+#ifndef _WIN32
 _modinit(void)
+#else
+info_modinit(void)
+#endif
 {
   info_cb = register_callback("doing_info", va_send_info_text);
   mod_add_cmd(&info_msgtab);
 }
 
+#ifndef _WIN32
 void
 _moddeinit(void)
 {
   mod_del_cmd(&info_msgtab);
   uninstall_hook(info_cb, va_send_info_text);
 }
+#endif
 #endif
 
 /*

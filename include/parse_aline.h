@@ -26,33 +26,33 @@
 #define INCLUDED_parse_aline_h
 #include "setup.h"
 
-extern dlink_list rxconf_items;
-extern dlink_list rkconf_items;
-extern dlink_list temporary_klines;
-extern dlink_list temporary_dlines;
-extern dlink_list temporary_glines;
-extern dlink_list temporary_xlines;
-extern dlink_list temporary_rxlines;
-extern dlink_list temporary_rklines;
+EXTERN dlink_list rxconf_items;
+EXTERN dlink_list rkconf_items;
+EXTERN dlink_list temporary_klines;
+EXTERN dlink_list temporary_dlines;
+EXTERN dlink_list temporary_glines;
+EXTERN dlink_list temporary_xlines;
+EXTERN dlink_list temporary_rxlines;
+EXTERN dlink_list temporary_rklines;
 
-extern void cluster_a_line(struct Client *,
+EXTERN void cluster_a_line(struct Client *,
 			   const char *, int, int, const char *,...);
-extern int valid_wild_card(struct Client *, int, int, ...);
+EXTERN int valid_wild_card(struct Client *, int, int, ...);
 
 #define CLEANUP_TKLINES_TIME 60
 #define TK_SECONDS 0
 #define TK_MINUTES 1
-extern time_t valid_tkline(char *, int);
+EXTERN time_t valid_tkline(char *, int);
 
 #define AWILD 0x1		/* check wild cards */
 #define NOUSERLOOKUP 0x2 /* Don't lookup the user@host on /rkline nick */
-extern int parse_aline(const char *, struct Client *, int, char **,
+EXTERN int parse_aline(const char *, struct Client *, int, char **,
 		       int, char **, char **, time_t *, char **, char **);
-extern int valid_comment(struct Client *, char *, int);
-extern struct AccessItem *find_kill(struct Client *);
-extern struct AccessItem *find_gline(struct Client *);
-extern struct AccessItem *find_regexp_kline(const char *[]);
+EXTERN int valid_comment(struct Client *, char *, int);
+EXTERN struct AccessItem *find_kill(struct Client *);
+EXTERN struct AccessItem *find_gline(struct Client *);
+EXTERN struct AccessItem *find_regexp_kline(const char *[]);
 
-extern void cleanup_tklines(void *);
-extern void add_temp_line(struct ConfItem *);
+EXTERN void cleanup_tklines(void *);
+EXTERN void add_temp_line(struct ConfItem *);
 #endif /* INCLUDED_parse_aline_h */

@@ -34,4 +34,3 @@ extern int get_randomness(unsigned char *, int);
 #endif
 
 #endif /* INCLUDED_rsa_h */
-

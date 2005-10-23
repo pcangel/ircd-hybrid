@@ -222,12 +222,12 @@ extern struct SlinkRplDef slinkrpltab[];
  * because all servers that we talk to already do TS, and the kludged
  * extra argument to "PASS" takes care of checking that.  -orabidoo
  */
-extern struct Capability captab[];
+EXTERN struct Capability captab[];
 #ifdef HAVE_LIBCRYPTO
-extern struct EncCapability CipherTable[];
+EXTERN struct EncCapability CipherTable[];
 #endif
 
-extern struct Client *uplink; /* NON NULL if leaf and is this servers uplink */
+EXTERN struct Client *uplink; /* NON NULL if leaf and is this servers uplink */
 
 /*
  * return values for hunt_server() 
@@ -236,39 +236,38 @@ extern struct Client *uplink; /* NON NULL if leaf and is this servers uplink */
 #define HUNTED_ISME     0       /* if this server should execute the command */
 #define HUNTED_PASS     1       /* if message passed onwards successfully */
 
-extern int check_server(const char *, struct Client *, int);
-extern int hunt_server(struct Client *, struct Client *,
+EXTERN int check_server(const char *, struct Client *, int);
+EXTERN int hunt_server(struct Client *, struct Client *,
                        const char *, int, int, char **);
-extern const char *my_name_for_link(struct AccessItem *);
-extern void add_capability(const char *, int, int);
-extern int delete_capability(const char *);
-extern int find_capability(const char *);
-extern void send_capabilities(struct Client *, struct AccessItem *, int, int);
-extern void write_links_file(void *);
-extern void server_estab(struct Client *);
-extern void set_autoconn(struct Client *, const char *, int);
-extern const char *show_capabilities(struct Client *);
-extern void try_connections(void *);
-extern void collect_zipstats(void *);
-extern void initServerMask(void);
-extern void burst_channel(struct Client *client_p, struct Channel *);
-extern void sendnick_TS(struct Client *, struct Client *);
-extern int serv_connect(struct AccessItem *, struct Client *);
-extern struct Client *find_servconn_in_progress(const char *);
-extern unsigned long nextFreeMask(void);
-extern void cryptlink_init(struct Client *, struct AccessItem *, fde_t *);
-extern void cryptlink_regen_key(void *);
-extern void cryptlink_error(struct Client *, const char *,
+EXTERN const char *my_name_for_link(struct AccessItem *);
+EXTERN void add_capability(const char *, int, int);
+EXTERN int delete_capability(const char *);
+EXTERN int find_capability(const char *);
+EXTERN void send_capabilities(struct Client *, struct AccessItem *, int, int);
+EXTERN void write_links_file(void *);
+EXTERN void server_estab(struct Client *);
+EXTERN void set_autoconn(struct Client *, const char *, int);
+EXTERN const char *show_capabilities(struct Client *);
+EXTERN void try_connections(void *);
+EXTERN void collect_zipstats(void *);
+EXTERN void initServerMask(void);
+EXTERN void burst_channel(struct Client *client_p, struct Channel *);
+EXTERN void sendnick_TS(struct Client *, struct Client *);
+EXTERN int serv_connect(struct AccessItem *, struct Client *);
+EXTERN struct Client *find_servconn_in_progress(const char *);
+EXTERN unsigned long nextFreeMask(void);
+EXTERN void cryptlink_init(struct Client *, struct AccessItem *, fde_t *);
+EXTERN void cryptlink_regen_key(void *);
+EXTERN void cryptlink_error(struct Client *, const char *,
                             const char *, const char *);
-extern void remove_lazylink_flags(unsigned long);
-extern void client_burst_if_needed(struct Client *, struct Client *);
-extern struct EncCapability *check_cipher(struct Client *, struct AccessItem *);
-extern void add_lazylinkclient(struct Client *, struct Client *);
+EXTERN void remove_lazylink_flags(unsigned long);
+EXTERN void client_burst_if_needed(struct Client *, struct Client *);
+EXTERN struct EncCapability *check_cipher(struct Client *, struct AccessItem *);
+EXTERN void add_lazylinkclient(struct Client *, struct Client *);
 
-extern struct Server *make_server(struct Client *);
+EXTERN struct Server *make_server(struct Client *);
 
 /* XXX don't belong in the now gone md5, but do these belong in s_serv.c ? */
-extern int base64_block(unsigned char **, char *, int);
-extern int unbase64_block(unsigned char **, char *, int);
+EXTERN int base64_block(unsigned char **, char *, int);
+EXTERN int unbase64_block(unsigned char **, char *, int);
 #endif /* INCLUDED_s_serv_h */
-

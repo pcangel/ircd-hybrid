@@ -46,7 +46,7 @@
 #endif /* GLINE_VOTING */
 #define GLINE_PLACED         1
 
-extern dlink_list gdeny_items;
+EXTERN dlink_list gdeny_items;
 
 /* internal functions */
 static void set_local_gline(const struct Client *,

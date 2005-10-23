@@ -62,5 +62,5 @@ struct gline_pending
 #define GLINE_PENDING_EXPIRE 600
 #define CLEANUP_GLINES_TIME  300
 
-extern dlink_list pending_glines;
+EXTERN dlink_list pending_glines;
 #endif /* INCLUDED_s_gline_h */

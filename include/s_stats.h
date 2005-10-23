@@ -53,9 +53,10 @@ struct ServerStatistics {
   unsigned int    is_abad; /* bad auth requests */
 };
 
-extern struct ServerStatistics *ServerStats;
+void init_stats(void);
 
-extern void init_stats(void);
-extern void tstats(struct Client *);
+EXTERN struct ServerStatistics *ServerStats;
+
+EXTERN void tstats(struct Client *);
 
 #endif /* INCLUDED_s_stats_h */

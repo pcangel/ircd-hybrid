@@ -56,29 +56,27 @@ struct module_path
   char path[PATH_MAX + 1];
 };
 
+void modules_init(void);
+
 /* add a path */
-extern void mod_add_path(const char *);
-extern void mod_clear_paths(void);
+EXTERN void mod_add_path(const char *);
+EXTERN void mod_clear_paths(void);
 
 /* load all modules */
-extern void load_all_modules(int);
+EXTERN void load_all_modules(int);
 
 /* load core modules */
-extern void load_core_modules(int);
+EXTERN void load_core_modules(int);
 
 /* Add this module to list of modules to be loaded from conf */
-extern void add_conf_module(const char *);
+EXTERN void add_conf_module(const char *);
 /* load all modules listed in conf */
-extern void load_conf_modules(void);
+EXTERN void load_conf_modules(void);
 
-extern void _modinit(void);
-extern void _moddeinit(void);
-
-extern int unload_one_module(char *, int);
-extern int load_one_module(char *, int);
-extern int load_a_module(char *, int, int);
-extern dlink_node *findmodule_byname(const char *);
-extern void modules_init(void);
+EXTERN int unload_one_module(char *, int);
+EXTERN int load_one_module(char *, int);
+EXTERN int load_a_module(char *, int, int);
+EXTERN dlink_node *findmodule_byname(const char *);
 
 #else /* STATIC_MODULES */
 
@@ -214,7 +212,7 @@ extern struct Message svsnick_msgtab;
 extern struct Message uncapture_msgtab;
 #endif
 
-extern void load_all_modules(int);
+EXTERN void load_all_modules(int);
 
 #endif /* STATIC_MODULES */
 #endif /* INCLUDED_modules_h */

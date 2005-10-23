@@ -530,29 +530,30 @@ struct LocalUser
 #define SHOW_IP 1
 #define MASK_IP 2
 
-extern struct Client me;
-extern dlink_list listing_client_list;
-extern dlink_list global_client_list;
+EXTERN struct Client me;
+EXTERN dlink_list listing_client_list;
+EXTERN dlink_list global_client_list;
 
-extern int accept_message(struct Client *, struct Client *);
-extern void set_initial_nick(struct Client *, struct Client *, const char *);
-extern void exit_client(struct Client *, struct Client *, const char *);
-extern void check_conf_klines(void);
-extern void init_client(void);
-extern void del_from_accept(struct Client *, struct Client *);
-extern void del_all_accepts(struct Client *);
-extern void del_all_their_accepts(struct Client *);
-extern void change_local_nick(struct Client *, struct Client *, const char *);
-extern void report_error(int, const char *, const char *, int);
-extern void dead_link_on_write(struct Client *, int);
-extern void dead_link_on_read(struct Client *, int);
-extern void exit_aborted_clients(void);
-extern void free_exited_clients(void);
-extern struct Client *make_client(struct Client *);
-extern struct Client *find_chasing(struct Client *, struct Client *, const char *, int *);
-extern struct Client *find_person(const struct Client *const, const char *);
-extern const char *get_client_name(struct Client *, int);
-extern void log_user_exit(struct Client *);
-extern void log_oper_action(int type, const struct Client *, const char *, ...);
+void init_client(void);
+void dead_link_on_write(struct Client *, int);
+void dead_link_on_read(struct Client *, int);
+void exit_aborted_clients(void);
+void free_exited_clients(void);
+
+EXTERN int accept_message(struct Client *, struct Client *);
+EXTERN void set_initial_nick(struct Client *, struct Client *, const char *);
+EXTERN void exit_client(struct Client *, struct Client *, const char *);
+EXTERN void check_conf_klines(void);
+EXTERN void del_from_accept(struct Client *, struct Client *);
+EXTERN void del_all_accepts(struct Client *);
+EXTERN void del_all_their_accepts(struct Client *);
+EXTERN void change_local_nick(struct Client *, struct Client *, const char *);
+EXTERN void report_error(int, const char *, const char *, int);
+EXTERN struct Client *make_client(struct Client *);
+EXTERN struct Client *find_chasing(struct Client *, struct Client *, const char *, int *);
+EXTERN struct Client *find_person(const struct Client *const, const char *);
+EXTERN const char *get_client_name(struct Client *, int);
+EXTERN void log_user_exit(struct Client *);
+EXTERN void log_oper_action(int type, const struct Client *, const char *, ...);
 
 #endif /* INCLUDED_client_h */

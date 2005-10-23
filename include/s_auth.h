@@ -66,13 +66,14 @@ struct AuthRequest
 #define SetCrit(x)	     ((x)->flags |= CRIT_REGION)
 #define ClearCrit(x)	     ((x)->flags &= ~CRIT_REGION)
 
-extern struct Callback *auth_cb;
+void init_auth(void);
 
-extern void send_auth_query(struct AuthRequest *);
-extern void remove_auth_request(struct AuthRequest *);
-extern struct AuthRequest *FindAuthClient(long);
-extern void init_auth(void);
-extern void delete_auth(struct Client *);
-extern void release_auth_client(struct Client *);
+EXTERN struct Callback *auth_cb;
+
+EXTERN void send_auth_query(struct AuthRequest *);
+EXTERN void remove_auth_request(struct AuthRequest *);
+EXTERN struct AuthRequest *FindAuthClient(long);
+EXTERN void delete_auth(struct Client *);
+EXTERN void release_auth_client(struct Client *);
 
 #endif /* INCLUDED_s_auth_h */

@@ -58,27 +58,27 @@ struct ConfField {
   dlink_node node;
 };
 
-extern int conf_pass;
-extern struct ConfParserContext conf_curctx;
-extern char conf_linebuf[];
-extern int conf_include_sptr;
+void init_conf(void);
+void yyerror(const char *);
+int yylex(void);
+int conf_yy_input(char *, int);
+void conf_clear_ident_list(void);
 
-extern struct Callback *reset_conf;
-extern struct Callback *verify_conf;
+EXTERN int conf_pass;
+EXTERN struct ConfParserContext conf_curctx;
+EXTERN char conf_linebuf[];
+EXTERN int conf_include_sptr;
+EXTERN struct Callback *reset_conf;
+EXTERN struct Callback *verify_conf;
 
-extern void init_conf(void);
-extern void parse_error(const char *, ...);
-extern void yyerror(const char *);
-extern int conf_yy_input(char *, int);
-extern int yylex(void);
-extern void conf_clear_ident_list(void);
-extern struct ConfSection *find_conf_section(const char *);
-extern struct ConfSection *add_conf_section(const char *, int);
-extern void delete_conf_section(struct ConfSection *);
-extern struct ConfField *find_conf_field(struct ConfSection *, char *);
-extern void conf_assign(int, struct ConfField *, void *);
-extern CONFF_HANDLER conf_assign_bool;
-extern CONFF_HANDLER conf_assign_number;
-extern CONFF_HANDLER conf_assign_string;
-extern void add_conf_field(struct ConfSection *, const char *, int,
+EXTERN void parse_error(const char *, ...);
+EXTERN struct ConfSection *find_conf_section(const char *);
+EXTERN struct ConfSection *add_conf_section(const char *, int);
+EXTERN void delete_conf_section(struct ConfSection *);
+EXTERN struct ConfField *find_conf_field(struct ConfSection *, char *);
+EXTERN void conf_assign(int, struct ConfField *, void *);
+EXTERN CONFF_HANDLER conf_assign_bool;
+EXTERN CONFF_HANDLER conf_assign_number;
+EXTERN CONFF_HANDLER conf_assign_string;
+EXTERN void add_conf_field(struct ConfSection *, const char *, int,
                            CONFF_HANDLER *, void *);
