@@ -101,7 +101,6 @@
 #include <windows.h>
 #include <winsock.h>
 #else
-#include <dirent.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -110,6 +109,7 @@
 #include <sys/file.h>
 #endif
 
+#include <dirent.h>
 #include <limits.h>
 
 #ifdef HAVE_UNISTD_H

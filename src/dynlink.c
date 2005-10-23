@@ -39,38 +39,24 @@ static char unknown_ver[] = "<unknown>";
  * -TimeMr14C
  */
 
-#if !defined(HAVE_SHL_LOAD) && !defined(HAVE_DLFUNC)
-/*
- * Fake dlfunc(3) if we don't have it, cause it's happy.
- */
-typedef void (*__function_p)(void);
-
-static __function_p
-dlfunc(void *myHandle, const char *functionName)
-{
-  /* XXX This is not guaranteed to work, but with
-   * traditional dl*(3), it is the best we can do.
-   * -jmallett
-   */
-  void *symbolp;
-
-  symbolp = dlsym(myHandle, functionName);
-  return((__function_p)(uintptr_t)symbolp);
-}
-#endif
-
 #ifdef _WIN32
 /*
  * jmallett's dl*(3) stubs for DLL management.
  */
 
+#define RTLD_LAZY 0
+
 char *
 dlerror(void)
 {
   static char errbuf[IRCD_BUFSIZE];
+  char *p;
 
   FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
     MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), errbuf, sizeof(errbuf), NULL);
+
+  if ((p = strpbrk(errbuf, "\r\n")) != NULL)
+    *p = 0;
 
   return errbuf;
 }
@@ -88,7 +74,7 @@ dlclose(void *module)
 }
 
 void *
-dlsym(void *module, char *sym)
+dlsym(void *module, const char *sym)
 {
   return GetProcAddress((HMODULE) module, sym);
 }
@@ -210,6 +196,26 @@ dlsym(void *myModule, char *mySymbolName)
   return NSAddressOfSymbol(mySymbol);
 }
 #endif
+#endif
+
+#if !defined(HAVE_SHL_LOAD) && !defined(HAVE_DLFUNC)
+/*
+ * Fake dlfunc(3) if we don't have it, cause it's happy.
+ */
+typedef void (*__function_p)(void);
+
+static __function_p
+dlfunc(void *myHandle, const char *functionName)
+{
+  /* XXX This is not guaranteed to work, but with
+   * traditional dl*(3), it is the best we can do.
+   * -jmallett
+   */
+  void *symbolp;
+
+  symbolp = dlsym(myHandle, functionName);
+  return((__function_p)symbolp);
+}
 #endif
 
 /* unload_one_module()

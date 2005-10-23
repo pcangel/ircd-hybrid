@@ -310,7 +310,7 @@ load_core_modules(int warn)
 
     if (load_a_module(module_name, warn, 1) == -1)
     {
-      ilog(L_CRIT, "Error loading core module %s%s: terminating ircd",
+      ilog(L_CRIT, "Error loading core module %s%s, terminating ircd",
            core_module_table[i], SHARED_SUFFIX);
       exit(EXIT_FAILURE);
     }
@@ -466,8 +466,8 @@ mo_modreload(struct Client *client_p, struct Client *source_p,
   if ((load_one_module(parv[1], check_core) == -1) && check_core)
   {
     sendto_realops_flags(UMODE_ALL, L_ALL, "Error reloading core "
-                         "module: %s: terminating ircd", parv[1]);
-    ilog(L_CRIT, "Error loading core module %s: terminating ircd", parv[1]);
+                         "module, %s: terminating ircd", parv[1]);
+    ilog(L_CRIT, "Error loading core module %s, terminating ircd", parv[1]);
     exit(0);
   }
 }
