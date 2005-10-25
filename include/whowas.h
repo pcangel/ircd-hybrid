@@ -39,10 +39,8 @@ struct Whowas
   char realname[REALLEN + 1];
   char servername[HOSTLEN + 1];
   struct Client *online; /* Pointer to new nickname for chasing or NULL */
-  struct Whowas *next;  /* for hash table... */
-  struct Whowas *prev;  /* for hash table... */
-  struct Whowas *cnext; /* for client struct linked list */
-  struct Whowas *cprev; /* for client struct linked list */
+  dlink_node tnode;  /* for hash table... */
+  dlink_node cnode; /* for client struct linked list */
 };
 
 /*
@@ -81,5 +79,5 @@ EXTERN struct Client *get_history(const char *, time_t);
 EXTERN void count_whowas_memory(int *, unsigned long *);
 
 /* XXX m_whowas.c in modules needs these */
-EXTERN struct Whowas *WHOWASHASH[];
+EXTERN dlink_list *WHOWASHASH[];
 #endif /* INCLUDED_whowas_h */

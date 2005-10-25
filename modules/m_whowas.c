@@ -89,8 +89,8 @@ m_whowas(struct Client *client_p, struct Client *source_p,
                me.name, source_p->name);
     return;
   }
-  else
-    last_used = CurrentTime;
+
+  last_used = CurrentTime;
 
   whowas_do(client_p, source_p, parc, parv);
 }
@@ -113,7 +113,7 @@ static void
 whowas_do(struct Client *client_p, struct Client *source_p,
           int parc, char *parv[])
 {
-  struct Whowas *temp = NULL;
+  const dlink_node *ptr = NULL;
   int cur = 0;
   int max = -1;
   char *p = NULL, *nick = NULL;
@@ -139,9 +139,11 @@ whowas_do(struct Client *client_p, struct Client *source_p,
   if (*nick == '\0')
     return;
 
-  for (temp = WHOWASHASH[strhash(nick)]; temp; temp = temp->next)
+  DLINK_FOREACH(ptr, WHOWASHASH[strhash(nick)].head)
   {
-    if (irccmp(nick, temp->name) == 0)
+    const struct Whowas *temp = ptr->data;
+
+    if (!irccmp(nick, temp->name))
     {
       sendto_one(source_p, form_str(RPL_WHOWASUSER),
                  me.name, source_p->name, temp->name,

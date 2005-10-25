@@ -35,26 +35,19 @@
 #include "send.h"
 #include "s_conf.h"
 
-/* internally defined function */
-static void add_whowas_to_clist(struct Whowas **, struct Whowas *);
-static void del_whowas_from_clist(struct Whowas **, struct Whowas *);
-static void add_whowas_to_list(struct Whowas **, struct Whowas *);
-static void del_whowas_from_list(struct Whowas **, struct Whowas *);
-
-struct Whowas WHOWAS[NICKNAMEHISTORYLENGTH];
-struct Whowas *WHOWASHASH[HASHSIZE];
-
-static unsigned int whowas_next = 0;
+static struct Whowas WHOWAS[NICKNAMEHISTORYLENGTH];
+dlink_list *WHOWASHASH[HASHSIZE];
 
 void
 add_history(struct Client *client_p, int online)
 {
+  static unsigned int whowas_next = 0;
   struct Whowas *who = &WHOWAS[whowas_next];
 
-  assert(client_p != NULL);
+  if (++whowas_next == NICKNAMEHISTORYLENGTH)
+    whowas_next = 0;
 
-  if (client_p == NULL)
-    return;
+  assert(client_p != NULL);
 
   /* XXX when is this possible? Looks like it could happen
    * (with a half registered client.)
@@ -65,9 +58,10 @@ add_history(struct Client *client_p, int online)
 
   if (who->hashv != -1)
   {
-    if (who->online)
-      del_whowas_from_clist(&(who->online->whowas),who);
-    del_whowas_from_list(&WHOWASHASH[who->hashv], who);
+   if (who->online)
+      dlinkDelete(&who->cnode, &who->online->whowas);
+
+    dlinkDelete(&who->tnode, &WHOWASHASH[who->hashv]);
   }
 
   who->hashv  = strhash(client_p->name);
@@ -86,54 +80,51 @@ add_history(struct Client *client_p, int online)
   if (online)
   {
     who->online = client_p;
-    add_whowas_to_clist(&(client_p->whowas), who);
+    dlinkAdd(who, &who->cnode, &client_p->whowas);
   }
   else
     who->online = NULL;
 
-  add_whowas_to_list(&WHOWASHASH[who->hashv], who);
-  whowas_next++;
-
-  if (whowas_next == NICKNAMEHISTORYLENGTH)
-    whowas_next = 0;
+  dlinkAdd(who, &who->tnode, &WHOWASHASH[who->hashv]);
 }
 
 void
 off_history(struct Client *client_p)
 {
-  struct Whowas *temp, *next;
+  dlink_node *ptr = NULL, *ptr_next = NULL;
 
-  for (temp = client_p->whowas; temp; temp=next)
+  DLINK_FOREACH_SAFE(ptr, ptr_next, client_p->whowas.head)
   {
-    next = temp->cnext;
+    struct Whowas *temp = ptr->data;
     temp->online = NULL;
-    del_whowas_from_clist(&(client_p->whowas), temp);
+    dlinkDelete(&temp->cnode, &client_p->whowas);
   }
 }
 
 struct Client *
 get_history(const char *nick, time_t timelimit)
 {
-  struct Whowas *temp;
+  dlink_node *ptr = NULL;
 
   timelimit = CurrentTime - timelimit;
-  temp = WHOWASHASH[strhash(nick)];
 
-  for (; temp; temp = temp->next)
-  {
+  DLINK_FOREACH(ptr, WHOWASHASH[strhash(nick)].head) {
+    struct Whowas *temp = ptr->data;
+
     if (irccmp(nick, temp->name))
       continue;
     if (temp->logoff < timelimit)
       continue;
-    return(temp->online);
+    return temp->online;
   }
 
-  return(NULL);
+  return NULL;
 }
 
 void
 count_whowas_memory(int *wwu, unsigned long *wwum)
 {
+#if 0
   struct Whowas *tmp;
   int i;
   int u = 0;
@@ -152,61 +143,24 @@ count_whowas_memory(int *wwu, unsigned long *wwum)
 
   *wwu = u;
   *wwum = um;
+#endif
+  *wwu = NICKNAMEHISTORYLENGTH;
 }
 
 void
 init_whowas(void)
 {
-  int i;
+  unsigned int i;
 
-  for (i = 0; i < NICKNAMEHISTORYLENGTH; i++)
+  for (i = 0; i < NICKNAMEHISTORYLENGTH; ++i)
   {
     memset(&WHOWAS[i], 0, sizeof(struct Whowas));
     WHOWAS[i].hashv = -1;
   }
 
-  for (i = 0; i < HASHSIZE; ++i)
-    WHOWASHASH[i] = NULL;        
-}
-
-static void
-add_whowas_to_clist(struct Whowas **bucket, struct Whowas *whowas)
-{
-  whowas->cprev = NULL;
-
-  if ((whowas->cnext = *bucket) != NULL)
-    whowas->cnext->cprev = whowas;
-  *bucket = whowas;
-}
- 
-static void
-del_whowas_from_clist(struct Whowas **bucket, struct Whowas *whowas)
-{
-  if (whowas->cprev)
-    whowas->cprev->cnext = whowas->cnext;
-  else
-    *bucket = whowas->cnext;
-  if (whowas->cnext)
-    whowas->cnext->cprev = whowas->cprev;
-}
-
-static void
-add_whowas_to_list(struct Whowas **bucket, struct Whowas *whowas)
-{
-  whowas->prev = NULL;
-
-  if ((whowas->next = *bucket) != NULL)
-    whowas->next->prev = whowas;
-  *bucket = whowas;
-}
- 
-static void
-del_whowas_from_list(struct Whowas **bucket, struct Whowas *whowas)
-{
-  if (whowas->prev)
-    whowas->prev->next = whowas->next;
-  else
-    *bucket = whowas->next;
-  if (whowas->next)
-    whowas->next->prev = whowas->prev;
+  /*
+   * Global variables are always 0 initialized,
+   * but we do this anyway.
+   */
+  memset(WHOWASHASH, 0, sizeof(WHOWASHASH));
 }

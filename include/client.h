@@ -96,7 +96,6 @@ struct Client
   struct Client*    servptr;    /* Points to server this Client is on */
   struct Client*    from;       /* == self, if Local Client, *NEVER* NULL! */
 
-  struct Whowas*    whowas;     /* Pointers to whowas structs */
   time_t            lasttime;   /* ...should be only LOCAL clients? --msa */
   time_t            firsttime;  /* time client was created */
   time_t            since;      /* last time we parsed something */
@@ -157,6 +156,7 @@ struct Client
   dlink_list	allow_list;	/* clients I'll allow to talk to me */
   dlink_list	on_allow_list;	/* clients that have =me= on their allow list*/
 
+  dlink_list     whowas;    /* Pointers to whowas structs */
   dlink_list     channel;   /* chain of channel pointer blocks */
   dlink_list     invited;   /* chain of invite pointer blocks */
 
