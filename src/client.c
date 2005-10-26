@@ -757,6 +757,9 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
     add_history(source_p, 0);
     off_history(source_p);
 
+    assert(source_p->whowas.head == NULL);
+    assert(source_p->whowas.tail == NULL);
+
     if (!MyConnect(source_p))
     {
       source_p->from->serv->dep_users--;
