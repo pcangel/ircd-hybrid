@@ -46,7 +46,7 @@ struct Whowas
 /*
 ** initwhowas
 */
-void init_whowas(void);
+EXTERN void init_whowas(void);
 
 /*
 ** add_history
@@ -72,11 +72,6 @@ EXTERN void off_history(struct Client *);
 **      one found...
 */
 EXTERN struct Client *get_history(const char *, time_t);
-
-/*
-** for debugging...counts related structures stored in whowas array.
-*/
-EXTERN void count_whowas_memory(int *, unsigned long *);
 
 /* XXX m_whowas.c in modules needs these */
 EXTERN dlink_list *WHOWASHASH[];

@@ -235,7 +235,8 @@ m_stats(struct Client *client_p, struct Client *source_p,
 
   /* Is the stats meant for us? */
   if (!ConfigFileEntry.disable_remote)
-    if (hunt_server(client_p,source_p,":%s STATS %s :%s",2,parc,parv) != HUNTED_ISME)
+    if (hunt_server(client_p, source_p, ":%s STATS %s :%s", 2,
+                    parc,parv) != HUNTED_ISME)
       return;
 
   if (!MyClient(source_p) && IsCapable(source_p->from, CAP_TS6) && HasID(source_p))
@@ -382,7 +383,6 @@ count_memory(struct Client *source_p)
   int channel_except = 0;
   int channel_invex = 0;
 
-  int wwu = 0;                  /* whowas users */
   int class_count = 0;          /* classes */
   int users_invited_count = 0;  /* users invited */
   int aways_counted = 0;
@@ -397,7 +397,6 @@ count_memory(struct Client *source_p)
   size_t safelist_memory = 0;
 
   unsigned long away_memory = 0;       /* memory used by aways           */
-  unsigned long wwm = 0;               /* whowas array memory used       */
   unsigned long conf_memory = 0;       /* memory used by conf lines      */
   unsigned long mem_ips_stored;        /* memory used by ip address hash */
 
@@ -406,7 +405,6 @@ count_memory(struct Client *source_p)
   unsigned long resv_hash_table_size = 0;
   unsigned long id_hash_table_size = 0;
   unsigned long total_channel_memory = 0;
-  unsigned long totww = 0;
 
   unsigned int local_client_count  = 0;
   unsigned int remote_client_count = 0;
@@ -416,8 +414,6 @@ count_memory(struct Client *source_p)
 
   unsigned long total_memory = 0;
   unsigned int topic_count = 0;
-
-  count_whowas_memory(&wwu, &wwm);
 
   DLINK_FOREACH(gptr, global_client_list.head)
   {
@@ -596,43 +592,20 @@ count_memory(struct Client *source_p)
   sendto_one(source_p, ":%s %d %s z :Safelist %u(%u)",
              me.name, RPL_STATSDEBUG, source_p->name,
              safelist_count, safelist_memory);
-
-  sendto_one(source_p, ":%s %d %s z :Whowas users %u(%lu)",
-             me.name, RPL_STATSDEBUG, source_p->name,
-             wwu, (unsigned long)(wwu * sizeof(struct Client)));
-
-  sendto_one(source_p, ":%s %d %s z :Whowas array %u(%d)",
-             me.name, RPL_STATSDEBUG, source_p->name,
-             NICKNAMEHISTORYLENGTH, (int)wwm);
-
-  totww = wwu * sizeof(struct Client) + wwm;
-/****
-  client_hash_table_size  = hash_get_client_table_size();
-  channel_hash_table_size = hash_get_channel_table_size();
-  resv_hash_table_size    = hash_get_resv_table_size();
-  id_hash_table_size      = hash_get_id_table_size();
-
-  sendto_one(source_p, ":%s %d %s z :Hash: client %u(%lu) chan %u(%lu) resv "
-             "%u(%lu) id %u(%lu)",
-             me.name, RPL_STATSDEBUG, source_p->name,
-             U_MAX, client_hash_table_size,
-             CH_MAX, channel_hash_table_size , R_MAX,
-             resv_hash_table_size, U_MAX, id_hash_table_size);
-****/
   count_ip_hash(&number_ips_stored,&mem_ips_stored);
   sendto_one(source_p, ":%s %d %s z :iphash %u(%d)",
              me.name, RPL_STATSDEBUG, source_p->name,
              number_ips_stored, (int)mem_ips_stored);
 
-  total_memory = totww + total_channel_memory + conf_memory + class_count *
+  total_memory = total_channel_memory + conf_memory + class_count *
                  sizeof(struct ClassItem);
   total_memory += client_hash_table_size;
   total_memory += channel_hash_table_size;
   total_memory += resv_hash_table_size;
   total_memory += id_hash_table_size;
 
-  sendto_one(source_p, ":%s %d %s z :Total: whowas %d channel %d conf %d",
-             me.name, RPL_STATSDEBUG, source_p->name, (int)totww,
+  sendto_one(source_p, ":%s %d %s z :Total: channel %d conf %d",
+             me.name, RPL_STATSDEBUG, source_p->name,
             (int)total_channel_memory, (int)conf_memory);
 
   local_client_memory_used = local_client_count*(sizeof(struct Client) + sizeof(struct LocalUser));
