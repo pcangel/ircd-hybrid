@@ -48,18 +48,18 @@ struct Callback *client_check_cb = NULL;
 struct config_server_hide ConfigServerHide;
 
 /* general conf items link list root, other than k lines etc. */
-EXTERN dlink_list server_items  = { NULL, NULL, 0 };
-EXTERN dlink_list cluster_items = { NULL, NULL, 0 };
-EXTERN dlink_list hub_items     = { NULL, NULL, 0 };
-EXTERN dlink_list leaf_items    = { NULL, NULL, 0 };
-EXTERN dlink_list oconf_items   = { NULL, NULL, 0 };
-EXTERN dlink_list uconf_items   = { NULL, NULL, 0 };
-EXTERN dlink_list xconf_items   = { NULL, NULL, 0 };
-EXTERN dlink_list rxconf_items  = { NULL, NULL, 0 };
-EXTERN dlink_list rkconf_items  = { NULL, NULL, 0 };
-EXTERN dlink_list nresv_items   = { NULL, NULL, 0 };
-EXTERN dlink_list class_items   = { NULL, NULL, 0 };
-EXTERN dlink_list gdeny_items = { NULL, NULL, 0 };
+dink_list server_items  = { NULL, NULL, 0 };
+dlink_list cluster_items = { NULL, NULL, 0 };
+dlink_list hub_items     = { NULL, NULL, 0 };
+dlink_list leaf_items    = { NULL, NULL, 0 };
+dlink_list oconf_items   = { NULL, NULL, 0 };
+dlink_list uconf_items   = { NULL, NULL, 0 };
+dlink_list xconf_items   = { NULL, NULL, 0 };
+dlink_list rxconf_items  = { NULL, NULL, 0 };
+dlink_list rkconf_items  = { NULL, NULL, 0 };
+dlink_list nresv_items   = { NULL, NULL, 0 };
+dlink_list class_items   = { NULL, NULL, 0 };
+dlink_list gdeny_items = { NULL, NULL, 0 };
 
 extern unsigned int lineno;
 extern char linebuf[];

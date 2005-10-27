@@ -74,5 +74,5 @@ EXTERN void off_history(struct Client *);
 EXTERN struct Client *get_history(const char *, time_t);
 
 /* XXX m_whowas.c in modules needs these */
-EXTERN dlink_list *WHOWASHASH[];
+EXTERN dlink_list WHOWASHASH[];
 #endif /* INCLUDED_whowas_h */

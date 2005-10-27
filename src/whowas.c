@@ -36,7 +36,7 @@
 #include "s_conf.h"
 
 static struct Whowas WHOWAS[NICKNAMEHISTORYLENGTH];
-dlink_list *WHOWASHASH[HASHSIZE];
+dlink_list WHOWASHASH[HASHSIZE];
 
 void
 add_history(struct Client *client_p, int online)
