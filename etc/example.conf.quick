@@ -59,10 +59,10 @@ admin {
 
 /* logging {}: contains information about logfiles. */
 logging {
-        use_logging = yes;
-        fuserlog = "logs/userlog";
-        foperlog = "logs/operlog";
-        ffailed_operlog = "logs/foperlog";
+    use_logging = yes;
+    fuserlog = "logs/userlog";
+    foperlog = "logs/operlog";
+    ffailed_operlog = "logs/foperlog";
 	log_level = L_INFO;
 };
 
@@ -111,7 +111,7 @@ listen {
 	port = 7000, 7001;
 
 	host = "3ffe:1234:a:b:c::d";
-        port = 7002;
+    port = 7002;
 };
 
 /* auth {}: allow users to connect to the ircd (OLD I:) */
@@ -180,38 +180,38 @@ connect {
 };
 
 connect {
-        name = "ipv6.some.server";
-        host = "3ffd:dead:beef::1";
-        send_password = "password";
-        accept_password = "password";
-        port = 6666;
+    name = "ipv6.some.server";
+    host = "3ffd:dead:beef::1";
+    send_password = "password";
+    accept_password = "password";
+    port = 6666;
 
 	aftype = ipv6;
-        class = "server";
+    class = "server";
 };
 
 /* cluster{}: servers that share klines/unkline/xline/unxline/resv/unresv/locops
  * automatically (OLD hyb6 SLAVE_SERVERS)
  */
 cluster {
-        /* name: the server to share with, this can take wildcards */
-        /* NOTE: only local actions will be clustered, meaning if
-         *       the server receives a shared kline/unkline/etc, it
-         *       will not be propagated to clustered servers.
-         */
-        name = "*.arpa";
-        
-        /* type: list of what to share, options are as follows:
-         *      kline   - share klines
-         *      unkline - share unklines
-         *      xline   - share xlines
-         *      unxline - share unxlines
-         *      resv    - share resvs
-         *      unresv  - share unresvs
-         *      locops  - share locops
-         *      all     - share all of the above
-         */
-        type = kline, unkline, locops, xline, resv;
+    /* name: the server to share with, this can take wildcards */
+    /* NOTE: only local actions will be clustered, meaning if
+     *       the server receives a shared kline/unkline/etc, it
+     *       will not be propagated to clustered servers.
+     */
+    name = "*.arpa";
+
+    /* type: list of what to share, options are as follows:
+     *      kline   - share klines
+     *      unkline - share unklines
+     *      xline   - share xlines
+     *      unxline - share unxlines
+     *      resv    - share resvs
+     *      unresv  - share unresvs
+     *      locops  - share locops
+     *      all     - share all of the above
+     */
+    type = kline, unkline, locops, xline, resv;
 };
 
 /* shared {}: users that are allowed to remote kline (OLD U:) */
@@ -297,79 +297,80 @@ serverhide {
 };
 
 general {
-	kill_chase_time_limit = 90;
-        hide_spoof_ips = yes;
-        ignore_bogus_ts = no;
-
 	disable_auth = no;
-        disable_remote_commands = no;
-	default_floodcount = 10;
-	failed_oper_notice = yes;
-	dots_in_ident=2;
-	dot_in_ip6_addr = yes;
-	min_nonwildcard = 4;
-	min_nonwildcard_simple = 3;
-	max_accept = 20;
-	anti_nick_flood = yes;
-
-	max_nick_time = 20 seconds;
-	max_nick_changes = 5;
-
-	anti_spam_exit_message_time = 5 minutes;
-	ts_warn_delta = 30 seconds;
-	ts_max_delta = 5 minutes;
-
-	kline_with_reason = yes;
-	kline_with_connection_closed = no;
-	reject_hold_time = 0;
-
-	invisible_on_connect = yes;
-	warn_no_nline = yes;
-	stats_o_oper_only=yes;
-	stats_P_oper_only=no;
-	stats_i_oper_only=masked;
-	stats_k_oper_only=masked;
-	caller_id_wait = 1 minute;
-	pace_wait_simple = 1 second;
-	pace_wait = 10 seconds;
-	short_motd = no;
 	ping_cookie = no;
+	dots_in_ident = 2;
+	dot_in_ip6_addr = yes;
+	short_motd = no;
+	invisible_on_connect = yes;
+
+	hide_spoof_ips = yes;
+	use_whois_actually = yes;
+	burst_away = no;
+	disable_remote_commands = no;
+	message_locale = "standard";
+	stats_o_oper_only = yes;
+	stats_P_oper_only = no;
+	stats_i_oper_only = masked;
+	stats_k_oper_only = masked;
+
+	throttle_time = 10;
+	max_targets = 4;
+	max_accept = 20;
+	caller_id_wait = 1 minute;
+	opers_bypass_callerid = no;
+	oper_pass_resv = yes;
+	client_flood = 2560 bytes;
 	no_oper_flood = yes;
 	true_no_oper_flood = yes;
-	oper_pass_resv = yes;
+	pace_wait_simple = 1 second;
+	pace_wait = 10 seconds;
+	default_floodcount = 10;
+	anti_nick_flood = yes;
+	max_nick_time = 20 seconds;
+	max_nick_changes = 5;
+	anti_spam_exit_message_time = 5 minutes;
+	reject_hold_time = 0;
 	idletime = 0;
 	/* REMOVE ME.  The following line checks you've been reading. */
 	havent_read_conf = 1;
 
-	max_targets = 4;
-	client_flood = 2560;
-	message_locale = "standard";
 	oper_only_umodes = bots, cconn, debug, full, skill, nchange, 
-                     rej, spy, external, operwall, locops, unauth;
-
+			   rej, spy, external, operwall, locops, unauth;
 	oper_umodes = locops, servnotice, operwall, wallop;
+	kill_chase_time_limit = 90;
+	min_nonwildcard = 4;
+	min_nonwildcard_simple = 3;
+	gline_min_cidr = 16;
+	gline_min_cidr6 = 48;
+	kline_with_reason = yes;
+	kline_reason = "Connection closed";
+	tkline_expire_notices = no;
+	failed_oper_notice = yes;
 
-
+	warn_no_nline = yes;
+	ignore_bogus_ts = no;
+	ts_warn_delta = 30 seconds;
+	ts_max_delta = 5 minutes;
 	#servlink_path = "/usr/local/ircd/bin/servlink";
 	#default_cipher_preference = "BF/168";
 	#use_egd = yes;
 	#egdpool_path = "/var/run/egd-pool";
 	#compression_level = 6;
-	throttle_time = 10;
 };
 
 glines {
-        enable = yes;
-        duration = 1 day;
+    enable = yes;
+    duration = 1 day;
 	logging = reject;
 
-        user = "god@I.still.hate.packets";
-        name = "hades.arpa";      
-        action = reject, block;
+    user = "god@I.still.hate.packets";
+    name = "hades.arpa";      
+    action = reject, block;
 
-        user = "god@*"; 
-        name = "*";
-        action = block;
+    user = "god@*"; 
+    name = "*";
+    action = block;
 };
 
 modules {
