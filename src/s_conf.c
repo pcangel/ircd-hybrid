@@ -48,7 +48,7 @@ struct Callback *client_check_cb = NULL;
 struct config_server_hide ConfigServerHide;
 
 /* general conf items link list root, other than k lines etc. */
-dink_list server_items  = { NULL, NULL, 0 };
+dlink_list server_items  = { NULL, NULL, 0 };
 dlink_list cluster_items = { NULL, NULL, 0 };
 dlink_list hub_items     = { NULL, NULL, 0 };
 dlink_list leaf_items    = { NULL, NULL, 0 };
