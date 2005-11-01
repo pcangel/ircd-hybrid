@@ -80,14 +80,15 @@ do_parse_error(int fatal, const char *fmt, va_list args)
   {
     sendto_realops_flags(UMODE_ALL, L_ALL, "\"%s\", line %u: %s: %s",
       conf_curctx.filename, conf_curctx.lineno, msg, newbuf);
-    ilog(L_WARN, "\"%s\", line %u: %s: %s",
+    ilog(fatal ? L_CRIT : L_WARN, "\"%s\", line %u: %s: %s",
       conf_curctx.filename, conf_curctx.lineno, msg, newbuf);
   }
   else
   {
     sendto_realops_flags(UMODE_ALL, L_ALL, "Conf %s: %s",
       fatal ? "FATAL" : "ERROR", msg);
-    ilog(L_WARN, "Conf %s: %s", fatal ? "FATAL" : "ERROR", msg);
+    ilog(fatal ? L_CRIT : L_WARN, "Conf %s: %s",
+      fatal ? "FATAL" : "ERROR", msg);
   }
 }
 
