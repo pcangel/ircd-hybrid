@@ -659,12 +659,13 @@ sendto_common_channels_local(struct Client *user, int touser,
     chptr = ((struct Membership *) cptr->data)->chptr;
     assert(chptr != NULL);
 
-    DLINK_FOREACH(uptr, chptr->locmembers.head)
+    DLINK_FOREACH(uptr, chptr->members.head)
     {
       ms = uptr->data;
       target_p = ms->client_p;
       assert(target_p != NULL);
-
+      if (!MyConnect(target_p))
+        continue;
       if (target_p == user || IsDefunct(target_p) ||
           target_p->serial == current_serial)
         continue;
@@ -704,12 +705,12 @@ sendto_channel_local(int type, int nodeaf, struct Channel *chptr,
   len = send_format(buffer, IRCD_BUFSIZE, pattern, args);
   va_end(args);
 
-  DLINK_FOREACH(ptr, chptr->locmembers.head)
+  DLINK_FOREACH(ptr, chptr->members.head)
   {
     ms = ptr->data;
     target_p = ms->client_p;
 
-    if (type != 0 && (ms->flags & type) == 0)
+    if (!MyConnect(target_p) || (type != 0 && !(ms->flags & type)))
       continue;
 
     if (IsDefunct(target_p) || (nodeaf && IsDeaf(target_p)))
@@ -746,12 +747,12 @@ sendto_channel_local_butone(struct Client *one, int type,
   len = send_format(buffer, IRCD_BUFSIZE, pattern, args);
   va_end(args);
 
-  DLINK_FOREACH(ptr, chptr->locmembers.head)       
+  DLINK_FOREACH(ptr, chptr->members.head)       
   {   
     ms = ptr->data;
     target_p = ms->client_p;
 
-    if (type != 0 && (ms->flags & type) == 0)
+    if (!MyConnect(target_p) || (type != 0 && !(ms->flags & type)))
       continue;
 
     if (target_p == one || IsDefunct(target_p) || IsDeaf(target_p))
