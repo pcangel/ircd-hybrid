@@ -1,8 +1,7 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  conf.h: Includes all configuration headers.
+ *  serverinfo.h: Defines serverinfo{} conf section.
  *
- *  Copyright (C) 2003 by Piotr Nizynski, Advanced IRC Services Project
  *  Copyright (C) 2005 by the Hybrid Development Team.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -20,17 +19,27 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
  *
- *  $Id: conf.h 69 2005-10-04 16:09:51Z adx $
+ *  $Id$
  */
 
-#ifndef INCLUDED_CONF_H
-#define INCLUDED_CONF_H
+struct ServerInfoConf
+{
+  char *network_name, *network_desc;
+  char hub;
+  struct irc_ssaddr vhost;
+#ifdef IPV6
+  struct irc_ssaddr vhost6;
+#endif
+  int max_clients;
+#ifdef HAVE_LIBCRYPTO
+  char *rsa_private_key_file;
+  RSA *rsa_private_key;
+  SSL_CTX *ctx;
+#endif
+};
 
-#include "conf/manager.h"
-#include "conf/serverinfo.h"
-#include "conf/admin.h"
-#include "conf/channel.h"
-#include "conf/serverhide.h"
-#include "conf/general.h"
+extern struct ServerInfoConf ServerInfo;
 
+#ifdef IN_CONF_C
+extern void init_serverinfo(void);
 #endif

@@ -43,9 +43,7 @@ static int old_use_splitcode;
 static void *
 reset_channel(va_list args)
 {
-  int cold = va_arg(args, int);
-
-  old_use_splitcode = cold ? NO : USE_SPLITCODE;
+  old_use_splitcode = conf_cold ? NO : USE_SPLITCODE;
 
   Channel.restrict_channels = Channel.disable_local_channels = NO;
   Channel.use_invex = Channel.use_except = YES;
@@ -62,7 +60,7 @@ reset_channel(va_list args)
   Channel.default_split_user_count = Channel.default_split_server_count = 0;
   Channel.no_create_on_split = YES, Channel.no_join_on_split = NO;
 
-  return pass_callback(hreset, cold);
+  return pass_callback(hreset);
 }
 
 /*
@@ -76,7 +74,6 @@ reset_channel(va_list args)
 static void *
 verify_channel(va_list args)
 {
-  int cold = va_arg(args, int);
   int new_use_splitcode = USE_SPLITCODE;
 
   if (new_use_splitcode != old_use_splitcode)
@@ -88,7 +85,7 @@ verify_channel(va_list args)
     }
     else
     {
-      if (cold)
+      if (conf_cold)
         splitmode = YES;
       else
         check_splitmode(NULL);
@@ -96,7 +93,7 @@ verify_channel(va_list args)
     }
   }
 
-  return pass_callback(hverify, cold);
+  return pass_callback(hverify);
 }
 
 /*

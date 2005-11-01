@@ -64,7 +64,7 @@ int yylex(void);
 int conf_yy_input(char *, int);
 void conf_clear_ident_list(void);
 
-EXTERN int conf_pass;
+EXTERN int conf_pass, conf_cold;
 EXTERN struct ConfParserContext conf_curctx;
 EXTERN char conf_linebuf[];
 EXTERN int conf_include_sptr;
@@ -72,6 +72,7 @@ EXTERN struct Callback *reset_conf;
 EXTERN struct Callback *verify_conf;
 
 EXTERN void parse_error(const char *, ...);
+EXTERN void parse_fatal(const char *, ...);
 EXTERN struct ConfSection *find_conf_section(const char *);
 EXTERN struct ConfSection *add_conf_section(const char *, int);
 EXTERN void delete_conf_section(struct ConfSection *);

@@ -43,8 +43,6 @@ static dlink_node *hreset;
 static void *
 reset_general(va_list args)
 {
-  int cold = va_arg(args, int);
-
   /* Local connection initialization */
   General.disable_auth = General.ping_cookie = NO;
   General.dots_in_ident = 0, General.dot_in_ip6_addr = YES;
@@ -80,7 +78,7 @@ reset_general(va_list args)
   General.min_nonwildcard = 4, General.min_nonwildcard_simple = 3;
   General.gline_min_cidr = 16, General.gline_min_cidr6 = 48;
   General.kline_with_reason = YES;
-  if (!cold)
+  if (!conf_cold)
     MyFree(General.kline_reason);
   General.kline_reason = NULL;
   General.tkline_expire_notices = General.failed_oper_notice = YES;
@@ -90,19 +88,19 @@ reset_general(va_list args)
   General.ignore_bogus_ts = NO;
   General.ts_warn_delta = TS_WARN_DELTA_DEFAULT, General.ts_max_delta =
     TS_MAX_DELTA_DEFAULT;
-  if (!cold)
+  if (!conf_cold)
     MyFree(General.servlink_path);
   DupString(General.servlink_path, SLPATH);
 #ifdef HAVE_LIBCRYPTO
   General.default_cipher_preference = NULL;
 #endif
   General.use_egd = NO;
-  if (!cold)
+  if (!conf_cold)
     MyFree(General.egdpool_path);
   General.egdpool_path = NULL;
   General.compression_level = 0;
 
-  return pass_callback(hreset, cold);
+  return pass_callback(hreset);
 }
 
 /*

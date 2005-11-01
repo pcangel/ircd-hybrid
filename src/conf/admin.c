@@ -40,9 +40,7 @@ static dlink_node *hreset;
 static void *
 reset_admin(va_list args)
 {
-  int cold = va_arg(args, int);
-
-  if (!cold)
+  if (!conf_cold)
   {
     MyFree(Admin.name);
     MyFree(Admin.description);
@@ -51,7 +49,7 @@ reset_admin(va_list args)
 
   Admin.name = Admin.description = Admin.email = NULL;
 
-  return pass_callback(hreset, cold);
+  return pass_callback(hreset);
 }
 
 /*

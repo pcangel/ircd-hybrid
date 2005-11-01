@@ -29,10 +29,12 @@
 #include "client.h"
 #include "send.h"
 
+int conf_cold = YES;
 struct Callback *reset_conf = NULL;
 struct Callback *verify_conf = NULL;
 
 static dlink_list conf_section_list = {NULL, NULL, 0};
+static int parsing = NO;
 
 extern int yyparse(void);
 
@@ -50,6 +52,7 @@ init_conf(void)
   reset_conf = register_callback("reset_conf", NULL);
   verify_conf = register_callback("verify_conf", NULL);
 
+  init_serverinfo();
   init_admin();
   init_channel();
   init_serverhide();
@@ -65,21 +68,49 @@ init_conf(void)
  *   fmt  -  error message format
  * output: none
  */
-void
-parse_error(const char *fmt, ...)
+static void
+do_parse_error(int fatal, const char *fmt, va_list args)
 {
   char *newbuf = stripws(conf_linebuf);
   char msg[CONF_BUFSIZE];
+
+  vsnprintf(msg, CONF_BUFSIZE, fmt, args);
+
+  if (parsing)
+  {
+    sendto_realops_flags(UMODE_ALL, L_ALL, "\"%s\", line %u: %s: %s",
+      conf_curctx.filename, conf_curctx.lineno, msg, newbuf);
+    ilog(L_WARN, "\"%s\", line %u: %s: %s",
+      conf_curctx.filename, conf_curctx.lineno, msg, newbuf);
+  }
+  else
+  {
+    sendto_realops_flags(UMODE_ALL, L_ALL, "Conf %s: %s",
+      fatal ? "FATAL" : "ERROR", msg);
+    ilog(L_WARN, "Conf %s: %s", fatal ? "FATAL" : "ERROR", msg);
+  }
+}
+
+void
+parse_error(const char *fmt, ...)
+{
   va_list args;
 
   va_start(args, fmt);
-  vsnprintf(msg, CONF_BUFSIZE, fmt, args);
+  do_parse_error(NO, fmt, args);
+  va_end(args);
+}
+
+void
+parse_fatal(const char *fmt, ...)
+{
+  va_list args;
+
+  va_start(args, fmt);
+  do_parse_error(YES, fmt, args);
   va_end(args);
 
-  sendto_realops_flags(UMODE_ALL, L_ALL, "\"%s\", line %u: %s: %s",
-    conf_curctx.filename, conf_curctx.lineno, msg, newbuf);
-  ilog(L_WARN, "\"%s\", line %u: %s: %s",
-    conf_curctx.filename, conf_curctx.lineno, msg, newbuf);
+  server_die("misconfigured server", NO);
 }
 
 /*

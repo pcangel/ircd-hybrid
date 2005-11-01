@@ -42,19 +42,17 @@ static int old_links_delay;
 static void *
 reset_serverhide(va_list args)
 {
-  int cold = va_arg(args, int);
-
-  old_links_delay = cold ? 0 : LINKS_DELAY;
+  old_links_delay = conf_cold ? 0 : LINKS_DELAY;
 
   ServerHide.flatten_links = NO;
   ServerHide.links_delay = 5*60;
   ServerHide.hidden = ServerHide.disable_hidden = ServerHide.hide_servers = NO;
-  if (!cold)
+  if (!conf_cold)
     MyFree(ServerHide.hidden_name);
   DupString(ServerHide.hidden_name, "*.hidden.com");
   ServerHide.hide_server_ips = NO;
 
-  return pass_callback(hreset, cold);
+  return pass_callback(hreset);
 }
 
 /*
@@ -68,7 +66,6 @@ reset_serverhide(va_list args)
 static void *
 verify_serverhide(va_list args)
 {
-  int cold = va_arg(args, int);
   int new_links_delay = LINKS_DELAY;
 
   if (new_links_delay != old_links_delay)
@@ -82,7 +79,7 @@ verify_serverhide(va_list args)
       eventAdd("write_links_file", write_links_file, NULL, new_links_delay);
   }
 
-  return pass_callback(hverify, cold);
+  return pass_callback(hverify);
 }
 
 /*
