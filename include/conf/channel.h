@@ -24,6 +24,21 @@
 
 struct ChannelConf
 {
+  char restrict_channels;
+  char disable_local_channels;
+  char use_invex, use_except;
+
+  char use_knock;
+  int knock_delay, knock_delay_channel;
+
+  char burst_topicwho;
+  int max_chans_per_user;
+  char quiet_on_ban;
+  int max_bans;
+  int join_flood_count, join_flood_time;
+
+  int default_split_user_count, default_split_server_count;
+  char no_create_on_split, no_join_on_split;
 };
 
 extern struct ChannelConf Channel;
