@@ -41,5 +41,5 @@ struct ServerInfoConf
 extern struct ServerInfoConf ServerInfo;
 
 #ifdef IN_CONF_C
-extern void init_serverinfo(void);
+void init_serverinfo(void);
 #endif

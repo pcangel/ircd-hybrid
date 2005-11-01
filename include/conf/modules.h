@@ -1,6 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  admin.h: Defines admin{} conf section.
+ *  modules.h: Defines modules{} conf section.
  *
  *  Copyright (C) 2005 by the Hybrid Development Team.
  *
@@ -22,15 +22,14 @@
  *  $Id$
  */
 
-struct AdminConf
-{
-  char *name;
-  char *description;
-  char *email;
-};
-
-extern struct AdminConf Admin;
+/*
+ * XXX move path/conflist stuff from src/modules.c here!
+ *
+ * These area has to be reworked anyway, perhaps:
+ * src/modules.c + conf/modules.c ? ..
+ *  -- adx
+ */
 
 #ifdef IN_CONF_C
-void init_admin(void);
+void init_modules(void);
 #endif

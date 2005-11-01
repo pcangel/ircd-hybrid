@@ -79,8 +79,8 @@ struct GeneralConf
   int compression_level;
 };
 
+EXTERN struct GeneralConf General;
+
 #ifdef IN_CONF_C
 void init_general(void);
 #endif
-
-EXTERN struct GeneralConf General;

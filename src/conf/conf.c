@@ -32,9 +32,9 @@
 int conf_cold = YES;
 struct Callback *reset_conf = NULL;
 struct Callback *verify_conf = NULL;
+struct Callback *switch_conf_pass = NULL;
 
 static dlink_list conf_section_list = {NULL, NULL, 0};
-static int parsing = NO;
 
 extern int yyparse(void);
 
@@ -51,12 +51,16 @@ init_conf(void)
 {
   reset_conf = register_callback("reset_conf", NULL);
   verify_conf = register_callback("verify_conf", NULL);
+  switch_conf_pass = register_callback("switch_conf_pass", NULL);
 
   init_serverinfo();
   init_admin();
   init_channel();
   init_serverhide();
   init_general();
+#ifndef STATIC_MODULES
+  init_modules();
+#endif
 }
 
 /*
@@ -76,7 +80,7 @@ do_parse_error(int fatal, const char *fmt, va_list args)
 
   vsnprintf(msg, CONF_BUFSIZE, fmt, args);
 
-  if (parsing)
+  if (conf_pass != 0)
   {
     sendto_realops_flags(UMODE_ALL, L_ALL, "\"%s\", line %u: %s: %s",
       conf_curctx.filename, conf_curctx.lineno, msg, newbuf);
@@ -262,7 +266,10 @@ conf_assign(int type, struct ConfField *field, void *value)
     return;
   if ((type == CT_NUMBER && (field->type == CT_TIME || field->type == CT_SIZE))
       || type == field->type)
-    field->handler(value, field->param);
+  {
+    if (field->handler != NULL)
+      field->handler(value, field->param);
+  }
   else
     parse_error("type mismatch, expected %s", field_types[type]);
 }

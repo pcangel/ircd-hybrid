@@ -32,5 +32,8 @@
 #include "conf/channel.h"
 #include "conf/serverhide.h"
 #include "conf/general.h"
+#ifndef STATIC_MODULES
+#include "conf/modules.h"
+#endif
 
 #endif

@@ -50,5 +50,5 @@ extern struct ChannelConf Channel;
 )
 
 #ifdef IN_CONF_C
-extern void init_channel(void);
+void init_channel(void);
 #endif

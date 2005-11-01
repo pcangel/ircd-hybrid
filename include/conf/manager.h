@@ -70,6 +70,7 @@ EXTERN char conf_linebuf[];
 EXTERN int conf_include_sptr;
 EXTERN struct Callback *reset_conf;
 EXTERN struct Callback *verify_conf;
+EXTERN struct Callback *switch_conf_pass;
 
 EXTERN void parse_error(const char *, ...);
 EXTERN void parse_fatal(const char *, ...);

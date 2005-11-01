@@ -38,5 +38,5 @@ extern struct ServerHideConf ServerHide;
 #define LINKS_DELAY (ServerHide.flatten_links ? ServerHide.links_delay : 0)
 
 #ifdef IN_CONF_C
-extern void init_serverhide(void);
+void init_serverhide(void);
 #endif
