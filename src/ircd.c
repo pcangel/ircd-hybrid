@@ -331,8 +331,7 @@ initialize_server_capabs(void)
   add_capability("EOB", CAP_EOB, 1);
   add_capability("HUB", CAP_HUB, 0);
   add_capability("LL", CAP_LL, 0);
-  if (ServerInfo.sid != NULL)	/* only enable TS6 if we have an SID */
-    add_capability("TS6", CAP_TS6, 0);
+  add_capability("TS6", CAP_TS6, 0);
   add_capability("ZIP", CAP_ZIP, 0);
   add_capability("CLUSTER", CAP_CLUSTER, 1);
 #ifdef HALFOPS
@@ -478,10 +477,13 @@ init_ssl(void)
 static void
 init_callbacks(void)
 {
+  entering_umode_cb = register_callback("entering_umode", NULL);
   iorecv_cb = register_callback("iorecv", iorecv_default);
   iosend_cb = register_callback("iosend", iosend_default);
   iorecvctrl_cb = register_callback("iorecvctrl", NULL);
   iosendctrl_cb = register_callback("iosendctrl", NULL);
+  uid_get_cb = register_callback("uid_get", uid_get);
+  umode_cb = register_callback("changing_umode", change_simple_umode);
 }
 
 static void *
@@ -532,13 +534,15 @@ main(int argc, char *argv[])
   memset(&me, 0, sizeof(me));
   memset(&meLocalUser, 0, sizeof(meLocalUser));
   me.localClient = &meLocalUser;
-  dlinkAdd(&me, &me.node, &global_client_list);	/* Pointer to beginning
-						   of Client list */
+  me.from = me.servptr = &me;
+  me.lasttime = me.since = me.firsttime = CurrentTime;
+
+  SetMe(&me);
+  make_server(&me);
+  dlinkAdd(&me, &me.node, &global_client_list);
+  dlinkAdd(&me, make_dlink_node(), &global_serv_list);
 
   memset(&ServerInfo, 0, sizeof(ServerInfo));
-
-  /* Initialise the channel capability usage counts... */
-  init_chcap_usage_counts();
 
   ConfigFileEntry.dpath      = DPATH;
   ConfigFileEntry.configfile = CPATH;  /* Server configuration file */
@@ -600,15 +604,14 @@ main(int argc, char *argv[])
   init_class();
   init_whowas();
   init_stats();
-  read_conf_files(1);   /* cold start init conf files */
   initServerMask();
-  me.id[0] = '\0';
-  init_uid();
   init_auth();          /* Initialise the auth code */
-  initialize_server_capabs();   /* Set up default_server_capabs */
-  initialize_global_set_options();
   init_channels();
   init_channel_modes();
+  initialize_server_capabs();   /* Set up default_server_capabs */
+
+  read_conf_files(1);   /* cold start init conf files */
+  check_class();
 
   if (ServerInfo.name == NULL)
   {
@@ -626,19 +629,10 @@ main(int argc, char *argv[])
   }
   strlcpy(me.info, ServerInfo.description, sizeof(me.info));
 
-  me.from    = &me;
-  me.servptr = &me;
-
-  SetMe(&me);
-  make_server(&me);
-
-  me.lasttime = me.since = me.firsttime = CurrentTime;
   hash_add_client(&me);
-  
-  /* add ourselves to global_serv_list */
-  dlinkAdd(&me, make_dlink_node(), &global_serv_list);
 
-  check_class();
+  init_uid();     /* XXX move this one up after inculcating new conf system */
+  initialize_global_set_options();   /* and this one is going to be deleted */
 
 #ifndef STATIC_MODULES
   if (chdir(MODPATH))

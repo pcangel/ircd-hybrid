@@ -33,8 +33,12 @@ struct Client;
 struct AccessItem;
 struct ConfItem;
 
+extern char new_uid[];
+
 void init_uid(void);
 void init_isupport(void);
+void *change_simple_umode(va_list);
+void *uid_get(va_list);
 
 EXTERN int MaxClientCount;     /* GLOBAL - highest number of clients     */
 EXTERN int MaxConnectionCount; /* GLOBAL - highest number of connections */

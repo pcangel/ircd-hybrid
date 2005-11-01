@@ -1056,7 +1056,7 @@ server_estab(struct Client *client_p)
     if (!EmptyString(aconf->spasswd))
     {
       /* only send ts6 format PASS if we have ts6 enabled */
-    if (me.id[0] != '\0')		/* Send TS 6 form only if id */
+      if (me.id[0] != '\0')		/* Send TS 6 form only if id */
         sendto_one(client_p, "PASS %s TS %d %s",
                    aconf->spasswd, TS_CURRENT, me.id);
       else

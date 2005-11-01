@@ -98,7 +98,6 @@ struct ChCapCombo
 EXTERN struct Callback *channel_access_cb;
 
 void init_channel_modes(void);
-void init_chcap_usage_counts(void);
 void set_chcap_usage_counts(struct Client *);
 void unset_chcap_usage_counts(struct Client *);
 

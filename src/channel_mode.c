@@ -421,14 +421,14 @@ fix_key_old(char *arg)
  * we do. -A1kmm
  */
 
-/* void init_chcap_usage_counts(void)
+/* static void init_chcap_usage_counts(void)
  *
  * Inputs	- none
  * Output	- none
  * Side-effects	- Initialises the usage counts to zero. Fills in the
  *                chcap_yes and chcap_no combination tables.
  */
-void
+static void
 init_chcap_usage_counts(void)
 {
   unsigned long m, c, y, n;
@@ -1338,6 +1338,7 @@ get_channel_access(va_list args)
 void
 init_channel_modes(void)
 {
+  init_chcap_usage_counts();
   channel_access_cb = register_callback("get_channel_access",
     get_channel_access);
 }

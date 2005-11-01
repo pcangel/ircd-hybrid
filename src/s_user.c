@@ -56,7 +56,6 @@ static void report_and_set_user_flags(struct Client *, const struct AccessItem *
 static int check_xline(struct Client *);
 static int check_regexp_xline(struct Client *);
 static void introduce_client(struct Client *, struct Client *);
-static void *uid_get(va_list);
 
 /* Used for building up the isupport string,
  * used with init_isupport, add_isupport, delete_isupport
@@ -845,7 +844,7 @@ do_local_user(const char *nick, struct Client *client_p, struct Client *source_p
  * this callback can be hooked to allow special handling of
  * certain usermodes
  */
-static void *
+void *
 change_simple_umode(va_list args)
 {
   struct Client *source_p;
@@ -1317,7 +1316,8 @@ oper_up(struct Client *source_p, struct ConfItem *conf)
  *
  */
 
-static char new_uid[TOTALSIDUID+1];     /* allow for \0 */
+char new_uid[TOTALSIDUID + 1] = {0};
+
 static void add_one_to_uid(int i);
 
 /*
@@ -1335,14 +1335,10 @@ init_uid(void)
 {
   int i;
 
-  memset(new_uid, 0, sizeof(new_uid));
-
   if (ServerInfo.sid != NULL)
   {
-    memcpy(new_uid, ServerInfo.sid, IRCD_MIN(strlen(ServerInfo.sid),
-                                             IRC_MAXSID));
-    memcpy(&me.id, ServerInfo.sid, IRCD_MIN(strlen(ServerInfo.sid),
-                                            IRC_MAXSID));
+    memcpy(new_uid, ServerInfo.sid, IRC_MAXSID);
+    memcpy(&me.id, ServerInfo.sid, IRC_MAXSID);
     hash_add_id(&me);
   }
 
@@ -1356,10 +1352,6 @@ init_uid(void)
    * -Dianora
    */
   memcpy(new_uid+IRC_MAXSID, "AAAAA@", IRC_MAXUID);
-
-  entering_umode_cb = register_callback("entering_umode", NULL);
-  umode_cb = register_callback("changing_umode", change_simple_umode);
-  uid_get_cb = register_callback("uid_get", uid_get);
 }
 
 /*
@@ -1369,7 +1361,7 @@ init_uid(void)
  * output	- new UID is returned to caller
  * side effects	- new_uid is incremented by one.
  */
-static void *
+void *
 uid_get(va_list args)
 {
   add_one_to_uid(TOTALSIDUID-1);    /* index from 0 */

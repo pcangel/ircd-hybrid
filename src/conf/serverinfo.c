@@ -104,6 +104,12 @@ verify_serverinfo(va_list args)
     }
   }
 
+  if (conf_cold && me.id[0])
+  {
+    hash_add_id(&me);
+    memcpy(new_uid, me.id, IRC_MAXSID);
+  }
+
   recalc_fdlimit(NULL);
 
   if (ServerInfo.max_clients < MAXCLIENTS_MIN)
@@ -147,6 +153,7 @@ si_set_sid(void *value, void *unused)
 {
   char *sid = (char *) value;
 
+  /* XXX */
   if (!IsDigit(sid[0]) || !IsAlNum(sid[1]) || !IsAlNum(sid[2]) || sid[3] != 0)
     parse_error("invalid SID, must match [0-9][0-9A-Z][0-9A-Z]");
   else if (conf_cold)
