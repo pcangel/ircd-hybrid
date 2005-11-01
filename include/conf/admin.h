@@ -1,8 +1,7 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  conf.h: Includes all configuration headers.
+ *  admin.h: Defines admin{} conf section.
  *
- *  Copyright (C) 2003 by Piotr Nizynski, Advanced IRC Services Project
  *  Copyright (C) 2005 by the Hybrid Development Team.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -20,16 +19,18 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
  *
- *  $Id: conf.h 69 2005-10-04 16:09:51Z adx $
+ *  $Id$
  */
 
-#ifndef INCLUDED_CONF_H
-#define INCLUDED_CONF_H
+struct AdminConf
+{
+  char *name;
+  char *description;
+  char *email;
+};
 
-#include "conf/manager.h"
-#include "conf/admin.h"
-#include "conf/channel.h"
-#include "conf/serverhide.h"
-#include "conf/general.h"
+extern struct AdminConf Admin;
 
+#ifdef IN_CONF_C
+extern void init_admin(void);
 #endif
