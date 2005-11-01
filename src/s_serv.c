@@ -690,7 +690,7 @@ check_server(const char *name, struct Client *client_p, int cryptlink)
   }
 
   /* Don't unset CAP_HUB here even if the server isn't a hub,
-   * it only indicates if the server thinks it's lazylinks are
+   * it only indicates if the server thinks its lazylinks are
    * leafs or not.. if you unset it, bad things will happen
    */
   if (aconf != NULL)
@@ -1073,11 +1073,10 @@ server_estab(struct Client *client_p)
      * - Dianora
      */
 
-     send_capabilities(client_p, aconf,
-       (IsConfLazyLink(aconf) ? find_capability("LL") : 0)
-       | (IsConfCompressed(aconf) ? find_capability("ZIP") : 0)
-       | (IsConfTopicBurst(aconf) ? find_capability("TBURST")|find_capability("TB") : 0)
-       , 0);
+    send_capabilities(client_p, aconf, (ServerInfo.hub ? CAP_HUB : 0)
+      | (IsConfLazyLink(aconf) ? CAP_LL : 0)
+      | (IsConfCompressed(aconf) ? CAP_ZIP : 0)
+      | (IsConfTopicBurst(aconf) ? CAP_TBURST|CAP_TB : 0), 0);
 
     /* SERVER is the last command sent before switching to ziplinks.
      * We set TCPNODELAY on the socket to make sure it gets sent out
@@ -2159,11 +2158,10 @@ serv_connect_callback(fde_t *fd, int status, void *data)
    * Pass on TB if supported.
    * - Dianora
    */
-  send_capabilities(client_p, aconf,
- 		    (IsConfLazyLink(aconf) ? find_capability("LL") : 0)
-		    | (IsConfCompressed(aconf) ? find_capability("ZIP") : 0)
-		    | (IsConfTopicBurst(aconf) ? find_capability("TBURST")|find_capability("TB") : 0)
-		    , 0);
+  send_capabilities(client_p, aconf, (ServerInfo.hub ? CAP_HUB : 0)
+    | (IsConfLazyLink(aconf) ? CAP_LL : 0)
+    | (IsConfCompressed(aconf) ? CAP_ZIP : )
+    | (IsConfTopicBurst(aconf) ? CAP_TBURST|CAP_TB : 0), 0);
 
   sendto_one(client_p, "SERVER %s 1 :%s%s",
              my_name_for_link(aconf),  /* XXX */
