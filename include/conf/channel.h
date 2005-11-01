@@ -43,6 +43,12 @@ struct ChannelConf
 
 extern struct ChannelConf Channel;
 
+#define USE_SPLITCODE ( \
+  Channel.default_split_user_count != 0 && \
+  Channel.default_split_server_count != 0 && \
+  (Channel.no_create_on_split || Channel.no_join_on_split) \
+)
+
 #ifdef IN_CONF_C
 extern void init_channel(void);
 #endif

@@ -24,9 +24,18 @@
 
 struct ServerHideConf
 {
+  char flatten_links;
+  int links_delay;
+  char hidden;
+  char disable_hidden;
+  char hide_servers;
+  char *hidden_name;
+  char hide_server_ips;
 };
 
 extern struct ServerHideConf ServerHide;
+
+#define LINKS_DELAY (ServerHide.flatten_links ? ServerHide.links_delay : 0)
 
 #ifdef IN_CONF_C
 extern void init_serverhide(void);

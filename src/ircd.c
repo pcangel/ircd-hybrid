@@ -264,6 +264,7 @@ io_loop(void)
  * inputs       - none
  * output       - none
  * side effects - This sets all global set options needed 
+ * XXX to be removed with old s_conf.c
  */
 static void
 initialize_global_set_options(void)
@@ -675,12 +676,13 @@ main(int argc, char *argv[])
   /* Setup the timeout check. I'll shift it later :)  -- adrian */
   eventAddIsh("comm_checktimeouts", comm_checktimeouts, NULL, 1);
 
+  /* XXX to be removed with old s_conf.c [superseded] */
   if (ConfigServerHide.links_delay > 0)
     eventAddIsh("write_links_file", write_links_file, NULL, ConfigServerHide.links_delay);
   else
     ConfigServerHide.links_disabled = 1;
 
-  if (splitmode)
+  if (splitmode)   /* XXX */
     eventAddIsh("check_splitmode", check_splitmode, NULL, 60);
 
   io_loop();

@@ -24,10 +24,13 @@
 
 #include "stdinc.h"
 #include "conf/conf.h"
+#include "channel.h"
+#include "ircd.h"
 
 struct ChannelConf Channel;
 
-static dlink_node *hreset;
+static dlink_node *hreset, *hverify;
+static int old_use_splitcode;
 
 /*
  * reset_channel()
@@ -41,6 +44,8 @@ static void *
 reset_channel(va_list args)
 {
   int cold = va_arg(args, int);
+
+  old_use_splitcode = cold ? NO : USE_SPLITCODE;
 
   Channel.restrict_channels = Channel.disable_local_channels = NO;
   Channel.use_invex = Channel.use_except = YES;
@@ -61,6 +66,40 @@ reset_channel(va_list args)
 }
 
 /*
+ * verify_channel()
+ *
+ * Sets up splitmode event if necessary. (After a rehash)
+ *
+ * inputs: none
+ * output: none
+ */
+static void *
+verify_channel(va_list args)
+{
+  int cold = va_arg(args, int);
+  int new_use_splitcode = USE_SPLITCODE;
+
+  if (new_use_splitcode != old_use_splitcode)
+  {
+    if (old_use_splitcode)
+    {
+      eventDelete(check_splitmode, NULL);
+      splitmode = NO;
+    }
+    else
+    {
+      if (cold)
+        splitmode = YES;
+      else
+        check_splitmode(NULL);
+      eventAddIsh("check_splitmode", check_splitmode, NULL, 60);
+    }
+  }
+
+  return pass_callback(hverify, cold);
+}
+
+/*
  * init_channel()
  *
  * Defines the channel{} conf section.
@@ -74,6 +113,7 @@ init_channel(void)
   struct ConfSection *s = add_conf_section("channel", 2);
 
   hreset = install_hook(reset_conf, reset_channel);
+  hverify = install_hook(verify_conf, verify_channel);
 
   add_conf_field(s, "restrict_channels", CT_BOOL, NULL,
     &Channel.restrict_channels);
