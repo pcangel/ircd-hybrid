@@ -63,7 +63,7 @@ reset_admin(va_list args)
  * output: none
  */
 void
-init_serverhide(void)
+init_admin(void)
 {
   struct ConfSection *s = add_conf_section("admin", 2);
 
