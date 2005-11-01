@@ -50,6 +50,8 @@ init_conf(void)
   reset_conf = register_callback("reset_conf", NULL);
   verify_conf = register_callback("verify_conf", NULL);
 
+  init_channel();
+  init_serverhide();
   init_general();
 }
 

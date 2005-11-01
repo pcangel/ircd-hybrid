@@ -71,7 +71,7 @@ reset_channel(va_list args)
 void
 init_channel(void)
 {
-  struct ConfSection *s = add_conf_section("channel", 1);
+  struct ConfSection *s = add_conf_section("channel", 2);
 
   hreset = install_hook(reset_conf, reset_channel);
 

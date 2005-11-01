@@ -320,7 +320,7 @@ parse_umode_list(void *list, void *var)
 void
 init_general(void)
 {
-  struct ConfSection *s = add_conf_section("general", 1);
+  struct ConfSection *s = add_conf_section("general", 2);
 
   hreset = install_hook(reset_conf, reset_general);
 
