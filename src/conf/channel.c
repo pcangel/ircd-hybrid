@@ -1,8 +1,7 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  conf.h: Includes all configuration headers.
+ *  channel.c: Defines the channel{} block of ircd.conf.
  *
- *  Copyright (C) 2003 by Piotr Nizynski, Advanced IRC Services Project
  *  Copyright (C) 2005 by the Hybrid Development Team.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -20,14 +19,44 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
  *
- *  $Id: conf.h 69 2005-10-04 16:09:51Z adx $
+ *  $Id$
  */
 
-#ifndef INCLUDED_CONF_H
-#define INCLUDED_CONF_H
+#include "stdinc.h"
+#include "conf/conf.h"
 
-#include "conf/manager.h"
-#include "conf/general.h"
-#include "conf/channel.h"
+struct ChannelConf Channel;
 
-#endif
+static dlink_node *hreset;
+
+/*
+ * reset_channel()
+ *
+ * Sets up default values before a rehash.
+ *
+ * inputs: none
+ * output: none
+ */
+static void *
+reset_channel(va_list args)
+{
+  int cold = va_arg(args, int);
+
+  return pass_callback(hreset, cold);
+}
+
+/*
+ * init_channel()
+ *
+ * Defines the channel{} conf section.
+ *
+ * inputs: none
+ * output: none
+ */
+void
+init_channel(void)
+{
+  struct ConfSection *s = add_conf_section("channel", 1);
+
+  hreset = install_hook(reset_conf, reset_channel);
+}
