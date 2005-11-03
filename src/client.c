@@ -353,7 +353,7 @@ check_unknowns_list(void)
     if (client_p->localClient->reject_delay > 0)
     {
       if (client_p->localClient->reject_delay <= CurrentTime)
-	exit_client(client_p, &me, "Rejected");
+        exit_client(client_p, &me, "Rejected");
       continue;
     }
 
@@ -394,21 +394,21 @@ check_conf_klines(void)
                                   client_p->localClient->aftype)) != NULL)
     {
       if (aconf->status & CONF_EXEMPTDLINE)
-	continue;
+        continue;
 
       conf = aconf->conf_ptr;
       ban_them(client_p, conf);
       continue; /* and go examine next fd/client_p */
     }
 
-    if (ConfigFileEntry.glines && (aconf = find_gline(client_p)))
+    if (ConfigFileEntry.glines && (aconf = find_gline(client_p)) != NULL)
     {
-      if (IsExemptKline(client_p) ||
-          IsExemptGline(client_p))
+      if (IsExemptKline(client_p) || IsExemptGline(client_p))
       {
         sendto_realops_flags(UMODE_ALL, L_ALL,
-                             "GLINE over-ruled for %s, client is %sline_exempt",
-                             get_client_name(client_p, HIDE_IP), IsExemptKline(client_p) ? "k" : "g");
+                             "GLINE over-ruled for %s, client is %cline_exempt",
+                             get_client_name(client_p, HIDE_IP),
+                             IsExemptKline(client_p) ? 'k' : 'g');
         continue;
       }
 
@@ -1177,9 +1177,9 @@ close_connection(struct Client *client_p)
  * Actually stderr is still there IFF ircd was run with -s --Rodder
  */
 void
-report_error(int level, const char* text, const char* who, int error)
+report_error(int level, const char *text, const char *who, int error)
 {
-  who = (who) ? who : "";
+  who = (who != NULL) ? who : "";
 
   sendto_realops_flags(UMODE_DEBUG, level, text, who, strerror(error));
   log_oper_action(LOG_IOERR_TYPE, NULL, "%s %s %s\n", who, text, strerror(error));

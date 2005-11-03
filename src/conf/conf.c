@@ -55,6 +55,7 @@ init_conf(void)
 
   init_serverinfo();
   init_admin();
+  init_logging();
   init_channel();
   init_serverhide();
   init_general();

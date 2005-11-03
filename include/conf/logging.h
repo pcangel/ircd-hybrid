@@ -1,8 +1,7 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  conf.h: Includes all configuration headers.
+ *  logging.h: Defines logging{} conf section.
  *
- *  Copyright (C) 2003 by Piotr Nizynski, Advanced IRC Services Project
  *  Copyright (C) 2005 by the Hybrid Development Team.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -20,21 +19,19 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
  *
- *  $Id: conf.h 69 2005-10-04 16:09:51Z adx $
+ *  $Id$
  */
 
-#ifndef INCLUDED_CONF_H
-#define INCLUDED_CONF_H
+struct LoggingConf
+{
+  char use_logging;
+  char operlog[PATH_MAX+1], userlog[PATH_MAX+1], glinelog[PATH_MAX+1];
+  char ioerrlog[PATH_MAX+1], klinelog[PATH_MAX+1], killlog[PATH_MAX+1];
+  char operspylog[PATH_MAX+1], failed_operlog[PATH_MAX+1];
+};
 
-#include "conf/manager.h"
-#include "conf/serverinfo.h"
-#include "conf/admin.h"
-#include "conf/logging.h"
-#include "conf/channel.h"
-#include "conf/serverhide.h"
-#include "conf/general.h"
-#ifndef STATIC_MODULES
-#include "conf/modules.h"
-#endif
+extern struct LoggingConf Logging;
 
+#ifdef IN_CONF_C
+void init_logging(void);
 #endif
