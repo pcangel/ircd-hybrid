@@ -532,19 +532,6 @@ main(int argc, char *argv[])
   initialVMTop = get_vm_top();
 #endif
 
-  memset(&me, 0, sizeof(me));
-  memset(&meLocalUser, 0, sizeof(meLocalUser));
-  me.localClient = &meLocalUser;
-  me.from = me.servptr = &me;
-  me.lasttime = me.since = me.firsttime = CurrentTime;
-
-  SetMe(&me);
-  make_server(&me);
-  dlinkAdd(&me, &me.node, &global_client_list);
-  /* XXX Can't call make_dlink_node() this early */
-#if 0
-  dlinkAdd(&me, make_dlink_node(), &global_serv_list);
-#endif
 
   memset(&ServerInfo, 0, sizeof(ServerInfo));
 
@@ -585,6 +572,19 @@ main(int argc, char *argv[])
 #endif
 
   libio_init(!server_state.foreground);
+
+  /* make_dlink_node() cannot be called until after libio_init() */
+  memset(&me, 0, sizeof(me));
+  memset(&meLocalUser, 0, sizeof(meLocalUser));
+  me.localClient = &meLocalUser;
+  me.from = me.servptr = &me;
+  me.lasttime = me.since = me.firsttime = CurrentTime;
+
+  SetMe(&me);
+  make_server(&me);
+  dlinkAdd(&me, &me.node, &global_client_list);
+  dlinkAdd(&me, make_dlink_node(), &global_serv_list);
+
   outofmemory = ircd_outofmemory;
   fdlimit_hook = install_hook(fdlimit_cb, changing_fdlimit);
 
