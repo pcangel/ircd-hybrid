@@ -27,6 +27,7 @@
 #include "stdinc.h"
 #include "conf/conf.h"
 #include "client.h"
+#include "restart.h"
 #include "send.h"
 
 int conf_cold = YES;
