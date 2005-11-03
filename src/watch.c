@@ -20,21 +20,24 @@
  *  USA
  */
 
-/*! \file watch.h
- * \brief Header including structures and prototypes for WATCH support
+/*! \file watch.c
+ * \brief File including functions for WATCH support
  * \version $Id$
  */
 
-#ifndef INCLUDED_watch_h
-#define INCLUDED_watch_h
+#define WATCH_HEAP_SIZE 32
 
-struct Watch
+static struct Watch *watchTable[HASHSIZE];
+
+static BlockHeap *watch_heap = NULL;
+
+void
+init_watch(void)
 {
-  struct Watch *hnext;
-  dlink_list watched_by;
-  char nick[NICKLEN];
-  time_t lasttime;
-};
+  unsigned int idx;
 
-extern void init_watch(void);
-#endif
+  watch_heap = BlockHeapCreate("watch", sizeof(struct Watch), WATCH_HEAP_SIZE);
+
+  for (idx = 0; idx < HASHSIZE; ++idx)
+    watchTable[idx] = NULL;
+}
