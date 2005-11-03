@@ -47,6 +47,7 @@ struct LocalUser;
 struct Server
 {
   char by[NICKLEN];       /* who activated this connection     */
+  /* TBD - Add back support for user@host info in /TRACE */
   struct ConfItem *sconf; /* ConfItem connect{} pointer for this server */
   dlink_list servers;     /* Servers on this server            */
   dlink_list users;       /* Users on this server              */
@@ -250,6 +251,7 @@ struct LocalUser
    * temporarily for new connections.
    */
   char llname[NICKLEN];
+  dlink_list watches;    /**< chain of Watch pointer blocks */
 };
 
 /*
