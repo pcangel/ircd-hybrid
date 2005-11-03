@@ -33,6 +33,7 @@ struct GeneralConf
   char invisible_on_connect;
 
   /* Registered clients settings */
+  int max_watch;
   char hide_spoof_ips;
   char use_whois_actually;
   char burst_away;
@@ -77,7 +78,6 @@ struct GeneralConf
 #endif
   char use_egd, *egdpool_path;
   int compression_level;
-  int max_watch;
 };
 
 EXTERN struct GeneralConf General;

@@ -304,6 +304,7 @@ general {
 	short_motd = no;
 	invisible_on_connect = yes;
 
+    max_watch = 64;
 	hide_spoof_ips = yes;
 	use_whois_actually = yes;
 	burst_away = no;

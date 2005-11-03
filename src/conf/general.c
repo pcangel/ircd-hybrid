@@ -50,6 +50,7 @@ reset_general(va_list args)
   General.invisible_on_connect = YES;
 
   /* Registered clients settings */
+  General.max_watch = WATCHSIZE_DEFAULT;
   General.hide_spoof_ips = General.use_whois_actually = YES;
   General.burst_away = General.disable_remote_commands = NO;
   General.stats_o_oper_only = General.stats_P_oper_only = 0,
@@ -99,8 +100,6 @@ reset_general(va_list args)
     MyFree(General.egdpool_path);
   General.egdpool_path = NULL;
   General.compression_level = 0;
-
-  General.max_watch = WATCHSIZE_DEFAULT;
 
   return pass_callback(hreset);
 }
