@@ -90,7 +90,7 @@ conf_log_level(void *list, void *unused)
   if (dlink_list_length((dlink_list *) list) != 1)
   {
     error:
-    parse_error("value should be yes/no/masked");
+    parse_error("invalid log level");
     return;
   }
 
