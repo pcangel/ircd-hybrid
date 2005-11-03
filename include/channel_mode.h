@@ -49,7 +49,7 @@
 #define CHFL_INVEX      0x0040
 
 /* channel modes ONLY */
-#define MODE_PRIVATE    0x0001
+#define MODE_PARANOID   0x0001
 #define MODE_SECRET     0x0002
 #define MODE_MODERATED  0x0004
 #define MODE_TOPICLIMIT 0x0008
@@ -74,7 +74,7 @@
 #define PubChannel(x)           (!SecretChannel(x))
 /* knock is forbidden, halfops can't kick/deop other halfops.
  * +pi means paranoid and will generate notices on each invite */
-#define PrivateChannel(x)       (((x)->mode.mode & MODE_PRIVATE))
+#define ParanoidChannel(x)       (((x)->mode.mode & MODE_PARANOID))
 
 struct ChModeChange
 {

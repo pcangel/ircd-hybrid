@@ -541,7 +541,10 @@ main(int argc, char *argv[])
   SetMe(&me);
   make_server(&me);
   dlinkAdd(&me, &me.node, &global_client_list);
+  /* XXX Can't call make_dlink_node() this early */
+#if 0
   dlinkAdd(&me, make_dlink_node(), &global_serv_list);
+#endif
 
   memset(&ServerInfo, 0, sizeof(ServerInfo));
 

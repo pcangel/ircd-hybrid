@@ -126,7 +126,7 @@ m_invite(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if ((chptr->mode.mode & (MODE_INVITEONLY | MODE_PRIVATE)))
+  if ((chptr->mode.mode & (MODE_INVITEONLY | MODE_PARANOID)))
   {
     if (MyConnect(source_p) && !has_member_flags(ms, CHFL_CHANOP|CHFL_HALFOP))
     {
@@ -178,7 +178,7 @@ m_invite(struct Client *client_p, struct Client *source_p,
 
     if (chptr->mode.mode & MODE_INVITEONLY)
     {
-      if (chptr->mode.mode & MODE_PRIVATE)
+      if (chptr->mode.mode & MODE_PARANOID)
       {
         /* Only do this if channel is set +i AND +p */
         sendto_channel_local(CHFL_CHANOP|CHFL_HALFOP, NO, chptr,

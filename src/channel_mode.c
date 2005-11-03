@@ -301,7 +301,7 @@ static const struct mode_letter
   { MODE_INVITEONLY, 'i' },
   { MODE_MODERATED,  'm' },
   { MODE_NOPRIVMSGS, 'n' },
-  { MODE_PRIVATE,    'p' },
+  { MODE_PARANOID,    'p' },
   { MODE_SECRET,     's' },
   { MODE_TOPICLIMIT, 't' },
   { 0, '\0' }
@@ -531,7 +531,7 @@ chm_simple(struct Client *client_p, struct Client *source_p, struct Channel *chp
   mode_type = (long)d;
 
   if ((alev < CHACCESS_HALFOP) ||
-      ((mode_type == MODE_PRIVATE) && (alev < CHACCESS_CHANOP)))
+      ((mode_type == MODE_PARANOID) && (alev < CHACCESS_CHANOP)))
   {
     if (!(*errors & SM_ERR_NOOPS))
       sendto_one(source_p, form_str(alev == CHACCESS_NOTONCHAN ?
@@ -944,7 +944,7 @@ chm_hop(struct Client *client_p, struct Client *source_p,
   struct Membership *member;
 
   /* *sigh* - dont allow halfops to set +/-h, they could fully control a
-   * channel if there were no ops - it doesnt solve anything.. MODE_PRIVATE
+   * channel if there were no ops - it doesnt solve anything.. MODE_PARANOID
    * when used with MODE_SECRET is paranoid - cant use +p
    *
    * it needs to be optional per channel - but not via +p, that or remove
@@ -957,7 +957,7 @@ chm_hop(struct Client *client_p, struct Client *source_p,
    * control whether they can (de)halfop...
    */
   if (alev <
-      ((chptr->mode.mode & MODE_PRIVATE) ? CHACCESS_CHANOP : CHACCESS_HALFOP))
+      ((chptr->mode.mode & MODE_PARANOID) ? CHACCESS_CHANOP : CHACCESS_HALFOP))
   {
     if (!(*errors & SM_ERR_NOOPS))
       sendto_one(source_p, form_str(alev == CHACCESS_NOTONCHAN ?
@@ -1278,7 +1278,7 @@ static struct ChannelMode ModeTable[255] =
   {chm_simple, (void *) MODE_MODERATED},          /* m */
   {chm_simple, (void *) MODE_NOPRIVMSGS},         /* n */
   {chm_op, NULL},                                 /* o */
-  {chm_simple, (void *) MODE_PRIVATE},            /* p */
+  {chm_simple, (void *) MODE_PARANOID},            /* p */
   {chm_nosuch, NULL},                             /* q */
   {chm_nosuch, NULL},                             /* r */
   {chm_simple, (void *) MODE_SECRET},             /* s */

@@ -435,7 +435,7 @@ channel_pub_or_secret(struct Channel *chptr)
 {
   if (SecretChannel(chptr))
     return "@";
-  if (PrivateChannel(chptr))
+  if (ParanoidChannel(chptr))
     return "*";
   return "=";
 }

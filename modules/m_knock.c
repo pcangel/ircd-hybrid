@@ -246,7 +246,7 @@ parse_knock_local(struct Client *client_p, struct Client *source_p,
   }
 
   /* don't allow a knock if the user is banned, or the channel is secret */
-  if ((chptr->mode.mode & MODE_PRIVATE) || is_banned(chptr, source_p))
+  if ((chptr->mode.mode & MODE_PARANOID) || is_banned(chptr, source_p))
   {
     sendto_one(source_p, form_str(ERR_CANNOTSENDTOCHAN),
                me.name, source_p->name, name);
