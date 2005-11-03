@@ -110,7 +110,7 @@ hash_check_watch(struct Client *client_p, int reply)
 
     sendto_one(target_p, form_str(reply),
                me.name, target_p->name, client_p->name,
-               client_p->username, client_p->realhost,
+               client_p->username, client_p->host,
                anptr->lasttime, client_p->info);
   }
 }
