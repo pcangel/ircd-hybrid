@@ -235,6 +235,7 @@ unhook_hub_leaf_confs(void)
 %token  MAX_NICK_TIME
 %token  MAX_NUMBER
 %token  MAX_TARGETS
+%token  MAX_WATCH
 %token  MESSAGE_LOCALE
 %token  MIN_NONWILDCARD
 %token  MIN_NONWILDCARD_SIMPLE
@@ -3082,10 +3083,14 @@ general_item:       general_hide_spoof_ips | general_ignore_bogus_ts |
                     general_disable_auth | general_burst_away |
 		    general_tkline_expire_notices | general_gline_min_cidr |
                     general_gline_min_cidr6 | general_use_whois_actually |
-		    general_reject_hold_time |
+		    general_reject_hold_time | general_max_watch |
 		    error;
 
 
+general_max_watch: MAX_WATCH '=' TBOOL ';'
+{
+  ConfigFileEntry.max_watch = yylval.number;
+};
 
 general_gline_min_cidr: GLINE_MIN_CIDR '=' NUMBER ';'
 {

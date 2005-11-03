@@ -100,6 +100,8 @@ reset_general(va_list args)
   General.egdpool_path = NULL;
   General.compression_level = 0;
 
+  General.max_watch = WATCHSIZE_DEFAULT;
+
   return pass_callback(hreset);
 }
 
@@ -410,4 +412,5 @@ init_general(void)
   add_conf_field(s, "egdpool_path", CT_STRING, NULL, &General.egdpool_path);
   add_conf_field(s, "compression_level", CT_NUMBER, set_compression_level,
     NULL);
+  add_conf_field(s, "max_watch", CT_BOOL, NULL, &General.max_watch);
 }

@@ -77,6 +77,7 @@ struct GeneralConf
 #endif
   char use_egd, *egdpool_path;
   int compression_level;
+  int max_watch;
 };
 
 EXTERN struct GeneralConf General;

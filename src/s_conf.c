@@ -1615,6 +1615,7 @@ set_default_conf(void)
   ConfigFileEntry.oper_only_umodes = UMODE_DEBUG;  /* XXX */
   ConfigFileEntry.oper_umodes = UMODE_LOCOPS | UMODE_SERVNOTICE |
     UMODE_OPERWALL | UMODE_WALLOP;        /* XXX */
+  ConfigFileEntry.max_watch = WATCHSIZE_DEFAULT;
   DupString(ConfigFileEntry.servlink_path, SLPATH);
 #ifdef HAVE_LIBCRYPTO
   /* jdc -- This is our default value for a cipher.  According to the
@@ -1680,6 +1681,9 @@ validate_conf(void)
   if ((ConfigFileEntry.client_flood < CLIENT_FLOOD_MIN) ||
       (ConfigFileEntry.client_flood > CLIENT_FLOOD_MAX))
     ConfigFileEntry.client_flood = CLIENT_FLOOD_MAX;
+
+  if (ConfigFileEntry.max_watch < WATCHSIZE_MIN)
+    ConfigFileEntry.max_watch = WATCHSIZE_DEFAULT;
 }
 
 /* lookup_confhost()

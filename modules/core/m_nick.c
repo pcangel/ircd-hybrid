@@ -41,6 +41,7 @@
 #include "modules.h"
 #include "common.h"
 #include "packet.h"
+#include "watch.h"
 
 static void m_nick(struct Client *, struct Client *, int, char **);
 static void mr_nick(struct Client *, struct Client *, int, char **);
@@ -671,6 +672,8 @@ static void
 nick_from_server(struct Client *client_p, struct Client *source_p, int parc,
                  char *parv[], time_t newts, char *nick, char *ngecos)
 {
+  int samenick = 0;
+
   if (IsServer(source_p))
   {
     /* A server introducing a new client, change source */
@@ -717,20 +720,24 @@ nick_from_server(struct Client *client_p, struct Client *source_p, int parc,
 
       register_remote_user(client_p, source_p, parv[5], parv[6],
                            parv[7], ngecos);
+      return;
     }
-    
   }
   else if (source_p->name[0])
   {
+    samenick = !irccmp(parv[0], nick);
     /* client changing their nick */
-    if (irccmp(parv[0], nick))
+    if (!samenick)
+    {
       source_p->tsinfo = newts ? newts : CurrentTime;
+      hash_check_watch(source_p, RPL_LOGOFF);
+    }
 
     sendto_common_channels_local(source_p, 1, ":%s!%s@%s NICK :%s",
-                                 source_p->name,source_p->username,
+                                 source_p->name, source_p->username,
                                  source_p->host, nick);
 
-    add_history(source_p,1);
+    add_history(source_p, 1);
     sendto_server(client_p, source_p, NULL, CAP_TS6, NOCAPS, NOFLAGS,
                   ":%s NICK %s :%lu",
                   ID(source_p), nick, (unsigned long)source_p->tsinfo);
@@ -740,11 +747,14 @@ nick_from_server(struct Client *client_p, struct Client *source_p, int parc,
   }
 
   /* set the new nick name */
-  if (source_p->name[0])
-    hash_del_client(source_p);
+  assert(source_p->name[0]);
 
+  hash_del_client(source_p);
   strcpy(source_p->name, nick);
   hash_add_client(source_p);
+
+  if (!samenick)
+    hash_check_watch(source_p, RPL_LOGON);
 }
 
 /*

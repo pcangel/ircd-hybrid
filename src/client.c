@@ -42,6 +42,7 @@
 #include "listener.h"
 #include "userhost.h"
 #include "s_stats.h"
+#include "watch.h"
 
 dlink_list listing_client_list = { NULL, NULL, 0 };
 /* Pointer to beginning of Client list */
@@ -773,6 +774,8 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
   if (source_p->name[0])
     hash_del_client(source_p);
 
+  hash_check_watch(source_p, RPL_LOGOFF);
+
   if (IsUserHostIp(source_p))
     delete_user_host(source_p->username, source_p->host, !MyConnect(source_p));
 
@@ -958,7 +961,7 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
       dlinkDelete(&source_p->localClient->lclient_node, &local_client_list);
       if (source_p->localClient->list_task != NULL)
         free_list_task(source_p->localClient->list_task, source_p);
-
+      hash_del_watch_list(source_p);
       sendto_realops_flags(UMODE_CCONN, L_ALL, "Client exiting: %s (%s@%s) [%s] [%s]",
                            source_p->name, source_p->username, source_p->host, comment,
                            ConfigFileEntry.hide_spoof_ips && IsIPSpoof(source_p) ?
@@ -1490,6 +1493,7 @@ set_initial_nick(struct Client *client_p, struct Client *source_p,
 void
 change_local_nick(struct Client *client_p, struct Client *source_p, const char *nick)
 {
+  int samenick = 0;
   /*
   ** Client just changing his/her nick. If he/she is
   ** on a channel, send note of change to all clients
@@ -1507,7 +1511,8 @@ change_local_nick(struct Client *client_p, struct Client *source_p, const char *
      !ConfigFileEntry.anti_nick_flood || 
      (IsOper(source_p) && ConfigFileEntry.no_oper_flood))
   {
-    if (irccmp(source_p->name, nick))
+    samenick = !irccmp(source_p->name, nick);
+    if (!samenick)
       source_p->tsinfo = CurrentTime;
 
     /* XXX - the format of this notice should eventually be changed
@@ -1543,13 +1548,18 @@ change_local_nick(struct Client *client_p, struct Client *source_p, const char *
   }
 
   /* Finally, add to hash */
-  if (source_p->name[0])
-    hash_del_client(source_p);
+  assert(source_p->name[0]);
 
+  hash_del_client(source_p);
+  if (!samenick)
+    hash_check_watch(source_p, RPL_LOGOFF);
   strcpy(source_p->name, nick);
   hash_add_client(source_p);
 
-  /* Make sure everyone that has this client on its accept list
+  if (!samenick)
+    hash_check_watch(source_p, RPL_LOGON);
+  /*
+   * Make sure everyone that has this client on its accept list
    * loses that reference. 
    */
   del_all_their_accepts(source_p);

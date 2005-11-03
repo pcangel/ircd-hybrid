@@ -53,7 +53,7 @@ void
 _modinit(void)
 {
   mod_add_cmd(&watch_msgtab);
-  add_isupport("WATCH", NULL, 32/* XXX */);
+  add_isupport("WATCH", NULL, ConfigFileEntry.max_watch);
 }
 
 void
@@ -119,10 +119,11 @@ m_watch(struct Client *client_p, struct Client *source_p, int parc, char *parv[]
     if (*s == '+') {
       if (*(s + 1) != '\0')
       {
-        if (dlink_list_length(&source_p->localClient->watches) >= 64 /* XXX */)
+        if (dlink_list_length(&source_p->localClient->watches) >=
+            ConfigFileEntry.max_watch)
         {
-          sendto_one(source_p, form_str(ERR_TOOMANYWATCH),
-                     me.name, source_p->name, s + 1, 32);
+          sendto_one(source_p, form_str(ERR_TOOMANYWATCH), me.name,
+                     source_p->name, s + 1, ConfigFileEntry.max_watch);
           continue;
         }
 

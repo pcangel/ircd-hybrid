@@ -132,4 +132,7 @@
 #define MIN_SPAM_NUM 5
 #define MIN_SPAM_TIME 60
 
+#define WATCHSIZE_MIN 1
+#define WATCHSIZE_DEFAULT 32
+
 #endif /* INCLUDED_defaults_h */
