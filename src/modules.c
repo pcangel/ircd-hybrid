@@ -32,6 +32,7 @@
 #include "numeric.h"
 #include "parse.h"
 #include "ircd_defs.h"
+#include "s_user.h"
 
 /* -TimeMr14C:
  * I have moved the dl* function definitions and
@@ -658,6 +659,8 @@ load_all_modules(int warn)
   mod_add_cmd(&users_msgtab);
   mod_add_cmd(&version_msgtab);
   mod_add_cmd(&wallops_msgtab);
+  mod_add_cmd(&watch_msgtab);
+  add_isupport("WATCH", NULL, 32/* XXX */);
   mod_add_cmd(&who_msgtab);
   mod_add_cmd(&whois_msgtab);
   mod_add_cmd(&whowas_msgtab);

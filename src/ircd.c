@@ -52,6 +52,7 @@
 #include "ircd_getopt.h"
 #include "motd.h"
 #include "supported.h"
+#include "watch.h"
 
 /* Try and find the correct name to use with getrlimit() for setting the max.
  * number of files allowed to be open by this process.
@@ -612,6 +613,7 @@ main(int argc, char *argv[])
 
   read_conf_files(1);   /* cold start init conf files */
   check_class();
+  init_watch();
 
   if (ServerInfo.name == NULL)
   {

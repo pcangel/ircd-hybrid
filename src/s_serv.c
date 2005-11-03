@@ -2160,7 +2160,7 @@ serv_connect_callback(fde_t *fd, int status, void *data)
    */
   send_capabilities(client_p, aconf, (ServerInfo.hub ? CAP_HUB : 0)
     | (IsConfLazyLink(aconf) ? CAP_LL : 0)
-    | (IsConfCompressed(aconf) ? CAP_ZIP : )
+    | (IsConfCompressed(aconf) ? CAP_ZIP : 0)
     | (IsConfTopicBurst(aconf) ? CAP_TBURST|CAP_TB : 0), 0);
 
   sendto_one(client_p, "SERVER %s 1 :%s%s",
