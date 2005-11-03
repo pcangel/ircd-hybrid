@@ -232,7 +232,7 @@ findmodule_byname(const char *name)
   {
     modp = ptr->data;
 
-    if (!irccmp(modp->name, name))
+    if (strcmp(modp->name, name) == 0)
       return ptr;
   }
 
