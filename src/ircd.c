@@ -573,6 +573,16 @@ main(int argc, char *argv[])
 
   libio_init(!server_state.foreground);
 
+  outofmemory = ircd_outofmemory;
+  fdlimit_hook = install_hook(fdlimit_cb, changing_fdlimit);
+
+  setup_signals();
+
+  get_ircd_platform(ircd_platform);
+
+  init_log(logFileName);
+  ServerInfo.can_use_v6 = check_can_use_v6();
+
   /* make_dlink_node() cannot be called until after libio_init() */
   memset(&me, 0, sizeof(me));
   memset(&meLocalUser, 0, sizeof(meLocalUser));
@@ -584,16 +594,6 @@ main(int argc, char *argv[])
   make_server(&me);
   dlinkAdd(&me, &me.node, &global_client_list);
   dlinkAdd(&me, make_dlink_node(), &global_serv_list);
-
-  outofmemory = ircd_outofmemory;
-  fdlimit_hook = install_hook(fdlimit_cb, changing_fdlimit);
-
-  setup_signals();
-
-  get_ircd_platform(ircd_platform);
-
-  init_log(logFileName);
-  ServerInfo.can_use_v6 = check_can_use_v6();
 
   /* Check if there is pidfile and daemon already running */
   check_pidfile(pidFileName);
