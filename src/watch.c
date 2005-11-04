@@ -40,19 +40,16 @@
 
 #define WATCH_HEAP_SIZE 32
 
-static struct Watch *watchTable[HASHSIZE];
+static dlink_list watchTable[HASHSIZE];
 
 static BlockHeap *watch_heap = NULL;
 
 void
 init_watch(void)
 {
-  unsigned int idx;
+  memset(watchTable, 0, sizeof(watchTable));
 
   watch_heap = BlockHeapCreate("watch", sizeof(struct Watch), WATCH_HEAP_SIZE);
-
-  for (idx = 0; idx < HASHSIZE; ++idx)
-    watchTable[idx] = NULL;
 }
 
 /*
@@ -77,15 +74,9 @@ count_watch_memory(unsigned int *count, unsigned int *memory)
   unsigned int idx;
 
   for (idx = 0; idx < HASHSIZE; ++idx)
-  {
-    const struct Watch *anptr = watchTable[idx];
+    *count += dlink_list_length(&watchTable[idx]);
 
-    for (; anptr; anptr = anptr->hnext)
-    {
-      (*count)++;
-      (*memory) += sizeof(struct Watch);
-    }
-  }
+  *memory = *count * sizeof(struct Watch);
 }
 
 /*
@@ -121,14 +112,15 @@ hash_check_watch(struct Client *client_p, int reply)
 struct Watch *
 hash_get_watch(const char *name)
 {
-  unsigned int hashv = strhash(name);
-  struct Watch *anptr = NULL;
+  dlink_node *ptr = NULL;
 
-  if ((anptr = watchTable[hashv]))
-    while (anptr && irccmp(anptr->nick, name))
-      anptr = anptr->hnext;
+  DLINK_FOREACH(ptr, watchTable[strhash(name)].head) {
+    struct Watch *anptr = ptr->data;
+    if (!irccmp(anptr->nick, name))
+      return anptr;
+  }
 
-  return anptr;
+  return NULL;
 }
 
 /*
@@ -137,24 +129,17 @@ hash_get_watch(const char *name)
 void
 add_to_watch_hash_table(const char *nick, struct Client *client_p)
 {
-  unsigned int hashv = strhash(nick);
   struct Watch *anptr = NULL;
   dlink_node *ptr = NULL;
 
-  /* Find the right nick (header) in the bucket, or NULL... */
-  if ((anptr = watchTable[hashv]))
-    while (anptr && irccmp(anptr->nick, nick))
-      anptr = anptr->hnext;
-
   /* If found NULL (no header for this nick), make one... */
-  if (anptr == NULL)
+  if ((anptr = hash_get_watch(nick)) == NULL)
   {
     anptr = BlockHeapAlloc(watch_heap);
     anptr->lasttime = CurrentTime;
     strlcpy(anptr->nick, nick, sizeof(anptr->nick));
 
-    anptr->hnext = watchTable[hashv];
-    watchTable[hashv] = anptr;
+    dlinkAdd(anptr, &anptr->node, &watchTable[strhash(nick)]);
   }
   else
   {
@@ -176,23 +161,11 @@ add_to_watch_hash_table(const char *nick, struct Client *client_p)
 void
 del_from_watch_hash_table(const char *nick, struct Client *client_p)
 {
-  unsigned int hashv = strhash(nick);
   struct Watch *anptr = NULL;
-  struct Watch *nlast = NULL;
   dlink_node *ptr = NULL;
 
-  /* Find the right header, maintaining last-link pointer... */
-  if ((anptr = watchTable[hashv]))
-  {
-    while (anptr && irccmp(anptr->nick, nick))
-    {
-      nlast = anptr;
-      anptr = anptr->hnext;
-    }
-  }
-
-  if (anptr == NULL)
-    return;    /* No such watch */
+  if (!(anptr = hash_get_watch(nick)))
+    return;    /* No header found for that nick. i.e. it's not being watched */
 
   if ((ptr = dlinkFind(&anptr->watched_by, client_p)) == NULL)
     return;
@@ -206,11 +179,8 @@ del_from_watch_hash_table(const char *nick, struct Client *client_p)
   /* In case this header is now empty of notices, remove it */
   if (anptr->watched_by.head == NULL)
   {
-    if (!nlast)
-      watchTable[hashv] = anptr->hnext;
-    else
-      nlast->hnext = anptr->hnext;
-
+    assert(dlinkFind(&watchTable[strhash(nick)], anptr) != NULL);
+    dlinkDelete(&anptr->node, &watchTable[strhash(nick)]);
     BlockHeapFree(watch_heap, anptr);
   }
 }
@@ -233,32 +203,17 @@ hash_del_watch_list(struct Client *client_p)
 
     assert(anptr);
 
+    assert(dlinkFind(&anptr->watched_by, client_p) != NULL);
     if ((tmp = dlinkFindDelete(&anptr->watched_by, client_p)))
       free_dlink_node(tmp);
 
     /*
      * If this leaves a header without notifies, remove it.
-     * Need to find the last-pointer!
      */
     if (anptr->watched_by.head == NULL)
     {
-      unsigned int hashv = 0;
-      struct Watch *np2, *nl;
-
-      hashv = strhash(anptr->nick);
-      nl = NULL;
-      np2 = watchTable[hashv];
-
-      while (np2 && (np2 != anptr))
-      {
-        nl  = np2;
-        np2 = np2->hnext;
-      }
-
-      if (nl)
-        nl->hnext = anptr->hnext;
-      else
-        watchTable[hashv] = anptr->hnext;
+      assert(dlinkFind(&watchTable[strhash(anptr->nick)], anptr) != NULL);
+      dlinkDelete(&anptr->node, &watchTable[strhash(anptr->nick)]);
 
       BlockHeapFree(watch_heap, anptr);
     }

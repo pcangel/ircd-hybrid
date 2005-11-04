@@ -30,7 +30,7 @@
 
 struct Watch
 {
-  struct Watch *hnext;
+  dlink_node node;
   dlink_list watched_by;
   char nick[NICKLEN];
   time_t lasttime;
