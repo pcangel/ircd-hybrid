@@ -1406,7 +1406,7 @@ void
 set_initial_nick(struct Client *client_p, struct Client *source_p,
                  const char *nick)
 {
- char buf[USERLEN + 1];
+  char buf[USERLEN + 1];
 
   /* Client setting NICK the first time */
   
@@ -1453,11 +1453,12 @@ void
 change_local_nick(struct Client *client_p, struct Client *source_p, const char *nick)
 {
   int samenick = 0;
+
   /*
-  ** Client just changing his/her nick. If he/she is
-  ** on a channel, send note of change to all clients
-  ** on that channel. Propagate notice to other servers.
-  */
+   * Client just changing his/her nick.  If he/she is
+   * on a channel, send note of change to all clients
+   * on that channel.  Propagate notice to other servers.
+   */
   if ((source_p->localClient->last_nick_change +
        ConfigFileEntry.max_nick_time) < CurrentTime)
     source_p->localClient->number_of_nick_changes = 0;
