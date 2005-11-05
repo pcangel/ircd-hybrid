@@ -72,15 +72,13 @@ m_accept(struct Client *client_p, struct Client *source_p,
   struct Accept *accept = NULL;
   char *mask, *nick, *user, *host;
   char *p = NULL;
-  unsigned int accept_num = 0;
-  
+
   if (parc < 2 || !irccmp(parv[1], "*"))
   {
     list_accepts(source_p);
     return;
   }
 
-  /* parse the delete list */
   for (mask = strtoken(&p, parv[1], ","); mask != NULL;
        mask = strtoken(&p,    NULL, ","))
   {
@@ -130,10 +128,10 @@ m_accept(struct Client *client_p, struct Client *source_p,
       }
 
       add_accept(nick, user, host, source_p);
+
       MyFree(nick);
       MyFree(user);
       MyFree(host);
-      ++accept_num;
     }
   }
 }
