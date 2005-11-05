@@ -385,7 +385,6 @@ count_memory(struct Client *source_p)
   int channel_invex = 0;
 
   int class_count = 0;          /* classes */
-  int users_invited_count = 0;  /* users invited */
   int aways_counted = 0;
   int number_ips_stored;        /* number of ip addresses hashed */
 
@@ -435,7 +434,6 @@ count_memory(struct Client *source_p)
     if (IsClient(target_p))
     {
       ++users_counted;
-      users_invited_count += dlink_list_length(&target_p->invited);
 
       if (target_p->away != NULL)
       {
@@ -538,10 +536,9 @@ count_memory(struct Client *source_p)
   /* count up all classes */
   class_count = dlink_list_length(&class_items);
 
-  sendto_one(source_p, ":%s %d %s z :Clients %u(%lu) Invites %u(%lu)",
+  sendto_one(source_p, ":%s %d %s z :Clients %u(%lu)",
              me.name, RPL_STATSDEBUG, source_p->name, users_counted,
-             (unsigned long)(users_counted * sizeof(struct Client)),
-             users_invited_count, (unsigned long)(users_invited_count * sizeof(dlink_node)));
+             (unsigned long)(users_counted * sizeof(struct Client)));
 
   sendto_one(source_p, ":%s %d %s z :User aways %u(%d)",
              me.name, RPL_STATSDEBUG, source_p->name,
@@ -583,10 +580,10 @@ count_memory(struct Client *source_p)
              me.name, RPL_STATSDEBUG, source_p->name,
              channel_invex, channel_invex_memory);
 
-  sendto_one(source_p, ":%s %d %s z :Channel members %u(%lu) invite %u(%u)",
+  sendto_one(source_p, ":%s %d %s z :Channel members %u(%lu) invites %u(%u)",
              me.name, RPL_STATSDEBUG, source_p->name, channel_users,
              (unsigned long)(channel_users * sizeof(struct Membership)),
-             channel_invites, channel_invites * sizeof(dlink_node));
+             channel_invites, channel_invites * sizeof(dlink_node) * 2);
 
   total_channel_memory = channel_memory + channel_ban_memory +
                          channel_users * sizeof(struct Membership) +
