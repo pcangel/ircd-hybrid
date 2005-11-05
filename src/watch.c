@@ -114,8 +114,10 @@ hash_get_watch(const char *name)
 {
   dlink_node *ptr = NULL;
 
-  DLINK_FOREACH(ptr, watchTable[strhash(name)].head) {
+  DLINK_FOREACH(ptr, watchTable[strhash(name)].head)
+  {
     struct Watch *anptr = ptr->data;
+
     if (!irccmp(anptr->nick, name))
       return anptr;
   }
@@ -164,7 +166,7 @@ del_from_watch_hash_table(const char *nick, struct Client *client_p)
   struct Watch *anptr = NULL;
   dlink_node *ptr = NULL;
 
-  if (!(anptr = hash_get_watch(nick)))
+  if ((anptr = hash_get_watch(nick)) == NULL)
     return;    /* No header found for that nick. i.e. it's not being watched */
 
   if ((ptr = dlinkFind(&anptr->watched_by, client_p)) == NULL)
