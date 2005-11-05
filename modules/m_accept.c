@@ -36,7 +36,7 @@
 #include "modules.h"
 
 static void m_accept(struct Client *, struct Client *, int, char *[]);
-static void add_accept(const char *, const char *, const char *, struct Client *);
+static void add_accept(char *, char *, char *, struct Client *);
 static void list_accepts(struct Client *);
 
 struct Message accept_msgtab = {
@@ -104,6 +104,14 @@ m_accept(struct Client *client_p, struct Client *source_p,
     }
     else if (*mask != '\0')
     {
+      if (dlink_list_length(&source_p->localClient->acceptlist) >=
+          ConfigFileEntry.max_accept)
+      {
+        sendto_one(source_p, form_str(ERR_ACCEPTFULL),
+                   me.name, source_p->name);
+	return;
+      }
+
       split_nuh(mask, &nick, &user, &host);
 
       if ((accept = find_accept(nick, user, host, source_p, 0)) != NULL)
@@ -115,45 +123,28 @@ m_accept(struct Client *client_p, struct Client *source_p,
         MyFree(host);
         continue;
       }
-
-      if (dlink_list_length(&source_p->localClient->acceptlist) >=
-          ConfigFileEntry.max_accept)
-      {
-        sendto_one(source_p, form_str(ERR_ACCEPTFULL),
-                   me.name, source_p->name);
-        MyFree(nick);
-        MyFree(user);
-        MyFree(host);
-        return;
-      }
-
       add_accept(nick, user, host, source_p);
-
-      MyFree(nick);
-      MyFree(user);
-      MyFree(host);
     }
   }
 }
 
 /* add_accept()
  *
- * input	- nick
- *		- username
- * 		- host
+ * input	- pointer to preallocated nick
+ *		- pointer to preallocated username
+ * 		- pointer to preallocated host
  * 		- pointer to client to add to acceptlist
  * output	- none
  * side effects - target is added to clients list
  */
 static void
-add_accept(const char *nick, const char *user,
-           const char *host, struct Client *source_p)
+add_accept(char *nick, char *user, char *host, struct Client *source_p)
 {
   struct Accept *accept = MyMalloc(sizeof(*accept));
 
-  DupString(accept->nick, nick);
-  DupString(accept->user, user);
-  DupString(accept->host, host);
+  accept->nick = nick;
+  accept->user = user;
+  accept->host = host;
 
   dlinkAdd(accept, &accept->node, &source_p->localClient->acceptlist);
 
