@@ -85,6 +85,16 @@ struct ListTask
   unsigned int topicts_min, topicts_max;
 };
 
+/* For accept processing */
+struct Accept
+{
+  dlink_node node;
+  char *name;
+  char *username;
+  char *host;
+};
+
+
 struct Client
 {
   dlink_node node;
@@ -150,13 +160,6 @@ struct Client
    */
   char              sockhost[HOSTIPLEN + 1]; /* This is the host name from the 
                                                 socket ip address as string */
-  /* caller ID allow list */
-  /* This has to be here, since a client on an on_allow_list could
-   * be a remote client. simpler to keep both here.
-   */
-  dlink_list	allow_list;	/* clients I'll allow to talk to me */
-  dlink_list	on_allow_list;	/* clients that have =me= on their allow list*/
-
   dlink_list     whowas;    /* Pointers to whowas structs */
   dlink_list     channel;   /* chain of channel pointer blocks */
   dlink_list     invited;   /* chain of invite pointer blocks */
@@ -252,6 +255,9 @@ struct LocalUser
    */
   char llname[NICKLEN];
   dlink_list watches;    /**< chain of Watch pointer blocks */
+  /* caller ID allow list */
+  dlink_list	 acceptlist;	/* clients I'll allow to talk to me */
+
 };
 
 /*
@@ -542,13 +548,12 @@ void dead_link_on_read(struct Client *, int);
 void exit_aborted_clients(void);
 void free_exited_clients(void);
 
-EXTERN int accept_message(struct Client *, struct Client *);
+EXTERN int accept_message(const char *name, const char *username,
+			  const char *host, 
+			  struct Client *source, struct Client *target);
 EXTERN void set_initial_nick(struct Client *, struct Client *, const char *);
 EXTERN void exit_client(struct Client *, struct Client *, const char *);
 EXTERN void check_conf_klines(void);
-EXTERN void del_from_accept(struct Client *, struct Client *);
-EXTERN void del_all_accepts(struct Client *);
-EXTERN void del_all_their_accepts(struct Client *);
 EXTERN void change_local_nick(struct Client *, struct Client *, const char *);
 EXTERN void report_error(int, const char *, const char *, int);
 EXTERN struct Client *make_client(struct Client *);
