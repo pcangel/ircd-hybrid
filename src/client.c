@@ -753,15 +753,19 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
     DLINK_FOREACH_SAFE(lp, next_lp, source_p->invited.head)
       del_invite(lp->data, source_p);
 
-    /* Clean up allow lists */
-    del_all_accepts(source_p);
     add_history(source_p, 0);
     off_history(source_p);
 
     assert(source_p->whowas.head == NULL);
     assert(source_p->whowas.tail == NULL);
 
-    if (!MyConnect(source_p))
+    /* Do local vs. remote processing here */
+    if (MyConnect(source_p))
+    {
+      /* Clean up allow lists */
+      del_all_accepts(source_p);
+    }
+    else
     {
       source_p->from->serv->dep_users--;
       assert(source_p->from->serv->dep_users >= 0);
