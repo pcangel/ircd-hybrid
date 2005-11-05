@@ -89,11 +89,10 @@ struct ListTask
 struct Accept
 {
   dlink_node node;
-  char *name;
-  char *username;
+  char *nick;
+  char *user;
   char *host;
 };
-
 
 struct Client
 {
@@ -548,9 +547,10 @@ void dead_link_on_read(struct Client *, int);
 void exit_aborted_clients(void);
 void free_exited_clients(void);
 
-EXTERN int accept_message(const char *name, const char *username,
-			  const char *host, 
-			  struct Client *source, struct Client *target);
+EXTERN int accept_message(struct Client *, struct Client *);
+EXTERN struct Accept *find_accept(const char *, const char *,
+                                  const char *, struct Client *, int);
+EXTERN void del_accept(struct Accept *, struct Client *);
 EXTERN void set_initial_nick(struct Client *, struct Client *, const char *);
 EXTERN void exit_client(struct Client *, struct Client *, const char *);
 EXTERN void check_conf_klines(void);

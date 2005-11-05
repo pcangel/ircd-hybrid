@@ -1318,6 +1318,38 @@ exit_aborted_clients(void)
  * Diane Bruce, "Dianora" db@db.net
  */
 
+void
+del_accept(struct Accept *accept, struct Client *client_p)
+{
+  dlinkDelete(ptr, &client_p->localClient->acceptlist);
+
+  MyFree(accept->nick);
+  MyFree(accept->user);
+  MyFree(accept->host);
+  MyFree(accept);
+}
+
+struct Accept *
+find_accept(const char *nick, const char *user,
+            const char *host, struct Client *client_p, int do_match)
+{
+  dlink_node *ptr = NULL;
+  /* XXX We wouldn't need that if match() would return 0 on match */
+  int (*cmpfunc)(const char *, const char *) = do_match ? match : irccmp;
+
+  DLINK_FOREACH(ptr, client_p->localClient->acceptlist.head)
+  {
+    struct Accept *accept = ptr->data;
+
+    if (cmpfunc(accept->nick, nick) == do_match &&
+        cmpfunc(accept->user, user) == do_match &&
+        cmpfunc(accept->host, host) == do_match)
+      return accept;
+  }
+
+  return NULL;
+}
+
 /* accept_message()
  *
  * inputs	- pointer to nick
@@ -1329,30 +1361,21 @@ exit_aborted_clients(void)
  * side effects - See if source is on target's allow list
  */
 int
-accept_message(const char *name, const char *username, const char *host,
-	       struct Client *source, struct Client *target)
+accept_message(struct Client *source,
+               struct Client *target)
 {
-  dlink_node *ptr;
-  struct Accept *accept;
+  dlink_node *ptr = NULL;
 
-  DLINK_FOREACH(ptr, target->localClient->acceptlist.head)
-  {
-    accept = ptr->data;
+  if (source == target || find_accept(source_p->name, source_p->username,
+                                      source_p->host, target, 1))
+    return 1;
 
-    if (match(accept->name, name) &&
-	match(accept->username, username) &&
-	match(accept->host, host))
-      return (1);
-  }
-
-  if ((source != NULL) && IsSoftCallerId(target))
-  {
+  if (IsSoftCallerId(target))
     DLINK_FOREACH(ptr, target->channel.head)
       if (IsMember(source, ptr->data))
-        return (1);
-  }
+        return 1;
 
-  return (0);
+  return 0;
 }
 
 /* del_all_accepts()
@@ -1364,18 +1387,10 @@ accept_message(const char *name, const char *username, const char *host,
 void
 del_all_accepts(struct Client *client_p)
 {
-  dlink_node *ptr, *next_ptr;
-  struct Accept *accept;
+  dlink_node *ptr = NULL, *next_ptr = NULL;
 
   DLINK_FOREACH_SAFE(ptr, next_ptr, client_p->localClient->acceptlist.head)
-  {
-    accept = ptr->data;
-    MyFree(accept->name);
-    MyFree(accept->username);
-    MyFree(accept->host);
-    dlinkDelete(ptr, &client_p->localClient->acceptlist);
-    MyFree(accept);
-   }
+    del_accept(ptr->data, client_p);
 }
 
 /* set_initial_nick()

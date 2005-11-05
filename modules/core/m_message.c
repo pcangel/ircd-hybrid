@@ -618,11 +618,8 @@ msg_client(int p_or_n, const char *command, struct Client *source_p,
     if (!IsServer(source_p) && IsSetCallerId(target_p))
     {
       /* Here is the anti-flood bot/spambot code -db */
-      if (source_p == target_p || accept_message((const char *)source_p->name,
-						 (const char *)source_p->username,
-						 (const char *)source_p->host,
-						 source_p, target_p) ||
-	  (IsOper(source_p) && (ConfigFileEntry.opers_bypass_callerid == 1)))
+      if (accept_message(source_p, target_p) ||
+          (IsOper(source_p) && ConfigFileEntry.opers_bypass_callerid))
       {
         sendto_one(target_p, ":%s!%s@%s %s %s :%s",
                    source_p->name, source_p->username,

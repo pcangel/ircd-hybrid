@@ -38,15 +38,13 @@
 
 static void m_accept(struct Client *, struct Client *, int, char *[]);
 static void build_nuh_list(struct Client *, char *, char *, char *);
-static void add_accept(const char *name, const char *username,
-		       const char *host, struct Client *source_p);
-static int del_accept(const char *name, const char *username,
-		      const char *host, struct Client *source_p);
+static void add_accept(const char *, const char *, const char *, struct Client *);
+static int del_accept(const char *, const char *, const char *, struct Client *);
 static void list_accepts(struct Client *);
 
 struct Message accept_msgtab = {
-  "ACCEPT", 0, 0, 0, 0, MFLG_SLOW, 0, 
-  {m_unregistered, m_accept, m_ignore, m_ignore, m_accept, m_ignore}
+  "ACCEPT", 0, 0, 0, 0, MFLG_SLOW, 0,
+  { m_unregistered, m_accept, m_ignore, m_ignore, m_accept, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -74,11 +72,12 @@ static void
 m_accept(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
+  struct Accept *accept = NULL;
   char *mask, *nick, *user, *host;
   char *p = NULL;
   char addbuf[IRCD_BUFSIZE] = { '\0' };
   char delbuf[IRCD_BUFSIZE] = { '\0' };
-  int accept_num=0;
+  int accept_num = 0;
   
   if (parc < 2)
   {
@@ -90,19 +89,26 @@ m_accept(struct Client *client_p, struct Client *source_p,
 
   /* parse the delete list */
   for (mask = strtoken(&p, delbuf, ","); mask != NULL;
-       mask = strtoken(&p, NULL, ","))
+       mask = strtoken(&p, NULL,   ","))
   {
     /* user isn't on clients accept list */
     split_nuh(mask, &nick, &user, &host);
-    if (!accept_message((const char *)nick, (const char *)user,
-			(const char *)host, NULL, source_p))
+
+    if ((accept = find_accept(nick, user, host, source_p, 0)) == NULL)
     {
       sendto_one(source_p, form_str(ERR_ACCEPTNOT),
                  me.name, source_p->name, nick, user, host);
+      MyFree(nick);
+      MyFree(user);
+      MyFree(host);
       continue;
     }
 
-    del_accept(nick, user, host, source_p);
+    del_accept(accept, source_p);
+
+    MyFree(nick);
+    MyFree(user);
+    MyFree(host);
   }
 
   /* get the number of accepts they have */ 
@@ -110,15 +116,18 @@ m_accept(struct Client *client_p, struct Client *source_p,
 
   /* parse the add list */
   for (mask = strtoken(&p, addbuf, ","); mask;
-       mask = strtoken(&p, NULL, ","), accept_num++)
+       mask = strtoken(&p, NULL,   ","), ++accept_num)
   {
      /* user is already on clients accept list */
     split_nuh(mask, &nick, &user, &host);
 
-    if (accept_message(nick, user, host, NULL, source_p))
+    if ((accept = find_accept(nick, user, host, source_p, 0)) != NULL)
     {
       sendto_one(source_p, form_str(ERR_ACCEPTEXIST),
                  me.name, source_p->name, nick, user, host);
+      MyFree(nick);
+      MyFree(user);
+      MyFree(host);
       continue;
     }
 
@@ -126,10 +135,16 @@ m_accept(struct Client *client_p, struct Client *source_p,
     {
       sendto_one(source_p, form_str(ERR_ACCEPTFULL),
                  me.name, source_p->name);
+      MyFree(nick);
+      MyFree(user);
+      MyFree(host);
       return;
     }
 
     add_accept(nick, user, host, source_p);
+    MyFree(nick);
+    MyFree(user);
+    MyFree(host);
   }
 }
 
@@ -145,40 +160,26 @@ m_accept(struct Client *client_p, struct Client *source_p,
  */
 static void
 build_nuh_list(struct Client *source_p, char *addbuf,
-               char *delbuf, char *masks)
+               char *delbuf, char *mask)
 {
   char *mask = NULL;
   char *p = NULL;
-  int lenadd;
-  int lendel;
+  char *buf_p = NULL;
 
   *addbuf = *delbuf = '\0';
-  lenadd = lendel = 0;
 
   /* build list of nuh to add into addbuf, nuh to remove in delbuf */
-  for (mask = strtoken(&p, masks, ","); mask; 
+  for (mask = strtoken(&p, mask, ","); mask; 
        mask = strtoken(&p, NULL, ","))
   {
     if (*mask == '-')
-    {
-      mask++;
-
-      /* deleting a client */
-      if (*delbuf)
-	strcat(delbuf, ",");
-
-      strncat(delbuf, mask, IRCD_BUFSIZE - lendel - 1);
-      lendel += strlen(mask) + 1;
-    }
-    /* adding a client */
+      buf_p = delbuf, ++name;
     else
-    {
-      if (*addbuf)
-	strcat(addbuf, ",");
- 
-      strncat(addbuf, mask, IRCD_BUFSIZE - lenadd - 1);
-      lenadd += strlen(mask) + 1;
-    }
+      buf_p = addbuf;
+
+    if (*buf_p)
+      strlcat(buf_p, ",", IRCD_BUFSIZE);
+    strlcat(buf_p, mask, IRCD_BUFSIZE);
   }
 }
 
@@ -192,53 +193,18 @@ build_nuh_list(struct Client *source_p, char *addbuf,
  * side effects - target is added to clients list
  */
 static void
-add_accept(const char *name, const char *username, const char *host,
-	   struct Client *source_p)
+add_accept(const char *nick, const char *user,
+           const char *host, struct Client *source_p)
 {
-  struct Accept *accept;
-  
-  accept = MyMalloc(sizeof(struct Accept));
-  DupString(accept->name, name);
-  DupString(accept->username, username);
+  struct Accept *accept = MyMalloc(sizeof(*accept));
+
+  DupString(accept->nick, nick);
+  DupString(accept->user, user);
   DupString(accept->host, host);
+
   dlinkAdd(accept, &accept->node, &source_p->localClient->acceptlist);
 
   list_accepts(source_p);
-}
-
-/* del_accept()
- *
- * input	- nick
- *		- username
- *		- host
- * 		- pointer to client to add to acceptlist
- * output	- 1 if found and removed 0 if not found and nothing removed
- * side effects - mask is removed from acceptlist of given client if found
- */
-static int
-del_accept(const char *name, const char *username, const char *host,
-	   struct Client *client_p)
-{
-  struct Accept *accept;
-  dlink_node *ptr, *next_ptr;
-  int found=0;
-
-  DLINK_FOREACH_SAFE(ptr, next_ptr, client_p->localClient->acceptlist.head)
-  {
-    accept = ptr->data;
-    if (match(accept->name, name) &&
-	match(accept->username, username) &&
-	match(accept->host, host))
-    {
-      MyFree(accept->name);
-      MyFree(accept->username);
-      MyFree(accept->host);
-      dlinkDelete(ptr, &client_p->localClient->acceptlist);
-      MyFree(accept);
-      found = 1;	/* On the off chance, they have more than one */
-    }
-  }
-  return(found);
 }
 
 /* list_accepts()
@@ -271,7 +237,7 @@ list_accepts(struct Client *source_p)
     }
 
     t += ircsprintf(t, "%s!%s@%s ",
-		    accept->name, accept->username, accept->host);
+		    accept->nick, accept->user, accept->host);
   }
 
   if (nuh_list[0] != '\0')
