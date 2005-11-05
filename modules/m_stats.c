@@ -375,8 +375,7 @@ count_memory(struct Client *source_p)
   const dlink_node *gptr = NULL;
   const dlink_node *dlink = NULL;
 
-  int local_client_conf_count = 0;      /* local client conf links */
-  int users_counted = 0;                /* user structs */
+  int users_counted = 0;   /* real Clients counted, i.e. not a server */
 
   int channel_users = 0; /* XXX */
   unsigned int channel_invites = 0;

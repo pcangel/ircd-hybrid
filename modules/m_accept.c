@@ -39,7 +39,6 @@
 static void m_accept(struct Client *, struct Client *, int, char *[]);
 static void build_nuh_list(struct Client *, char *, char *, char *);
 static void add_accept(const char *, const char *, const char *, struct Client *);
-static int del_accept(const char *, const char *, const char *, struct Client *);
 static void list_accepts(struct Client *);
 
 struct Message accept_msgtab = {
@@ -160,24 +159,22 @@ m_accept(struct Client *client_p, struct Client *source_p,
  */
 static void
 build_nuh_list(struct Client *source_p, char *addbuf,
-               char *delbuf, char *mask)
+               char *delbuf, char *inbuf)
 {
   char *mask = NULL;
   char *p = NULL;
   char *buf_p = NULL;
 
-  *addbuf = *delbuf = '\0';
-
   /* build list of nuh to add into addbuf, nuh to remove in delbuf */
-  for (mask = strtoken(&p, mask, ","); mask; 
-       mask = strtoken(&p, NULL, ","))
+  for (mask = strtoken(&p, inbuf, ","); mask; 
+       mask = strtoken(&p,  NULL, ","))
   {
     if (*mask == '-')
-      buf_p = delbuf, ++name;
+      buf_p = delbuf, ++mask;
     else
       buf_p = addbuf;
 
-    if (*buf_p)
+    if (*buf_p != '\0')
       strlcat(buf_p, ",", IRCD_BUFSIZE);
     strlcat(buf_p, mask, IRCD_BUFSIZE);
   }

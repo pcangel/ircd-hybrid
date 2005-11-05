@@ -1321,7 +1321,7 @@ exit_aborted_clients(void)
 void
 del_accept(struct Accept *accept, struct Client *client_p)
 {
-  dlinkDelete(ptr, &client_p->localClient->acceptlist);
+  dlinkDelete(&accept->node, &client_p->localClient->acceptlist);
 
   MyFree(accept->nick);
   MyFree(accept->user);
@@ -1366,8 +1366,8 @@ accept_message(struct Client *source,
 {
   dlink_node *ptr = NULL;
 
-  if (source == target || find_accept(source_p->name, source_p->username,
-                                      source_p->host, target, 1))
+  if (source == target || find_accept(source->name, source->username,
+                                      source->host, target, 1))
     return 1;
 
   if (IsSoftCallerId(target))
