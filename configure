@@ -875,10 +875,10 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-zlib-path=DIR    Path to libz.so for ziplinks support.
+  --with-nicklen=LENGTH   Set the nick length to LENGTH (default 15)
   --with-syslog-facility=LOG
                           Define the log facility to use with ircd's syslog
                           output (default LOG_LOCAL4)
-  --with-nicklen=LENGTH   Set the nick length to LENGTH (default 9)
   --with-topiclen=NUMBER  Set the max topic length to NUMBER (default 160, max
                           390)
 
@@ -9624,6 +9624,15 @@ _ACEOF
 
 fi
 
+
+# Check whether --with-nicklen or --without-nicklen was given.
+if test "${with_nicklen+set}" = set; then
+  withval="$with_nicklen"
+  NICKLEN="$withval"
+else
+  NICKLEN="15"
+fi;
+
 # Check whether --enable-efnet or --disable-efnet was given.
 if test "${enable_efnet+set}" = set; then
   enableval="$enable_efnet"
@@ -9645,6 +9654,7 @@ _ACEOF
 
 	echo "Building ircd for use with EFnet"
 	EXAMPLE_CONF=example.efnet.conf
+    NICKLEN=9
 else
 
 cat >>confdefs.h <<\_ACEOF
@@ -9791,15 +9801,6 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 fi
-
-
-# Check whether --with-nicklen or --without-nicklen was given.
-if test "${with_nicklen+set}" = set; then
-  withval="$with_nicklen"
-  NICKLEN="$withval"
-else
-  NICKLEN="9"
-fi;
 
 
 # Check whether --with-topiclen or --without-topiclen was given.

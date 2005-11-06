@@ -804,6 +804,10 @@ else
 	AC_DEFINE([DBUF_HEAP_SIZE], 512, [Size of the dbuf heap.])
 fi
 
+AC_ARG_WITH(nicklen,
+AC_HELP_STRING([--with-nicklen=LENGTH],[Set the nick length to LENGTH (default 15)]),
+	NICKLEN="$withval", NICKLEN="15")
+
 AC_ARG_ENABLE(efnet,
 AC_HELP_STRING([--enable-efnet],[For IRCDs running on EFnet.]),
 [efnet=$enableval], [efnet=no])
@@ -813,6 +817,7 @@ if test "$efnet" = yes; then
 	AC_DEFINE(TS5_ONLY, 1, [If enabled, server links to your network must have a minimum of TS5.])
 	echo "Building ircd for use with EFnet"
 	EXAMPLE_CONF=example.efnet.conf
+    NICKLEN=9
 else
 	AC_DEFINE(INVARIANTS, 1, [Miscellaneous sanity checks for the ircd. Makes it slightly slower])
 	EXAMPLE_CONF=example.conf
@@ -903,10 +908,6 @@ AC_HELP_STRING([--with-syslog-facility=LOG], [Define the log facility to use wit
 if test "$syslogstuff" != none; then
 AC_DEFINE_UNQUOTED(LOG_FACILITY, $facility, [Log facility to use for syslog()])
 fi
-
-AC_ARG_WITH(nicklen,
-AC_HELP_STRING([--with-nicklen=LENGTH],[Set the nick length to LENGTH (default 9)]),
-	NICKLEN="$withval", NICKLEN="9")
 
 AC_ARG_WITH(topiclen,           
 AC_HELP_STRING([--with-topiclen=NUMBER],[Set the max topic length to NUMBER (default 160, max 390)]),
