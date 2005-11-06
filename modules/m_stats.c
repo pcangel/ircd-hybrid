@@ -317,7 +317,7 @@ send_usage(struct Client *source_p)
   struct rusage rus;
   time_t secs;
   time_t rup;
-#ifdef  hz
+#ifdef hz
 # define hzz hz
 #else
 # ifdef HZ
@@ -528,7 +528,7 @@ count_memory(struct Client *source_p)
 #endif
   count_watch_memory(&wlh, &wlhm);
 
-  sendto_one(source_p, ":%s %d %s :WATCH headers %u(%u) entries %d(%d)",
+  sendto_one(source_p, ":%s %d %s z :WATCH headers %u(%u) entries %d(%d)",
              me.name, RPL_STATSDEBUG, source_p->name, wlh, wlhm, wle,
              wle * sizeof(dlink_node));
 
