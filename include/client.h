@@ -117,7 +117,6 @@ struct Client
   unsigned short    hopcount;   /* number of servers to this 0 = local */
   unsigned short    status;     /* Client type */
   unsigned char     handler;    /* Handler index */
-  unsigned long     serial;	/* used to enforce 1 send per nick */
   unsigned long     lazyLinkClientExists; /* This client exists on the
 					   * bit mapped lazylink servers 
 					   * mapped here
@@ -244,6 +243,7 @@ struct LocalUser
   int sent_parsed;      /* how many messages we've parsed in this second */
   time_t last_knock;    /* time of last knock */
   unsigned long random_ping;
+  unsigned long serial;     /* used to enforce 1 send per nick */
 
   char*          response;  /* expected response from client */
   char*          auth_oper; /* Operator to become if they supply the response.*/

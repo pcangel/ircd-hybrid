@@ -504,10 +504,10 @@ sendto_channel_butone(struct Client *one, struct Client *from,
 
     if (MyClient(target_p))
     {
-      if (target_p->serial != current_serial)
+      if (target_p->localClient->serial != current_serial)
       {
         send_message(target_p, local_buf, local_len);
-        target_p->serial = current_serial;
+        target_p->localClient->serial = current_serial;
       }
     }
     else
@@ -515,13 +515,13 @@ sendto_channel_butone(struct Client *one, struct Client *from,
       /* Now check whether a message has been sent to this
        * remote link already
        */
-      if (target_p->from->serial != current_serial)
+      if (target_p->from->localClient->serial != current_serial)
       {
         if (IsCapable(target_p->from, CAP_TS6))
           send_message_remote(target_p->from, from, uid_buf, uid_len);
         else
           send_message_remote(target_p->from, from, remote_buf, remote_len);
-        target_p->from->serial = current_serial;
+        target_p->from->localClient->serial = current_serial;
       }
     }
   }
@@ -667,16 +667,16 @@ sendto_common_channels_local(struct Client *user, int touser,
       if (!MyConnect(target_p))
         continue;
       if (target_p == user || IsDefunct(target_p) ||
-          target_p->serial == current_serial)
+          target_p->localClient->serial == current_serial)
         continue;
 
-      target_p->serial = current_serial;
+      target_p->localClient->serial = current_serial;
       send_message(target_p, buffer, len);
     }
   }
 
   if (touser && MyConnect(user) && !IsDead(user) &&
-      user->serial != current_serial)
+      user->localClient->serial != current_serial)
     send_message(user, buffer, len);
 }
 
@@ -806,10 +806,10 @@ sendto_channel_remote(struct Client *one, struct Client *from, int type, int cap
         ((target_p->from->localClient->caps & caps) != caps) ||
         ((target_p->from->localClient->caps & nocaps) != 0))
       continue;
-    if (target_p->from->serial != current_serial)
+    if (target_p->from->localClient->serial != current_serial)
     {
       send_message(target_p, buffer, len);
-      target_p->from->serial = current_serial;
+      target_p->from->localClient->serial = current_serial;
     }
   } 
 }
@@ -835,9 +835,9 @@ static int
 match_it(const struct Client *one, const char *mask, int what)
 {
   if (what == MATCH_HOST)
-    return(match(mask, one->host));
+    return match(mask, one->host);
 
-  return(match(mask, one->servptr->name));
+  return match(mask, one->servptr->name);
 }
 
 /* sendto_match_butone()
@@ -943,7 +943,7 @@ sendto_match_servs(struct Client *source_p, const char *mask, int cap,
     if (IsMe(target_p) || target_p->from == source_p->from)
       continue;
 
-    if (target_p->from->serial == current_serial)
+    if (target_p->from->localClient->serial == current_serial)
       continue;
 
     if (match(mask, target_p->name))
@@ -952,7 +952,7 @@ sendto_match_servs(struct Client *source_p, const char *mask, int cap,
        * if we set the serial here, then we'll never do a
        * match() again, if !IsCapable()
        */
-      target_p->from->serial = current_serial;
+      target_p->from->localClient->serial = current_serial;
       found++;
 
       if (!IsCapable(target_p->from, cap))
@@ -1179,6 +1179,7 @@ kill_client_ll_serv_butone(struct Client *one, struct Client *source_p,
   int len_uid = 0, len_nick;
 
   va_start(args, pattern);
+
   if (HasID(source_p) && (me.id[0] != '\0'))
   {
     have_uid = 1;
@@ -1186,6 +1187,7 @@ kill_client_ll_serv_butone(struct Client *one, struct Client *source_p,
     len_uid += send_format(&buf_uid[len_uid], IRCD_BUFSIZE - len_uid, pattern,
                            args);
   }
+
   len_nick = ircsprintf(buf_nick, ":%s KILL %s :", me.name, source_p->name);
   len_nick += send_format(&buf_nick[len_nick], IRCD_BUFSIZE - len_nick, pattern,
                           args);
