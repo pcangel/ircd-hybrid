@@ -59,7 +59,7 @@ dlink_list rxconf_items  = { NULL, NULL, 0 };
 dlink_list rkconf_items  = { NULL, NULL, 0 };
 dlink_list nresv_items   = { NULL, NULL, 0 };
 dlink_list class_items   = { NULL, NULL, 0 };
-dlink_list gdeny_items = { NULL, NULL, 0 };
+dlink_list gdeny_items   = { NULL, NULL, 0 };
 
 extern unsigned int lineno;
 extern char linebuf[];
@@ -125,7 +125,7 @@ struct conf_item_table_type conf_item_table[] =
     { CONFSIZE + sizeof(struct AccessItem), CONF_KLINE,
       &rkconf_items, free_aconf_items },
     /* RXLINE_TYPE */
-    { CONFSIZE + sizeof(struct MatchItem), CONF_KLINE, 
+    { CONFSIZE + sizeof(struct MatchItem), 0, 
       &rxconf_items, free_match_items },
     /* XLINE_TYPE */
     { CONFSIZE + sizeof(struct AccessItem), 0,
@@ -2324,10 +2324,8 @@ conf_add_class_to_conf(struct ConfItem *conf, const char *class_name)
 int
 conf_add_server(struct ConfItem *conf, unsigned int lcount, const char *class_name)
 {
-  struct AccessItem *aconf;
-  char *orig_host;
-
-  aconf = &conf->conf.AccessItem;
+  struct AccessItem *aconf = &conf->conf.AccessItem;
+  char *orig_host = NULL;
 
   conf_add_class_to_conf(conf, class_name);
 
@@ -2346,7 +2344,9 @@ conf_add_server(struct ConfItem *conf, unsigned int lcount, const char *class_na
     return -1;
   }
 
-  orig_host = aconf->host;
+  DupString(orig_host, aconf->host);
+  MyFree(aconf->host);
+  aconf->host = NULL;
   split_nuh(orig_host, NULL, &aconf->user, &aconf->host);
   MyFree(orig_host);
   lookup_confhost(conf);
