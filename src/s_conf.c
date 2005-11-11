@@ -87,8 +87,7 @@ static void free_match_items(struct ConfItem *, dlink_list *);
 static void delete_link(struct ConfItem *, dlink_list *);
 
 #define CONFSIZE (offsetof(struct ConfItem, conf))
-struct conf_item_table_type conf_item_table[] = 
-  {
+struct conf_item_table_type conf_item_table[] = {
     /* CONF_TYPE */
     { 0, 0 , 0, 0},
     /* CLASS_TYPE */
@@ -128,10 +127,10 @@ struct conf_item_table_type conf_item_table[] =
     { CONFSIZE + sizeof(struct MatchItem), 0, 
       &rxconf_items, free_match_items },
     /* XLINE_TYPE */
-    { CONFSIZE + sizeof(struct AccessItem), 0,
+    { CONFSIZE + sizeof(struct MatchItem), 0,
       &xconf_items, free_match_items },
     /* ULINE_TYPE */
-    { CONFSIZE + sizeof(struct AccessItem), 0,
+    { CONFSIZE + sizeof(struct MatchItem), 0,
       &uconf_items, free_match_items },
     /* GLINE_TYPE */
     { CONFSIZE + sizeof(struct AccessItem), CONF_GLINE,
@@ -145,7 +144,7 @@ struct conf_item_table_type conf_item_table[] =
     { CONFSIZE + sizeof(struct AccessItem), 0,
       &gdeny_items, free_aconf_items },
     { 0, 0, 0}
-  };
+};
 
 /*
  * bit_len
