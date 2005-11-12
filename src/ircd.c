@@ -632,23 +632,20 @@ main(int argc, char *argv[])
 
   init_uid();     /* XXX move this one up after inculcating new conf system */
   initialize_global_set_options();   /* and this one is going to be deleted */
- ilog(L_NOTICE, "test1");
+
 #ifndef STATIC_MODULES
   if (chdir(MODPATH))
   {
     ilog (L_CRIT, "Could not load core modules. Terminating!");
     exit(EXIT_FAILURE);
   }
-ilog(L_NOTICE, "test2");
+
   load_all_modules(1);
-ilog(L_NOTICE, "test3");
   load_conf_modules();
-ilog(L_NOTICE, "test4");
   load_core_modules(1);
-ilog(L_NOTICE, "test5");
+
   /* Go back to DPATH after checking to see if we can chdir to MODPATH */
   chdir(ConfigFileEntry.dpath);
-ilog(L_NOTICE, "test6");
 #else
   load_all_modules(1);
 #endif
