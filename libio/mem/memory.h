@@ -33,7 +33,7 @@ LIBIO_EXTERN void mem_frob(void *, int);
 /* forte (and maybe others) don't like double declarations, 
  * so we don't declare the inlines unless GNUC
  */
-#ifdef __GNUC__
+#ifdef __GNUCXYZBLAH__
 LIBIO_EXTERN inline void *
 MyMalloc(size_t size)
 {

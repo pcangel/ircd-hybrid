@@ -117,7 +117,7 @@ if test "$ac_cv_c_compiler_gnu" = yes; then
 
 	AC_MSG_RESULT($AppleGCC)
 
-	IRC_CFLAGS="$IRC_CFLAGS -Wall -O2"
+	IRC_CFLAGS="$IRC_CFLAGS -Wall -O0"
 fi
 
 dnl If we support -g, use it!
