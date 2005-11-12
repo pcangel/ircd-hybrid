@@ -118,7 +118,7 @@ struct conf_item_table_type conf_item_table[] = {
     { CONFSIZE + sizeof(struct AccessItem), CONF_EXEMPTDLINE,
       NULL, free_aconf_items },
     /* CLUSTER_TYPE */
-    { CONFSIZE , 0,
+    { CONFSIZE + sizeof(struct AccessItem), 0,
       &cluster_items, delete_link },
     /* RKLINE_TYPE */
     { CONFSIZE + sizeof(struct AccessItem), CONF_KLINE,

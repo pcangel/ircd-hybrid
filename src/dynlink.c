@@ -268,6 +268,8 @@ unload_one_module(char *name, int warn)
   return 0;
 }
 
+static struct BlockHeap *modules_heap = NULL;
+
 /* load_a_module()
  *
  * inputs	- path name of module, int to notice, int of core
@@ -292,6 +294,10 @@ load_a_module(char *path, int warn, int core)
   char **verp;
   char *ver;
   struct module *modp;
+  static int initialized_modules = 0;
+
+  if (!initialized_modules++)
+    modules_heap = BlockHeapCreate("module", sizeof(struct module), 10);
 
   mod_basename = basename(path);
 
@@ -386,7 +392,7 @@ load_a_module(char *path, int warn, int core)
 #endif
 
   
-  modp            = MyMalloc(sizeof(struct module));
+  modp            = BlockHeapAlloc(modules_heap);
 #ifdef HAVE_DLINFO
   dlinfo(tmpptr, RTLD_DI_LINKMAP, &map);
   if (map != NULL)
