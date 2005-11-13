@@ -118,8 +118,8 @@ struct conf_item_table_type conf_item_table[] = {
     { CONFSIZE + sizeof(struct AccessItem), CONF_EXEMPTDLINE,
       NULL, free_aconf_items },
     /* CLUSTER_TYPE */
-    { CONFSIZE + sizeof(struct AccessItem), 0,
-      &cluster_items, delete_link },
+    { CONFSIZE + sizeof(struct MatchItem), 0,
+      &cluster_items, free_match_items },
     /* RKLINE_TYPE */
     { CONFSIZE + sizeof(struct AccessItem), CONF_KLINE,
       &rkconf_items, free_aconf_items },
@@ -311,6 +311,7 @@ free_aconf_items(struct ConfItem *conf, dlink_list *list)
     delete_resolver_queries(aconf->dns_query);
     MyFree(aconf->dns_query);
   }
+
   if (aconf->passwd != NULL)
     memset(aconf->passwd, 0, strlen(aconf->passwd));
   if (aconf->spasswd != NULL)
@@ -371,6 +372,7 @@ free_match_items(struct ConfItem *conf, dlink_list *list)
   MyFree(match_item->host);
   MyFree(match_item->reason);
   MyFree(match_item->oper_reason);
+
   if ((list != NULL) && !match_item->illegal)
     dlinkDelete(&conf->node, list);
 }
@@ -489,11 +491,12 @@ report_confitem_types(struct Client *source_p, ConfType type, int temp)
     DLINK_FOREACH(ptr, cluster_items.head)
     {
       conf = ptr->data;
+      matchitem = &conf->conf.MatchItem;
 
       p = buf;
 
       *p++ = 'C';
-      flags_to_ascii(conf->flags, shared_bit_table, p, 0);
+      flags_to_ascii(matchitem->action, shared_bit_table, p, 0);
 
       sendto_one(source_p, form_str(RPL_STATSULINE),
                  me.name, source_p->name, conf->name,

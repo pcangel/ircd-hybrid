@@ -2234,16 +2234,14 @@ cluster_entry: T_CLUSTER
   if (ypass == 2)
   {
     yy_conf = make_conf_item(CLUSTER_TYPE);
-    yy_conf->flags = SHARED_ALL;
+    yy_match_item = &yy_conf->conf.MatchItem;
+    yy_match_item->action = SHARED_ALL;
+    DupString(yy_conf->name, "*");
   }
 } '{' cluster_items '}' ';'
 {
-  if (ypass == 2)
-  {
-    if (yy_conf->name == NULL)
-      DupString(yy_conf->name, "*");
-    yy_conf = NULL;
-  }
+  yy_conf = NULL;
+  yy_match_item = NULL;
 };
 
 cluster_items:	cluster_items cluster_item | cluster_item;
@@ -2252,60 +2250,63 @@ cluster_item:	cluster_name | cluster_type | error ';' ;
 cluster_name: NAME '=' QSTRING ';'
 {
   if (ypass == 2)
+  {
+    MyFree(yy_conf->name);
     DupString(yy_conf->name, yylval.string);
+  }
 };
 
 cluster_type: TYPE
 {
   if (ypass == 2)
-    yy_conf->flags = 0;
+    yy_match_item->action = 0;
 } '=' cluster_types ';' ;
 
 cluster_types:	cluster_types ',' cluster_type_item | cluster_type_item;
 cluster_type_item: KLINE
 {
   if (ypass == 2)
-    yy_conf->flags |= SHARED_KLINE;
+    yy_match_item->action |= SHARED_KLINE;
 } | TKLINE
 {
   if (ypass == 2)
-    yy_conf->flags |= SHARED_TKLINE;
+    yy_match_item->action |= SHARED_TKLINE;
 } | UNKLINE
 {
   if (ypass == 2)
-    yy_conf->flags |= SHARED_UNKLINE;
+    yy_match_item->action |= SHARED_UNKLINE;
 } | XLINE
 {
   if (ypass == 2)
-    yy_conf->flags |= SHARED_XLINE;
+    yy_match_item->action |= SHARED_XLINE;
 } | TXLINE
 {
   if (ypass == 2)
-    yy_conf->flags |= SHARED_TXLINE;
+    yy_match_item->action |= SHARED_TXLINE;
 } | T_UNXLINE
 {
   if (ypass == 2)
-    yy_conf->flags |= SHARED_UNXLINE;
+    yy_match_item->action |= SHARED_UNXLINE;
 } | RESV
 {
   if (ypass == 2)
-    yy_conf->flags |= SHARED_RESV;
+    yy_match_item->action |= SHARED_RESV;
 } | TRESV
 {
   if (ypass == 2)
-    yy_conf->flags |= SHARED_TRESV;
+    yy_match_item->action |= SHARED_TRESV;
 } | T_UNRESV
 {
   if (ypass == 2)
-    yy_conf->flags |= SHARED_UNRESV;
+    yy_match_item->action |= SHARED_UNRESV;
 } | T_LOCOPS
 {
   if (ypass == 2)
-    yy_conf->flags |= SHARED_LOCOPS;
+    yy_match_item->action |= SHARED_LOCOPS;
 } | T_ALL
 {
   if (ypass == 2)
-    yy_conf->flags = SHARED_ALL;
+    yy_match_item->action = SHARED_ALL;
 };
 
 /***************************************************************************
