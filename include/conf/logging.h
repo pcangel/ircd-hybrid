@@ -30,7 +30,7 @@ struct LoggingConf
   char operspylog[PATH_MAX+1], failed_operlog[PATH_MAX+1];
 };
 
-extern struct LoggingConf Logging;
+EXTERN struct LoggingConf Logging;
 
 #ifdef IN_CONF_C
 void init_logging(void);

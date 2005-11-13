@@ -38,7 +38,7 @@ struct ServerInfoConf
 #endif
 };
 
-extern struct ServerInfoConf ServerInfo;
+EXTERN struct ServerInfoConf ServerInfo;
 
 #ifdef IN_CONF_C
 void init_serverinfo(void);

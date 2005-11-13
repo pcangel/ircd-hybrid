@@ -33,7 +33,7 @@ struct ServerHideConf
   char hide_server_ips;
 };
 
-extern struct ServerHideConf ServerHide;
+EXTERN struct ServerHideConf ServerHide;
 
 #define LINKS_DELAY (ServerHide.flatten_links ? ServerHide.links_delay : 0)
 

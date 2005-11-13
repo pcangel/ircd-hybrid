@@ -69,16 +69,16 @@ logging {
 /* class {}: contain information about classes for users (OLD Y:) */
 class {
 	name = "users";
-	ping_time = 2 minutes;
-	number_per_ip = 2;
+	ping_time = 90;
+	host_limit = local:2;
 	max_number = 100;
 	sendq = 100 kbytes;
 };
 
 class {
 	name = "restricted";
-	ping_time = 1 minute 30 seconds;
-	number_per_ip = 1;
+	ping_time = 60;
+	host_limit = 1, global:2;
 	max_number = 100;
 	sendq = 60kb;
 };
@@ -86,14 +86,14 @@ class {
 class {
 	name = "opers";
 	ping_time = 5 minutes;
-	number_per_ip = 10;
+	host_limit = 10;
 	max_number = 100;
 	sendq = 100kbytes;
 };
 
 class {
 	name = "server";
-	ping_time = 5 minutes;
+	ping_time = 90 seconds;
 	ping_warning = 15 seconds;
 	connectfreq = 5 minutes;
 	max_number = 1;

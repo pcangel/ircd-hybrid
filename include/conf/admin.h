@@ -29,7 +29,7 @@ struct AdminConf
   char *email;
 };
 
-extern struct AdminConf Admin;
+EXTERN struct AdminConf Admin;
 
 #ifdef IN_CONF_C
 void init_admin(void);

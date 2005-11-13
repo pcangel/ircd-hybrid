@@ -59,7 +59,7 @@ static int conf_yy_fatal_error(const char *msg)
 ws		[ \t]*
 include		\.include{ws}(\<.*\>|\".*\")
 qstring		\"[^\"]*\"
-identifier	[a-zA-Z_][a-zA-Z0-9_]*
+identifier	[a-zA-Z_][a-zA-Z0-9_:]*
 
 %%
 

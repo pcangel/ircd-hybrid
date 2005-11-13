@@ -30,6 +30,7 @@
 #include "conf/serverinfo.h"
 #include "conf/admin.h"
 #include "conf/logging.h"
+#include "conf/class.h"
 #include "conf/channel.h"
 #include "conf/serverhide.h"
 #include "conf/general.h"

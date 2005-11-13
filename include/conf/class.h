@@ -1,6 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  channel.h: Defines channel{} conf section.
+ *  class.h: Defines class{} conf section.
  *
  *  Copyright (C) 2005 by the Hybrid Development Team.
  *
@@ -22,33 +22,34 @@
  *  $Id$
  */
 
-struct ChannelConf
+struct Class
 {
-  char restrict_channels;
-  char disable_local_channels;
-  char use_invex, use_except;
+  char *name;
+  int connectfreq, ping_time, ping_warning;
+  long sendq_size;
 
-  char use_knock;
-  int knock_delay, knock_delay_channel;
+  int userhost_limit[2], host_limit[2];
 
-  char burst_topicwho;
-  int max_chans_per_user;
-  char quiet_on_ban;
-  int max_bans;
-  int join_flood_count, join_flood_time;
+  int number_per_cidr;
+  int cidr_bitlen_ipv4, cidr_bitlen_ipv6;
+  dlink_list list_ipv4, list_ipv6;
 
-  int default_split_user_count, default_split_server_count;
-  char no_create_on_split, no_join_on_split;
+  int max_ident, max_noident, max_number;
+
+  int stale;
+  int refcnt, cur_clients;
+  dlink_node node;
 };
 
-EXTERN struct ChannelConf Channel;
+typedef void (* ENUMCLASSFUNC) (struct Class *);
 
-#define USE_SPLITCODE ( \
-  Channel.default_split_user_count != 0 && \
-  Channel.default_split_server_count != 0 && \
-  (Channel.no_create_on_split || Channel.no_join_on_split) \
-)
+EXTERN struct Class *ref_class_by_name(const char *);
+EXTERN struct Class *ref_class_by_ptr(struct Class *);
+EXTERN void unref_class(struct Class *);
+EXTERN struct Class *make_class(const char *);
+EXTERN void delete_class(struct Class *);
+EXTERN void enum_classes(ENUMCLASSFUNC);
 
 #ifdef IN_CONF_C
-void init_channel(void);
+void init_class(void);
 #endif
