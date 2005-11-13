@@ -27,7 +27,7 @@ static const char saltChars[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTU
 
 struct Message mkpasswd_msgtab = {
   "MKPASSWD", 0, 0, 1, 2, MFLG_SLOW, 0,
-  {m_unregistered, m_mkpasswd, m_ignore, m_ignore, mo_mkpasswd, m_ignore}
+  { m_unregistered, m_mkpasswd, m_ignore, m_ignore, mo_mkpasswd, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -52,7 +52,7 @@ m_mkpasswd(struct Client *client_p, struct Client *source_p,
 {
   static time_t last_used = 0;
 
-  if (parc < 1)
+  if (EmptyString(parv[1]))
   {
     sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
                me.name, source_p->name, "MKPASSWD");
@@ -68,11 +68,7 @@ m_mkpasswd(struct Client *client_p, struct Client *source_p,
 
   last_used = CurrentTime;
 
-  if (parv[2] == NULL)
-    sendto_one(source_p, ":%s NOTICE %s :DES Encryption for [%s]: %s",
-               me.name, source_p->name, parv[1], crypt(parv[1],
-               des()));
-  else if (!irccmp(parv[2], "DES"))
+  if (parv[2] == NULL || !irccmp(parv[2], "DES"))
     sendto_one(source_p, ":%s NOTICE %s :DES Encryption for [%s]: %s",
                me.name, source_p->name, parv[1], crypt(parv[1],
                des()));
@@ -94,18 +90,14 @@ static void
 mo_mkpasswd(struct Client *client_p, struct Client *source_p,
             int parc, char *parv[])
 {
-  if (parc < 1)
+  if (EmptyString(parv[1]))
   {
     sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
                me.name, source_p->name, "MKPASSWD");
     return;
   }
 
-  if (parv[2] == NULL)
-    sendto_one(source_p, ":%s NOTICE %s :DES Encryption for [%s]: %s",
-               me.name, source_p->name, parv[1], crypt(parv[1],
-               des()));
-  else if (!irccmp(parv[2], "DES"))
+  if (parv[2] == NULL || !irccmp(parv[2], "DES"))
     sendto_one(source_p, ":%s NOTICE %s :DES Encryption for [%s]: %s",
                me.name, source_p->name, parv[1], crypt(parv[1],
                des()));
