@@ -3087,7 +3087,7 @@ general_item:       general_hide_spoof_ips | general_ignore_bogus_ts |
 		    error;
 
 
-general_max_watch: MAX_WATCH '=' TBOOL ';'
+general_max_watch: MAX_WATCH '=' NUMBER ';'
 {
   ConfigFileEntry.max_watch = yylval.number;
 };
