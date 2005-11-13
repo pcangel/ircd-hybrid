@@ -73,8 +73,8 @@ reset_general(va_list args)
   General.reject_hold_time = General.idletime = 0;
 
   /* Opers settings */
-  General.oper_only_umodes = UMODE_DEBUG, General.oper_umodes = UMODE_LOCOPS |
-    UMODE_SERVNOTICE | UMODE_OPERWALL | UMODE_WALLOP;
+  General.oper_only_umodes = UMODE_DEBUG, General.oper_umodes = UMODE_BOTS |
+    UMODE_LOCOPS | UMODE_SERVNOTICE | UMODE_OPERWALL | UMODE_WALLOP;
   General.kill_chase_time_limit = 90;
   General.min_nonwildcard = 4, General.min_nonwildcard_simple = 3;
   General.gline_min_cidr = 16, General.gline_min_cidr6 = 48;
