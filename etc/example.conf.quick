@@ -338,7 +338,7 @@ general {
 
 	oper_only_umodes = bots, cconn, debug, full, skill, nchange, 
 			   rej, spy, external, operwall, locops, unauth;
-	oper_umodes = locops, servnotice, operwall, wallop;
+	oper_umodes = bots, locops, servnotice, operwall, wallop;
 	kill_chase_time_limit = 90;
 	min_nonwildcard = 4;
 	min_nonwildcard_simple = 3;
