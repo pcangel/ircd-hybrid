@@ -409,7 +409,11 @@ build_target_list(int p_or_n, const char *command, struct Client *client_p,
 
     if (*nick == '$' || strchr(nick, '@') != NULL)
     {
-      handle_special(p_or_n, command, client_p, source_p, nick, text);
+      // special message type, if present, should always be the only one
+
+      if (ntargets == 0)
+        handle_special(p_or_n, command, client_p, source_p, nick, text);
+
       return 1;
     }
     else
