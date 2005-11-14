@@ -175,6 +175,7 @@ mo_whois(struct Client *client_p, struct Client *source_p,
 static void
 do_whois(struct Client *source_p, int parc, char **parv)
 {
+  static time_t last_used = 0;
   struct Client *target_p;
   char *nick;
   char *p = NULL;
@@ -183,7 +184,7 @@ do_whois(struct Client *source_p, int parc, char **parv)
   nick = parv[1];
   while (*nick == ',')
     nick++;
-  if ((p = strchr(nick,',')) != NULL)
+  if ((p = strchr(nick, ',')) != NULL)
     *p = '\0';
 
   if (*nick == '\0')
@@ -220,6 +221,18 @@ do_whois(struct Client *source_p, int parc, char **parv)
     /* disallow wild card whois on lazylink leafs for now */
     if (!ServerInfo.hub && uplink && IsCapable(uplink, CAP_LL))
       return;
+
+    if (!IsOper(source_p))
+    {
+      if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+      {
+        sendto_one(source_p, form_str(RPL_LOAD2HI),
+                   me.name, source_p->name);
+        return;
+      }
+      else
+        last_used = CurrentTime;
+    }
 
     /* Oh-oh wilds is true so have to do it the hard expensive way */
     if (MyClient(source_p))

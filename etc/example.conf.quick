@@ -59,10 +59,10 @@ admin {
 
 /* logging {}: contains information about logfiles. */
 logging {
-    use_logging = yes;
-    fuserlog = "logs/userlog";
-    foperlog = "logs/operlog";
-    ffailed_operlog = "logs/foperlog";
+	use_logging = yes;
+	fuserlog = "logs/userlog";
+	foperlog = "logs/operlog";
+	ffailed_operlog = "logs/foperlog";
 	log_level = L_INFO;
 };
 
@@ -111,7 +111,7 @@ listen {
 	port = 7000, 7001;
 
 	host = "3ffe:1234:a:b:c::d";
-    port = 7002;
+	port = 7002;
 };
 
 /* auth {}: allow users to connect to the ircd (OLD I:) */
@@ -180,38 +180,38 @@ connect {
 };
 
 connect {
-    name = "ipv6.some.server";
-    host = "3ffd:dead:beef::1";
-    send_password = "password";
-    accept_password = "password";
-    port = 6666;
+	name = "ipv6.some.server";
+	host = "3ffd:dead:beef::1";
+	send_password = "password";
+	accept_password = "password";
+	port = 6666;
 
 	aftype = ipv6;
-    class = "server";
+	class = "server";
 };
 
 /* cluster{}: servers that share klines/unkline/xline/unxline/resv/unresv/locops
  * automatically (OLD hyb6 SLAVE_SERVERS)
  */
 cluster {
-    /* name: the server to share with, this can take wildcards */
-    /* NOTE: only local actions will be clustered, meaning if
-     *       the server receives a shared kline/unkline/etc, it
-     *       will not be propagated to clustered servers.
-     */
-    name = "*.arpa";
+	/* name: the server to share with, this can take wildcards */
+	/* NOTE: only local actions will be clustered, meaning if
+	 *       the server receives a shared kline/unkline/etc, it
+	 *       will not be propagated to clustered servers.
+	 */
+	name = "*.arpa";
 
-    /* type: list of what to share, options are as follows:
-     *      kline   - share klines
-     *      unkline - share unklines
-     *      xline   - share xlines
-     *      unxline - share unxlines
-     *      resv    - share resvs
-     *      unresv  - share unresvs
-     *      locops  - share locops
-     *      all     - share all of the above
-     */
-    type = kline, unkline, locops, xline, resv;
+	/* type: list of what to share, options are as follows:
+	 *      kline   - share klines
+	 *      unkline - share unklines
+	 *      xline   - share xlines
+	 *      unxline - share unxlines
+	 *      resv    - share resvs
+	 *      unresv  - share unresvs
+	 *      locops  - share locops
+	 *      all     - share all of the above
+	 */
+	type = kline, unkline, locops, xline, resv;
 };
 
 /* shared {}: users that are allowed to remote kline (OLD U:) */
@@ -274,7 +274,7 @@ channel {
 	use_knock = yes;
 	knock_delay = 5 minutes;
 	knock_delay_channel = 1 minute;
-    burst_topicwho = yes;
+	burst_topicwho = yes;
 	max_chans_per_user = 15;
 	quiet_on_ban = yes;
 	max_bans = 25;
@@ -304,7 +304,7 @@ general {
 	short_motd = no;
 	invisible_on_connect = yes;
 
-    max_watch = 64;
+	max_watch = 64;
 	hide_spoof_ips = yes;
 	use_whois_actually = yes;
 	burst_away = no;
@@ -361,17 +361,17 @@ general {
 };
 
 glines {
-    enable = yes;
-    duration = 1 day;
+	enable = yes;
+	duration = 1 day;
 	logging = reject;
 
-    user = "god@I.still.hate.packets";
-    name = "hades.arpa";      
-    action = reject, block;
+	user = "god@I.still.hate.packets";
+	name = "hades.arpa";      
+	action = reject, block;
 
-    user = "god@*"; 
-    name = "*";
-    action = block;
+	user = "god@*"; 
+	name = "*";
+	action = block;
 };
 
 modules {

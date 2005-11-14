@@ -117,7 +117,7 @@ do_links(struct Client *source_p, int parc, char **parv)
        */
       sendto_one(source_p, form_str(RPL_LINKS),
                  me_name, nick,
-		 target_p->name, target_p->servptr->name,
+                 target_p->name, target_p->servptr->name,
                  target_p->hopcount, p);
     }
   
@@ -155,6 +155,17 @@ static void
 m_links(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
 {
+  static time_t last_used = 0;
+
+  if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+  {
+    sendto_one(source_p, form_str(RPL_LOAD2HI),
+               me.name, source_p->name);
+    return;
+  }
+  else
+    last_used = CurrentTime;
+
   if (!ConfigServerHide.flatten_links)
   {
     mo_links(client_p, source_p, parc, parv);

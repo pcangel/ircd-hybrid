@@ -37,6 +37,8 @@
 #include "parse.h"
 #include "modules.h"
 
+static time_t last_used = 0;
+
 static void m_who(struct Client *, struct Client *, int, char **);
 static void ms_who(struct Client *, struct Client *, int, char **);
 
@@ -207,18 +209,18 @@ who_common_channel(struct Client *source_p, struct Channel *chptr,
     assert(target_p->servptr != NULL);
 
     if ((mask == NULL) ||
-	match(mask, target_p->name) || match(mask, target_p->username) ||
-	match(mask, target_p->host) || 
-	((!ConfigServerHide.hide_servers || IsOper(source_p)) &&
-	 match(mask, target_p->servptr->name)) ||
-	match(mask, target_p->info))
+      match(mask, target_p->name) || match(mask, target_p->username) ||
+      match(mask, target_p->host) || 
+      ((!ConfigServerHide.hide_servers || IsOper(source_p)) &&
+       match(mask, target_p->servptr->name)) ||
+      match(mask, target_p->info))
     {
       do_who(source_p, target_p, NULL, "");
 
       if (*maxmatches > 0)
       {
-	if (--(*maxmatches) == 0)
-	  return;
+        if (--(*maxmatches) == 0)
+          return;
       }
     }
   }
@@ -243,6 +245,19 @@ who_global(struct Client *source_p, char *mask, int server_oper)
   dlink_node *gcptr;
   dlink_node *gcptr_next;
   int maxmatches = 500;
+
+  if (!IsOper(source_p))
+  {
+    if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+    {
+      /* safe enough to give this on a local connect only */
+      sendto_one(source_p, form_str(RPL_LOAD2HI),
+        me.name, source_p->name);
+      return;
+    }
+    else
+      last_used = CurrentTime;
+  }
 
   /* first, list all matching invisible clients on common channels */
   DLINK_FOREACH_SAFE(lp, lp_next, source_p->channel.head)
@@ -272,15 +287,15 @@ who_global(struct Client *source_p, char *mask, int server_oper)
 
     if (!mask ||
         match(mask, target_p->name) || match(mask, target_p->username) ||
-	match(mask, target_p->host) || match(mask, target_p->servptr->name) ||
-	match(mask, target_p->info))
+        match(mask, target_p->host) || match(mask, target_p->servptr->name) ||
+        match(mask, target_p->info))
     {
       do_who(source_p, target_p, NULL, "");
 
       if (maxmatches > 0)
       {
         if (--maxmatches == 0)
-  	  return;
+          return;
       }
     }
   }
@@ -306,6 +321,19 @@ do_who_on_channel(struct Client *source_p, struct Channel *chptr,
   struct Client *target_p;
   struct Membership *ms;
 
+  if (!IsOper(source_p))
+  {
+    if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+    {
+      /* safe enough to give this on a local connect only */
+      sendto_one(source_p, form_str(RPL_LOAD2HI),
+        me.name, source_p->name);
+      return;
+    }
+    else
+      last_used = CurrentTime;
+  }
+
   DLINK_FOREACH_SAFE(ptr, ptr_next, chptr->members.head)
   {
     ms = ptr->data;
@@ -314,7 +342,7 @@ do_who_on_channel(struct Client *source_p, struct Channel *chptr,
     if (member || !IsInvisible(target_p))
     {
       if (server_oper && !IsOper(target_p))
-	continue;
+        continue;
       do_who(source_p, target_p, chname, get_member_status(ms, NO));
     }
   }
