@@ -71,16 +71,16 @@ m_accept(struct Client *client_p, struct Client *source_p,
 {
   struct Accept *accept = NULL;
   char *mask, *nick, *user, *host;
-  char *p = NULL;
+  char first, *p = NULL;
 
-  if (parc < 2 || !irccmp(parv[1], "*"))
+  if (EmptyString(parv[1]) || !irccmp(parv[1], "*"))
   {
     list_accepts(source_p);
     return;
   }
 
-  for (mask = strtoken(&p, parv[1], ","); mask != NULL;
-       mask = strtoken(&p,    NULL, ","))
+  for (mask = strtoken(&p, parv[1], ","), first = YES; mask != NULL;
+       mask = strtoken(&p,    NULL, ","), first = NO)
   {
     if (*mask == '-' && *++mask != '\0')
     {
@@ -88,8 +88,9 @@ m_accept(struct Client *client_p, struct Client *source_p,
 
       if ((accept = find_accept(nick, user, host, source_p, 0)) == NULL)
       {
-        sendto_one(source_p, form_str(ERR_ACCEPTNOT),
-                   me.name, source_p->name, nick, user, host);
+        if (first)
+          sendto_one(source_p, form_str(ERR_ACCEPTNOT),
+                     me.name, source_p->name, nick, user, host);
         MyFree(nick);
         MyFree(user);
         MyFree(host);
@@ -109,15 +110,16 @@ m_accept(struct Client *client_p, struct Client *source_p,
       {
         sendto_one(source_p, form_str(ERR_ACCEPTFULL),
                    me.name, source_p->name);
-	return;
+        return;
       }
 
       split_nuh(mask, &nick, &user, &host);
 
       if ((accept = find_accept(nick, user, host, source_p, 0)) != NULL)
       {
-        sendto_one(source_p, form_str(ERR_ACCEPTEXIST),
-                   me.name, source_p->name, nick, user, host);
+        if (first)
+          sendto_one(source_p, form_str(ERR_ACCEPTEXIST),
+                     me.name, source_p->name, nick, user, host);
         MyFree(nick);
         MyFree(user);
         MyFree(host);
@@ -163,28 +165,30 @@ list_accepts(struct Client *source_p)
   struct Accept *accept;
   int len = 0;
   char nuh_list[IRCD_BUFSIZE] = { '\0' };
-  char *t = nuh_list;
+  char *t;
   const dlink_node *ptr = NULL;
 
-  len = strlen(me.name) + strlen(source_p->name) + 12;
+  len = ircsprintf(nuh_list, form_str(RPL_ACCEPTLIST), me.name,
+    source_p->name);
+  t = nuh_list + len;
 
   DLINK_FOREACH(ptr, source_p->localClient->acceptlist.head)
   {
     accept = ptr->data;
 
-    if ((t - nuh_list) + strlen(source_p->name) + len > IRCD_BUFSIZE)
+    if ((t - nuh_list) + (strlen(accept->nick) + 1 + strlen(accept->user) + 1 +
+        strlen(accept->host)) > IRCD_BUFSIZE)
     {
       *(t - 1) = '\0';
-      sendto_one(source_p, form_str(RPL_ACCEPTLIST),
-                 me.name, source_p->name, nuh_list);
-      t = nuh_list;
+      sendto_one(source_p, "%s", nuh_list);
+      t = nuh_list + len;
     }
 
     t += ircsprintf(t, "%s!%s@%s ",
 		    accept->nick, accept->user, accept->host);
   }
 
-  if (nuh_list[0] != '\0')
+  if (t - nuh_list > len)
   {
     *(t - 1) = '\0';
     sendto_one(source_p, form_str(RPL_ACCEPTLIST),

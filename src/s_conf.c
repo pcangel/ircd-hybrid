@@ -2498,9 +2498,9 @@ split_nuh(char *mask, char **nick, char **user, char **host)
     if (nick != NULL)
     {
       if (*mask != '\0')
-	*nick = xstrldup(mask, NICKLEN);
+        *nick = xstrldup(mask, NICKLEN);
       else
-	DupString(*nick, "*");
+        DupString(*nick, "*");
     }
 
     if ((q = strchr(++p, '@')) != NULL)
@@ -2508,21 +2508,21 @@ split_nuh(char *mask, char **nick, char **user, char **host)
       *q = '\0';
 
       if (*p != '\0')
-	*user = xstrldup(p, USERLEN+1);
+        *user = xstrldup(p, USERLEN+1);
       else
-	DupString(*user, "*");
+        DupString(*user, "*");
 
       if (*++q != '\0')
-	*host = xstrldup(q, HOSTLEN+1);
+        *host = xstrldup(q, HOSTLEN+1);
       else
-	DupString(*host, "*");
+        DupString(*host, "*");
     }
     else
     {
       if (*p != '\0')
-	*user = xstrldup(p, USERLEN+1);
+        *user = xstrldup(p, USERLEN+1);
       else
-	DupString(*user, "*");
+        DupString(*user, "*");
 
       DupString(*host, "*");
     }
@@ -2532,18 +2532,18 @@ split_nuh(char *mask, char **nick, char **user, char **host)
     if ((p = strchr(mask, '@')) != NULL)        /* if found a @ */
     {
       if (nick != NULL)
-	DupString(*nick, "*");
+        DupString(*nick, "*");
       *p = '\0';
 
       if (*mask != '\0')
-	*user = xstrldup(mask, USERLEN+1);
+        *user = xstrldup(mask, USERLEN+1);
       else
-	DupString(*user, "*");
+        DupString(*user, "*");
 
       if (*++p != '\0')
-	*host = xstrldup(p, HOSTLEN+1);
+        *host = xstrldup(p, HOSTLEN+1);
       else
-	DupString(*host, "*");
+        DupString(*host, "*");
     }
     else                                        /* no @ found */
     {
