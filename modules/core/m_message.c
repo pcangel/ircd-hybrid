@@ -571,9 +571,9 @@ msg_channel_flags(int p_or_n, const char *command, struct Client *client_p,
     return;
 
   sendto_channel_remote(source_p, client_p, type, CAP_CHW, CAP_TS6, chptr,
-                ":%s %s %c%s :%s", source_p->name, command, c, chptr->chname, text);
+    ":%s %s %c%s :%s", source_p->name, command, c, chptr->chname, text);
   sendto_channel_remote(source_p, client_p, type, CAP_CHW|CAP_TS6, NOCAPS, chptr,
-                ":%s %s %c%s :%s", ID(source_p), command, c, chptr->chname, text);
+    ":%s %s %c%s :%s", ID(source_p), command, c, chptr->chname, text);
   // non CAP_CHW servers?
 }
 
@@ -1007,17 +1007,17 @@ find_userhost(int use_match, char *nick, char *host, int *count)
   if (collapse(nick) != NULL)
     DLINK_FOREACH(ptr, local_client_list.head)
     {
-      cptr = lc2ptr->data;
+      cptr = ptr->data;
       if (!IsClient(cptr))  // something other than a client
         continue;
 
-      if (match(cptr->name, nick) && (!host || match(host, c2ptr->host)))
+      if (match(cptr->name, nick) && (!host || match(host, cptr->host)))
       {
         (*count)++;
         if (*count > 1)
           return res;
 
-        res = c2ptr;
+        res = cptr;
       }
     }
 
