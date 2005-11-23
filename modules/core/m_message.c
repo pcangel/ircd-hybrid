@@ -55,7 +55,7 @@ static int flood_attack_client(int p_or_n, struct Client *source_p,
                                struct Client *target_p);
 static int flood_attack_channel(int p_or_n, struct Client *source_p,
                                 struct Channel *chptr, char *chname);
-static struct Client* find_userhost (char *, char *, int *);
+static struct Client* find_userhost (int, char *, char *, int *);
 
 #define ENTITY_NONE    0
 #define ENTITY_CHANNEL 1
@@ -282,7 +282,7 @@ build_target_list(int p_or_n, const char *command, struct Client *client_p,
   {
     char *with_prefix;
 
-    targets[ntargets] = ENTITY_NONE;
+    targets[ntargets].type = ENTITY_NONE;
 
     if (!*nick)
       continue;
