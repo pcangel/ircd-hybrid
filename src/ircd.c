@@ -297,6 +297,7 @@ initialize_global_set_options(void)
 
   GlobalSetOptions.ident_timeout = IDENT_TIMEOUT;
   GlobalSetOptions.idletime = ConfigFileEntry.idletime;
+  GlobalSetOptions.maxlisters = 10; /* XXX ya ya ya - db */
   /* End of global set options */
 }
 

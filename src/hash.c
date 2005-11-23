@@ -831,6 +831,14 @@ exceeding_sendq(struct Client *to)
     return 0;
 }
 
+/* free_list_task()
+ *
+ * inputs       - pointer to ListTask
+ *		- pointer to client being listed on
+ * output	- none
+ * side effects -
+ *
+ */
 void
 free_list_task(struct ListTask *lt, struct Client *source_p)
 {

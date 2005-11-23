@@ -232,7 +232,10 @@ m_list(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  do_list(source_p, parc, parv);
+  if (GlobalSetOptions.maxlisters <= dlink_list_length(&listing_client_list))
+    do_list(source_p, parc, parv);
+  else
+    sendto_one(source_p,form_str(RPL_LOAD2HI),me.name,parv[0]);
 }
 
 /*

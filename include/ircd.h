@@ -44,6 +44,7 @@ struct SetOptions
   int ident_timeout; /* timeout for identd lookups        */
   int spam_num;
   int spam_time;
+  int maxlisters;
 };
 
 struct Counter
