@@ -691,33 +691,33 @@ flood_attack_client(int p_or_n, struct Client *source_p,
 {
   int delta;
 
-  if (GlobalSetOptions.floodcount && MyConnect(target_p)
-      && IsClient(source_p) && !IsConfCanFlood(source_p))
+  if (GlobalSetOptions.floodcount && MyConnect(target_p) &&
+      IsClient(source_p) && !IsConfCanFlood(source_p))
   {
-    if ((target_p->localClient->first_received_message_time + 1)
-        < CurrentTime)
+    if ((target_p->localClient->first_received_message_time + 1) < CurrentTime)
     {
-      delta =
-        CurrentTime - target_p->localClient->first_received_message_time;
+      delta = CurrentTime - target_p->localClient->first_received_message_time;
       target_p->localClient->received_number_of_privmsgs -= delta;
       target_p->localClient->first_received_message_time = CurrentTime;
+
       if (target_p->localClient->received_number_of_privmsgs <= 0)
       {
         target_p->localClient->received_number_of_privmsgs = 0;
-        target_p->localClient->flood_noticed = 0;
+        ClearFloodNoticed(target_p);
       }
     }
 
     if ((target_p->localClient->received_number_of_privmsgs >=
-         GlobalSetOptions.floodcount) || target_p->localClient->flood_noticed)
+         GlobalSetOptions.floodcount) || IsFloodNoticed(target_p))
     {
-      if (target_p->localClient->flood_noticed == 0)
+      if (!IsFloodNoticed(target_p))
       {
         sendto_realops_flags(UMODE_BOTS, L_ALL,
                              "Possible Flooder %s on %s target: %s",
                              get_client_name(source_p, HIDE_IP),
                              source_p->servptr->name, target_p->name);
-        target_p->localClient->flood_noticed = 1;
+        SetFloodNoticed(target_p);
+
         /* add a bit of penalty */
         target_p->localClient->received_number_of_privmsgs += 2;
       }
@@ -729,7 +729,7 @@ flood_attack_client(int p_or_n, struct Client *source_p,
       return 1;
     }
     else
-      target_p->localClient->received_number_of_privmsgs++;
+      ++target_p->localClient->received_number_of_privmsgs;
   }
 
   return 0;
