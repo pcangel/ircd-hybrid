@@ -1191,7 +1191,7 @@ kill_client_ll_serv_butone(struct Client *one, struct Client *source_p,
     len_uid = ircsprintf(buf_uid, ":%s KILL %s :", me.id, ID(source_p));
     len_uid += send_format(&buf_uid[len_uid], IRCD_BUFSIZE - len_uid, pattern,
                            args);
-    va_end(args, pattern);
+    va_end(args);
   }
 
   va_start(args, pattern);
