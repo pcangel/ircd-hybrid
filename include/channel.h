@@ -133,9 +133,9 @@ EXTERN struct Membership *find_channel_link(struct Client *, struct Channel *);
 #define FLOOD_NOTICED		1
 #define JOIN_FLOOD_NOTICED	2
 
-#define SetFloodNoticed(x)   ((x)->flags |= FLOOD_NOTICED)
-#define IsSetFloodNoticed(x) ((x)->flags & FLOOD_NOTICED)
-#define ClearFloodNoticed(x) ((x)->flags &= ~FLOOD_NOTICED)
+#define SetMsgFloodNoticed(x)   ((x)->flags |= FLOOD_NOTICED)
+#define IsMsgFloodNoticed(x) ((x)->flags & FLOOD_NOTICED)
+#define ClearMsgFloodNoticed(x) ((x)->flags &= ~FLOOD_NOTICED)
 
 #define SetJoinFloodNoticed(x)   ((x)->flags |= JOIN_FLOOD_NOTICED)
 #define IsSetJoinFloodNoticed(x) ((x)->flags & JOIN_FLOOD_NOTICED)

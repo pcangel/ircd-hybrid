@@ -760,20 +760,20 @@ flood_attack_channel(int p_or_n, struct Client *source_p,
       if (chptr->received_number_of_privmsgs <= 0)
       {
         chptr->received_number_of_privmsgs = 0;
-        ClearFloodNoticed(chptr);
+        ClearMsgFloodNoticed(chptr);
       }
     }
 
     if ((chptr->received_number_of_privmsgs >= GlobalSetOptions.floodcount)
-        || IsSetFloodNoticed(chptr))
+        || IsMsgFloodNoticed(chptr))
     {
-      if (!IsSetFloodNoticed(chptr))
+      if (!IsMsgFloodNoticed(chptr))
       {
         sendto_realops_flags(UMODE_BOTS, L_ALL,
                              "Possible Flooder %s on %s target: %s",
                              get_client_name(source_p, HIDE_IP),
                              source_p->servptr->name, chptr->chname);
-        SetFloodNoticed(chptr);
+        SetMsgFloodNoticed(chptr);
 
         /* Add a bit of penalty */
         chptr->received_number_of_privmsgs += 2;
