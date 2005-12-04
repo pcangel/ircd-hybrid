@@ -431,7 +431,7 @@ operspy_whois(struct Client *client_p, int parc, char *parv[])
   int cur_len = 0;
   int reply_to_send = NO;
 
-  if (strchr(parv[2], '?') || strchr(parv[2], '*'))
+  if (has_wildcards(parv[2]))
   {
     sendto_one(client_p, ":%s NOTICE %s :Do not use wildcards with this.",
                me.name, client_p->name);

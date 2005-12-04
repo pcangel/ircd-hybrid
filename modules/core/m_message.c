@@ -987,7 +987,7 @@ handle_special(int p_or_n, const char *command, struct Client *client_p,
 static struct Client *
 find_userhost(int use_match, char *nick, char *host, int *count)
 {
-  int wildcards = strpbrk(nick, "?#*") != NULL;
+  int wildcards = has_wildcards(nick);
   dlink_node *ptr;
   struct Client *cptr, *res = NULL;
 

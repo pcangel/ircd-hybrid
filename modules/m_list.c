@@ -67,22 +67,10 @@ _moddeinit(void)
 const char *_version = "$Revision$";
 #endif
 
-static int
-has_wildcards(const char *s)
-{
-  char c;
-
-  while ((c = *s++))
-    if (IsMWildChar(c))
-      return 1;
-
-  return 0;
-}
-
 static void
 do_list(struct Client *source_p, int parc, char *parv[])
 {
-  struct ListTask *lt;
+  struct ListTask *lt = NULL;
   int no_masked_channels;
 
   if (MyConnect(source_p))
@@ -95,10 +83,11 @@ do_list(struct Client *source_p, int parc, char *parv[])
     }
   }
 
-  lt = (struct ListTask *) MyMalloc(sizeof(struct ListTask));
+  lt = MyMalloc(sizeof(*lt));
   lt->users_max = UINT_MAX;
   lt->created_max = UINT_MAX;
   lt->topicts_max = UINT_MAX;
+
   if (MyConnect(source_p))
     source_p->localClient->list_task = lt;
   no_masked_channels = 1;

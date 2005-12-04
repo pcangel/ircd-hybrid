@@ -285,6 +285,18 @@ match_cidr(const char *s1, const char *s2)
     offset, cidrlen) && match(mask, address));
 }
 
+int
+has_wildcards(const char *s)
+{
+  char c;
+
+  while ((c = *s++))
+    if (IsMWildChar(c))
+      return 1;
+
+  return 0;
+}
+
 /* collapse()
  *
  * collapses a string containing multiple *'s.

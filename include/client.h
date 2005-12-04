@@ -438,8 +438,6 @@ struct LocalUser
 				 if (!IsOper((x)) && !IsServer((x))) \
 				  (x)->handler = CLIENT_HANDLER; }
 
-#define IsPrivileged(x)         (IsOper(x) || IsServer(x))
-
 #define IsInvisible(x)          ((x)->umodes & UMODE_INVISIBLE)
 #define SendWallops(x)          ((x)->umodes & UMODE_WALLOP)
 #define IsSetCallerId(x)        ((x)->umodes & \

@@ -192,7 +192,7 @@ do_whois(struct Client *source_p, int parc, char **parv)
 
   collapse(nick);
 
-  if (strpbrk(nick, "?#*") == NULL)
+  if (!has_wildcards(nick))
   {
     if ((target_p = find_client(nick)) != NULL)
     {

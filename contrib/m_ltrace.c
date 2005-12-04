@@ -143,7 +143,7 @@ do_ltrace(struct Client *source_p, int parc, char **parv)
   }
 
   doall = (parv[1] && (parc > 1)) ? match(tname, me.name): TRUE;
-  wilds = !parv[1] || strchr(tname, '*') || strchr(tname, '?');
+  wilds = !parv[1] || has_wildcards(tname);
   dow = wilds || doall;
   
   /* lusers cant issue ltrace.. */
