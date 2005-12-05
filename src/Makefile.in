@@ -59,6 +59,7 @@ SRCS = \
  lex.yy.c \
  listener.c \
  m_error.c \
+ metadata.c \
  modules.c \
  motd.c \
  numeric.c \
