@@ -421,8 +421,7 @@ whois_person(struct Client *source_p, struct Client *target_p)
   {
     int show_ip = 0;
 
-    if ((target_p->sockhost[0] != '\0') && (target_p->sockhost[0] == '0' &&
-					    target_p->sockhost[1] == '\0'))
+    if (irccmp(target_p->sockhost, "0"))
     {
       if ((IsAdmin(source_p) || source_p == target_p))
 	show_ip = 1;
