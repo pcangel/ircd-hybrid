@@ -288,11 +288,18 @@ match_cidr(const char *s1, const char *s2)
 int
 has_wildcards(const char *s)
 {
-  char c;
+  const unsigned char *p = (const unsigned char *)s;
 
-  while ((c = *s++))
-    if (IsMWildChar(c))
+  for (; *p != '\0'; ++p)
+  {
+    if (*p == '\\')
+    {
+      if (*++p == '\0')
+        return 0;
+    }
+    else if (IsMWildChar(*p))
       return 1;
+  }
 
   return 0;
 }
