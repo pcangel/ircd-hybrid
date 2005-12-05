@@ -26,78 +26,78 @@
 #include "metadata.h"
 
 struct Metadata *
-add_metadata_str(dlink_list *list, char *key, char *strval)
+add_metadata_str (dlink_list * list, char *key, char *strval)
 {
-	struct Metadata *mdptr;
+  struct Metadata *mdptr;
 
-	assert(key != NULL);
-	assert(strval != NULL);
+  assert (key != NULL);
+  assert (strval != NULL);
 
-	if (find_metadata(list, key) != NULL)
-		return NULL;
+  if (find_metadata (list, key) != NULL)
+    return NULL;
 
-	mdptr = MyMalloc(sizeof(struct Metadata));
-	memset(mdptr, 0, sizeof(struct Metadata));
-	DupString(key, mdptr->key);
-	DupString(strval, mdptr->u.strval);
+  mdptr = MyMalloc (sizeof (struct Metadata));
+  memset (mdptr, 0, sizeof (struct Metadata));
+  DupString (key, mdptr->key);
+  DupString (strval, mdptr->u.strval);
 
-	dlinkAdd(mdptr, make_dlink_node(), list);
+  dlinkAdd (mdptr, make_dlink_node (), list);
 
-	return mdptr;
+  return mdptr;
 }
 
 struct Metadata *
-add_metadata_int(dlink_list *list, char *key, int intval)
+add_metadata_int (dlink_list * list, char *key, int intval)
 {
-	struct Metadata *mdptr;
+  struct Metadata *mdptr;
 
-	assert(key != NULL);
+  assert (key != NULL);
 
-	if (find_metadata(list, key) != NULL)
-		return NULL;
+  if (find_metadata (list, key) != NULL)
+    return NULL;
 
-	mdptr = MyMalloc(sizeof(struct Metadata));
-	memset(mdptr, 0, sizeof(struct Metadata));
-	DupString(key, mdptr->key);
-	mdptr->u.intval = intval;
+  mdptr = MyMalloc (sizeof (struct Metadata));
+  memset (mdptr, 0, sizeof (struct Metadata));
+  DupString (key, mdptr->key);
+  mdptr->u.intval = intval;
 
-	dlinkAdd(mdptr, make_dlink_node(), list);
+  dlinkAdd (mdptr, make_dlink_node (), list);
 
-	return mdptr;
+  return mdptr;
 }
 
 struct Metadata *
-find_metadata(dlink_list *list, char *key)
+find_metadata (dlink_list * list, char *key)
 {
-	dlink_node *n;
+  dlink_node *n;
 
-	assert(key != NULL);
+  assert (key != NULL);
 
-	DLINK_FOREACH(n, list->head)
-	{
-		struct Metadata *md = (struct Metadata *) n->data;
+  DLINK_FOREACH (n, list->head)
+  {
+    struct Metadata *md = (struct Metadata *) n->data;
 
-		if (!irccmp(key, md->key))
-			return md;
-	}
+    if (!irccmp (key, md->key))
+      return md;
+  }
 
-	return NULL;
+  return NULL;
 }
 
 void
-destroy_metadata(dlink_list *list, char *key)
+destroy_metadata (dlink_list * list, char *key)
 {
-	struct Metadata *md;
+  struct Metadata *md;
 
-	assert(key != NULL);
+  assert (key != NULL);
 
-	if ((md = find_metadata(list, key)) == NULL)
-		return;
+  if ((md = find_metadata (list, key)) == NULL)
+    return;
 
-	if (md->u.strval != NULL)
-		MyFree(md->u.strval);
+  if (md->u.strval != NULL)
+    MyFree (md->u.strval);
 
-	dlinkFindDelete(list, md);
+  dlinkFindDelete (list, md);
 
-	MyFree(md);
+  MyFree (md);
 }
