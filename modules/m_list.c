@@ -200,6 +200,13 @@ m_list(struct Client *client_p, struct Client *source_p,
 {
   static time_t last_used = 0;
 
+  if (GlobalSetOptions.maxlisters == 0)
+  {
+    sendto_one(source_p, ":%s NOTICE %s :LIST has been disabled",
+      me.name, source_p->name);
+    return;
+  }
+
   /* If not a LazyLink connection, see if its still paced */
   /* If we're forwarding this to uplinks.. it should be paced due to the
    * traffic involved in /list.. -- fl_ */
@@ -221,7 +228,7 @@ m_list(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if (GlobalSetOptions.maxlisters <= dlink_list_length(&listing_client_list))
+  if (dlink_list_length(&listing_client_list) < GlobalSetOptions.maxlisters)
     do_list(source_p, parc, parv);
   else
     sendto_one(source_p,form_str(RPL_LOAD2HI),me.name,parv[0]);
