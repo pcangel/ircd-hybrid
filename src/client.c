@@ -117,7 +117,7 @@ make_client(struct Client *from)
     dlinkAdd(client_p, make_dlink_node(), &unknown_list);
   }
   else
-    client_p->from = from; /* 'from' of local client is self! */
+    client_p->from = from;
 
   client_p->hnext  = client_p;
   client_p->status = STAT_UNKNOWN;
@@ -760,7 +760,7 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
     if (MyConnect(source_p))
     {
       /* Clean up invitefield */
-      DLINK_FOREACH_SAFE(lp, next_lp, source_p->invited.head)
+      DLINK_FOREACH_SAFE(lp, next_lp, source_p->localClient->invited.head)
         del_invite(lp->data, source_p);
 
       /* Clean up allow lists */
