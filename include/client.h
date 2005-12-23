@@ -153,14 +153,12 @@ struct Client
   char              info[REALLEN + 1]; /* Free form additional client info */
 
   /* client->sockhost contains the ip address gotten from the socket as a
-   * string, this field should be considered read-only once the connection
-   * has been made. (set in s_bsd.c only)
+   * string
    */
   char              sockhost[HOSTIPLEN + 1]; /* This is the host name from the 
                                                 socket ip address as string */
   dlink_list     whowas;    /* Pointers to whowas structs */
   dlink_list     channel;   /* chain of channel pointer blocks */
-  dlink_list     invited;   /* chain of invite pointer blocks */
 
   struct LocalUser *localClient;
 };
@@ -254,8 +252,8 @@ struct LocalUser
   char llname[NICKLEN];
   dlink_list watches;    /**< chain of Watch pointer blocks */
   /* caller ID allow list */
-  dlink_list	 acceptlist;	/* clients I'll allow to talk to me */
-
+  dlink_list acceptlist;	/* clients I'll allow to talk to me */
+  dlink_list invited;   /* chain of invite pointer blocks */
 };
 
 /*

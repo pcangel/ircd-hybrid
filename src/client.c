@@ -139,9 +139,7 @@ free_client(struct Client *client_p)
   assert(client_p != NULL);
   assert(client_p != &me);
   assert(client_p->hnext == client_p);
-  assert(client_p->invited.head == NULL);
   assert(client_p->channel.head == NULL);
-  assert(dlink_list_length(&client_p->invited) == 0);
   assert(dlink_list_length(&client_p->channel) == 0);
 
   MyFree(client_p->away);
@@ -149,6 +147,8 @@ free_client(struct Client *client_p)
 
   if (MyConnect(client_p))
   {
+    assert(dlink_list_length(&client_p->localClient->invited) == 0);
+    assert(client_p->localClient->invited.head == NULL);
     assert(IsClosing(client_p) && IsDead(client_p));
 
     MyFree(client_p->localClient->response);
@@ -738,20 +738,17 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
     if (source_p->servptr->serv != NULL)
       dlinkDelete(&source_p->lnode, &source_p->servptr->serv->users);
 
-    /* If a person is on a channel, send a QUIT notice
-    ** to every client (person) on the same channel (so
-    ** that the client can show the "**signoff" message).
-    ** (Note: The notice is to the local clients *only*)
-    */
+    /*
+     * If a person is on a channel, send a QUIT notice
+     * to every client (person) on the same channel (so
+     * that the client can show the "**signoff" message).
+     * (Note: The notice is to the local clients *only*)
+     */
     sendto_common_channels_local(source_p, 0, ":%s!%s@%s QUIT :%s",
                                  source_p->name, source_p->username,
                                  source_p->host, quitmsg);
     DLINK_FOREACH_SAFE(lp, next_lp, source_p->channel.head)
       remove_user_from_channel(lp->data);
-
-    /* Clean up invitefield */
-    DLINK_FOREACH_SAFE(lp, next_lp, source_p->invited.head)
-      del_invite(lp->data, source_p);
 
     add_history(source_p, 0);
     off_history(source_p);
@@ -762,6 +759,10 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
     /* Do local vs. remote processing here */
     if (MyConnect(source_p))
     {
+      /* Clean up invitefield */
+      DLINK_FOREACH_SAFE(lp, next_lp, source_p->invited.head)
+        del_invite(lp->data, source_p);
+
       /* Clean up allow lists */
       del_all_accepts(source_p);
     }
