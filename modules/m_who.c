@@ -63,11 +63,11 @@ _moddeinit(void)
 const char *_version = "$Revision$";
 #endif
 
-static void who_global(struct Client *source_p, char *mask, int server_oper);
-static void do_who(struct Client *source_p, struct Client *target_p,
-                   const char *chname, const char *op_flags);
-static void do_who_on_channel(struct Client *source_p, struct Channel *chptr,
-                              const char *chname, int member, int server_oper);
+static void who_global(struct Client *, char *, int);
+static void do_who(struct Client *, struct Client *,
+                   const char *, const char *);
+static void do_who_on_channel(struct Client *, struct Channel *, const char *,
+                              int, int);
 
 /*
 ** m_who
@@ -316,23 +316,9 @@ static void
 do_who_on_channel(struct Client *source_p, struct Channel *chptr,
                   const char *chname, int member, int server_oper)
 {
-  dlink_node *ptr;
-  dlink_node *ptr_next;
+  dlink_node *ptr = NULL, *ptr_next = NULL;
   struct Client *target_p;
   struct Membership *ms;
-
-  if (!IsOper(source_p))
-  {
-    if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
-    {
-      /* safe enough to give this on a local connect only */
-      sendto_one(source_p, form_str(RPL_LOAD2HI),
-        me.name, source_p->name);
-      return;
-    }
-    else
-      last_used = CurrentTime;
-  }
 
   DLINK_FOREACH_SAFE(ptr, ptr_next, chptr->members.head)
   {
@@ -411,7 +397,8 @@ static void
 ms_who(struct Client *client_p, struct Client *source_p,
        int parc, char *parv[])
 {
-  /* If its running as a hub, and linked with lazy links
+  /*
+   * If it's running as a hub, and linked with lazy links
    * then allow leaf to use normal client m_who()
    * other wise, ignore it.
    */
