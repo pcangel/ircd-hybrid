@@ -223,21 +223,21 @@ collect_zipstats(void *unused)
 struct EncCapability *
 check_cipher(struct Client *client_p, struct AccessItem *aconf)
 {
-  struct EncCapability *epref;
+  struct EncCapability *epref = NULL;
 
   /* Use connect{} specific info if available */
   if (aconf->cipher_preference)
     epref = aconf->cipher_preference;
-  else
+  else if (ConfigFileEntry.default_cipher_preference)
     epref = ConfigFileEntry.default_cipher_preference;
 
   /* If the server supports the capability in hand, return the matching
    * conf struct.  Otherwise, return NULL (an error).
    */
-  if (IsCapableEnc(client_p, epref->cap))
-    return(epref);
+  if (epref && IsCapableEnc(client_p, epref->cap))
+    return epref;
 
-  return(NULL);
+  return NULL;
 }
 #endif /* HAVE_LIBCRYPTO */
 
@@ -822,7 +822,7 @@ send_capabilities(struct Client *client_p, struct AccessItem *aconf,
   int tl;
   dlink_node *ptr;
 #ifdef HAVE_LIBCRYPTO
-  struct EncCapability *epref;
+  const struct EncCapability *epref = NULL;
   char *capend;
   int sent_cipher = 0;
 #endif
@@ -849,10 +849,10 @@ send_capabilities(struct Client *client_p, struct AccessItem *aconf,
     /* use connect{} specific info if available */
     if (aconf->cipher_preference)
       epref = aconf->cipher_preference;
-    else
+    else if (ConfigFileEntry.default_cipher_preference)
       epref = ConfigFileEntry.default_cipher_preference;
 
-    if (epref->cap & enc_can_send)
+    if (epref && (epref->cap & enc_can_send))
     {
       /* Leave the space -- it is removed later. */
       tl = ircsprintf(t, "%s ", epref->name);
@@ -864,7 +864,7 @@ send_capabilities(struct Client *client_p, struct AccessItem *aconf,
       t = capend; /* truncate string before ENC:, below */
   }
 #endif
-  *(t-1) = '\0';
+  *(t - 1) = '\0';
   sendto_one(client_p, "CAPAB :%s", msgbuf);
 }
 
@@ -970,7 +970,7 @@ show_capabilities(struct Client *target_p)
 #endif
   *(t - 1) = '\0';
 
-  return(msgbuf);
+  return msgbuf;
 }
 
 /* make_server()
