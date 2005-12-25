@@ -61,9 +61,6 @@ EXTERN void register_local_user(struct Client *, struct Client *,
 EXTERN void register_remote_user(struct Client *, struct Client *,
                                  const char *, const char *,
                                  const char *, const char *);
-EXTERN void do_local_user(const char *, struct Client *, struct Client *,
-                          const char *, const char *, const char *,
-                          const char *);
 EXTERN int valid_hostname(const char *);
 EXTERN int valid_username(const char *);
 EXTERN void add_isupport(const char *, const char *, int);

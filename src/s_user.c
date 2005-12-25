@@ -794,54 +794,6 @@ report_and_set_user_flags(struct Client *source_p, const struct AccessItem *acon
   }
 }
 
-/* do_local_user()
- *
- * inputs	-
- * output	- NONE
- * side effects -
- */
-void
-do_local_user(const char *nick, struct Client *client_p, struct Client *source_p,
-              const char *username, const char *host, const char *server,
-              const char *realname)
-{
-  assert(source_p != NULL);
-  assert(source_p->username != username);
-
-  if (source_p == NULL)
-    return;
-
-  if (!IsUnknown(source_p))
-  {
-    sendto_one(source_p, form_str(ERR_ALREADYREGISTRED),
-               me.name, nick);
-    return;
-  }
-
-  source_p->flags |= FLAGS_GOTUSER;
-
-  /*
-   * don't take the clients word for it, ever
-   */
-  source_p->servptr = &me;
-
-  strlcpy(source_p->info, realname, sizeof(source_p->info));
-
-  if (!IsGotId(source_p)) 
-  {
-    /* save the username in the client
-     * If you move this you'll break ping cookies..you've been warned 
-     */
-    strlcpy(source_p->username, username, sizeof(source_p->username));
-  }
-
-  if (source_p->name[0])
-  {
-    /* NICK already received, now I have USER... */
-    register_local_user(client_p, source_p, source_p->name, username);
-  }
-}
-
 /* change_simple_umode()
  *
  * this callback can be hooked to allow special handling of

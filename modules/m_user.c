@@ -36,11 +36,11 @@
 #include "modules.h"
 
 
-static void mr_user(struct Client*, struct Client*, int, char**);
+static void mr_user(struct Client*, struct Client*, int, char *[]);
 
 struct Message user_msgtab = {
   "USER", 0, 0, 5, 0, MFLG_SLOW, 0L,
-  {mr_user, m_registered, m_ignore, m_ignore, m_registered, m_ignore}
+  { mr_user, m_registered, m_ignore, m_ignore, m_registered, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -83,9 +83,34 @@ mr_user(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  do_local_user(parv[0], client_p, source_p,
-                parv[1], /* username */
-                parv[2], /* host     */
-                parv[3], /* server   */
-                parv[4]	 /* users real name */ );
+  if (!IsUnknown(source_p))
+  {
+    sendto_one(source_p, form_str(ERR_ALREADYREGISTRED),
+               me.name, parv[0]);
+    return;
+  }
+
+  source_p->flags |= FLAGS_GOTUSER;
+
+  /*
+   * don't take the clients word for it, ever
+   */
+  source_p->servptr = &me;
+
+  strlcpy(source_p->info, parv[4], sizeof(source_p->info));
+
+  if (!IsGotId(source_p))
+  {
+    /*
+     * save the username in the client
+     * If you move this you'll break ping cookies..you've been warned
+     */
+    strlcpy(source_p->username, parv[1], sizeof(source_p->username));
+  }
+
+  if (source_p->name[0] != '\0')
+  {
+    /* NICK already received, now I have USER... */
+    register_local_user(client_p, source_p, source_p->name, parv[1]);
+  }
 }
