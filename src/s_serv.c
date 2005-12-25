@@ -2266,11 +2266,10 @@ cryptlink_init(struct Client *client_p, struct AccessItem *aconf, fde_t *fd)
     return;
   }
 
-  send_capabilities(client_p, aconf,
- 		    (IsConfLazyLink(aconf) ? find_capability("LL") : 0)
-		    | (IsConfCompressed(aconf) ? find_capability("ZIP") : 0)
-		    | (IsConfTopicBurst(aconf) ? find_capability("TBURST")|find_capability("TB") : 0)
-		    , CAP_ENC_MASK);
+  send_capabilities(client_p, aconf, (ServerInfo.hub ? CAP_HUB : 0)
+                    | (IsConfLazyLink(aconf) ? CAP_LL : 0)
+                    | (IsConfCompressed(aconf) ? CAP_ZIP : 0)
+                    | (IsConfTopicBurst(aconf) ? CAP_TBURST|CAP_TB : 0), CAP_ENC_MASK);
 
   if (me.id[0] != '\0')
     sendto_one(client_p, "PASS . TS %d %s", TS_CURRENT, me.id);
