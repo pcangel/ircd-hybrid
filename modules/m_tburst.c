@@ -163,7 +163,7 @@ static void
 set_topic(struct Client *source_p, struct Channel *chptr, time_t topicts,
           const char *topicwho, const char *topic)
 {
-  int new_topic = strcmp(chptr->topic ? chptr->topic : "", topic)
+  int new_topic = strcmp(chptr->topic ? chptr->topic : "", topic);
 
   set_channel_topic(chptr, topic, topicwho, topicts);
 
