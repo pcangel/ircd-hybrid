@@ -31,11 +31,11 @@
 #include "parse.h"
 #include "modules.h"
 
-static void mr_capab(struct Client *, struct Client *, int, char **);
+static void mr_capab(struct Client *, struct Client *, int, char *[]);
 
 struct Message capab_msgtab = {
   "CAPAB", 0, 0, 0, 0, MFLG_SLOW | MFLG_UNREG, 0,
-  {mr_capab, m_ignore, m_ignore, m_ignore, m_ignore, m_ignore}
+  { mr_capab, m_ignore, m_ignore, m_ignore, m_ignore, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -54,22 +54,29 @@ _moddeinit(void)
 const char *_version = "$Revision$";
 #endif
 
-/*
- * mr_capab - CAPAB message handler
- *      parv[0] = sender prefix
- *      parv[1] = space-separated list of capabilities
+/*! \brief CAPAB command handler (called for unregistered connections only)
  *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = space-separated list of capabilities
  */
 static void
 mr_capab(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
-  int i;
-  int cap;
-  char *p;
-  char *s;
+  int i = 0;
+  int cap = 0;
+  char *p = NULL;
+  char *s = NULL;
 #ifdef HAVE_LIBCRYPTO
-  struct EncCapability *ecap;
+  struct EncCapability *ecap = NULL;
   unsigned int cipher = 0;
 #endif
 
@@ -82,15 +89,16 @@ mr_capab(struct Client *client_p, struct Client *source_p,
     exit_client(client_p, client_p, "CAPAB received twice");
     return;
   }
-  else
-    SetCapable(client_p, CAP_CAP);
+
+  SetCapable(client_p, CAP_CAP);
 
   for (i = 1; i < parc; i++)
   {
-    for (s = strtoken(&p, parv[i], " "); s; s = strtoken(&p, NULL, " "))
+    for (s = strtoken(&p, parv[i], " "); s;
+         s = strtoken(&p, NULL,    " "))
     {
 #ifdef HAVE_LIBCRYPTO
-      if ((strncmp(s, "ENC:", 4) == 0))
+      if (!strncmp(s, "ENC:", 4))
       {
         /* Skip the "ENC:" portion */
         s += 4;
@@ -100,7 +108,7 @@ mr_capab(struct Client *client_p, struct Client *source_p,
          */
         for (ecap = CipherTable; ecap->name; ecap++)
         {
-          if ((irccmp(ecap->name, s) == 0) && (ecap->cap & CAP_ENC_MASK))
+          if (!irccmp(ecap->name, s) && (ecap->cap & CAP_ENC_MASK))
           {
             cipher = ecap->cap;
             break;
@@ -116,7 +124,7 @@ mr_capab(struct Client *client_p, struct Client *source_p,
         {
           /* cipher is still zero; we didn't find a matching entry. */
           exit_client(client_p, client_p,
-	              "Cipher selected is not available here.");
+                      "Cipher selected is not available here.");
           return;
         }
       }

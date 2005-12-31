@@ -62,19 +62,28 @@ _moddeinit(void)
 const char *_version = "$Revision$";
 #endif
 
-/*
- * m_challenge - generate RSA challenge for wouldbe oper
- * parv[0] = sender prefix
- * parv[1] = operator to challenge for, or +response
+/*! \brief CHALLENGE command handler (called for local clients only)
  *
+ * Generate RSA challenge for wouldbe oper
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = operator to challenge for, or +response
  */
 static void
 m_challenge(struct Client *client_p, struct Client *source_p,
             int parc, char *parv[])
 {
-  char *challenge;
-  struct ConfItem *conf=NULL;
-  struct AccessItem *aconf=NULL;
+  char *challenge = NULL;
+  struct ConfItem *conf = NULL;
+  struct AccessItem *aconf = NULL;
 
   assert(source_p->localClient);
 
@@ -89,7 +98,7 @@ m_challenge(struct Client *client_p, struct Client *source_p,
   if (*parv[1] == '+')
   {
     /* Ignore it if we aren't expecting this... -A1kmm */
-    if (!source_p->localClient->response)
+    if (source_p->localClient->response == NULL)
       return;
 
     if (irccmp(source_p->localClient->response, ++parv[1]))
@@ -145,7 +154,7 @@ m_challenge(struct Client *client_p, struct Client *source_p,
     aconf = &conf->conf.AccessItem;
   }
 
-  if(aconf == NULL)
+  if (aconf == NULL)
   {
     sendto_one (source_p, form_str(ERR_NOOPERHOST), me.name, parv[0]);
     conf = find_exact_name_conf(OPER_TYPE, parv[1], NULL, NULL);
@@ -166,7 +175,7 @@ m_challenge(struct Client *client_p, struct Client *source_p,
   if (!generate_challenge(&challenge, &(source_p->localClient->response),
                           aconf->rsa_public_key))
     sendto_one(source_p, form_str(RPL_RSACHALLENGE),
-               me.name, parv[0], challenge);
+               me.name, source_p->name, challenge);
 
   DupString(source_p->localClient->auth_oper, conf->name);
   MyFree(challenge);

@@ -54,22 +54,28 @@ _moddeinit(void)
 const char *_version = "$Revision$";
 #endif
 
-/*
- * mo_close - CLOSE message handler
- *  - added by Darren Reed Jul 13 1992.
+/*! \brief CLOSE command handler (called for operators only)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
  */
 static void
 mo_close(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
-  struct Client *target_p;
-  dlink_node *ptr;
-  dlink_node *ptr_next;
+  dlink_node *ptr = NULL, *ptr_next = NULL;
   unsigned int closed = 0;
 
   DLINK_FOREACH_SAFE(ptr, ptr_next, unknown_list.head)
   {
-    target_p = ptr->data;
+    struct Client *target_p = ptr->data;
 
   /* Which list would connecting servers be found in? serv_list ? */
 #if 0
@@ -77,13 +83,14 @@ mo_close(struct Client *client_p, struct Client *source_p,
           !IsHandshake(target_p) && !IsDoingKauth(target_p))
         continue;
 #endif
-    sendto_one(source_p, form_str(RPL_CLOSING), me.name, parv[0],
+    sendto_one(source_p, form_str(RPL_CLOSING), me.name, source_p->name,
                get_client_name(target_p, SHOW_IP), target_p->status);
-    /* exit here is safe, because it is guaranteed not to be source_p
+    /*
+     * exit here is safe, because it is guaranteed not to be source_p
      * because it is unregistered and source_p is an oper.
      */
     exit_client(target_p, target_p, "Oper Closing");
-    closed++;
+    ++closed;
   }
 
   sendto_one(source_p, form_str(RPL_CLOSEEND),

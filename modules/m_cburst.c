@@ -38,11 +38,11 @@
 #include "modules.h"
 
 
-static void ms_cburst(struct Client*, struct Client*, int, char**);
+static void ms_cburst(struct Client *, struct Client *, int, char *[]);
 
 struct Message cburst_msgtab = {
-  "CBURST", 0, 0, 1, 0, MFLG_SLOW | MFLG_UNREG, 0L,
-  {m_unregistered, m_ignore, ms_cburst, m_ignore, m_ignore, m_ignore}
+  "CBURST", 0, 0, 1, 0, MFLG_SLOW | MFLG_UNREG, 0,
+  { m_unregistered, m_ignore, ms_cburst, m_ignore, m_ignore, m_ignore }
 };
 #ifndef STATIC_MODULES
 void
@@ -60,28 +60,34 @@ _moddeinit(void)
 const char *_version = "$Revision$";
 #endif
 
-/*
-** m_cburst
-**      parv[0] = sender prefix
-**      parv[1] = channel
-**      parv[2] = nick if present (!nick indicates cjoin)
-**      parv[3] = channel key (EVENTUALLY)
-*/
-/*
+/*! \brief CBURST command handler (called for servers only)
+ *
  * This function will "burst" the given channel onto
  * the given LL capable server.
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = channel
+ *      - parv[2] = nick if present (!nick indicates cjoin)
+ *      - parv[3] = channel key (EVENTUALLY)
  */
-
 static void 
 ms_cburst(struct Client *client_p, struct Client *source_p,
           int parc, char *parv[])
 {
-  char *name;
-  char *nick;
-  const char *key;
-  struct Channel *chptr;
+  char *name = NULL;
+  char *nick = NULL;
+  const char *key = NULL;
+  struct Channel *chptr = NULL;
 
-  if (parc < 2 || *parv[1] == '\0' )
+  if (EmptyString(parv[1]))
      return;
 
   name = parv[1];
@@ -109,10 +115,10 @@ ms_cburst(struct Client *client_p, struct Client *source_p,
 					* over-ruled
                                         */
     }
-    else if(nick && *nick=='!')
+    else if (nick && *nick== '!')
     {
       sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL),
-                 me.name, nick+1, name);
+                 me.name, nick + 1, name);
       return;
     }
   }
@@ -130,5 +136,5 @@ ms_cburst(struct Client *client_p, struct Client *source_p,
     sendto_realops_flags(UMODE_ALL, L_ALL,
                          "*** CBURST request received from non LL capable server! [%s]",
                          client_p->name);
-    }
+  }
 }

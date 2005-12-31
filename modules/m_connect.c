@@ -35,12 +35,12 @@
 #include "hash.h"
 #include "modules.h"
 
-static void mo_connect(struct Client *, struct Client *, int, char **);
-static void ms_connect(struct Client *, struct Client *, int, char **);
+static void mo_connect(struct Client *, struct Client *, int, char *[]);
+static void ms_connect(struct Client *, struct Client *, int, char *[]);
 
 struct Message connect_msgtab = {
   "CONNECT", 0, 0, 2, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_not_oper, ms_connect, m_ignore, mo_connect, m_ignore}
+  { m_unregistered, m_not_oper, ms_connect, m_ignore, mo_connect, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -59,16 +59,20 @@ _moddeinit(void)
 const char *_version = "$Revision$";
 #endif
 
-/*
- * mo_connect - CONNECT command handler
- * 
- * Added by Jto 11 Feb 1989
+/*! \brief CONNECT command handler (called for operators only)
  *
- * m_connect
- *      parv[0] = sender prefix
- *      parv[1] = servername
- *      parv[2] = port number
- *      parv[3] = remote server
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = servername
+ *      - parv[2] = port number
+ *      - parv[3] = remote server
  */
 static void
 mo_connect(struct Client* client_p, struct Client* source_p,
@@ -88,8 +92,8 @@ mo_connect(struct Client* client_p, struct Client* source_p,
     return;
   }
 
-  if (hunt_server(client_p, source_p,
-                  ":%s CONNECT %s %s :%s", 3, parc, parv) != HUNTED_ISME)
+  if (hunt_server(client_p, source_p, ":%s CONNECT %s %s :%s", 3,
+                  parc, parv) != HUNTED_ISME)
     return;
 
   if (*parv[1] == '\0')
@@ -181,22 +185,27 @@ mo_connect(struct Client* client_p, struct Client* source_p,
                me.name, source_p->name, conf->name, aconf->port);
   }
 
-  /* client is either connecting with all the data it needs or has been
+  /*
+   * client is either connecting with all the data it needs or has been
    * destroyed
    */
   aconf->port = tmpport;
 }
 
-/*
- * ms_connect - CONNECT command handler
- * 
- * Added by Jto 11 Feb 1989
+/*! \brief CONNECT command handler (called for remote clients only)
  *
- * m_connect
- *      parv[0] = sender prefix
- *      parv[1] = servername
- *      parv[2] = port number
- *      parv[3] = remote server
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = servername
+ *      - parv[2] = port number
+ *      - parv[3] = remote server
  */
 static void
 ms_connect(struct Client *client_p, struct Client *source_p,
@@ -208,8 +217,8 @@ ms_connect(struct Client *client_p, struct Client *source_p,
   struct AccessItem *aconf = NULL;
   struct Client *target_p;
 
-  if (hunt_server(client_p, source_p,
-                  ":%s CONNECT %s %s :%s", 3, parc, parv) != HUNTED_ISME)
+  if (hunt_server(client_p, source_p, ":%s CONNECT %s %s :%s", 3,
+                  parc, parv) != HUNTED_ISME)
     return;
 
   if (*parv[1] == '\0')
@@ -304,9 +313,10 @@ ms_connect(struct Client *client_p, struct Client *source_p,
   else
     sendto_one(source_p, ":%s NOTICE %s :*** Couldn't connect to %s.%d",
                me.name, source_p->name, conf->name, aconf->port);
-  /* client is either connecting with all the data it needs or has been
+
+  /*
+   * client is either connecting with all the data it needs or has been
    * destroyed
    */
   aconf->port = tmpport;
 }
-
