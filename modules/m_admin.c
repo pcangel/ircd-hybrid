@@ -41,7 +41,7 @@ static void do_admin(struct Client *);
 
 struct Message admin_msgtab = {
   "ADMIN", 0, 0, 0, 0, MFLG_SLOW | MFLG_UNREG, 0, 
-  {mr_admin, m_admin, ms_admin, m_ignore, ms_admin, m_ignore}
+  { mr_admin, m_admin, ms_admin, m_ignore, ms_admin, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -70,10 +70,18 @@ _moddeinit(void)
 }
 #endif
 
-/*
- * mr_admin - ADMIN command handler
- *      parv[0] = sender prefix   
- *      parv[1] = servername   
+/*! \brief ADMIN command handler (called for unregistered clients only)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = servername
  */
 static void
 mr_admin(struct Client *client_p, struct Client *source_p,
@@ -97,10 +105,18 @@ mr_admin(struct Client *client_p, struct Client *source_p,
 #endif
 }
 
-/*
- * m_admin - ADMIN command handler
- *      parv[0] = sender prefix
- *      parv[1] = servername
+/*! \brief ADMIN command handler (called for local clients only)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = servername
  */
 static void
 m_admin(struct Client *client_p, struct Client *source_p,
@@ -130,10 +146,18 @@ m_admin(struct Client *client_p, struct Client *source_p,
 #endif
 }
 
-/*
- * ms_admin - ADMIN command handler, used for OPERS as well
- *      parv[0] = sender prefix
- *      parv[1] = servername
+/*! \brief ADMIN command handler (called for remote clients and servers)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = servername
  */
 static void
 ms_admin(struct Client *client_p, struct Client *source_p,

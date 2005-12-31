@@ -63,21 +63,19 @@ _moddeinit(void)
 const char *_version = "$Revision$";
 #endif
 
-/***********************************************************************
- * m_away() - Added 14 Dec 1988 by jto. 
- *            Not currently really working, I don't like this
- *            call at all...
- *
- *            ...trying to make it work. I don't like it either,
- *            but perhaps it's worth the load it causes to net.
- *            This requires flooding of the whole net like NICK,
- *            USER, MODE, etc messages...  --msa
- ***********************************************************************/
 
-/*
- * m_away
- *  parv[0] = sender prefix
- *  parv[1] = away message
+/*! \brief AWAY command handler (called for local clients only)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = away text (optional)
  */
 static void
 m_away(struct Client *client_p, struct Client *source_p,
@@ -146,6 +144,19 @@ m_away(struct Client *client_p, struct Client *source_p,
   sendto_one(source_p, form_str(RPL_NOWAWAY), me.name, source_p->name);
 }
 
+/*! \brief AWAY command handler (called for operators only)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = away text (optional)
+ */
 static void
 mo_away(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
@@ -204,6 +215,19 @@ mo_away(struct Client *client_p, struct Client *source_p,
   sendto_one(source_p, form_str(RPL_NOWAWAY), me.name, source_p->name);
 }
 
+/*! \brief AWAY command handler (called for remote clients)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = away text (optional)
+ */
 static void
 ms_away(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])

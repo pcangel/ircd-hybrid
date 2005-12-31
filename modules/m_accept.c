@@ -60,10 +60,19 @@ _moddeinit(void)
 const char *_version = "$Revision$";
 #endif
 
-/*
- * m_accept - ACCEPT command handler
- *      parv[0] = sender prefix
- *      parv[1] = list of masks to be accepted or removed
+
+/*! \brief ACCEPT command handler
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = list of masks to be accepted or removed (optional)
  */
 static void
 m_accept(struct Client *client_p, struct Client *source_p,
