@@ -44,17 +44,17 @@ static void mo_chgname(struct Client *, struct Client *, int, char *[]);
 
 struct Message chgident_msgtab = {
   "CHGIDENT", 0, 0, 2, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_not_oper, mo_chgident, mo_chgident, mo_chgident, m_ignore}
+  { m_unregistered, m_not_oper, mo_chgident, mo_chgident, mo_chgident, m_ignore }
 };
 
 struct Message chghost_msgtab = {
   "CHGHOST", 0, 0, 2, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_not_oper, mo_chghost, mo_chghost, mo_chghost, m_ignore}
+  { m_unregistered, m_not_oper, mo_chghost, mo_chghost, mo_chghost, m_ignore }
 };
 
 struct Message chgname_msgtab = {
   "CHGNAME", 0, 0, 2, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_not_oper, mo_chgname, mo_chgname, mo_chgname, m_ignore}
+  { m_unregistered, m_not_oper, mo_chgname, mo_chgname, mo_chgname, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -103,7 +103,8 @@ mo_chgident(struct Client *client_p, struct Client *source_p,
 
     if (target_p == NULL || !IsClient(target_p))
     {
-      sendto_one(source_p, form_str(ERR_NOSUCHNICK), me.name, parv[0], parv[1]);
+      sendto_one(source_p, form_str(ERR_NOSUCHNICK),
+                 me.name, parv[0], parv[1]);
       return;
     }
   }
@@ -156,7 +157,8 @@ mo_chghost(struct Client *client_p, struct Client *source_p,
     target_p = find_client(parv[1]);
     if (target_p == NULL || !IsClient(target_p))
     {
-      sendto_one(source_p, form_str(ERR_NOSUCHNICK), me.name, parv[0], parv[1]);
+      sendto_one(source_p, form_str(ERR_NOSUCHNICK),
+                 me.name, parv[0], parv[1]);
       return;
     }
   }
@@ -168,6 +170,7 @@ mo_chghost(struct Client *client_p, struct Client *source_p,
   }
 
   strcpy(target_p->host, parv[2]);
+  SetIPSpoof(target_p);
   
   if (MyClient(source_p))
   {
@@ -204,7 +207,8 @@ mo_chgname(struct Client *client_p, struct Client *source_p,
   }
   else if ((target_p = find_client(parv[1])) == NULL)
   {
-    sendto_one(source_p, form_str(ERR_NOSUCHNICK), me.name, parv[0], parv[1]);
+    sendto_one(source_p, form_str(ERR_NOSUCHNICK),
+               me.name, parv[0], parv[1]);
     return;
   }
 
