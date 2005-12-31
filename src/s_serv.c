@@ -566,6 +566,34 @@ try_connections(void *unused)
   }
 }
 
+/* bogus_host()
+ *
+ * inputs       - hostname
+ * output       - 1 if a bogus hostname input,
+ *              - 0 if its valid
+ * side effects - none
+ */
+int
+bogus_host(const char *host)
+{
+  unsigned int length = 0;
+  unsigned int dots   = 0;
+  const unsigned char *s = (const unsigned char *)host;
+
+  for (; *s; ++s)
+  {
+    if (!IsServChar(*s))
+      return 1;
+
+    ++length;
+
+    if ('.' == *s)
+      ++dots;
+  }
+
+  return !dots || length > HOSTLEN;
+}
+
 /*
  * check_server
  *

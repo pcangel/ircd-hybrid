@@ -39,13 +39,12 @@
 #include "modules.h"
 
 
-static void mr_server(struct Client *, struct Client *, int, char **);
-static void ms_server(struct Client *, struct Client *, int, char **);
-static void ms_sid(struct Client *, struct Client *, int, char **);
+static void mr_server(struct Client *, struct Client *, int, char *[]);
+static void ms_server(struct Client *, struct Client *, int, char *[]);
+static void ms_sid(struct Client *, struct Client *, int, char *[]);
 
-static int bogus_host(char *host);
 static void set_server_gecos(struct Client *, char *);
-static struct Client *server_exists(char *);
+static struct Client *server_exists(const char *);
 
 struct Message server_msgtab = {
   "SERVER", 0, 0, 4, 0, MFLG_SLOW | MFLG_UNREG, 0,
@@ -454,15 +453,15 @@ ms_server(struct Client *client_p, struct Client *source_p,
     sendto_realops_flags(UMODE_ALL, L_OPER,
 			 "Link %s introduced leafed server %s.",
                          client_p->name, name);
-      /* If it is new, we are probably misconfigured, so split the
-       * non-hub server introducing this. Otherwise, split the new
-       * server. -A1kmm.
-       */
-      /* wastes too much bandwidth, generates too many errors on
-       * larger networks, dont bother. --fl_
-       */
-      exit_client(client_p, &me, "Leafed Server.");
-      return;
+    /* If it is new, we are probably misconfigured, so split the
+     * non-hub server introducing this. Otherwise, split the new
+     * server. -A1kmm.
+     */
+    /* wastes too much bandwidth, generates too many errors on
+     * larger networks, dont bother. --fl_
+     */
+    exit_client(client_p, &me, "Leafed Server.");
+    return;
   }
 
   target_p = make_client(client_p);
@@ -878,50 +877,24 @@ set_server_gecos(struct Client *client_p, char *info)
     strlcpy(client_p->info, "(Unknown Location)", sizeof(client_p->info));
 }
 
-/* bogus_host()
- *
- * inputs	- hostname
- * output	- 1 if a bogus hostname input,
- *              - 0 if its valid
- * side effects	- none
- */
-static int
-bogus_host(char *host)
-{
-  unsigned int dots = 0;
-  char *s;
-
-  for (s = host; *s; s++)
-  {
-    if (!IsServChar(*s))
-      return(1);
-
-    if ('.' == *s)
-      ++dots;
-  }
-
-  return(!dots);
-}
-
 /* server_exists()
  *
  * inputs	- servername
  * output	- 1 if server exists, 0 if doesnt exist
  */
 static struct Client *
-server_exists(char *servername)
+server_exists(const char *servername)
 {
-  struct Client *target_p;
-  dlink_node *ptr;
+  dlink_node *ptr = NULL;
 
   DLINK_FOREACH(ptr, global_serv_list.head)
   {
-    target_p = ptr->data;
+    struct Client *target_p = ptr->data;
 
     if (match(target_p->name, servername) || 
         match(servername, target_p->name))
-      return(target_p);
+      return target_p;
   }
 
-  return(NULL);
+  return NULL;
 }

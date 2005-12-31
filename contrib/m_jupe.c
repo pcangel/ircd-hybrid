@@ -39,7 +39,6 @@
 #include "s_conf.h"
 
 static void mo_jupe(struct Client *, struct Client *, int, char *[]);
-static int bogus_host(char *);
 
 struct Message jupe_msgtab = {
   "JUPE", 0, 0, 3, 0, MFLG_SLOW, 0,
@@ -162,36 +161,9 @@ mo_jupe(struct Client *client_p, struct Client *source_p,
   dlinkAdd(ajupe, &ajupe->lnode, &ajupe->servptr->serv->servers);
   dlinkAdd(ajupe, make_dlink_node(), &global_serv_list);
 
-  /* XXX is this really necessary? 
+  /*
+   * TBR: Is this really necessary? 
    * for now, 'cause of the way squit works
    */
   dlinkAdd(ajupe, &ajupe->node, &global_client_list);
-}
-
-/* bogus_host()
- *
- * inputs       - hostname
- * output       - 1 if a bogus hostname input,
- *              - 0 if its valid
- * side effects - none
- */
-static int
-bogus_host(char *host)
-{
-  unsigned int length = 0;
-  unsigned int dots   = 0;
-  char *s = host;
-
-  for (; *s; s++)
-  {
-    if (!IsServChar(*s))  
-      return 1;
-
-    ++length;
-
-    if ('.' == *s)
-      ++dots;
-  }
-
-  return !dots || length > HOSTLEN;
 }

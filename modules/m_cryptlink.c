@@ -47,7 +47,6 @@
 #include "s_stats.h"     /* ServerStats */
 #include "motd.h"
 
-static int bogus_host(char *host);
 static char *parse_cryptserv_args(struct Client *client_p,
                                   char *parv[], int parc, char *info,
                                   char *key);
@@ -528,36 +527,9 @@ parse_cryptserv_args(struct Client *client_p, char *parv[],
   MyFree(out);
 
   strlcpy(info, parv[4], REALLEN + 1);
-
+  /* XXX: bogus_host() should take care of this case */
   if (strlen(name) > HOSTLEN)
     name[HOSTLEN] = '\0';
 
   return(name);
-}
-
-/* bogus_host()
- *
- * inputs	- hostname
- * output	- 1 if a bogus hostname input, 0 if its valid
- * side effects	- none
- */
-static int
-bogus_host(char *host)
-{
-  unsigned int length = 0;
-  unsigned int dots   = 0;
-  char *s = host;
-
-  for (; *s; s++)
-  {
-    if (!IsServChar(*s))
-      return(1);
-
-    ++length;
-
-    if ('.' == *s)
-      ++dots;
-  }
-
-  return(!dots || length > HOSTLEN);
 }

@@ -236,6 +236,7 @@ EXTERN struct Client *uplink; /* NON NULL if leaf and is this servers uplink */
 #define HUNTED_ISME     0       /* if this server should execute the command */
 #define HUNTED_PASS     1       /* if message passed onwards successfully */
 
+EXTERN int bogus_host(const char *);
 EXTERN int check_server(const char *, struct Client *, int);
 EXTERN int hunt_server(struct Client *, struct Client *,
                        const char *, int, int, char **);
@@ -251,7 +252,7 @@ EXTERN const char *show_capabilities(struct Client *);
 EXTERN void try_connections(void *);
 EXTERN void collect_zipstats(void *);
 EXTERN void initServerMask(void);
-EXTERN void burst_channel(struct Client *client_p, struct Channel *);
+EXTERN void burst_channel(struct Client *, struct Channel *);
 EXTERN void sendnick_TS(struct Client *, struct Client *);
 EXTERN int serv_connect(struct AccessItem *, struct Client *);
 EXTERN struct Client *find_servconn_in_progress(const char *);
