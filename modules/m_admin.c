@@ -34,9 +34,9 @@
 #include "parse.h"
 #include "modules.h"
 
-static void m_admin(struct Client *, struct Client *, int, char **);
-static void mr_admin(struct Client *, struct Client *, int, char **);
-static void ms_admin(struct Client *, struct Client *, int, char **);
+static void m_admin(struct Client *, struct Client *, int, char *[]);
+static void mr_admin(struct Client *, struct Client *, int, char *[]);
+static void ms_admin(struct Client *, struct Client *, int, char *[]);
 static void do_admin(struct Client *);
 
 struct Message admin_msgtab = {
@@ -45,7 +45,7 @@ struct Message admin_msgtab = {
 };
 
 #ifndef STATIC_MODULES
-static struct Callback *admin_cb;
+static struct Callback *admin_cb = NULL;
 const char *_version = "$Revision$";
 
 static void *
@@ -81,7 +81,7 @@ _moddeinit(void)
  *                 pointers.
  * \note Valid arguments for this command are:
  *      - parv[0] = sender prefix
- *      - parv[1] = servername
+ *      - parv[1] = name of target (rejected for unregistered clients)
  */
 static void
 mr_admin(struct Client *client_p, struct Client *source_p,
@@ -95,8 +95,8 @@ mr_admin(struct Client *client_p, struct Client *source_p,
                me.name, EmptyString(parv[0]) ? "*" : parv[0]);
     return;
   }
-  else
-    last_used = CurrentTime;
+
+  last_used = CurrentTime;
 
 #ifdef STATIC_MODULES
   do_admin(client_p);
@@ -116,7 +116,8 @@ mr_admin(struct Client *client_p, struct Client *source_p,
  *                 pointers.
  * \note Valid arguments for this command are:
  *      - parv[0] = sender prefix
- *      - parv[1] = servername
+ *      - parv[1] = name of target (optional; string can be a nick or server
+ *                  and can also include wildcards)
  */
 static void
 m_admin(struct Client *client_p, struct Client *source_p,
@@ -130,14 +131,13 @@ m_admin(struct Client *client_p, struct Client *source_p,
                me.name, source_p->name);
     return;
   }
-  else
-    last_used = CurrentTime;
+
+  last_used = CurrentTime;
 
   if (!ConfigFileEntry.disable_remote)
-  {
-    if (hunt_server(client_p, source_p, ":%s ADMIN :%s", 1, parc, parv) != HUNTED_ISME)
+    if (hunt_server(client_p, source_p, ":%s ADMIN :%s", 1,
+                    parc, parv) != HUNTED_ISME)
       return;
-  }
 
 #ifdef STATIC_MODULES
   do_admin(client_p);
@@ -157,13 +157,15 @@ m_admin(struct Client *client_p, struct Client *source_p,
  *                 pointers.
  * \note Valid arguments for this command are:
  *      - parv[0] = sender prefix
- *      - parv[1] = servername
+ *      - parv[1] = name of target (optional; string can be a nick or server
+ *                  and can also include wildcards)
  */
 static void
 ms_admin(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
-  if (hunt_server(client_p, source_p, ":%s ADMIN :%s", 1, parc, parv) != HUNTED_ISME)
+  if (hunt_server(client_p, source_p, ":%s ADMIN :%s", 1,
+                  parc, parv) != HUNTED_ISME)
     return;
 
   if (IsClient(source_p))
@@ -190,14 +192,14 @@ do_admin(struct Client *source_p)
   nick = ID_or_name(source_p, source_p->from);
 
   sendto_one(source_p, form_str(RPL_ADMINME),
-	     me_name, nick, me.name);
+             me_name, nick, me.name);
   if (AdminInfo.name != NULL)
     sendto_one(source_p, form_str(RPL_ADMINLOC1),
-	       me_name, nick, AdminInfo.name);
+               me_name, nick, AdminInfo.name);
   if (AdminInfo.description != NULL)
     sendto_one(source_p, form_str(RPL_ADMINLOC2),
-	       me_name, nick, AdminInfo.description);
+               me_name, nick, AdminInfo.description);
   if (AdminInfo.email != NULL)
     sendto_one(source_p, form_str(RPL_ADMINEMAIL),
-	       me_name, nick, AdminInfo.email);
+               me_name, nick, AdminInfo.email);
 }
