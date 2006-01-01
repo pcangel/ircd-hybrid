@@ -236,7 +236,7 @@ static struct NumericInfo replies[] = {
 /* 209 */  {"RPL_TRACECLASS", ":%s 209 %s Class %s %d", NULL},
 /* 210 */  {NULL, NULL, NULL},
 /* 211 */  {"RPL_STATSLINKINFO", ":%s 211 %s %s %u %u %llu %u %llu :%u %u %s", NULL},
-/* 212 */  {"RPL_STATSCOMMANDS", ":%s 212 %s %s %u %u :%u", NULL},
+/* 212 */  {"RPL_STATSCOMMANDS", ":%s 212 %s %s %u %llu :%u", NULL},
 /* 213 */  {"RPL_STATSCLINE", ":%s 213 %s %c %s %s %s %d %s", NULL},
 /* 214 */  {"RPL_STATSNLINE", ":%s 214 %s %c %s * %s %d %s", NULL},
 /* 215 */  {"RPL_STATSILINE", ":%s 215 %s %c %s * %s@%s %d %s", NULL},
