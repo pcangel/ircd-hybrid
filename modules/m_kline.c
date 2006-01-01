@@ -230,7 +230,7 @@ me_kline(struct Client *client_p, struct Client *source_p,
   time_t cur_time;
   char *kuser, *khost, *kreason, *oper_reason;
 
-  if (parc != 6)
+  if (parc != 6 || EmptyString(parv[5]))
     return;
 
   if (!match(parv[1], me.name))
@@ -306,7 +306,7 @@ static void
 ms_kline(struct Client *client_p, struct Client *source_p,
 	 int parc, char *parv[])
 {
-  if (parc != 6)
+  if (parc != 6 || EmptyString(parv[5]))
     return;
 
   sendto_match_servs(source_p, parv[1], CAP_KLN,
