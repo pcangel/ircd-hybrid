@@ -62,13 +62,21 @@ _moddeinit(void)
 const char *_version = "$Revision$";
 #endif
 
-/*
-** m_invite
-**      parv[0] - sender prefix
-**      parv[1] - user to invite
-**      parv[2] - channel name
-**      parv[3] - invite timestamp
-*/
+/*! \brief INVITE command handler (called for clients only)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = user to invite
+ *      - parv[2] = channel name
+ *      - parv[3] = invite timestamp
+ */
 static void
 m_invite(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
@@ -97,16 +105,13 @@ m_invite(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  /* Do not send local channel invites to users if they are not on the
+  /*
+   * Do not send local channel invites to users if they are not on the
    * same server as the person sending the INVITE message. 
    */
-  /* Possibly should be an error sent to source_p */
-  /* done .. there should be no problem because MyConnect(source_p) should
-   * always be true if parse() and such is working correctly --is
-   */
-  if (!MyConnect(target_p) && (*parv[2] == '&'))
+  if ((*parv[2] == '&') && !MyConnect(target_p))
   {
-    if (ConfigServerHide.hide_servers == 0)
+    if (!ConfigServerHide.hide_servers)
       sendto_one(source_p, form_str(ERR_USERNOTONSERV),
                  me.name, source_p->name, target_p->name);
     return;

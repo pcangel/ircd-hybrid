@@ -38,12 +38,13 @@
 #include "modules.h"
 
 
-static void ms_drop(struct Client *,struct Client *,int,char **);
+static void ms_drop(struct Client *, struct Client *, int, char *[]);
 
 struct Message drop_msgtab = {
-  "DROP", 0, 0, 2, 0, MFLG_SLOW | MFLG_UNREG, 0L,
-  {m_unregistered, m_ignore, ms_drop, m_ignore, m_ignore, m_ignore}
+  "DROP", 0, 0, 2, 0, MFLG_SLOW | MFLG_UNREG, 0,
+  { m_unregistered, m_ignore, ms_drop, m_ignore, m_ignore, m_ignore }
 };
+
 #ifndef STATIC_MODULES
 void
 _modinit(void)
@@ -59,34 +60,40 @@ _moddeinit(void)
 
 const char *_version = "$Revision$";
 #endif
-/*
-** ms_drop
-**      parv[0] = sender prefix
-**      parv[1] = channel
-**      parv[2] = channel password (key)
-**
-**      "drop" a channel from consideration on a lazy link
-*/
+
+
+/*! \brief DROP command handler (called for servers only)
+ *
+ * "drop" a channel from consideration on a lazy link
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = channel
+ *      - parv[2] = channel password (key)
+ */
 static void
 ms_drop(struct Client *client_p, struct Client *source_p,
-	int parc, char *parv[])
+        int parc, char *parv[])
 {
-  char *name;
-  struct Channel *chptr;
+  struct Channel *chptr = NULL;
 
-  if(parc < 2 || *parv[1] == '\0')
+  if (EmptyString(parv[1]))
     return;
-
-  name = parv[1];
 
 #ifdef DEBUGLL
-  sendto_realops(UMODE_ALL, "DROP called by %s for %s", client_p->name, name );
+  sendto_realops(UMODE_ALL, "DROP called by %s for %s",
+                 client_p->name, parv[1]);
 #endif
-
-  if((chptr=hash_find_channel(name)) == NULL)
+  if ((chptr = hash_find_channel(parv[1])) == NULL)
     return;
 
-  if(client_p->localClient->serverMask) /* JIC */
+  if (client_p->localClient->serverMask) /* JIC */
     chptr->lazyLinkChannelExists &= ~client_p->localClient->serverMask;
-  return;
 }

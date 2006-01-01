@@ -46,7 +46,7 @@
 #endif /* GLINE_VOTING */
 #define GLINE_PLACED         1
 
-EXTERN dlink_list gdeny_items;
+EXTERN dlink_list gdeny_items; /* XXX */
 
 /* internal functions */
 static void set_local_gline(const struct Client *,
@@ -102,20 +102,22 @@ _moddeinit(void)
 const char *_version = "$Revision$";
 #endif
 
-/* mo_gline()
+/*! \brief GLINE command handler (called for operators only)
  *
- * inputs       - The usual for a m_ function
- * output       -
- * side effects -
+ * Places a G line if 3 opers agree on the identical user@host
  *
- * Place a G line if 3 opers agree on the identical user@host
- * 
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = user@host mask
+ *      - parv[2] = reason
  */
-/* Allow this server to pass along GLINE if received and
- * GLINES is not defined.
- *
- */
-
 static void
 mo_gline(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])

@@ -109,14 +109,25 @@ static void apply_tkline(struct Client *, struct ConfItem *, int);
 
 static char buffer[IRCD_BUFSIZE];
 
-/* mo_kline()
+
+/*! \brief KLINE command handler (called for operators only)
  *
- * inputs	- pointer to server
- *		- pointer to client
- *		- parameter count
- *		- parameter list
- * output	-
- * side effects - k line is added
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = time in minutes
+ *      - parv[2] = nick or user@host mask
+ *      - parv[3] = reason (optional)
+ *  or
+ *      - parv[0] = sender prefix
+ *      - parv[1] = nick or user@host mask
+ *      - parv[2] = reason (optional)
  */
 static void
 mo_kline(struct Client *client_p, struct Client *source_p,
@@ -271,6 +282,26 @@ me_kline(struct Client *client_p, struct Client *source_p,
   }
 }
 
+/*! \brief KLINE command handler (called for remote clients and servers only)
+ *
+ * Returns various information such as maxmimum entries, slots that
+ * are in use and collision count
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = target server (string may include wildcards)
+ *      - parv[2] = duration in minutes
+ *      - parv[3] = username
+ *      - parv[4] = hostname
+ *      - parv[5] = reason
+ */
 static void
 ms_kline(struct Client *client_p, struct Client *source_p,
 	 int parc, char *parv[])
@@ -278,8 +309,6 @@ ms_kline(struct Client *client_p, struct Client *source_p,
   if (parc != 6)
     return;
 
-  /* parv[0]  parv[1]        parv[2]      parv[3]  parv[4]  parv[5] */
-  /* oper     target_server  tkline_time  user     host     reason */
   sendto_match_servs(source_p, parv[1], CAP_KLN,
                      "KLINE %s %s %s %s :%s",
                      parv[1], parv[2], parv[3], parv[4], parv[5]);

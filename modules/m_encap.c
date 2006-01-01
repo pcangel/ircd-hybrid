@@ -35,7 +35,7 @@ static void ms_encap(struct Client *, struct Client *, int, char *[]);
 
 struct Message encap_msgtab = {
   "ENCAP", 0, 0, 3, 0, MFLG_SLOW, 0,
-  {m_ignore, m_ignore, ms_encap, m_ignore, m_ignore, m_ignore}
+  { m_ignore, m_ignore, ms_encap, m_ignore, m_ignore, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -55,12 +55,23 @@ _moddeinit(void)
 const char *_version = "$Revision$";
 #endif
 
-/*
- * ms_encap()
+
+/*! \brief ENCAP command handler (called for servers only)
  *
- * inputs	- destination server, subcommand, parameters
- * output	- none
- * side effects	- propagates subcommand to locally connected servers
+ * propagates subcommand to locally connected servers
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = target server
+ *      - parv[2] = subcommand
+ *      - parv[3] .. parv[parc-1] = parameters
  */
 static void
 ms_encap(struct Client *client_p, struct Client *source_p,
@@ -91,7 +102,6 @@ ms_encap(struct Client *client_p, struct Client *source_p,
    * like the rest, or should we truncate?  ratbox seems to think truncate,
    * so i'll do that for now until i can talk to lee.  -bill
    */
-
   if (parc == 3)
     ircsprintf(ptr, "%s", parv[2]);
   else
