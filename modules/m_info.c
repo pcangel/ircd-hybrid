@@ -44,16 +44,15 @@ static void send_info_text(struct Client *);
 
 static void m_info(struct Client *, struct Client *, int, char *[]);
 static void ms_info(struct Client *, struct Client *, int, char *[]);
-static void mo_info(struct Client *, struct Client *, int, char *[]);
 
 struct Message info_msgtab = {
   "INFO", 0, 0, 0, 0, MFLG_SLOW, 0,
-  { m_unregistered, m_info, ms_info, m_ignore, mo_info, m_ignore }
+  { m_unregistered, m_info, ms_info, m_ignore, ms_info, m_ignore }
 };
 
 #ifndef STATIC_MODULES
 const char *_version = "$Revision$";
-static struct Callback *info_cb;
+static struct Callback *info_cb = NULL;
 
 static void *
 va_send_info_text(va_list args)
@@ -576,11 +575,20 @@ static const struct InfoStruct info_table[] =
   }
 };
 
-/*
-** m_info()
-**  parv[0] = sender prefix
-**  parv[1] = servername
-*/
+/*! \brief INFO command handler (called for local clients only)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = name of target (optional; string can be a nick or server
+ *                  and can also include wildcards)
+ */
 static void
 m_info(struct Client *client_p, struct Client *source_p,
        int parc, char *parv[])
@@ -594,17 +602,13 @@ m_info(struct Client *client_p, struct Client *source_p,
                me.name, source_p->name);
     return;
   }
-  else
-    last_used = CurrentTime;
+
+  last_used = CurrentTime;
 
   if (!ConfigFileEntry.disable_remote)
-  {
     if (hunt_server(client_p,source_p, ":%s INFO :%s",
                     1, parc, parv) != HUNTED_ISME)
-    {
       return;
-    }
-  }
 
 #ifdef STATIC_MODULES
   send_info_text(source_p);
@@ -613,38 +617,24 @@ m_info(struct Client *client_p, struct Client *source_p,
 #endif
 }
 
-/*
-** mo_info()
-**  parv[0] = sender prefix
-**  parv[1] = servername
-*/
-static void
-mo_info(struct Client *client_p, struct Client *source_p,
-        int parc, char *parv[])
-{
-  if (hunt_server(client_p, source_p, ":%s INFO :%s", 1,
-                  parc, parv) != HUNTED_ISME)
-    return;
-
-#ifdef STATIC_MODULES
-  send_info_text(source_p);
-#else
-  execute_callback(info_cb, source_p, parc, parv);
-#endif
-}
-
-/*
-** ms_info()
-**  parv[0] = sender prefix
-**  parv[1] = servername
-*/
+/*! \brief INFO command handler (called for remote clients and operators)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = name of target (optional; string can be a nick or server
+ *                  and can also include wildcards)
+ */
 static void
 ms_info(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
 {
-  if (!IsClient(source_p))
-      return;
-
   if (hunt_server(client_p, source_p, ":%s INFO :%s",
                   1, parc, parv) != HUNTED_ISME)
     return;
