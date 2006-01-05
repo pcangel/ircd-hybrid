@@ -144,7 +144,10 @@ add_id(struct Client *client_p, struct Channel *chptr, char *banid, int type)
   size_t len = 0;
   struct Ban *actualBan;
   unsigned int num_mask;
-  char *name = NULL, *user = NULL, *host = NULL;
+  char name[NICKLEN + 1];
+  char user[USERLEN + 1];
+  char host[HOSTLEN + 1];
+  struct split_nuh_item nuh;
 
   /* dont let local clients overflow the b/e/I lists */
   if (MyClient(client_p))
@@ -163,10 +166,19 @@ add_id(struct Client *client_p, struct Channel *chptr, char *banid, int type)
     collapse(banid);
   }
 
-  split_nuh(check_string(banid), &name, &user, &host);
+  nuh.nuhmask  = check_string(banid);
+  nuh.nickptr  = name;
+  nuh.userptr  = user;
+  nuh.hostptr  = host;
+
+  nuh.nicksize = sizeof(name);
+  nuh.usersize = sizeof(user);
+  nuh.hostsize = sizeof(host);
+
+  split_nuh(&nuh);
 
   /*
-   * Assemble a n!u@h and print it back to banid for sending
+   * Re-assemble a new n!u@h and print it back to banid for sending
    * the mode to the channel.
    */
   len = ircsprintf(banid, "%s!%s@%s", name, user, host);
@@ -196,19 +208,16 @@ add_id(struct Client *client_p, struct Channel *chptr, char *banid, int type)
 	!irccmp(actualBan->username, user) &&
 	!irccmp(actualBan->host, host))
     {
-      MyFree(name);
-      MyFree(user);
-      MyFree(host);
       return 0;
     }
   }
 
   actualBan = BlockHeapAlloc(ban_heap);
   actualBan->when = CurrentTime;
-  actualBan->name = name;
-  actualBan->username = user;
-  actualBan->host = host;
-  actualBan->len = len-2; /* -2 for @ and ! */
+  DupString(actualBan->name, name);
+  DupString(actualBan->username, user);
+  DupString(actualBan->host, host);
+  actualBan->len = len - 2; /* -2 for @ and ! */
 
   if (IsClient(client_p))
   {
@@ -240,15 +249,27 @@ del_id(struct Channel *chptr, char *banid, int type)
   dlink_list *list;
   dlink_node *ban;
   struct Ban *banptr;
-  char *name = NULL, *user = NULL, *host = NULL;
+  char name[NICKLEN + 1];
+  char user[USERLEN + 1];
+  char host[HOSTLEN + 1];
+  struct split_nuh_item nuh;
 
   if (banid == NULL)
     return 0;
 
-  split_nuh(check_string(banid), &name, &user, &host);
+  nuh.nuhmask  = check_string(banid);
+  nuh.nickptr  = name;
+  nuh.userptr  = user;
+  nuh.hostptr  = host;
+
+  nuh.nicksize = sizeof(name);
+  nuh.usersize = sizeof(user);
+  nuh.hostsize = sizeof(host);
+
+  split_nuh(&nuh);
 
   /*
-   * Assemble a n!u@h and print it back to banid for sending
+   * Re-assemble a new n!u@h and print it back to banid for sending
    * the mode to the channel.
    */
   ircsprintf(banid, "%s!%s@%s", name, user, host);
@@ -269,10 +290,7 @@ del_id(struct Channel *chptr, char *banid, int type)
     default:
       sendto_realops_flags(UMODE_ALL, L_ALL,
                            "del_id() called with unknown ban type %d!", type);
-      MyFree(name);
-      MyFree(user);
-      MyFree(host);
-      return(0);
+      return 0;
   }
 
   DLINK_FOREACH(ban, list->head)
@@ -284,16 +302,10 @@ del_id(struct Channel *chptr, char *banid, int type)
 	!irccmp(host, banptr->host))
     {
       remove_ban(banptr, list);
-      MyFree(name);
-      MyFree(user);
-      MyFree(host);
       return 1;
     }
   }
 
-  MyFree(name);
-  MyFree(user);
-  MyFree(host);
   return 0;
 }
 
@@ -305,7 +317,7 @@ static const struct mode_letter
   { MODE_INVITEONLY, 'i' },
   { MODE_MODERATED,  'm' },
   { MODE_NOPRIVMSGS, 'n' },
-  { MODE_PARANOID,    'p' },
+  { MODE_PARANOID,   'p' },
   { MODE_SECRET,     's' },
   { MODE_TOPICLIMIT, 't' },
   { 0, '\0' }

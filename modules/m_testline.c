@@ -39,8 +39,8 @@
 #include "hash.h"
 #include "modules.h"
 
-static void mo_testline(struct Client*, struct Client*, int, char**);
-static void mo_testgecos(struct Client*, struct Client*, int, char**);
+static void mo_testline(struct Client *, struct Client *, int, char *[]);
+static void mo_testgecos(struct Client *, struct Client *, int, char *[]);
 
 struct Message testline_msgtab = {
   "TESTLINE", 0, 0, 0, 0, MFLG_SLOW, 0,
@@ -87,9 +87,10 @@ static void
 mo_testline(struct Client *client_p, struct Client *source_p,
             int parc, char *parv[])
 {
-  char *orig_parv1;
-  char *given_name;
-  char *given_host = NULL;
+  char *orig_parv1 = NULL;
+  /* IRCD_BUFSIZE to allow things like *u*s*e*r*n*a*m*e* etc. */
+  char given_name[IRCD_BUFSIZE];
+  char given_host[IRCD_BUFSIZE];
   struct ConfItem *conf;
   struct AccessItem *aconf;
   struct irc_ssaddr ip;
@@ -97,21 +98,20 @@ mo_testline(struct Client *client_p, struct Client *source_p,
   int t;
   int matches = 0;
   char userhost[HOSTLEN + USERLEN + 2];
+  struct split_nuh_item nuh;
 
-  if (parc < 2 || EmptyString(parv[1]))
+  if (EmptyString(parv[1]))
   {
     sendto_one(source_p, ":%s NOTICE %s :usage: user@host|ip [password]",
                me.name, source_p->name);
     return;
   }
 
-  given_name = parv[1];
-
-  if (IsChanPrefix(*given_name))	/* Might be channel resv */
+  if (IsChanPrefix(*parv[1]))	/* Might be channel resv */
   {
     struct ResvChannel *chptr;
     
-    chptr = match_find_resv(given_name);
+    chptr = match_find_resv(parv[1]);
     if (chptr != NULL)
     {
       sendto_one(source_p,
@@ -123,8 +123,18 @@ mo_testline(struct Client *client_p, struct Client *source_p,
     }
   }
 
-  DupString(orig_parv1,parv[1]);
-  split_nuh(given_name, NULL, &given_name, &given_host);
+  DupString(orig_parv1, parv[1]);
+
+  nuh.nuhmask  = parv[1];
+  nuh.nickptr  = NULL;
+  nuh.userptr  = given_name;
+  nuh.hostptr  = given_host;
+
+  nuh.nicksize = 0;
+  nuh.usersize = sizeof(given_name);
+  nuh.hostsize = sizeof(given_host);
+
+  split_nuh(&nuh);
 
   t = parse_netmask(given_host, &ip, &host_mask);
 
@@ -220,23 +230,21 @@ mo_testline(struct Client *client_p, struct Client *source_p,
 
   if (conf != NULL)
   {
-    struct MatchItem *mconf;
-    mconf = &conf->conf.MatchItem;
+    struct MatchItem *mconf = &conf->conf.MatchItem;
 
     sendto_one(source_p, form_str(RPL_TESTLINE),
-	       me.name, source_p->name,
-	       'Q', 0L,
-	       conf->name, 
-	       mconf->reason ? mconf->reason : "No reason",
-	       mconf->oper_reason ? mconf->oper_reason : "");
+               me.name, source_p->name,
+               'Q', 0L,
+               conf->name, 
+               mconf->reason ? mconf->reason : "No reason",
+               mconf->oper_reason ? mconf->oper_reason : "");
     ++matches;
   }
 
   if (matches == 0)
     sendto_one(source_p, form_str(RPL_NOTESTLINE),
-	       me.name, source_p->name, orig_parv1);
-  MyFree(given_host);
-  MyFree(given_name);
+               me.name, source_p->name, orig_parv1);
+
   MyFree(orig_parv1);
 }
 
@@ -259,27 +267,24 @@ mo_testgecos(struct Client *client_p, struct Client *source_p,
 {
   struct ConfItem *conf = NULL;
   struct MatchItem *xconf = NULL;
-  const char *gecos_name = NULL;
 
-  if (parc < 2 || EmptyString(parv[1]))
+  if (EmptyString(parv[1]))
   {
     sendto_one(source_p, ":%s NOTICE %s :usage: gecos",
                me.name, source_p->name);
     return;
   }
 
-  gecos_name = parv[1];
-
-  if ((conf = find_matching_name_conf(XLINE_TYPE, gecos_name, NULL, NULL, 0))
-      != NULL)
+  if ((conf = find_matching_name_conf(XLINE_TYPE, parv[1],
+                                      NULL, NULL, 0)) != NULL)
   {
     xconf = &conf->conf.MatchItem;
     sendto_one(source_p, form_str(RPL_TESTLINE),
-	       me.name, source_p->name, 'X', 0L,
-	       conf->name, xconf->reason ? xconf->reason : "X-lined",
-	       xconf->oper_reason ? xconf->oper_reason : "");
+               me.name, source_p->name, 'X', 0L,
+               conf->name, xconf->reason ? xconf->reason : "X-lined",
+               xconf->oper_reason ? xconf->oper_reason : "");
   }
   else
     sendto_one(source_p, form_str(RPL_NOTESTLINE),
-	       me.name, source_p->name, parv[1]);
+               me.name, source_p->name, parv[1]);
 }

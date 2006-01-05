@@ -45,12 +45,12 @@ static void mo_uncapture(struct Client *, struct Client *, int, char *[]);
 
 struct Message capture_msgtab = {
   "CAPTURE", 0, 0, 0, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_ignore, mo_capture, mo_capture, mo_capture, m_ignore}
+  { m_unregistered, m_ignore, mo_capture, mo_capture, mo_capture, m_ignore }
 };
 
 struct Message uncapture_msgtab = {
   "UNCAPTURE", 0, 0, 0, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_ignore, mo_uncapture, mo_uncapture, mo_uncapture, m_ignore}
+  { m_unregistered, m_ignore, mo_uncapture, mo_uncapture, mo_uncapture, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -80,11 +80,12 @@ mo_capture(struct Client *client_p, struct Client *source_p,
            int parc, char *parv[])
 {
   struct Client *target_p = NULL;
-  char *nick = NULL, *user = NULL, *host = NULL;
-  char *p = NULL;
+  char nick[NICKLEN + 1];
+  char user[USERLEN + 1];
+  char host[HOSTLEN + 1];
   dlink_node *ptr = NULL;
 
-  if (parc < 2 || EmptyString(parv[1]))
+  if (EmptyString(parv[1]))
   {
     sendto_one(source_p, form_str(ERR_NONICKNAMEGIVEN),
                me.name, source_p->name);
@@ -100,7 +101,7 @@ mo_capture(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if ((p = strchr(parv[1], '@')) == NULL)
+  if (strchr(parv[1], '@') == NULL)
   {
     if ((target_p = find_client(parv[1])) != NULL && IsClient(target_p))
     {
@@ -135,22 +136,18 @@ mo_capture(struct Client *client_p, struct Client *source_p,
   else
   {
     unsigned int matches = 0;
+    struct split_nuh_item nuh;
 
-    /* p != NULL so user @ host given */
-    nick = parv[1];
-    *p++ = '\0';
-    host = p;
+    nuh.nuhmask  = parv[1];
+    nuh.nickptr  = nick;
+    nuh.userptr  = user;
+    nuh.hostptr  = host;
 
-    if ((p = strchr(nick, '!')) != NULL)
-    {
-      *p++ = '\0';
-      user = p;
-    }
-    else
-    {
-      user = nick;
-      nick = "*";
-    }
+    nuh.nicksize = sizeof(nick);
+    nuh.usersize = sizeof(user);
+    nuh.hostsize = sizeof(host);
+
+    split_nuh(&nuh);
 
     if (!valid_wild_card(source_p, YES, 3, nick, user, host))
       return;
@@ -164,7 +161,7 @@ mo_capture(struct Client *client_p, struct Client *source_p,
     {
       target_p = ptr->data;
 
-      if ((source_p == target_p) || IsOper(target_p) || IsCaptured(target_p))
+      if (source_p == target_p || IsOper(target_p) || IsCaptured(target_p))
         continue;
 
       if (match(nick, target_p->name) &&
@@ -190,7 +187,9 @@ mo_uncapture(struct Client *client_p, struct Client *source_p,
              int parc, char *parv[])
 {
   struct Client *target_p = NULL;
-  char *nick = NULL, *user = NULL, *host = NULL, *p = NULL;
+  char nick[NICKLEN + 1];
+  char user[USERLEN + 1];
+  char host[HOSTLEN + 1];
   dlink_node *ptr = NULL;
 
   if (MyClient(source_p) && !IsAdmin(source_p))
@@ -200,14 +199,14 @@ mo_uncapture(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if (parc < 2 || EmptyString(parv[1]))
+  if (EmptyString(parv[1]))
   {
     sendto_one(source_p, form_str(ERR_NONICKNAMEGIVEN),
                me.name, source_p->name);
     return;
   }
 
-  if ((p = strchr(parv[1], '@')) == NULL)
+  if (strchr(parv[1], '@') == NULL)
   {      
     if ((target_p = find_client(parv[1])) != NULL && IsClient(target_p))
     {
@@ -236,22 +235,18 @@ mo_uncapture(struct Client *client_p, struct Client *source_p,
   else
   {
     unsigned int matches = 0;
+    struct split_nuh_item nuh;
 
-    /* p != NULL so user @ host given */
-    nick = parv[1];
-    *p++ = '\0';
-    host = p;
+    nuh.nuhmask  = parv[1];
+    nuh.nickptr  = nick;
+    nuh.userptr  = user;
+    nuh.hostptr  = host;
 
-    if ((p = strchr(nick, '!')) != NULL)
-    {
-      *p++ = '\0';
-      user = p;
-    }
-    else
-    {
-      user = nick;
-      nick = "*";
-    }
+    nuh.nicksize = sizeof(nick);
+    nuh.usersize = sizeof(user);
+    nuh.hostsize = sizeof(host);
+
+    split_nuh(&nuh);
 
     if (IsClient(client_p))
       sendto_server(client_p, NULL, NULL, CAP_ENCAP, 0, 0,

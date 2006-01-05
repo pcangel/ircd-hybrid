@@ -36,7 +36,7 @@
 #include "modules.h"
 
 static void m_accept(struct Client *, struct Client *, int, char *[]);
-static void add_accept(char *, char *, char *, struct Client *);
+static void add_accept(const struct split_nuh_item *, struct Client *);
 static void list_accepts(struct Client *);
 
 struct Message accept_msgtab = {
@@ -79,8 +79,12 @@ m_accept(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
   struct Accept *accept = NULL;
-  char *mask, *nick, *user, *host;
+  char *mask = NULL;
+  char nick[NICKLEN + 1];
+  char user[USERLEN + 1];
+  char host[HOSTLEN + 1];
   char first, *p = NULL;
+  struct split_nuh_item nuh;
 
   if (EmptyString(parv[1]) || !irccmp(parv[1], "*"))
   {
@@ -93,24 +97,26 @@ m_accept(struct Client *client_p, struct Client *source_p,
   {
     if (*mask == '-' && *++mask != '\0')
     {
-      split_nuh(mask, &nick, &user, &host);
+      nuh.nuhmask  = mask;
+      nuh.nickptr  = nick;
+      nuh.userptr  = user;
+      nuh.hostptr  = host;
+
+      nuh.nicksize = sizeof(nick);
+      nuh.usersize = sizeof(user);
+      nuh.hostsize = sizeof(host);
+
+      split_nuh(&nuh);
 
       if ((accept = find_accept(nick, user, host, source_p, 0)) == NULL)
       {
         if (first)
           sendto_one(source_p, form_str(ERR_ACCEPTNOT),
                      me.name, source_p->name, nick, user, host);
-        MyFree(nick);
-        MyFree(user);
-        MyFree(host);
         continue;
       }
 
       del_accept(accept, source_p);
-
-      MyFree(nick);
-      MyFree(user);
-      MyFree(host);
     }
     else if (*mask != '\0')
     {
@@ -122,19 +128,26 @@ m_accept(struct Client *client_p, struct Client *source_p,
         return;
       }
 
-      split_nuh(mask, &nick, &user, &host);
+      nuh.nuhmask  = mask;
+      nuh.nickptr  = nick;
+      nuh.userptr  = user;
+      nuh.hostptr  = host;
+
+      nuh.nicksize = sizeof(nick);
+      nuh.usersize = sizeof(user);
+      nuh.hostsize = sizeof(host);
+
+      split_nuh(&nuh);
 
       if ((accept = find_accept(nick, user, host, source_p, 0)) != NULL)
       {
         if (first)
           sendto_one(source_p, form_str(ERR_ACCEPTEXIST),
                      me.name, source_p->name, nick, user, host);
-        MyFree(nick);
-        MyFree(user);
-        MyFree(host);
         continue;
       }
-      add_accept(nick, user, host, source_p);
+
+      add_accept(&nuh, source_p);
     }
   }
 }
@@ -149,13 +162,13 @@ m_accept(struct Client *client_p, struct Client *source_p,
  * side effects - target is added to clients list
  */
 static void
-add_accept(char *nick, char *user, char *host, struct Client *source_p)
+add_accept(const struct split_nuh_item *nuh, struct Client *source_p)
 {
   struct Accept *accept = MyMalloc(sizeof(*accept));
 
-  accept->nick = nick;
-  accept->user = user;
-  accept->host = host;
+  DupString(accept->nick, nuh->nickptr);
+  DupString(accept->user, nuh->userptr);
+  DupString(accept->host, nuh->hostptr);
 
   dlinkAdd(accept, &accept->node, &source_p->localClient->acceptlist);
 
@@ -171,14 +184,14 @@ add_accept(char *nick, char *user, char *host, struct Client *source_p)
 static void
 list_accepts(struct Client *source_p)
 {
-  struct Accept *accept;
+  struct Accept *accept = NULL;
   int len = 0;
   char nuh_list[IRCD_BUFSIZE] = { '\0' };
-  char *t;
+  char *t = NULL;
   const dlink_node *ptr = NULL;
 
-  len = ircsprintf(nuh_list, form_str(RPL_ACCEPTLIST), me.name,
-    source_p->name);
+  len = ircsprintf(nuh_list, form_str(RPL_ACCEPTLIST),
+                   me.name, source_p->name);
   t = nuh_list + len;
 
   DLINK_FOREACH(ptr, source_p->localClient->acceptlist.head)

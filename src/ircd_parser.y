@@ -58,7 +58,7 @@ static dlink_list hub_conf_list  = { NULL, NULL, 0 };
 static dlink_list leaf_conf_list = { NULL, NULL, 0 };
 static unsigned int listener_flags = 0;
 static unsigned int regex_ban = 0;
-static char userbuf[IRCD_BUFSIZE];
+static char userbuf[IRCD_BUFSIZE]; /* must be that big to allow things like *u*s*e*r* etc. */
 static char hostbuf[IRCD_BUFSIZE];
 static char reasonbuf[REASONLEN + 1];
 static char gecos_name[REALLEN * 4];
@@ -1061,16 +1061,31 @@ oper_user: USER '=' QSTRING ';'
 {
   if (ypass == 2)
   {
-    struct CollectItem *yy_tmp;
+    struct split_nuh_item nuh;
+
+    nuh.nuhmask  = yylval.string;
+    nuh.nickptr  = NULL;
+    nuh.userptr  = userbuf;
+    nuh.hostptr  = hostbuf;
+
+    nuh.nicksize = 0;
+    nuh.usersize = sizeof(userbuf);
+    nuh.hostsize = sizeof(hostbuf);
+
+    split_nuh(&nuh);
 
     if (yy_aconf->user == NULL)
     {
-      split_nuh(yylval.string, NULL, &yy_aconf->user, &yy_aconf->host);
+      DupString(yy_aconf->user, userbuf);
+      DupString(yy_aconf->host, hostbuf);
     }
     else
     {
-      yy_tmp = (struct CollectItem *)MyMalloc(sizeof(struct CollectItem));
-      split_nuh(yylval.string, NULL, &yy_tmp->user, &yy_tmp->host);
+      struct CollectItem *yy_tmp = MyMalloc(sizeof(struct CollectItem));
+
+      DupString(yy_tmp->user, userbuf);
+      DupString(yy_tmp->host, hostbuf);
+
       dlinkAdd(yy_tmp, &yy_tmp->node, &col_conf_list);
     }
   }
@@ -1840,14 +1855,32 @@ auth_user: USER '=' QSTRING ';'
 {
   if (ypass == 2)
   {
-    struct CollectItem *yy_tmp;
+    struct CollectItem *yy_tmp = NULL;
+    struct split_nuh_item nuh;
+
+    nuh.nuhmask  = yylval.string;
+    nuh.nickptr  = NULL;
+    nuh.userptr  = userbuf;
+    nuh.hostptr  = hostbuf;
+
+    nuh.nicksize = 0;
+    nuh.usersize = sizeof(userbuf);
+    nuh.hostsize = sizeof(hostbuf);
+
+    split_nuh(&nuh);
 
     if (yy_aconf->user == NULL)
-      split_nuh(yylval.string, NULL, &yy_aconf->user, &yy_aconf->host);
+    {
+      DupString(yy_aconf->user, userbuf);
+      DupString(yy_aconf->host, hostbuf);
+    }
     else
     {
       yy_tmp = MyMalloc(sizeof(struct CollectItem));
-      split_nuh(yylval.string, NULL, &yy_tmp->user, &yy_tmp->host);
+
+      DupString(yy_tmp->user, userbuf);
+      DupString(yy_tmp->host, hostbuf);
+
       dlinkAdd(yy_tmp, &yy_tmp->node, &col_conf_list);
     }
   }
@@ -2188,7 +2221,21 @@ shared_user: USER '=' QSTRING ';'
 {
   if (ypass == 2)
   {
-    split_nuh(yylval.string, NULL, &yy_match_item->user, &yy_match_item->host);
+    struct split_nuh_item nuh;
+
+    nuh.nuhmask  = yylval.string;
+    nuh.nickptr  = NULL;
+    nuh.userptr  = userbuf;
+    nuh.hostptr  = hostbuf;
+
+    nuh.nicksize = 0;
+    nuh.usersize = sizeof(userbuf);
+    nuh.hostsize = sizeof(hostbuf);
+
+    split_nuh(&nuh);
+
+    DupString(yy_match_item->user, userbuf);
+    DupString(yy_match_item->host, hostbuf);
   }
 };
 
@@ -2909,15 +2956,18 @@ kill_user: USER '=' QSTRING ';'
 {
   if (ypass == 2)
   {
-    char *user = NULL, *host = NULL;
+    struct split_nuh_item nuh;
 
-    split_nuh(yylval.string, NULL, &user, &host);
+    nuh.nuhmask  = yylval.string;
+    nuh.nickptr  = NULL;
+    nuh.userptr  = userbuf;
+    nuh.hostptr  = hostbuf;
 
-    strlcpy(userbuf, user, sizeof(userbuf));
-    strlcpy(hostbuf, host, sizeof(hostbuf));
+    nuh.nicksize = 0;
+    nuh.usersize = sizeof(userbuf);
+    nuh.hostsize = sizeof(hostbuf);
 
-    MyFree(user);
-    MyFree(host);
+    split_nuh(&nuh);
   }
 };
 
@@ -3635,14 +3685,31 @@ gline_user: USER '=' QSTRING ';'
 {
   if (ypass == 2)
   {
+    struct split_nuh_item nuh;
+
+    nuh.nuhmask  = yylval.string;
+    nuh.nickptr  = NULL;
+    nuh.userptr  = userbuf;
+    nuh.hostptr  = hostbuf;
+
+    nuh.nicksize = 0;
+    nuh.usersize = sizeof(userbuf);
+    nuh.hostsize = sizeof(hostbuf);
+
+    split_nuh(&nuh);
+
     if (yy_aconf->user == NULL)
     {
-      split_nuh(yylval.string, NULL, &yy_aconf->user, &yy_aconf->host);
+      DupString(yy_aconf->user, userbuf);
+      DupString(yy_aconf->host, hostbuf);
     }
     else
     {
       struct CollectItem *yy_tmp = MyMalloc(sizeof(struct CollectItem));
-      split_nuh(yylval.string, NULL, &yy_tmp->user, &yy_tmp->host);
+
+      DupString(yy_tmp->user, userbuf);
+      DupString(yy_tmp->host, hostbuf);
+
       dlinkAdd(yy_tmp, &yy_tmp->node, &col_conf_list);
     }
   }

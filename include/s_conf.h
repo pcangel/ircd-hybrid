@@ -47,6 +47,18 @@ struct CidrItem
   dlink_node node;
 };
 
+struct split_nuh_item
+{
+  char *nuhmask;
+  char *nickptr;
+  char *userptr;
+  char *hostptr;
+
+  size_t nicksize;
+  size_t usersize;
+  size_t hostsize;
+};
+
 #define ConFreq(x)	((x)->con_freq)
 #define PingFreq(x)	((x)->ping_freq)
 #define PingWarning(x)  ((x)->ping_warning)
@@ -509,7 +521,7 @@ EXTERN int detach_conf(struct Client *, ConfType);
 
 EXTERN int conf_connect_allowed(struct irc_ssaddr *, int);
 EXTERN char *oper_privs_as_string(const unsigned int);
-EXTERN void split_nuh(char *mask, char **nick, char **user, char **host);
+EXTERN void split_nuh(struct split_nuh_item *const);
 EXTERN struct ConfItem *find_matching_name_conf(ConfType, const char *,
                                                 const char *, const char *, int);
 EXTERN struct ConfItem *find_exact_name_conf(ConfType, const char *,
