@@ -42,7 +42,7 @@ EXTERN int valid_wild_card(struct Client *, int, int, ...);
 #define CLEANUP_TKLINES_TIME 60
 #define TK_SECONDS 0
 #define TK_MINUTES 1
-EXTERN time_t valid_tkline(char *, int);
+EXTERN time_t valid_tkline(const char *, int);
 
 #define AWILD 0x1		/* check wild cards */
 #define NOUSERLOOKUP 0x2 /* Don't lookup the user@host on /rkline nick */

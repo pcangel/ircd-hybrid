@@ -53,7 +53,7 @@ dlink_list temporary_xlines  = { NULL, NULL, 0 };
 dlink_list temporary_rklines = { NULL, NULL, 0 };
 dlink_list temporary_glines  = { NULL, NULL, 0 };
 dlink_list temporary_rxlines = { NULL, NULL, 0 };
-dlink_list temporary_resv = { NULL, NULL, 0 };
+dlink_list temporary_resv    = { NULL, NULL, 0 };
 
 /* parse_aline
  *
@@ -90,20 +90,20 @@ parse_aline(const char *cmd, struct Client *source_p,
 	    int parse_flags, char **up_p, char **h_p, time_t *tkline_time, 
 	    char **target_server, char **reason)
 {
-  int found_tkline_time=0;
+  int found_tkline_time = 0;
   static char def_reason[] = "No Reason";
-  static char user[USERLEN*4+1];
-  static char host[HOSTLEN*4+1];
+  static char user[USERLEN * 4 + 1];
+  static char host[HOSTLEN * 4 + 1];
 
-  parv++;
-  parc--;
+  ++parv;
+  --parc;
 
   found_tkline_time = valid_tkline(*parv, TK_MINUTES);
 
   if (found_tkline_time != 0)
   {
-    parv++;
-    parc--;
+    ++parv;
+    --parc;
 
     if (tkline_time != NULL)
       *tkline_time = found_tkline_time;
@@ -115,7 +115,7 @@ parse_aline(const char *cmd, struct Client *source_p,
     }
   }
 
-  if (parc == 0)
+  if (parc == 0 || EmptyString(*parv))
   {
     sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
                me.name, source_p->name, cmd);
@@ -133,15 +133,15 @@ parse_aline(const char *cmd, struct Client *source_p,
     *h_p = host;
   }
  
-  parc--;
-  parv++;
+  --parc;
+  ++parv;
 
   if (parc != 0)
   {
-    if (irccmp(*parv, "ON") == 0)
+    if (!irccmp(*parv, "ON"))
     {
-      parc--;
-      parv++;
+      --parc;
+      ++parv;
 
       if (target_server == NULL)
       {
@@ -165,8 +165,8 @@ parse_aline(const char *cmd, struct Client *source_p,
       }
 
       *target_server = *parv;
-      parc--;
-      parv++;
+      --parc;
+      ++parv;
     }
     else
     {
@@ -196,7 +196,7 @@ parse_aline(const char *cmd, struct Client *source_p,
 
   if (reason != NULL)
   {
-    if (parc != 0)
+    if (parc != 0 && !EmptyString(*parv))
     {
       *reason = *parv;
       if (!valid_comment(source_p, *reason, YES))
@@ -281,8 +281,7 @@ static int
 find_user_host(struct Client *source_p, char *user_host_or_nick,
                char *luser, char *lhost, unsigned int flags)
 {
-  struct Client *target_p = NULL;
-  char *hostp = NULL;
+  const struct Client *target_p = NULL;
 
   if (lhost == NULL)
   {
@@ -292,27 +291,19 @@ find_user_host(struct Client *source_p, char *user_host_or_nick,
 
   if ((hostp = strchr(user_host_or_nick, '@')) || *user_host_or_nick == '*')
   {
-    /* Explicit user@host mask given */
+    struct split_nuh_item nuh;
 
-    if(hostp != NULL)                            /* I'm a little user@host */
-    {
-      *(hostp++) = '\0';                       /* short and squat */
-      if (*user_host_or_nick)
-	strlcpy(luser, user_host_or_nick, USERLEN*4 + 1); /* here is my user */
-      else
-	strcpy(luser, "*");
-      if (*hostp)
-	strlcpy(lhost, hostp, HOSTLEN + 1);    /* here is my host */
-      else
-	strcpy(lhost, "*");
-    }
-    else
-    {
-      luser[0] = '*';             /* no @ found, assume its *@somehost */
-      luser[1] = '\0';	  
-      strlcpy(lhost, user_host_or_nick, HOSTLEN*4 + 1);
-    }
-    
+    nuh.nuhmask  = user_host_or_nick;
+    nuh.nickptr  = NULL;
+    nuh.userptr  = luser;
+    nuh.hostptr  = lhost;
+
+    nuh.nicksize = 0;
+    nuh.usersize = USERLEN*4+1;
+    nuh.hostsize = HOSTLEN*4+1;
+
+    split_nuh(&nuh);
+
     return 1;
   }
   else if (!(flags & NOUSERLOOKUP))
@@ -363,27 +354,25 @@ find_user_host(struct Client *source_p, char *user_host_or_nick,
  * Originally written by Dianora (Diane, db@db.net)
  */
 time_t
-valid_tkline(char *p, int minutes)
+valid_tkline(const char *in, int minutes)
 {
   time_t result = 0;
+  const unsigned char *p = (const unsigned char *)in;
 
-  while (*p)
+  for (; *p != '\0'; ++p)
   {
-    if (IsDigit(*p))
-    {
-      result *= 10;
-      result += ((*p) & 0xF);
-      p++;
-    }
-    else
+    if (!IsDigit(*p))
       return 0;
+
+    result *= 10;
+    result += (*p & 0xF);
   }
 
-  /* in the degenerate case where oper does a /quote kline 0 user@host :reason 
+  /*
+   * In the degenerate case where oper does a /quote kline 0 user@host :reason 
    * i.e. they specifically use 0, I am going to return 1 instead
    * as a return value of non-zero is used to flag it as a temporary kline
    */
-
   if (result == 0)
     result = 1;
 
