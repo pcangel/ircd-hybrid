@@ -86,9 +86,9 @@ mo_killhost(struct Client *client_p, struct Client *source_p,
   char *reason = NULL;
   char bufhost[IRCD_BUFSIZE];
   char conf_nick[NICKLEN + 1];
-  char conf_user[USERLEN + 1]:
+  char conf_user[USERLEN + 1];
   char conf_host[HOSTLEN + 1];
-  char def_reason[] = "No reason specified";
+  char def_reason[] = "No reason";
   unsigned int count = 0;
   struct split_nuh_item nuh;
 

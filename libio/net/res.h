@@ -24,9 +24,6 @@ struct DNSQuery
   void (*callback)(void* vptr, struct DNSReply *reply); /* callback to call */
 };
 
-LIBIO_EXTERN struct irc_ssaddr irc_nsaddr_list[];
-LIBIO_EXTERN int irc_nscount;
-
 #ifdef IN_MISC_C
 extern void init_resolver(void);
 #endif

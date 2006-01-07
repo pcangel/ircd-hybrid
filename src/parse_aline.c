@@ -303,7 +303,7 @@ find_user_host(struct Client *source_p, char *user_host_or_nick,
 
   if (!(flags & NOUSERLOOKUP) && irccmp(lnick, "*"))
   {
-    const struct Client *target_p = NULL
+    const struct Client *target_p = NULL;
 
     /* Try to find user@host mask from nick */
     /* Okay to use source_p as the first param, because source_p == client_p */

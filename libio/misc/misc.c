@@ -190,10 +190,10 @@ set_time(void)
 }
 
 void
-libio_init(int daemon)
+libio_init(int daemonn)
 {
 #ifndef _WIN32
-  if (daemon)
+  if (daemonn)
     close_standard_fds();
 #endif
 

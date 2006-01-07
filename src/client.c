@@ -1324,14 +1324,14 @@ exit_aborted_clients(void)
  */
 
 void
-del_accept(struct Accept *accept, struct Client *client_p)
+del_accept(struct Accept *acceptvar, struct Client *client_p)
 {
-  dlinkDelete(&accept->node, &client_p->localClient->acceptlist);
+  dlinkDelete(&acceptvar->node, &client_p->localClient->acceptlist);
 
-  MyFree(accept->nick);
-  MyFree(accept->user);
-  MyFree(accept->host);
-  MyFree(accept);
+  MyFree(acceptvar->nick);
+  MyFree(acceptvar->user);
+  MyFree(acceptvar->host);
+  MyFree(acceptvar);
 }
 
 struct Accept *
@@ -1344,12 +1344,12 @@ find_accept(const char *nick, const char *user,
 
   DLINK_FOREACH(ptr, client_p->localClient->acceptlist.head)
   {
-    struct Accept *accept = ptr->data;
+    struct Accept *acceptvar = ptr->data;
 
-    if (cmpfunc(accept->nick, nick) == do_match &&
-        cmpfunc(accept->user, user) == do_match &&
-        cmpfunc(accept->host, host) == do_match)
-      return accept;
+    if (cmpfunc(acceptvar->nick, nick) == do_match &&
+        cmpfunc(acceptvar->user, user) == do_match &&
+        cmpfunc(acceptvar->host, host) == do_match)
+      return acceptvar;
   }
 
   return NULL;

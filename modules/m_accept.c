@@ -78,7 +78,7 @@ static void
 m_accept(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
-  struct Accept *accept = NULL;
+  struct Accept *acceptvar = NULL;
   char *mask = NULL;
   char nick[NICKLEN + 1];
   char user[USERLEN + 1];
@@ -108,7 +108,7 @@ m_accept(struct Client *client_p, struct Client *source_p,
 
       split_nuh(&nuh);
 
-      if ((accept = find_accept(nick, user, host, source_p, 0)) == NULL)
+      if ((acceptvar = find_accept(nick, user, host, source_p, 0)) == NULL)
       {
         if (first)
           sendto_one(source_p, form_str(ERR_ACCEPTNOT),
@@ -116,7 +116,7 @@ m_accept(struct Client *client_p, struct Client *source_p,
         continue;
       }
 
-      del_accept(accept, source_p);
+      del_accept(acceptvar, source_p);
     }
     else if (*mask != '\0')
     {
@@ -139,7 +139,7 @@ m_accept(struct Client *client_p, struct Client *source_p,
 
       split_nuh(&nuh);
 
-      if ((accept = find_accept(nick, user, host, source_p, 0)) != NULL)
+      if ((acceptvar = find_accept(nick, user, host, source_p, 0)) != NULL)
       {
         if (first)
           sendto_one(source_p, form_str(ERR_ACCEPTEXIST),
@@ -164,13 +164,13 @@ m_accept(struct Client *client_p, struct Client *source_p,
 static void
 add_accept(const struct split_nuh_item *nuh, struct Client *source_p)
 {
-  struct Accept *accept = MyMalloc(sizeof(*accept));
+  struct Accept *acceptvar = MyMalloc(sizeof(*acceptvar));
 
-  DupString(accept->nick, nuh->nickptr);
-  DupString(accept->user, nuh->userptr);
-  DupString(accept->host, nuh->hostptr);
+  DupString(acceptvar->nick, nuh->nickptr);
+  DupString(acceptvar->user, nuh->userptr);
+  DupString(acceptvar->host, nuh->hostptr);
 
-  dlinkAdd(accept, &accept->node, &source_p->localClient->acceptlist);
+  dlinkAdd(acceptvar, &acceptvar->node, &source_p->localClient->acceptlist);
 
   list_accepts(source_p);
 }
@@ -184,7 +184,7 @@ add_accept(const struct split_nuh_item *nuh, struct Client *source_p)
 static void
 list_accepts(struct Client *source_p)
 {
-  struct Accept *accept = NULL;
+  struct Accept *acceptvar = NULL;
   int len = 0;
   char nuh_list[IRCD_BUFSIZE] = { '\0' };
   char *t = NULL;
@@ -196,10 +196,10 @@ list_accepts(struct Client *source_p)
 
   DLINK_FOREACH(ptr, source_p->localClient->acceptlist.head)
   {
-    accept = ptr->data;
+    acceptvar = ptr->data;
 
-    if ((t - nuh_list) + (strlen(accept->nick) + 1 + strlen(accept->user) + 1 +
-        strlen(accept->host)) > IRCD_BUFSIZE)
+    if ((t - nuh_list) + (strlen(acceptvar->nick) + 1 + strlen(acceptvar->user) + 1 +
+        strlen(acceptvar->host)) > IRCD_BUFSIZE)
     {
       *(t - 1) = '\0';
       sendto_one(source_p, "%s", nuh_list);
@@ -207,7 +207,7 @@ list_accepts(struct Client *source_p)
     }
 
     t += ircsprintf(t, "%s!%s@%s ",
-		    accept->nick, accept->user, accept->host);
+		    acceptvar->nick, acceptvar->user, acceptvar->host);
   }
 
   if (t - nuh_list > len)
