@@ -74,3 +74,4 @@ it's a leaf.
 
 -- metalrock's list
 * Fix that missing server connection timed out notice.
+* Add support for global ungline.
