@@ -88,6 +88,9 @@ struct Ban
   char *username;
   char *host;
   char *who;
+  struct irc_ssaddr addr;
+  int bits;
+  char type;
   time_t when;
 };
 

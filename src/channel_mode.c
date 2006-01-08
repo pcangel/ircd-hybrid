@@ -28,6 +28,7 @@
 #include "client.h"
 #include "common.h"
 #include "hash.h"
+#include "hostmask.h"
 #include "ircd.h"
 #include "numeric.h"
 #include "s_serv.h"             /* captab */
@@ -139,10 +140,10 @@ check_string(char *s)
 int
 add_id(struct Client *client_p, struct Channel *chptr, char *banid, int type)
 {
-  dlink_list *list;
-  dlink_node *ban;
+  dlink_list *list = NULL;
+  dlink_node *ban = NULL;
   size_t len = 0;
-  struct Ban *actualBan;
+  struct Ban *ban_p = NULL;
   unsigned int num_mask;
   char name[NICKLEN];
   char user[USERLEN + 1];
@@ -203,35 +204,37 @@ add_id(struct Client *client_p, struct Channel *chptr, char *banid, int type)
 
   DLINK_FOREACH(ban, list->head)
   {
-    actualBan = ban->data;
-    if (!irccmp(actualBan->name, name) &&
-	!irccmp(actualBan->username, user) &&
-	!irccmp(actualBan->host, host))
+    ban_p = ban->data;
+    if (!irccmp(ban_p->name, name) &&
+	!irccmp(ban_p->username, user) &&
+	!irccmp(ban_p->host, host))
     {
       return 0;
     }
   }
 
-  actualBan = BlockHeapAlloc(ban_heap);
-  actualBan->when = CurrentTime;
-  DupString(actualBan->name, name);
-  DupString(actualBan->username, user);
-  DupString(actualBan->host, host);
-  actualBan->len = len - 2; /* -2 for @ and ! */
+  ban_p = BlockHeapAlloc(ban_heap);
+
+  DupString(ban_p->name, name);
+  DupString(ban_p->username, user);
+  DupString(ban_p->host, host);
+
+  ban_p->when = CurrentTime;
+  ban_p->len = len - 2; /* -2 for @ and ! */
+  ban_p->type = parse_netmask(host, &ban_p->addr, &ban_p->bits);
 
   if (IsClient(client_p))
   {
-    actualBan->who =
-      MyMalloc(strlen(client_p->name) +
-               strlen(client_p->username) +
-               strlen(client_p->host) + 3);
-    ircsprintf(actualBan->who, "%s!%s@%s",
-               client_p->name, client_p->username, client_p->host);
+    ban_p->who = MyMalloc(strlen(client_p->name) +
+                          strlen(client_p->username) +
+                          strlen(client_p->host) + 3);
+    ircsprintf(ban_p->who, "%s!%s@%s", client_p->name,
+               client_p->username, client_p->host);
   }
   else
-    DupString(actualBan->who, client_p->name);
+    DupString(ban_p->who, client_p->name);
 
-  dlinkAdd(actualBan, &actualBan->node, list);
+  dlinkAdd(ban_p, &ban_p->node, list);
 
   return 1;
 }
