@@ -1159,7 +1159,7 @@ close_connection(struct Client *client_p)
   dbuf_clear(&client_p->localClient->buf_recvq);
 
   MyFree(client_p->localClient->passwd);
-  detach_conf(client_p, CONF_TYPE);
+  detach_confs(client_p);
   client_p->from = NULL; /* ...this should catch them! >:) --msa */
 }
 

@@ -513,15 +513,16 @@ EXTERN int get_client_ping(struct Client *, int *);
 EXTERN struct ConfItem *find_class(const char *);
 EXTERN void count_ip_hash(int *, unsigned long *);
 EXTERN void remove_one_ip(struct irc_ssaddr *);
-EXTERN struct ConfItem *make_conf_item(ConfType type);
+EXTERN struct ConfItem *make_conf_item(ConfType);
+EXTERN int attach_class(struct Client *, struct ConfItem *);
 EXTERN int attach_connect_block(struct Client *, const char *, const char *);
 EXTERN int attach_server_conf(struct Client *, struct ConfItem *);
 EXTERN int attach_leaf_hub(struct Client *, struct ConfItem *);
-EXTERN int detach_conf(struct Client *, ConfType);
+EXTERN int detach_confs(struct Client *);
 
 EXTERN int conf_connect_allowed(struct irc_ssaddr *, int);
 EXTERN char *oper_privs_as_string(const unsigned int);
-EXTERN void split_nuh(struct split_nuh_item *const);
+EXTERN void split_nuh(struct split_nuh_item *);
 EXTERN struct ConfItem *find_matching_name_conf(ConfType, const char *,
                                                 const char *, const char *, int);
 EXTERN struct ConfItem *find_exact_name_conf(ConfType, const char *,

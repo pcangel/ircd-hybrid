@@ -81,7 +81,6 @@ static int verify_access(struct Client *, const char *, struct AccessItem **);
 static struct ip_entry *find_or_add_ip(struct irc_ssaddr *);
 static void parse_conf_file(int, int);
 static int check_class_limits(struct Client *, int ,struct ClassItem *);
-static int attach_class(struct Client *client_p, struct ClassItem *aclass);
 static void free_aconf_items(struct ConfItem *, dlink_list *);
 static void free_match_items(struct ConfItem *, dlink_list *);
 static void delete_link(struct ConfItem *, dlink_list *);
@@ -780,11 +779,11 @@ verify_access(struct Client *client_p, const char *username, struct AccessItem *
                    me.name, client_p->name,
                    conf->name ? conf->name : "",
                    aconf->port);
-        return(NOT_AUTHORIZED);
+        return NOT_AUTHORIZED;
       }
 
       if (IsConfDoIdentd(aconf))
-	SetNeedId(client_p);
+        SetNeedId(client_p);
 
       /* Thanks for spoof idea amm */
       if (IsConfDoSpoofIp(aconf))
@@ -802,11 +801,10 @@ verify_access(struct Client *client_p, const char *username, struct AccessItem *
       {
         assert(aptr);
         *aptr = aconf;
-	attach_class(client_p, aclass);
-	return(0);
+        return 0;
       }
       else
-	return(TOO_MANY);
+        return TOO_MANY;
     }
     else if (rkconf || IsConfKill(aconf) || (ConfigFileEntry.glines && IsConfGline(aconf)))
     {
@@ -818,11 +816,11 @@ verify_access(struct Client *client_p, const char *username, struct AccessItem *
       if (ConfigFileEntry.kline_with_reason)
         sendto_one(client_p, ":%s NOTICE %s :*** Banned %s", 
                   me.name, client_p->name, aconf->reason);
-      return(BANNED_CLIENT);
+      return BANNED_CLIENT;
     }
   }
 
-  return(NOT_AUTHORIZED);
+  return NOT_AUTHORIZED;
 }
 
 /* check_class_limits()
@@ -835,7 +833,7 @@ verify_access(struct Client *client_p, const char *username, struct AccessItem *
  */
 static int
 check_class_limits(struct Client *client_p, int exempt,
-		   struct ClassItem *aclass)
+                   struct ClassItem *aclass)
 {
   struct ip_entry *ip_found;
   int a_limit_reached = 0;
@@ -1114,13 +1112,12 @@ garbage_collect_ip_entries(void)
 /* detach_conf()
  *
  * inputs	- pointer to client to detach
- *		- type of conf to detach
  * output	- 0 for success, -1 for failure
  * side effects	- Disassociate configuration from the client.
  *		  Also removes a class from the list if marked for deleting.
  */
 int
-detach_conf(struct Client *client_p, ConfType type)
+detach_confs(struct Client *client_p)
 {
   dlink_node *ptr, *next_ptr;
   struct ConfItem *conf;
@@ -1189,13 +1186,15 @@ attach_leaf_hub(struct Client *client_p, struct ConfItem *conf)
  * attach_class
  *
  * inputs	- pointer to client to attach ClassItem to
- * 		- pointer to aclass
+ *          - pointer to aclass
  * output	- 0 if successful, -1 if unsuccesful
  * side effects	- 
  */
-static int
-attach_class(struct Client *client_p, struct ClassItem *aclass)
+int
+attach_class(struct Client *client_p, struct ConfItem *cl)
 {
+  struct ClassItem *aclass = &cl->conf.ClassItem;
+
   if (client_p->localClient->class == NULL)
   {
     CurrUserCount(aclass)++;
@@ -1380,16 +1379,16 @@ find_exact_name_conf(ConfType type, const char *name,
       conf = ptr->data;
       match_item = &conf->conf.MatchItem;
       if (EmptyString(conf->name))
-	continue;
-    
+        continue;
+
       if (irccmp(conf->name, name) == 0)
       {
-	if ((user == NULL && (host == NULL)))
-	  return (conf);
-	if (EmptyString(match_item->user) || EmptyString(match_item->host))
-	  return (conf);
-	if (match(match_item->user, user) && match(match_item->host, host))
-	  return (conf);
+        if ((user == NULL && (host == NULL)))
+          return conf;
+        if (EmptyString(match_item->user) || EmptyString(match_item->host))
+          return conf;
+        if (match(match_item->user, user) && match(match_item->host, host))
+          return conf;
       }
     }
     break;
@@ -1400,16 +1399,16 @@ find_exact_name_conf(ConfType type, const char *name,
       conf = ptr->data;
       aconf = &conf->conf.AccessItem;
       if (EmptyString(conf->name))
-	continue;
+        continue;
     
       if (irccmp(conf->name, name) == 0)
       {
-	if ((user == NULL && (host == NULL)))
-	  return (conf);
-	if (EmptyString(aconf->user) || EmptyString(aconf->host))
-	  return (conf);
-	if (match(aconf->user, user) && match(aconf->host, host))
-	  return (conf);
+        if ((user == NULL && (host == NULL)))
+          return conf;
+        if (EmptyString(aconf->user) || EmptyString(aconf->host))
+          return conf;
+        if (match(aconf->user, user) && match(aconf->host, host))
+          return conf;
       }
     }
     break;
@@ -1419,20 +1418,18 @@ find_exact_name_conf(ConfType type, const char *name,
     {
       conf = ptr->data;
       if (EmptyString(conf->name))
-	continue;
+        continue;
       aconf = &conf->conf.AccessItem;
-    
+
       if (name == NULL)
       {
-	if (EmptyString(aconf->host))
-	  continue;
-	if (irccmp(aconf->host, host) == 0)
-	  return(conf);
+        if (EmptyString(aconf->host))
+          continue;
+        if (irccmp(aconf->host, host) == 0)
+          return conf;
       }
       else if (irccmp(conf->name, name) == 0)
-      {
-	  return (conf);
-      }
+        return conf;
     }
     break;
 
@@ -1442,16 +1439,16 @@ find_exact_name_conf(ConfType type, const char *name,
       conf = ptr->data;
       if (EmptyString(conf->name))
         continue;
-    
+
       if (irccmp(conf->name, name) == 0)
-        return (conf);
+        return conf;
     }
     break;
 
   default:
     break;
   }
-  return(NULL);
+  return NULL;
 }
 
 /* rehash()

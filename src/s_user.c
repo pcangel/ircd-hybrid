@@ -304,6 +304,8 @@ register_local_user(struct Client *client_p, struct Client *source_p,
   if (!execute_callback(client_check_cb, source_p, username, &aconf))
     return;
 
+  attach_class(source_p, aconf->class_ptr);
+
   if (valid_hostname(source_p->host) == 0)
   {
     sendto_one(source_p, ":%s NOTICE %s :*** Notice -- You have an illegal "

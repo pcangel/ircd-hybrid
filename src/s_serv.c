@@ -1056,6 +1056,7 @@ server_estab(struct Client *client_p)
 
   /* XXX */
   aconf = &conf->conf.AccessItem;
+  attach_class(client_p, aconf->class_ptr);
   MyFree(client_p->localClient->passwd);
   client_p->localClient->passwd = NULL;
 
