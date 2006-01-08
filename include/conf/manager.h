@@ -31,6 +31,7 @@
 #define CT_SIZE   3
 #define CT_STRING 4
 #define CT_LIST   5
+#define CT_NLIST  6
 
 typedef void CONFS_HANDLER(void);
 typedef void CONFF_HANDLER(void *, void *);

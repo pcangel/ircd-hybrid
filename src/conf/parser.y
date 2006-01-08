@@ -33,19 +33,33 @@
 struct ConfSection *conf_current_section;
 int conf_pass;
 
-static dlink_list conf_ident_list = {NULL, NULL, 0};
+static dlink_list conf_list = {NULL, NULL, 0};
 static struct ConfField *conf_field;
 
-void conf_clear_ident_list(void)
+void conf_clear_list(int free_items)
 {
   dlink_node *ptr, *ptr_next;
 
-  DLINK_FOREACH_SAFE(ptr, ptr_next, conf_ident_list.head)
+  DLINK_FOREACH_SAFE(ptr, ptr_next, conf_list.head)
   {
-    MyFree(ptr->data);
-    dlinkDelete(ptr, &conf_ident_list);
+    if (free_items)
+      MyFree(ptr->data);
+    dlinkDelete(ptr, &conf_list);
     free_dlink_node(ptr);
   }
+}
+
+void conf_add_ident(const char *ident)
+{
+  char *str;
+
+  DupString(str, ident);
+  dlinkAdd(str, make_dlink_node(), &conf_list);
+}
+
+void conf_add_number(int number)
+{
+  dlinkAdd((void *) (long) number, make_dlink_node(), &conf_list);
 }
 
 %}
@@ -53,7 +67,6 @@ void conf_clear_ident_list(void)
 %union {
     int number;
     char *string;
-    dlink_list *idlist;
 }
 
 %token BOOL
@@ -77,7 +90,6 @@ void conf_clear_ident_list(void)
 %type <number> timespec_
 %type <number> sizespec
 %type <number> sizespec_
-%type <idlist> ident_list
 
 %%
 
@@ -121,27 +133,33 @@ sizespec: NUMBER BYTES sizespec_ { $$ = $1 + $3; }
 	  | NUMBER KBYTES sizespec_ { $$ = $1*1024 + $3; }
 	  | NUMBER MBYTES sizespec_ { $$ = $1*1048576 + $3; };
 
-ident_list_item: ',' IDENTIFIER
+ident_list_atom: IDENTIFIER { conf_add_ident($1); };
+ident_list: ident_list_atom
+            | ident_list ',' ident_list_atom
+            ;
+
+// This is made so that a NUMBER alone doesn't match the rules, to avoid
+// conflicts. The NUMBER -> NLIST conversion is later dealt with by conf_assign
+
+number_atom: NUMBER { conf_add_number($1); };
+number_range: NUMBER '.' '.' NUMBER
 {
-  char *str;
-  DupString(str, $2);
-  dlinkAdd(str, make_dlink_node(), &conf_ident_list);
+  int i;
+  if ($4 - $1 < 0 || $4 - $1 >= 100)
+    yyerror("invalid range");
+  else for (i = $1; i <= $4; i++)
+    conf_add_number(i);
 };
-_ident_list: /* empty */
-             | _ident_list ident_list_item;
-ident_list: IDENTIFIER
-{
-  char *str;
-  conf_clear_ident_list();
-  DupString(str, $1);
-  dlinkAdd(str, make_dlink_node(), &conf_ident_list);
-} _ident_list {
-  $$ = &conf_ident_list;
-};
+number_item: number_range | number_atom;
+number_items: number_item | number_items ',' number_item;
+number_list: number_atom ',' number_items
+             | number_range ',' number_items
+             | number_range
+             ;
 
 conf_items: /* empty */
             | conf_items conf_item
-	    ;
+            ;
 
 conf_item: IDENTIFIER {
   conf_field = find_conf_field(conf_current_section, $1);
@@ -160,6 +178,9 @@ value: QSTRING {
        } | sizespec {
          conf_assign(CT_SIZE, conf_field, &$1);
        } | ident_list {
-         conf_assign(CT_LIST, conf_field, $1);
-         conf_clear_ident_list();
+         conf_assign(CT_LIST, conf_field, &conf_list);
+         conf_clear_list(1);
+       } | number_list {
+         conf_assign(CT_NLIST, conf_field, &conf_list);
+         conf_clear_list(0);
        };

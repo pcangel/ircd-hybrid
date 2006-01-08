@@ -263,15 +263,26 @@ void
 conf_assign(int type, struct ConfField *field, void *value)
 {
   static char *field_types[] =
-  {"NUMBER", "BOOLEAN", "TIME", "SIZE", "STRING", "LIST"};
+    {"NUMBER", "BOOLEAN", "TIME", "SIZE", "STRING", "LIST", "NLIST"};
 
   if (field == NULL)
     return;
-  if ((type == CT_NUMBER && (field->type == CT_TIME || field->type == CT_SIZE))
-      || type == field->type)
+
+  if (type == field->type || (type == CT_NUMBER &&
+       (field->type == CT_TIME || field->type == CT_SIZE)))
   {
     if (field->handler != NULL)
       field->handler(value, field->param);
+  }
+  else if (type == CT_NUMBER && field->type == CT_NLIST)
+  {
+    dlink_list list = {NULL, NULL, 0};
+    dlink_node node;
+
+    dlinkAdd((void *) (long) (*(int *) value), &node, &list);
+
+    if (field->handler != NULL)
+      field->handler(&list, field->param);
   }
   else
     parse_error("type mismatch, expected %s", field_types[type]);

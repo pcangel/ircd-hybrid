@@ -63,14 +63,13 @@
 
 
 #ifndef YYSTYPE
-#line 53 "parser.y"
+#line 67 "parser.y"
 typedef union {
     int number;
     char *string;
-    dlink_list *idlist;
 } yystype;
 /* Line 1281 of /usr/local/share/bison/yacc.c.  */
-#line 74 "y.tab.h"
+#line 73 "y.tab.h"
 # define YYSTYPE yystype
 #endif
 
