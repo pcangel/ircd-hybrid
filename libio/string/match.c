@@ -210,45 +210,29 @@ comp_with_mask(void *addr, void *dest, unsigned int mask)
  * Output - 1 = Matched 0 = Did not match
  */
 int
-match_cidr(const char *s1, const char *s2)
+match_cidr(const char *s1, const char *address)
 {
   struct irc_ssaddr ipaddr, maskaddr;
-  char address[NICKLEN + USERLEN + HOSTLEN + 6];
-  char mask[NICKLEN + USERLEN + HOSTLEN + 6];
-  char *ipmask, *ip, *len;
+  char mask[HOSTLEN + 1];
+  char *len = NULL;
   int cidrlen, offset;
   struct addrinfo hints, *res;
-  
-  /* Unlikely to ever overflow, but we may as well be consistant - stu */
+
   strlcpy(mask, s1, sizeof(mask));
-  strlcpy(address, s2, sizeof(address));
-  
-  ipmask = strrchr(mask, '@');
-  if (ipmask == NULL)
-    return 0;
-  
-  *ipmask++ = '\0';
-  
-  ip = strrchr(address, '@');
-  if (ip == NULL)
-    return 0;
-  *ip++ = '\0';
-  
-  len = strrchr(ipmask, '/');
-  if (len == NULL)
+
+  if ((len = strrchr(mask, '/')) == NULL)
     return 0;
   
   *len++ = '\0';
-  
-  cidrlen = atoi(len);
-  if (cidrlen == 0) 
+
+  if (!(cidrlen = atoi(len)))
     return 0;
 
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_UNSPEC;
   hints.ai_flags = AI_NUMERICHOST;
 
-  irc_getaddrinfo(ip, NULL, &hints, &res);
+  irc_getaddrinfo(address, NULL, &hints, &res);
   if (!res)
     return 0;
 
@@ -270,7 +254,7 @@ match_cidr(const char *s1, const char *s2)
   if (cidrlen > ipaddr.ss_len * 8)
     return 0;
 
-  irc_getaddrinfo(ipmask, NULL, &hints, &res);
+  irc_getaddrinfo(mask, NULL, &hints, &res);
   if (!res)
     return 0;
 
