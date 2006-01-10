@@ -188,22 +188,6 @@ match_chan(const char *mask, const char *name)
   return *mask ? (*mask == *name && match_esc(mask + 1, name + 1)) : !*name;
 }
 
-static inline int 
-comp_with_mask(void *addr, void *dest, unsigned int mask)
-{
-  if (memcmp(addr, dest, mask / 8) == 0) 
-  {
-    int n = mask / 8;
-    int m = ((-1) << (8 - (mask % 8)));
-
-    if (mask % 8 == 0 || 
-       (((unsigned char *) addr)[n] & m) == (((unsigned char *) dest)[n] & m))  
-      return 1;
-  }
-
-  return 0;
-}
-
 int
 has_wildcards(const char *s)
 {
