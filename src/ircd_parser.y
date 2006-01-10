@@ -2904,6 +2904,8 @@ kill_entry: KILL
         }
 
         yy_conf = make_conf_item(RKLINE_TYPE);
+
+        yy_aconf = &yy_conf->conf.AccessItem;
         yy_aconf->regexuser = exp_user;
         yy_aconf->regexhost = exp_host;
 
