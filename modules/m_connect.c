@@ -106,32 +106,32 @@ mo_connect(struct Client* client_p, struct Client* source_p,
   if ((target_p = find_server(parv[1])))
   {
     sendto_one(source_p,
-	       ":%s NOTICE %s :Connect: Server %s already exists from %s.",
+               ":%s NOTICE %s :Connect: Server %s already exists from %s.",
                me.name, source_p->name, parv[1], target_p->from->name);
     return;
   }
 
   /*
-   * try to find the name, then host, if both fail notify ops and bail
+   * Try to find the name, then host, if both fail notify ops and bail
    */
   if ((conf = find_matching_name_conf(SERVER_TYPE,
-				      parv[1], NULL, NULL, 0)) != NULL)
+                                      parv[1], NULL, NULL, 0)) != NULL)
     aconf = &conf->conf.AccessItem;
   else if ((conf = find_matching_name_conf(SERVER_TYPE,
-					   NULL, NULL, parv[1], 0)) != NULL)
+                                           NULL, NULL, parv[1], 0)) != NULL)
     aconf = &conf->conf.AccessItem;
   
   if (conf == NULL)
   {
     sendto_one(source_p,
-	       ":%s NOTICE %s :Connect: Host %s not listed in ircd.conf",
-	       me.name, source_p->name, parv[1]);
+               ":%s NOTICE %s :Connect: Host %s not listed in ircd.conf",
+               me.name, source_p->name, parv[1]);
     return;
   }
-    
-  /* Get port number from user, if given. If not specified,
-   * use the default form configuration structure. If missing
-   * from there, then use the precompiled default.
+
+  /*
+   * Get port number from user, if given.  If not specified,
+   * use the default from configuration structure.
    */
   tmpport = port = aconf->port;
 
@@ -144,7 +144,7 @@ mo_connect(struct Client* client_p, struct Client* source_p,
       return;
     }
   }
-  else if (port <= 0 && (port = PORTNUM) <= 0)
+  else if (port <= 0)
   {
     sendto_one(source_p, ":%s NOTICE %s :Connect: missing port number",
                me.name, source_p->name);
@@ -166,8 +166,9 @@ mo_connect(struct Client* client_p, struct Client* source_p,
 
   aconf->port = port;
 
-  /* at this point we should be calling connect_server with a valid
-   * C:line and a valid port in the C:line
+  /*
+   * At this point we should be calling connect_server with a valid
+   * connect{} and a valid port in the connect{}
    */
   if (serv_connect(aconf, source_p))
   {
@@ -186,7 +187,7 @@ mo_connect(struct Client* client_p, struct Client* source_p,
   }
 
   /*
-   * client is either connecting with all the data it needs or has been
+   * Client is either connecting with all the data it needs or has been
    * destroyed
    */
   aconf->port = tmpport;
@@ -231,34 +232,34 @@ ms_connect(struct Client *client_p, struct Client *source_p,
   if ((target_p = find_server(parv[1])))
   {
     sendto_one(source_p,
-	       ":%s NOTICE %s :Connect: Server %s already exists from %s.",
+               ":%s NOTICE %s :Connect: Server %s already exists from %s.",
                me.name, source_p->name, parv[1], target_p->from->name);
     return;
   }
 
   /*
-   * try to find the name, then host, if both fail notify ops and bail
+   * Try to find the name, then host, if both fail notify ops and bail
    */
   if ((conf = find_matching_name_conf(SERVER_TYPE,
-				      parv[1], NULL, NULL, 0)) != NULL)
+                                      parv[1], NULL, NULL, 0)) != NULL)
     aconf = &conf->conf.AccessItem;
   else if ((conf = find_matching_name_conf(SERVER_TYPE,
-					   NULL, NULL, parv[1], 0)) != NULL)
+                                           NULL, NULL, parv[1], 0)) != NULL)
     aconf = &conf->conf.AccessItem;
 
   if (aconf == NULL)
   {
     sendto_one(source_p,
-	       ":%s NOTICE %s :Connect: Host %s not listed in ircd.conf",
-	       me.name, source_p->name, parv[1]);
+               ":%s NOTICE %s :Connect: Host %s not listed in ircd.conf",
+               me.name, source_p->name, parv[1]);
     return;
   }
 
   assert(aconf != NULL);
 
-  /* Get port number from user, if given. If not specified,
-   * use the default form configuration structure. If missing
-   * from there, then use the precompiled default.
+  /*
+   * Get port number from user, if given. If not specified,
+   * use the default from configuration structure.
    */
   tmpport = port = aconf->port;
 
@@ -276,7 +277,7 @@ ms_connect(struct Client *client_p, struct Client *source_p,
       return;
     }
   }
-  else if (port <= 0 && (port = PORTNUM) <= 0)
+  else if (port <= 0)
   {
     sendto_one(source_p, ":%s NOTICE %s :Connect: missing port number",
                me.name, source_p->name);
@@ -304,8 +305,9 @@ ms_connect(struct Client *client_p, struct Client *source_p,
 
   aconf->port = port;
 
-  /* at this point we should be calling connect_server with a valid
-   * C:line and a valid port in the C:line
+  /*
+   * At this point we should be calling connect_server with a valid
+   * connect{} and a valid port in the connect{}
    */
   if (serv_connect(aconf, source_p))
     sendto_one(source_p, ":%s NOTICE %s :*** Connecting to %s.%d",
@@ -315,7 +317,7 @@ ms_connect(struct Client *client_p, struct Client *source_p,
                me.name, source_p->name, conf->name, aconf->port);
 
   /*
-   * client is either connecting with all the data it needs or has been
+   * Client is either connecting with all the data it needs or has been
    * destroyed
    */
   aconf->port = tmpport;
