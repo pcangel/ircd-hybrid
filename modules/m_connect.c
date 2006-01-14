@@ -75,14 +75,13 @@ const char *_version = "$Revision$";
  *      - parv[3] = remote server
  */
 static void
-mo_connect(struct Client* client_p, struct Client* source_p,
-           int parc, char* parv[])
+mo_connect(struct Client *client_p, struct Client *source_p,
+           int parc, char *parv[])
 {
-  int port;
-  int tmpport;
+  int port = 0;
   struct ConfItem *conf = NULL;
   struct AccessItem *aconf = NULL;
-  struct Client *target_p;
+  struct Client *target_p = NULL;
 
   /* always privileged with handlers */
   if (MyConnect(source_p) && !IsOperRemote(source_p) && parc > 3)
@@ -133,20 +132,14 @@ mo_connect(struct Client* client_p, struct Client* source_p,
    * Get port number from user, if given.  If not specified,
    * use the default from configuration structure.
    */
-  tmpport = port = aconf->port;
+  port = aconf->port;
 
   if (parc > 2 && !EmptyString(parv[2]))
+    port = atoi(parv[2]);
+
+  if (port <= 0 || port > 0xFFFF)
   {
-    if ((port = atoi(parv[2])) <= 0)
-    {
-      sendto_one(source_p, ":%s NOTICE %s :Connect: Illegal port number",
-                 me.name, source_p->name);
-      return;
-    }
-  }
-  else if (port <= 0)
-  {
-    sendto_one(source_p, ":%s NOTICE %s :Connect: missing port number",
+    sendto_one(source_p, ":%s NOTICE %s :Connect: Illegal or missing port number",
                me.name, source_p->name);
     return;
   }
@@ -164,33 +157,30 @@ mo_connect(struct Client* client_p, struct Client* source_p,
   ilog(L_TRACE, "CONNECT From %s : %s %s", 
        source_p->name, parv[1], parv[2] ? parv[2] : "");
 
-  aconf->port = port;
-
   /*
    * At this point we should be calling connect_server with a valid
    * connect{} and a valid port in the connect{}
    */
-  if (serv_connect(aconf, source_p))
+  if (serv_connect(aconf, source_p, port))
   {
     if (!ConfigServerHide.hide_server_ips && IsAdmin(source_p))
       sendto_one(source_p, ":%s NOTICE %s :*** Connecting to %s[%s].%d",
                  me.name, source_p->name, aconf->host,
-                 conf->name, aconf->port);
+                 conf->name, port);
     else
       sendto_one(source_p, ":%s NOTICE %s :*** Connecting to %s.%d",
-                 me.name, source_p->name, conf->name, aconf->port);
+                 me.name, source_p->name, conf->name, port);
   }
   else
   {
     sendto_one(source_p, ":%s NOTICE %s :*** Couldn't connect to %s.%d",
-               me.name, source_p->name, conf->name, aconf->port);
+               me.name, source_p->name, conf->name, port);
   }
 
   /*
    * Client is either connecting with all the data it needs or has been
    * destroyed
    */
-  aconf->port = tmpport;
 }
 
 /*! \brief CONNECT command handler (called for remote clients only)
@@ -212,11 +202,10 @@ static void
 ms_connect(struct Client *client_p, struct Client *source_p,
            int parc, char *parv[])
 {
-  int port;
-  int tmpport;
+  int port = 0;
   struct ConfItem *conf = NULL;
   struct AccessItem *aconf = NULL;
-  struct Client *target_p;
+  struct Client *target_p = NULL;
 
   if (hunt_server(client_p, source_p, ":%s CONNECT %s %s :%s", 3,
                   parc, parv) != HUNTED_ISME)
@@ -261,25 +250,20 @@ ms_connect(struct Client *client_p, struct Client *source_p,
    * Get port number from user, if given. If not specified,
    * use the default from configuration structure.
    */
-  tmpport = port = aconf->port;
+  port = aconf->port;
 
   if (parc > 2 && !EmptyString(parv[2]))
   {
     port = atoi(parv[2]);
 
-    /* if someone sends port 0, and we have a config port.. use it */
-    if (port == 0 && aconf->port)
+    /* if someone sends port 0, use the config port instead */
+    if (port == 0)
       port = aconf->port;
-    else if (port <= 0)
-    {
-      sendto_one(source_p, ":%s NOTICE %s :Connect: Illegal port number",
-                 me.name, source_p->name);
-      return;
-    }
   }
-  else if (port <= 0)
+
+  if (port <= 0 || port > 0xFFFF)
   {
-    sendto_one(source_p, ":%s NOTICE %s :Connect: missing port number",
+    sendto_one(source_p, ":%s NOTICE %s :Connect: Illegal or missing port number",
                me.name, source_p->name);
     return;
   }
@@ -303,22 +287,19 @@ ms_connect(struct Client *client_p, struct Client *source_p,
   ilog(L_TRACE, "CONNECT From %s : %s %d", 
        source_p->name, parv[1], port);
 
-  aconf->port = port;
-
   /*
    * At this point we should be calling connect_server with a valid
    * connect{} and a valid port in the connect{}
    */
-  if (serv_connect(aconf, source_p))
+  if (serv_connect(aconf, source_p, port))
     sendto_one(source_p, ":%s NOTICE %s :*** Connecting to %s.%d",
-               me.name, source_p->name, conf->name, aconf->port);
+               me.name, source_p->name, conf->name, port);
   else
     sendto_one(source_p, ":%s NOTICE %s :*** Couldn't connect to %s.%d",
-               me.name, source_p->name, conf->name, aconf->port);
+               me.name, source_p->name, conf->name, port);
 
   /*
    * Client is either connecting with all the data it needs or has been
    * destroyed
    */
-  aconf->port = tmpport;
 }

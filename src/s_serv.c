@@ -559,7 +559,7 @@ try_connections(void *unused)
         sendto_realops_flags(UMODE_ALL, L_ALL, "Connection to %s[%s] activated.",
                              conf->name, aconf->host);
 
-      serv_connect(aconf, NULL);
+      serv_connect(aconf, NULL, aconf->port);
       /* We connect only one at time... */
       return;
     }
@@ -1902,23 +1902,19 @@ nextFreeMask(void)
  * it suceeded or not, and 0 if it fails in here somewhere.
  */
 int
-serv_connect(struct AccessItem *aconf, struct Client *by)
+serv_connect(struct AccessItem *aconf, struct Client *by, int connect_port)
 {
-  struct ConfItem *conf;
-  struct Client *client_p;
-  char buf[HOSTIPLEN];
+  struct ConfItem *conf = NULL;
+  struct Client *client_p = NULL;
+  char buf[HOSTIPLEN] = { '\0' };
 
   /* conversion structs */
   struct sockaddr_in *v4;
   /* Make sure aconf is useful */
   assert(aconf != NULL);
 
-  if(aconf == NULL)
-    return (0);
-
   conf = aconf->conf_ptr;
 
-  /* log */
   irc_getnameinfo((struct sockaddr*)&aconf->ipnum, aconf->ipnum.ss_len,
 		  buf, HOSTIPLEN, NULL, 0, NI_NUMERICHOST);
   ilog(L_NOTICE, "Connect to %s[%s] @%s", aconf->user, aconf->host,
@@ -1929,10 +1925,11 @@ serv_connect(struct AccessItem *aconf, struct Client *by)
   {
     sendto_realops_flags(UMODE_ALL, L_OPER,
                          "Error connecting to %s: Error during DNS lookup", conf->name);
-    return (0);
+    return 0;
   }
 
-  /* Make sure this server isn't already connected
+  /*
+   * Make sure this server isn't already connected
    * Note: aconf should ALWAYS be a valid C: line
    */
   if ((client_p = find_server(conf->name)) != NULL)
@@ -1943,11 +1940,14 @@ serv_connect(struct AccessItem *aconf, struct Client *by)
     sendto_realops_flags(UMODE_ALL, L_OPER,
 		         "Server %s already present from %s",
 		         conf->name, get_client_name(client_p, MASK_IP));
+    /*
+     * 'by' can be a NULL pointer if called by try_connections()
+     */
     if (by && IsClient(by) && !MyClient(by))
       sendto_one(by, ":%s NOTICE %s :Server %s already present from %s",
 	         me.name, by->name, conf->name,
 	         get_client_name(client_p, MASK_IP));
-    return (0);
+    return 0;
   }
     
   /* Create a local client */
@@ -1969,7 +1969,7 @@ serv_connect(struct AccessItem *aconf, struct Client *by)
 		 "opening stream socket to %s: %s", conf->name, errno);
     SetDead(client_p);
     exit_client(client_p, &me, "Connection failed");
-    return (0);
+    return 0;
   }
 
   /* servernames are always guaranteed under HOSTLEN chars */
@@ -1993,7 +1993,7 @@ serv_connect(struct AccessItem *aconf, struct Client *by)
 	         me.name, by->name, client_p->name);
     SetDead(client_p);
     exit_client(client_p, client_p, "Connection failed");
-    return (0);
+    return 0;
   }
 
   /* at this point we have a connection in progress and a connect block
@@ -2028,7 +2028,7 @@ serv_connect(struct AccessItem *aconf, struct Client *by)
         ipn.ss.ss_family = AF_INET;
         ipn.ss_port = 0;
         memcpy(&ipn, &aconf->my_ipnum, sizeof(struct irc_ssaddr));
-	comm_connect_tcp(&client_p->localClient->fd, aconf->host, aconf->port,
+	comm_connect_tcp(&client_p->localClient->fd, aconf->host, connect_port,
 			 (struct sockaddr *)&ipn, ipn.ss_len, 
 			 serv_connect_callback, client_p, aconf->aftype,
 			 CONNECTTIMEOUT);
@@ -2040,13 +2040,13 @@ serv_connect(struct AccessItem *aconf, struct Client *by)
         ipn.ss.ss_family = AF_INET;
         ipn.ss_port = 0;
         memcpy(&ipn, &ServerInfo.ip, sizeof(struct irc_ssaddr));
-        comm_connect_tcp(&client_p->localClient->fd, aconf->host, aconf->port,
+        comm_connect_tcp(&client_p->localClient->fd, aconf->host, connect_port,
                          (struct sockaddr *)&ipn, ipn.ss_len,
                          serv_connect_callback, client_p, aconf->aftype,
 			 CONNECTTIMEOUT);
       }
       else
-        comm_connect_tcp(&client_p->localClient->fd, aconf->host, aconf->port, 
+        comm_connect_tcp(&client_p->localClient->fd, aconf->host, connect_port, 
                          NULL, 0, serv_connect_callback, client_p, aconf->aftype, 
                          CONNECTTIMEOUT);
       break;
@@ -2068,7 +2068,7 @@ serv_connect(struct AccessItem *aconf, struct Client *by)
 	  ipn.ss.ss_family = AF_INET6;
 	  ipn.ss_port = 0;
 	  comm_connect_tcp(&client_p->localClient->fd,
-			   aconf->host, aconf->port,
+			   aconf->host, connect_port,
 			   (struct sockaddr *)&ipn, ipn.ss_len, 
 			   serv_connect_callback, client_p,
 			   aconf->aftype, CONNECTTIMEOUT);
@@ -2079,20 +2079,21 @@ serv_connect(struct AccessItem *aconf, struct Client *by)
 	  ipn.ss.ss_family = AF_INET6;
 	  ipn.ss_port = 0;
 	  comm_connect_tcp(&client_p->localClient->fd,
-			   aconf->host, aconf->port,
+			   aconf->host, connect_port,
 			   (struct sockaddr *)&ipn, ipn.ss_len,
 			   serv_connect_callback, client_p,
 			   aconf->aftype, CONNECTTIMEOUT);
 	}
 	else
 	  comm_connect_tcp(&client_p->localClient->fd,
-			   aconf->host, aconf->port, 
+			   aconf->host, connect_port, 
 			   NULL, 0, serv_connect_callback, client_p,
 			   aconf->aftype, CONNECTTIMEOUT);
       }
 #endif
   }
-  return (1);
+
+  return 1;
 }
 
 /* serv_connect_callback() - complete a server connection.

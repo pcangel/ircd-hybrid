@@ -254,7 +254,7 @@ EXTERN void collect_zipstats(void *);
 EXTERN void initServerMask(void);
 EXTERN void burst_channel(struct Client *, struct Channel *);
 EXTERN void sendnick_TS(struct Client *, struct Client *);
-EXTERN int serv_connect(struct AccessItem *, struct Client *);
+EXTERN int serv_connect(struct AccessItem *, struct Client *, int);
 EXTERN struct Client *find_servconn_in_progress(const char *);
 EXTERN unsigned long nextFreeMask(void);
 EXTERN void cryptlink_init(struct Client *, struct AccessItem *, fde_t *);
