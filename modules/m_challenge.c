@@ -37,8 +37,8 @@
 #include "s_user.h"
 
 static void failed_challenge_notice(struct Client *, const char *,
-				    const char *);
-static void m_challenge(struct Client *, struct Client *, int, char **);
+                                    const char *);
+static void m_challenge(struct Client *, struct Client *, int, char *[]);
 
 /* We have openssl support, so include /CHALLENGE */
 struct Message challenge_msgtab = {
@@ -90,7 +90,7 @@ m_challenge(struct Client *client_p, struct Client *source_p,
   /* if theyre an oper, reprint oper motd and ignore */
   if (IsOper(source_p))
   {
-    sendto_one(source_p, form_str(RPL_YOUREOPER), me.name, parv[0]);
+    sendto_one(source_p, form_str(RPL_YOUREOPER), me.name, source_p->name);
     send_message_file(source_p, &ConfigFileEntry.opermotd);
     return;
   }
@@ -115,7 +115,7 @@ m_challenge(struct Client *client_p, struct Client *source_p,
 				     source_p->username, source_p->host
 				   )) == NULL)
     {
-      sendto_one (source_p, form_str(ERR_NOOPERHOST), me.name, parv[0]);
+      sendto_one (source_p, form_str(ERR_NOOPERHOST), me.name, source_p->name);
       log_oper_action(LOG_FAILED_OPER_TYPE, source_p, "%s\n",
 		      source_p->localClient->auth_oper);
       return;
@@ -130,9 +130,13 @@ m_challenge(struct Client *client_p, struct Client *source_p,
 		    "%s\n", source_p->localClient->auth_oper);
 
     MyFree(source_p->localClient->response);
-    MyFree(source_p->localClient->auth_oper);
+/*
+ *  Do NOT free auth_oper here as it is already done and
+ *  a new string is copied to it in oper_up()
+ */
+/*  MyFree(source_p->localClient->auth_oper);*/
     source_p->localClient->response  = NULL;
-    source_p->localClient->auth_oper = NULL;
+/*  source_p->localClient->auth_oper = NULL; */
     return;
   }
 
@@ -156,7 +160,7 @@ m_challenge(struct Client *client_p, struct Client *source_p,
 
   if (aconf == NULL)
   {
-    sendto_one (source_p, form_str(ERR_NOOPERHOST), me.name, parv[0]);
+    sendto_one (source_p, form_str(ERR_NOOPERHOST), me.name, source_p->name);
     conf = find_exact_name_conf(OPER_TYPE, parv[1], NULL, NULL);
     failed_challenge_notice(source_p, parv[1], (conf != NULL)
                             ? "host mismatch" : "no oper {} block");
@@ -168,7 +172,7 @@ m_challenge(struct Client *client_p, struct Client *source_p,
   {
     sendto_one (source_p, ":%s NOTICE %s :I'm sorry, PK authentication "
 		"is not enabled for your oper{} block.", me.name,
-		parv[0]);
+		source_p->name);
     return;
   }
 
