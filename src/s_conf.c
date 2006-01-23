@@ -533,7 +533,7 @@ report_confitem_types(struct Client *source_p, ConfType type, int temp)
 		 me.name, source_p->name, 'Y',
 		 conf->name, PingFreq(classitem),
 		 ConFreq(classitem),
-		 MaxTotal(classitem), MaxSendq(classitem));
+		 MaxTotal(classitem), MaxSendq(classitem), CurrUserCount(classitem));
     }
     break;
 
