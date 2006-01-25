@@ -543,13 +543,6 @@ count_memory(struct Client *source_p)
              me.name, RPL_STATSDEBUG, source_p->name,
              aways_counted, (int)away_memory);
 
-  /* XXX  ConfigItemList fix */
-#if 0
-  sendto_one(source_p, ":%s %d %s z :Conflines %lu(%d)",
-             me.name, RPL_STATSDEBUG, source_p->name,
-             dlink_list_length(&ConfigItemList), (int) conf_memory);
-#endif
-
   sendto_one(source_p, ":%s %d %s z :Resv channels %lu(%lu) nicks %lu(%lu)",
              me.name, RPL_STATSDEBUG, source_p->name,
              dlink_list_length(&resv_channel_list),
@@ -591,6 +584,7 @@ count_memory(struct Client *source_p)
   sendto_one(source_p, ":%s %d %s z :Safelist %u(%u)",
              me.name, RPL_STATSDEBUG, source_p->name,
              safelist_count, safelist_memory);
+
   count_ip_hash(&number_ips_stored,&mem_ips_stored);
   sendto_one(source_p, ":%s %d %s z :iphash %u(%d)",
              me.name, RPL_STATSDEBUG, source_p->name,
