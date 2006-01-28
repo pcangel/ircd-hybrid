@@ -544,7 +544,7 @@ report_confitem_types(struct Client *source_p, ConfType type, int temp)
 
       DLINK_FOREACH(ptr_mask, conf->mask_list.head)
       {
-        struct split_nuh_item *nuh = ptr->data;
+        struct split_nuh_item *nuh = ptr_mask->data;
         /* Don't allow non opers to see oper privs */
         if (IsOper(source_p))
           sendto_one(source_p, form_str(RPL_STATSOLINE),
