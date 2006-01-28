@@ -251,7 +251,8 @@ struct MatchItem
   int count;            /* How many times this matchitem has been matched */
   int ref_count;        /* How many times is this matchitem in use */
   int illegal;          /* Should it be deleted when possible? */
-  time_t           hold;     /* Hold action until this time (calendar time) */
+  time_t hold;     /* Hold action until this time (calendar time) */
+  dlink_list mask_list;
 };
 
 struct AccessItem
@@ -282,6 +283,7 @@ struct AccessItem
 #endif
   pcre *regexuser;
   pcre *regexhost;
+  dlink_list mask_list;
 };
 
 struct ClassItem
