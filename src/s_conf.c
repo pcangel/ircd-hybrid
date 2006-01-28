@@ -275,16 +275,26 @@ delete_conf_item(struct ConfItem *conf)
 {
   ConfType type = conf->type;
   dlink_list *list;
+  dlink_node *ptr = NULL, *ptr_next = NULL;
 
   list = conf_item_table[type].list;
 
   MyFree(conf->name);
-  conf->name = NULL;
   MyFree(conf->regexpname);
-  conf->regexpname = NULL;
 
   if (conf_item_table[type].freer != NULL)
     conf_item_table[type].freer(conf, list);
+
+  DLINK_FOREACH_SAFE(ptr, ptr_next, conf->mask_list.head)
+  {
+    struct split_nuh_item *nuh = ptr->data;
+
+    dlinkDelete(&nuh->node, &conf->mask_list);
+    MyFree(nuh->nickptr);
+    MyFree(nuh->userptr);
+    MyFree(nuh->hostptr);
+    MyFree(nuh);
+  }
 
   MyFree(conf);
 }
@@ -350,7 +360,6 @@ delete_link(struct ConfItem *conf, dlink_list *list)
   if (list != NULL)
     dlinkDelete(&conf->node, list);
 }
-
 
 /*
  * free_match_items
@@ -522,7 +531,35 @@ report_confitem_types(struct Client *source_p, ConfType type, int temp)
                    conf->name, "0",
 		   aconf->class_ptr ? aconf->class_ptr->name : "<default>");
     }
+#ifdef NOTYET
+  /*
+   * This is an example about how to deal with multiple user@host masks
+   * in a single AccessItem struct
+   */
+    DLINK_FOREACH(ptr, oconf_items.head)
+    {
+      dlink_node *ptr_mask = NULL;
+      conf = ptr->data;
+      aconf = &conf->conf.AccessItem;
+
+      DLINK_FOREACH(ptr_mask, conf->mask_list.head)
+      {
+        struct split_nuh_item *nuh = ptr->data;
+        /* Don't allow non opers to see oper privs */
+        if (IsOper(source_p))
+          sendto_one(source_p, form_str(RPL_STATSOLINE),
+                     me.name, source_p->name, 'O', nuh->userptr, nuh->hostptr,
+                     conf->name, oper_privs_as_string(aconf->port),
+                     aconf->class_ptr ? aconf->class_ptr->name : "<default>");
+        else
+          sendto_one(source_p, form_str(RPL_STATSOLINE),
+                     me.name, source_p->name, 'O', nuh->userptr, nuh->hostptr,
+                     conf->name, "0",
+                     aconf->class_ptr ? aconf->class_ptr->name : "<default>");
+      }
+    }
     break;
+#endif
 
   case CLASS_TYPE:
     DLINK_FOREACH(ptr, class_items.head)

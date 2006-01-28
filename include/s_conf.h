@@ -49,6 +49,8 @@ struct CidrItem
 
 struct split_nuh_item
 {
+  dlink_node node;
+
   char *nuhmask;
   char *nickptr;
   char *userptr;
@@ -252,7 +254,6 @@ struct MatchItem
   int ref_count;        /* How many times is this matchitem in use */
   int illegal;          /* Should it be deleted when possible? */
   time_t hold;     /* Hold action until this time (calendar time) */
-  dlink_list mask_list;
 };
 
 struct AccessItem
@@ -283,7 +284,6 @@ struct AccessItem
 #endif
   pcre *regexuser;
   pcre *regexhost;
-  dlink_list mask_list;
 };
 
 struct ClassItem
@@ -313,13 +313,15 @@ struct ConfItem
   dlink_node node;	/* link into known ConfItems of this type */
   unsigned int flags;
   ConfType type;
+  dlink_list mask_list;
+
   union
   {
     struct MatchItem MatchItem;
     struct AccessItem AccessItem;
     struct ClassItem ClassItem;
     struct ResvChannel ResvChannel;
-  }conf;
+  } conf;
 };
 
 struct conf_item_table_type
