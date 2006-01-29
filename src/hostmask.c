@@ -778,21 +778,19 @@ clear_out_address_conf(void)
 }
 
 /*
- * show_iline_prefix()
+ * make_iline_prefix()
  *
  * inputs       - pointer to struct Client requesting output
  *              - pointer to struct AccessItem 
- *              - name to which iline prefix will be prefixed to
  * output       - pointer to static string with prefixes listed in ascii form
  * side effects - NONE
  */
 char *
-show_iline_prefix(struct Client *sptr, struct AccessItem *aconf, const char *name)
+make_iline_prefix(struct Client *sptr, struct AccessItem *aconf)
 {
-  static char prefix_of_host[USERLEN + 14];
-  char *prefix_ptr;
+  static char prefix_of_host[14];
+  char *prefix_ptr = prefix_of_host;
 
-  prefix_ptr = prefix_of_host;
   if (IsNoTilde(aconf))
     *prefix_ptr++ = '-';
   if (IsLimitIp(aconf))
@@ -817,9 +815,9 @@ show_iline_prefix(struct Client *sptr, struct AccessItem *aconf, const char *nam
     *prefix_ptr++ = '<';
   if (IsConfCanFlood(aconf))
     *prefix_ptr++ = '|';
-  strlcpy(prefix_ptr, name, USERLEN);
+  *prefix_ptr = '\0';
 
-  return(prefix_of_host);
+  return prefix_of_host;
 }
 
 /* report_auth()
@@ -856,16 +854,15 @@ report_auth(struct Client *client_p)
           sendto_one(client_p, form_str(RPL_STATSILINE), me.name,
                      client_p->name, 'I',
 		     conf->name == NULL ? "*" : conf->name,
-		     show_iline_prefix(client_p, aconf, aconf->user),
+		     make_iline_prefix(client_p, aconf), aconf->user,
                      IsConfDoSpoofIp(aconf) ? "255.255.255.255" :
                      aconf->host, aconf->port,
 		     aconf->class_ptr ? aconf->class_ptr->name : "<default>");
-		     
         else
           sendto_one(client_p, form_str(RPL_STATSILINE), me.name,
                      client_p->name, 'I',
 		     conf->name == NULL ? "*" : conf->name,
-		     show_iline_prefix(client_p, aconf, aconf->user),
+		     make_iline_prefix(client_p, aconf), aconf->user,
                      aconf->host, aconf->port,
 		     aconf->class_ptr ? aconf->class_ptr->name : "<default>");
       }

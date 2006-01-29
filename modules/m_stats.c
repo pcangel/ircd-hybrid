@@ -894,8 +894,8 @@ stats_auth(struct Client *source_p)
     conf = aconf->conf_ptr;
 
     sendto_one(source_p, form_str(RPL_STATSILINE), from,
-               to, 'I',
-	       "*", show_iline_prefix(source_p, aconf, aconf->user), 
+               to, 'I', "*",
+               make_iline_prefix(source_p, aconf), aconf->user, 
 	       aconf->host, aconf->port,
 	       aconf->class_ptr ? aconf->class_ptr->name : "<default>");
   }

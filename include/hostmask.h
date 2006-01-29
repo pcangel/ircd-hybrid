@@ -54,7 +54,7 @@ EXTERN void delete_one_address_conf(const char *, struct AccessItem *);
 EXTERN void report_Klines(struct Client *, int);
 EXTERN void report_auth(struct Client *);
 
-EXTERN char *show_iline_prefix(struct Client *, struct AccessItem *, const char *);
+EXTERN char *make_iline_prefix(struct Client *, struct AccessItem *);
 EXTERN struct AccessItem *find_address_conf(const char *, const char *,
                                             struct irc_ssaddr *, int, char *);
 EXTERN struct AccessItem *find_kline_conf(const char *, const char *,
