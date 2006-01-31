@@ -1357,10 +1357,7 @@ find_accept(const char *nick, const char *user,
 
 /* accept_message()
  *
- * inputs	- pointer to nick
- *		- pointer to username
- *		- pointer to hostname
- * 		- pointer to source client
+ * inputs	- pointer to source client
  * 		- pointer to target client
  * output	- 1 if accept this message 0 if not
  * side effects - See if source is on target's allow list
@@ -1377,7 +1374,7 @@ accept_message(struct Client *source,
 
   if (IsSoftCallerId(target))
     DLINK_FOREACH(ptr, target->channel.head)
-      if (IsMember(source, ptr->data))
+      if (IsMember(source, ((struct Membership *)ptr->data)->chptr))
         return 1;
 
   return 0;
