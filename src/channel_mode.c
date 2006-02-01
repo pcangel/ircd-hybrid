@@ -36,6 +36,7 @@
 #include "send.h"
 #include "whowas.h"
 #include "s_conf.h"             /* ConfigFileEntry, ConfigChannel */
+#include "msg.h"
 
 /* some small utility functions */
 static char *check_string(char *);
@@ -83,6 +84,7 @@ static void send_mode_changes(struct Client *, struct Client *,
 #define NCHCAPS         (sizeof(channel_capabs)/sizeof(int))
 #define NCHCAP_COMBOS   (1 << NCHCAPS)
 
+static char nuh_mask[MAXPARA][IRCD_BUFSIZE];
 /* some buffers for rebuilding channel/nick lists with ,'s */
 static char modebuf[IRCD_BUFSIZE];
 static char parabuf[MODEBUFLEN];
@@ -609,7 +611,6 @@ chm_ban(struct Client *client_p, struct Client *source_p,
         const char *chname)
 {
   char *mask = NULL;
-
   if (dir == MODE_QUERY || parc <= *parn)
   {
     dlink_node *ptr = NULL;
@@ -646,8 +647,10 @@ chm_ban(struct Client *client_p, struct Client *source_p,
   if (MyClient(source_p) && (++mode_limit > MAXMODEPARAMS))
     return;
 
-  mask = parv[(*parn)++];
-  
+  mask = nuh_mask[*parn];
+  memcpy(mask, parv[*parn], sizeof(nuh_mask[*parn]));
+  ++*parn;
+
   if (IsServer(client_p))
     if (strchr(mask, ' '))
       return;
@@ -741,7 +744,9 @@ chm_except(struct Client *client_p, struct Client *source_p,
   if (MyClient(source_p) && (++mode_limit > MAXMODEPARAMS))
     return;
 
-  mask = parv[(*parn)++];
+  mask = nuh_mask[*parn];
+  memcpy(mask, parv[*parn], sizeof(nuh_mask[*parn]));
+  ++*parn;
 
   if (IsServer(client_p))
     if (strchr(mask, ' '))
@@ -833,7 +838,9 @@ chm_invex(struct Client *client_p, struct Client *source_p,
   if (MyClient(source_p) && (++mode_limit > MAXMODEPARAMS))
     return;
 
-  mask = parv[(*parn)++];
+  mask = nuh_mask[*parn];
+  memcpy(mask, parv[*parn], sizeof(nuh_mask[*parn]));
+  ++*parn;
 
   if (IsServer(client_p))
     if (strchr(mask, ' '))
