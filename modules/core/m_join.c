@@ -39,17 +39,16 @@
 #include "modules.h"
 
 
-struct entity
+static struct entity
 {
   struct Channel *chptr;
   char *key;
   int flags;
-};
+} targets[IRCD_BUFSIZE];
 
-static struct entity targets[512];
 static int ntargets, join_0;
 
-static int build_target_list(struct Client *, struct Client *, char *, char *);
+static void build_target_list(struct Client *, struct Client *, char *, char *);
 static int is_target(struct Channel *);
 
 static void m_join(struct Client *, struct Client *, int, char **);
@@ -67,7 +66,7 @@ static char *mbuf;
 
 struct Message join_msgtab = {
   "JOIN", 0, 0, 2, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_join, ms_join, m_ignore, m_join, m_ignore}
+  { m_unregistered, m_join, ms_join, m_ignore, m_join, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -98,9 +97,8 @@ m_join(struct Client *client_p, struct Client *source_p,
 {
   struct Channel *chptr = NULL;
   char *key = NULL;
-  int i, a;
+  int i = 0, a = 0;
   unsigned int flags = 0;
-  int successful_join_count = 0; /* Number of channels successfully joined */
 
   if (*parv[1] == '\0')
   {
@@ -114,7 +112,7 @@ m_join(struct Client *client_p, struct Client *source_p,
   if ((a = (join_0 >= 0) ? join_0 : 0))
     do_join_0(client_p, source_p);
 
-  for (; a < ntargets; a++)
+  for (; a < ntargets; ++a)
   {
     chptr = targets[a].chptr;
     key = targets[a].key;
@@ -131,11 +129,10 @@ m_join(struct Client *client_p, struct Client *source_p,
      */
     if ((i = can_join(source_p, chptr, key)))
     {
-      sendto_one(source_p, form_str(i), me.name, source_p->name, chptr->chname);
+      sendto_one(source_p, form_str(i), me.name,
+                 source_p->name, chptr->chname);
       continue;
     }
-
-    ++successful_join_count;
 
     /* add the user to the channel */
     add_user_to_channel(chptr, source_p, flags, YES);
@@ -201,8 +198,7 @@ m_join(struct Client *client_p, struct Client *source_p,
 
     channel_member_names(source_p, chptr, 1);
 
-    if (successful_join_count != 0)
-      source_p->localClient->last_join_time = CurrentTime;
+    source_p->localClient->last_join_time = CurrentTime;
   }
 }
 
@@ -441,7 +437,7 @@ do_join_0(struct Client *client_p, struct Client *source_p)
  *		  that result from a join attempt to the user.
  *
  */
-static int
+static void
 build_target_list(struct Client *client_p, struct Client *source_p,
                   char *channels, char *keys)
 {
@@ -472,7 +468,8 @@ build_target_list(struct Client *client_p, struct Client *source_p,
       join_0 = ntargets;
       continue;
     }
-    else if (!IsChanPrefix(*chan))
+
+    if (!IsChanPrefix(*chan))
     {
       sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL),
                  me.name, source_p->name, chan);
@@ -505,8 +502,8 @@ build_target_list(struct Client *client_p, struct Client *source_p,
       continue;
     }
 
-    if ((dlink_list_length(&source_p->channel) >= ConfigChannel.max_chans_per_user) &&
-        (!IsOper(source_p) || (dlink_list_length(&source_p->channel) >=
+    if ((dlink_list_length(&source_p->channel)+ntargets >= ConfigChannel.max_chans_per_user) &&
+        (!IsOper(source_p) || (dlink_list_length(&source_p->channel)+ntargets >=
                                ConfigChannel.max_chans_per_user * 3)))
     {
       if (!error_reported++)
@@ -566,8 +563,6 @@ build_target_list(struct Client *client_p, struct Client *source_p,
     targets[ntargets].key = key;
     targets[ntargets++].flags = flags;
   }
-
-  return ((ntargets) ? 1 : 0);
 }
 
 /* is_target()
