@@ -533,8 +533,23 @@ read_auth_reply(fde_t *fd, void *data)
   int count;
   char buf[AUTH_BUFSIZ + 1]; /* buffer to read auth reply into */
 
-  len = recv(fd->fd, buf, AUTH_BUFSIZ, 0);
-  
+  /* Why?
+   * Well, recv() on many POSIX systems is a per-packet operation,
+   * and we do not necessarily want this, because on lowspec machines,
+   * the ident response may come back fragmented, thus resulting in an
+   * invalid ident response, even if the ident response was really OK.
+   *
+   * So PLEASE do not change this code to recv without being aware of the
+   * consequences.
+   *
+   *    --nenolod
+   */
+#ifndef _WIN32
+  len = read(fd->fd, buf, AUTH_BUFSIZ);
+#else
+  len = recv(fd->fd, buf, AUTH_BUFSIZ, 0);  
+#endif
+
   if (len < 0)
   {
 #ifdef _WIN32
