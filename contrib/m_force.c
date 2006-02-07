@@ -243,8 +243,8 @@ mo_forcejoin(struct Client *client_p, struct Client *source_p,
       return;
     }
 
-    /* newch can't be longer than CHANNELLEN */
-    if (strlen(newch) > CHANNELLEN)
+    /* newch can't be longer than LOCAL_CHANNELLEN */
+    if (strlen(newch) > LOCAL_CHANNELLEN)
     {
       sendto_one(source_p, form_str(ERR_BADCHANNAME),
                  me.name, source_p->name, newch);
