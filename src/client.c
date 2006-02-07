@@ -977,8 +977,7 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
      * it has to be put on the serv_list, or SJOIN's to this new server
      * from the connect burst will not be seen.
      */
-    if (IsServer(source_p) || IsConnecting(source_p) ||
-        IsHandshake(source_p))
+    if (IsServer(source_p) || IsConnecting(source_p) || IsHandshake(source_p))
     {
       if ((m = dlinkFindDelete(&serv_list, source_p)) != NULL)
       {
@@ -987,13 +986,7 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
       }
 
       if (IsServer(source_p))
-      {
-        Count.myserver--;
-        if (ServerInfo.hub)
-          remove_lazylink_flags(source_p->localClient->serverMask);
-        else
-          uplink = NULL;
-      }
+        --Count.myserver;
     }
 
     log_user_exit(source_p);
@@ -1033,7 +1026,8 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
     assert(source_p->serv != NULL && source_p->servptr != NULL);
 
     if (ConfigServerHide.hide_servers)
-      /* set netsplit message to "*.net *.split" to still show 
+      /*
+       * set netsplit message to "*.net *.split" to still show 
        * that its a split, but hide the servers splitting
        */
       strcpy(splitstr, "*.net *.split");
@@ -1423,9 +1417,6 @@ set_initial_nick(struct Client *client_p, struct Client *source_p,
 
   /* fd_desc is long enough */
   fd_note(&client_p->localClient->fd, "Nick: %s", nick);
-  
-  /* They have the nick they want now.. */
-  client_p->localClient->llname[0] = '\0';
 
   if (source_p->flags & FLAGS_GOTUSER)
   {

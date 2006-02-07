@@ -117,10 +117,7 @@ struct Client
   unsigned short    hopcount;   /* number of servers to this 0 = local */
   unsigned short    status;     /* Client type */
   unsigned char     handler;    /* Handler index */
-  unsigned long     lazyLinkClientExists; /* This client exists on the
-					   * bit mapped lazylink servers 
-					   * mapped here
-					   */
+
   char *away;
 
   /*
@@ -203,7 +200,7 @@ struct LocalUser
   struct irc_ssaddr ip;
   int 		    aftype;	/* Makes life easier for DNS res in IPV6 */
   struct DNSQuery   *dns_query;  /* result returned from resolver query */
-  unsigned long     serverMask; /* Only used for Lazy Links */
+
   time_t last;                  /* Last time client sent a PRIVMSG */
   time_t            last_nick_change;
   int               number_of_nick_changes;
@@ -245,12 +242,8 @@ struct LocalUser
   char*          response;  /* expected response from client */
   char*          auth_oper; /* Operator to become if they supply the response.*/
 
-  /*
-   * llname is used to store the clients requested nick
-   * temporarily for new connections.
-   */
-  char llname[NICKLEN];
   dlink_list watches;    /**< chain of Watch pointer blocks */
+
   /* caller ID allow list */
   dlink_list acceptlist;	/* clients I'll allow to talk to me */
   dlink_list invited;   /* chain of invite pointer blocks */

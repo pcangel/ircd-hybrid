@@ -735,40 +735,8 @@ serverinfo_max_clients: T_MAX_CLIENTS '=' NUMBER ';'
 
 serverinfo_hub: HUB '=' TBOOL ';' 
 {
-  if (ypass == 2 && ServerInfo.hub != yylval.number)
-  {
-    if ((ServerInfo.hub = yylval.number))
-    {
-      /* Don't become a hub if we have an LL uplink. */
-      if (uplink != NULL)
-      {
-        ServerInfo.hub = NO;
-        sendto_realops_flags(UMODE_ALL, L_ALL,
-                             "Ignoring config file line hub=yes; "
-                             "due to active LazyLink (%s)", uplink->name);
-      }
-    }
-    else
-    {
-      dlink_node *ptr = NULL;
-
-      /* Don't become a leaf if we have a lazylink active. */
-      DLINK_FOREACH(ptr, serv_list.head)
-      {
-        struct Client *acptr = ptr->data;
-
-        if (MyConnect(acptr) && IsCapable(acptr, CAP_LL))
-        {
-          ServerInfo.hub = YES;
-          sendto_realops_flags(UMODE_ALL, L_ALL,
-                               "Ignoring config file line hub=no; "
-                               "due to active LazyLink (%s)",
-                               acptr->name);
-          break;
-        }
-      }
-    }
-  }
+  if (ypass == 2)
+    ServerInfo.hub = yylval.number;
 };
 
 /***************************************************************************

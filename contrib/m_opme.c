@@ -92,8 +92,6 @@ mo_opme(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  /* XXX - we might not have CBURSTed this channel if we are a lazylink
-   * yet. */
   if ((chptr = hash_find_channel(parv[1])) == NULL)
   {
     sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL),
@@ -108,7 +106,7 @@ mo_opme(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if (chan_is_opless(chptr) == 0)
+  if (!chan_is_opless(chptr))
   {
     sendto_one(source_p, ":%s NOTICE %s :%s Channel is not opless",
                me.name, source_p->name, chptr->chname);

@@ -227,8 +227,6 @@ EXTERN struct Capability captab[];
 EXTERN struct EncCapability CipherTable[];
 #endif
 
-EXTERN struct Client *uplink; /* NON NULL if leaf and is this servers uplink */
-
 /*
  * return values for hunt_server() 
  */
@@ -251,7 +249,6 @@ EXTERN void set_autoconn(struct Client *, const char *, int);
 EXTERN const char *show_capabilities(struct Client *);
 EXTERN void try_connections(void *);
 EXTERN void collect_zipstats(void *);
-EXTERN void initServerMask(void);
 EXTERN void burst_channel(struct Client *, struct Channel *);
 EXTERN void sendnick_TS(struct Client *, struct Client *);
 EXTERN int serv_connect(struct AccessItem *, struct Client *, int);
@@ -261,11 +258,7 @@ EXTERN void cryptlink_init(struct Client *, struct AccessItem *, fde_t *);
 EXTERN void cryptlink_regen_key(void *);
 EXTERN void cryptlink_error(struct Client *, const char *,
                             const char *, const char *);
-EXTERN void remove_lazylink_flags(unsigned long);
-EXTERN void client_burst_if_needed(struct Client *, struct Client *);
 EXTERN struct EncCapability *check_cipher(struct Client *, struct AccessItem *);
-EXTERN void add_lazylinkclient(struct Client *, struct Client *);
-
 EXTERN struct Server *make_server(struct Client *);
 
 /* XXX don't belong in the now gone md5, but do these belong in s_serv.c ? */

@@ -46,7 +46,7 @@ static void relay_kill(struct Client *, struct Client *, struct Client *,
 
 struct Message kill_msgtab = {
   "KILL", 0, 0, 2, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_not_oper, ms_kill, m_ignore, mo_kill, m_ignore}
+  { m_unregistered, m_not_oper, ms_kill, m_ignore, mo_kill, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -149,13 +149,13 @@ mo_kill(struct Client *client_p, struct Client *source_p,
   /* Do not change the format of this message.  There's no point in changing messages
    * that have been around for ever, for no reason.. */
   sendto_realops_flags(UMODE_ALL, L_ALL,
-		       "Received KILL message for %s. From %s Path: %s (%s)", 
-		       target_p->name, source_p->name, me.name, reason);
+                       "Received KILL message for %s. From %s Path: %s (%s)", 
+                       target_p->name, source_p->name, me.name, reason);
 
   ilog(L_INFO, "KILL From %s For %s Path %s (%s)",
        source_p->name, target_p->name, me.name, reason);
   log_oper_action(LOG_KILL_TYPE, source_p, "%s %s\n",
-		  me.name, reason);
+                  me.name, reason);
 
   /*
   ** And pass on the message to other servers. Note, that if KILL
@@ -227,18 +227,20 @@ ms_kill(struct Client *client_p, struct Client *source_p,
        * not an uid, automatically rewrite the KILL for this new nickname.
        * --this keeps servers in synch when nick change and kill collide
        */
-    if(IsDigit(*user))	/* Somehow an uid was not found in the hash ! */
+    if (IsDigit(*user))	/* Somehow an uid was not found in the hash ! */
       return;
-    if((target_p = get_history(user,
-		       (time_t)ConfigFileEntry.kill_chase_time_limit))
+
+    if ((target_p = get_history(user,
+                                (time_t)ConfigFileEntry.kill_chase_time_limit))
        == NULL)
     {
       sendto_one(source_p, form_str(ERR_NOSUCHNICK),
-		 me.name, source_p->name, user);
+                 me.name, source_p->name, user);
       return;
     }
+
     sendto_one(source_p,":%s NOTICE %s :KILL changed from %s to %s",
-	       me.name, source_p->name, user, target_p->name);
+               me.name, source_p->name, user, target_p->name);
   }
 
   if (IsServer(target_p) || IsMe(target_p))
@@ -255,15 +257,15 @@ ms_kill(struct Client *client_p, struct Client *source_p,
       /* dont send clients kills from a hidden server */
       if ((IsHidden(source_p) || ConfigServerHide.hide_servers) && !IsOper(target_p))
         sendto_one(target_p, ":%s KILL %s :%s",
- 		   me.name, target_p->name, reason);
+                   me.name, target_p->name, reason);
       else
-	sendto_one(target_p, ":%s KILL %s :%s",
-	           source_p->name, target_p->name, reason);
+        sendto_one(target_p, ":%s KILL %s :%s",
+                   source_p->name, target_p->name, reason);
     }
     else
       sendto_one(target_p, ":%s!%s@%s KILL %s :%s",
-		 source_p->name, source_p->username, source_p->host,
-		 target_p->name, reason);
+                 source_p->name, source_p->username, source_p->host,
+                 target_p->name, reason);
   }
 
   /* Be warned, this message must be From %s, or it confuses clients
@@ -306,27 +308,7 @@ relay_kill(struct Client *one, struct Client *source_p,
 {
   dlink_node *ptr;
   struct Client *client_p;
-  int introduce_killed_client;
   const char *from, *to;
-
-  /* LazyLinks:
-   * Check if each lazylink knows about target_p.
-   *   If it does, send the kill, introducing source_p if required.
-   *   If it doesn't either:
-   *     a) don't send the kill (risk ghosts)
-   *     b) introduce the client (and source_p, if required)
-   *        [rather redundant]
-   *
-   * Use a) if IsServer(source_p), but if an oper kills someone,
-   * ensure we blow away any ghosts.
-   *
-   * -davidt
-   */
-
-  if (IsServer(source_p))
-    introduce_killed_client = 0;
-  else
-    introduce_killed_client = 1;
 
   DLINK_FOREACH(ptr, serv_list.head)
   {
@@ -334,26 +316,6 @@ relay_kill(struct Client *one, struct Client *source_p,
 
     if (client_p == NULL || client_p == one)
       continue;
-
-    if (!introduce_killed_client)
-    {
-      if (ServerInfo.hub && IsCapable(client_p, CAP_LL))
-      {
-        if ((client_p->localClient->serverMask &
-             target_p->lazyLinkClientExists) == 0)
-        {
-          /* target isn't known to lazy leaf, skip it */
-          continue;
-        }
-      }
-    }
-    /* force introduction of killed client but check that
-     * its not on the server we're bursting too.. */
-    else if (strcmp(target_p->servptr->name, client_p->name))
-      client_burst_if_needed(client_p, target_p);
-
-    /* introduce source of kill */
-    client_burst_if_needed(client_p, source_p);
 
     /* use UID if possible */
     from = ID_or_name(source_p, client_p);

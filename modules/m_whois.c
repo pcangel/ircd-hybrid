@@ -108,8 +108,8 @@ m_whois(struct Client *client_p, struct Client *source_p,
                  me.name, source_p->name);
       return;
     }
-    else
-      last_used = CurrentTime;
+
+    last_used = CurrentTime;
 
     /* if we have serverhide enabled, they can either ask the clients
      * server, or our server.. I dont see why they would need to ask
@@ -194,34 +194,14 @@ do_whois(struct Client *source_p, int parc, char **parv)
 
   if (!has_wildcards(nick))
   {
-    if ((target_p = find_client(nick)) != NULL)
+    if ((target_p = find_client(nick)) && IsClient(target_p))
     {
-      if (IsServer(source_p->from))
-        client_burst_if_needed(source_p->from, target_p);
-
-      if (IsClient(target_p))
-      {
-        whois_person(source_p, target_p);
-        found = 1;
-      }
-    }
-    else if (!ServerInfo.hub && uplink && IsCapable(uplink, CAP_LL))
-    {
-      if (parc > 2)
-        sendto_one(uplink,":%s WHOIS %s :%s",
-                   source_p->name, nick, nick);
-      else
-        sendto_one(uplink,":%s WHOIS %s",
-                   source_p->name, nick);
-      return;
+      whois_person(source_p, target_p);
+      found = 1;
     }
   }
   else /* wilds is true */
   {
-    /* disallow wild card whois on lazylink leafs for now */
-    if (!ServerInfo.hub && uplink && IsCapable(uplink, CAP_LL))
-      return;
-
     if (!IsOper(source_p))
     {
       if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
@@ -230,8 +210,8 @@ do_whois(struct Client *source_p, int parc, char **parv)
                    me.name, source_p->name);
         return;
       }
-      else
-        last_used = CurrentTime;
+
+      last_used = CurrentTime;
     }
 
     /* Oh-oh wilds is true so have to do it the hard expensive way */

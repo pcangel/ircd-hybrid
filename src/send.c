@@ -162,13 +162,6 @@ send_message_remote(struct Client *to, struct Client *from,
     return;
   }
 
-  if (ServerInfo.hub && IsCapable(to, CAP_LL))
-  {
-    if (((from->lazyLinkClientExists &
-          to->localClient->serverMask) == 0))
-      client_burst_if_needed(to, from);
-  }
-
   /* Optimize by checking if (from && to) before everything */
   /* we set to->from up there.. */
 
@@ -570,11 +563,8 @@ sendto_server(struct Client *one, struct Client *source_p,
   char buffer[IRCD_BUFSIZE];
   int len;
 
-  if (chptr != NULL)
-  {
-    if (chptr->chname[0] != '#')
-      return;
-  }
+  if (chptr && chptr->chname[0] != '#')
+    return;
 
   va_start(args, format);
   len = send_format(buffer, IRCD_BUFSIZE, format, args);
@@ -597,35 +587,6 @@ sendto_server(struct Client *one, struct Client *source_p,
     if ((client_p->localClient->caps & nocaps) != 0)
       continue;
 
-    if (ServerInfo.hub && IsCapable(client_p, CAP_LL))
-    {
-      /* check LL channel */
-      if (chptr != NULL &&
-          ((chptr->lazyLinkChannelExists &
-            client_p->localClient->serverMask) == 0))
-      {
-        /* Only introduce the channel if we really will send this message */
-        if (!(llflags & LL_ICLIENT) && source_p &&
-            ((source_p->lazyLinkClientExists &
-              client_p->localClient->serverMask) == 0))
-          continue; /* we can't introduce the unknown source_p, skip */
-
-        if (llflags & LL_ICHAN)
-          burst_channel(client_p, chptr);
-        else
-          continue; /* we can't introduce the unknown chptr, skip */
-      }
-      /* check LL client */
-      if (source_p &&
-          ((source_p->lazyLinkClientExists &
-            client_p->localClient->serverMask) == 0))
-      {
-        if (llflags & LL_ICLIENT)
-          client_burst_if_needed(client_p,source_p);
-        else
-          continue; /* we can't introduce the unknown source_p, skip */
-      }
-    }
     send_message(client_p, buffer, len);
   }
 }
@@ -1009,7 +970,7 @@ sendto_anywhere(struct Client *to, struct Client *from,
   len += send_format(&buffer[len], IRCD_BUFSIZE - len, pattern, args);
   va_end(args);
 
-  if(MyClient(to))
+  if (MyClient(to))
     send_message(send_to, buffer, len);
   else
     send_message_remote(send_to, from, buffer, len);
@@ -1206,18 +1167,13 @@ kill_client_ll_serv_butone(struct Client *one, struct Client *source_p,
 
     if (one != NULL && (client_p == one->from))
       continue;
+
     if (IsDefunct(client_p))
       continue;
 
-    /* XXX perhaps IsCapable should test for localClient itself ? -db */
-    if (client_p->localClient == NULL || !IsCapable(client_p, CAP_LL) ||
-        !ServerInfo.hub ||
-        (source_p->lazyLinkClientExists & client_p->localClient->serverMask))
-    {
-      if (have_uid && IsCapable(client_p, CAP_TS6))
-        send_message(client_p, buf_uid, len_uid);
-      else
-        send_message(client_p, buf_nick, len_nick);
-    }
+    if (have_uid && IsCapable(client_p, CAP_TS6))
+      send_message(client_p, buf_uid, len_uid);
+    else
+      send_message(client_p, buf_nick, len_nick);
   }
 } 

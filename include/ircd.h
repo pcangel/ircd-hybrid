@@ -95,7 +95,6 @@ EXTERN dlink_list local_client_list;  /* local clients only ON this server      
 EXTERN dlink_list serv_list;          /* local servers to this server ONLY          */
 EXTERN dlink_list global_serv_list;   /* global servers on the network              */
 EXTERN dlink_list oper_list;          /* our opers, duplicated in local_client_list */
-EXTERN dlink_list lazylink_channels;  /* known about lazylink channels on HUB       */
 EXTERN int rehashed_klines;
 EXTERN unsigned long get_maxrss(void);
 

@@ -229,7 +229,7 @@ io_loop(void)
       {
         struct Client *client_p = ptr->data;
         assert(client_p->localClient->list_task);
-        safe_list_channels(client_p, client_p->localClient->list_task, 0, 0);
+        safe_list_channels(client_p, client_p->localClient->list_task, 0);
       }
     }
 
@@ -332,7 +332,6 @@ initialize_server_capabs(void)
   add_capability("QS", CAP_QS, 1);
   add_capability("EOB", CAP_EOB, 1);
   add_capability("HUB", CAP_HUB, 0);
-  add_capability("LL", CAP_LL, 0);
   add_capability("TS6", CAP_TS6, 0);
   add_capability("ZIP", CAP_ZIP, 0);
   add_capability("CLUSTER", CAP_CLUSTER, 1);
@@ -603,7 +602,6 @@ main(int argc, char *argv[])
   init_class();
   init_whowas();
   init_stats();
-  initServerMask();
   init_auth();          /* Initialise the auth code */
   init_channels();
   init_channel_modes();

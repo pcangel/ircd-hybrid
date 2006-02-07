@@ -35,12 +35,12 @@
 #include "s_conf.h"
 #include "s_serv.h"
 
-static void m_ping(struct Client*, struct Client*, int, char**);
-static void ms_ping(struct Client*, struct Client*, int, char**);
+static void m_ping(struct Client *, struct Client *, int, char *[]);
+static void ms_ping(struct Client *, struct Client *, int, char *[]);
 
 struct Message ping_msgtab = {
   "PING", 0, 0, 1, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_ping, ms_ping, m_ignore, m_ping, m_ping}
+  { m_unregistered, m_ping, ms_ping, m_ignore, m_ping, m_ping }
 };
 
 #ifndef STATIC_MODULES
@@ -96,17 +96,6 @@ m_ping(struct Client *client_p, struct Client *source_p,
     /* XXX - sendto_server() ? --fl_ */
     if ((target_p = find_server(destination)) != NULL)
     {
-      struct Client *ll_p;
-
-      /* use the direct link for LL checking */
-      ll_p = target_p->from;
-
-      if(ServerInfo.hub && IsCapable(ll_p, CAP_LL))
-      {
-        if((ll_p->lazyLinkClientExists & target_p->localClient->serverMask) == 0)
-          client_burst_if_needed(target_p, ll_p);
-      }
-
       sendto_one(target_p,":%s PING %s :%s", parv[0],
                  origin, destination);
     }

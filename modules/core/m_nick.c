@@ -102,11 +102,10 @@ static void
 mr_nick(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
 {
-  struct Client *target_p, *uclient_p;
+  struct Client *target_p = NULL;
   char nick[NICKLEN];
   char *s;
-  dlink_node *ptr;
-   
+
   if (parc < 2 || EmptyString(parv[1]))
   {
     sendto_one(source_p, form_str(ERR_NONICKNAMEGIVEN),
@@ -141,49 +140,18 @@ mr_nick(struct Client *client_p, struct Client *source_p,
 
   if ((target_p = find_client(nick)) == NULL)
   {
-    if (!ServerInfo.hub && uplink && IsCapable(uplink, CAP_LL))
-    {
-      /* We don't know anyone called nick, but our hub might */
-      DLINK_FOREACH(ptr, unknown_list.head)
-      {
-        uclient_p = ptr->data;
-
-	if (!strcmp(nick, uclient_p->localClient->llname))
-	{
-	
-	  /* We're already waiting for a reply about this nick
-	   * for someone else. */
-
-	  sendto_one(source_p, form_str(ERR_NICKNAMEINUSE), me.name, "*", nick);
-	  return;
-	}
-      }
-
-      /* Set their llname so we can find them later */
-      strcpy(source_p->localClient->llname, nick);
-
-      /* Ask the hub about their requested name */
-      sendto_one(uplink, ":%s NBURST %s %s !%s", me.name, nick,
-                 nick, nick);
-
-      /* wait for LLNICK */
-      return;
-    }
-    else
-    {
-      set_initial_nick(client_p, source_p, nick);
-      return;
-    }
-  }
-  else if (source_p == target_p)
-  {
-    strcpy(source_p->name, nick);
+    set_initial_nick(client_p, source_p, nick);
     return;
   }
-  else
+
+  if (source_p == target_p)
   {
-    sendto_one(source_p, form_str(ERR_NICKNAMEINUSE), me.name, "*", nick);
+    strlcpy(source_p->name, nick, sizeof(source_p->name));
+    return;
   }
+
+  sendto_one(source_p, form_str(ERR_NICKNAMEINUSE),
+             me.name, "*", nick);
 }
 
 /* m_nick()
@@ -266,19 +234,8 @@ m_nick(struct Client *client_p, struct Client *source_p,
   }
   else
   {
-    if (!ServerInfo.hub && uplink && IsCapable(uplink, CAP_LL))
-    {
-      /* The uplink might know someone by this name already. */
-      sendto_one(uplink, ":%s NBURST %s %s %s",
-                 ID_or_name(&me, uplink), nick,
-                 nick, source_p->name);
-      return;
-    }
-    else
-    {
-      change_local_nick(client_p,source_p,nick);
-      return;
-    }
+    change_local_nick(client_p,source_p,nick);
+    return;
   }
 }
 
@@ -456,9 +413,6 @@ ms_uid(struct Client *client_p, struct Client *source_p,
 			 target_p->name, target_p->from->name,
 			 client_p->name);
 
-    if (ServerInfo.hub && IsCapable(client_p, CAP_LL))
-      add_lazylinkclient(client_p, source_p);
-
     kill_client_ll_serv_butone(NULL, target_p, "%s (ID collision)",
 		               me.name);
 
@@ -549,7 +503,7 @@ check_clean_user(struct Client *client_p, char *nick,
     sendto_one(client_p, ":%s KILL %s :%s (Bad Username)",
                me.name, nick, me.name);
   
-    return (1);
+    return 1;
   }
 
   if (!clean_user_name(user))
@@ -557,7 +511,7 @@ check_clean_user(struct Client *client_p, char *nick,
                          "Bad Username: %s Nickname: %s From: %s(via %s)",
 			 user, nick, server_p->name, client_p->name);
 			 
-  return (0);
+  return 0;
 }
 
 /* check_clean_host()
@@ -583,7 +537,7 @@ check_clean_host(struct Client *client_p, char *nick,
     sendto_one(client_p, ":%s KILL %s :%s (Bad Hostname)",
                me.name, nick, me.name);
 
-    return (1);
+    return 1;
   }
 
   if (!clean_host_name(host))
@@ -591,7 +545,7 @@ check_clean_host(struct Client *client_p, char *nick,
                          "Bad Hostname: %s Nickname: %s From: %s(via %s)",
 			 host, nick, server_p->name, client_p->name);
 
-  return (0);
+  return 0;
 }
 
 /* clean_nick_name()
@@ -605,22 +559,17 @@ static int
 clean_nick_name(char *nick, int local)
 {
   assert(nick);
-  if (nick == NULL)
-    return (0);
 
   /* nicks cant start with a digit or - or be 0 length */
   /* This closer duplicates behaviour of hybrid-6 */
-
   if (*nick == '-' || (IsDigit(*nick) && local) || *nick == '\0')
-    return (0);
+    return 0;
 
-  for(; *nick; nick++)
-  {
+  for (; *nick; ++nick)
     if (!IsNickChar(*nick))
-      return (0);
-  }
+      return 0;
 
-  return (1);
+  return 1;
 }
 
 /* clean_user_name()
@@ -633,14 +582,10 @@ static int
 clean_user_name(char *user)
 {
   assert(user);
-  if (user == NULL)
-    return 0;
-    
-  for(; *user; user++)
-  {
+
+  for (; *user; ++user)
     if (!IsUserChar(*user))
       return 0;
-  }
 
   return 1;
 }
@@ -654,13 +599,10 @@ static int
 clean_host_name(char *host)
 {
   assert(host);
-  if (host == NULL)
-    return 0;
-  for(; *host; host++)
-  {
+
+  for (; *host; ++host)
     if (!IsHostChar(*host))
       return 0;
-  }
 
   return 1;
 }
@@ -680,10 +622,6 @@ nick_from_server(struct Client *client_p, struct Client *source_p, int parc,
     source_p = make_client(client_p);
     dlinkAdd(source_p, &source_p->node, &global_client_list);
 
-    /* We don't need to introduce leafs clients back to them! */
-    if (ServerInfo.hub && IsCapable(client_p, CAP_LL))
-      add_lazylinkclient(client_p, source_p);
-
     if (parc > 2)
       source_p->hopcount = atoi(parv[2]);
     if (newts)
@@ -695,7 +633,7 @@ nick_from_server(struct Client *client_p, struct Client *source_p, int parc,
     }
 
     /* copy the nick in place */
-    strcpy(source_p->name, nick);
+    strlcpy(source_p->name, nick, sizeof(source_p->name));
     hash_add_client(source_p);
 
     if (parc > 8)
@@ -771,10 +709,6 @@ client_from_server(struct Client *client_p, struct Client *source_p, int parc,
   source_p = make_client(client_p);
   dlinkAdd(source_p, &source_p->node, &global_client_list);
 
-  /* We don't need to introduce leafs clients back to them! */
-  if (ServerInfo.hub && IsCapable(client_p, CAP_LL))
-    add_lazylinkclient(client_p, source_p);
-
   source_p->hopcount = atoi(parv[2]);
   source_p->tsinfo = newts;
 
@@ -822,9 +756,6 @@ perform_nick_collides(struct Client *source_p, struct Client *client_p,
 			   target_p->name, target_p->from->name,
 			   client_p->name);
       
-      if (ServerInfo.hub && IsCapable(client_p,CAP_LL))
-        add_lazylinkclient(client_p, target_p);
-
       /* if we have a UID, issue a kill for it */
       if (uid)
         sendto_one(client_p, ":%s KILL %s :%s (Nick collision (new))",
@@ -857,8 +788,6 @@ perform_nick_collides(struct Client *source_p, struct Client *client_p,
         if (uid)
           sendto_one(client_p, ":%s KILL %s :%s (Nick collision (new))",
                      me.id, uid, me.name);
-
-        client_burst_if_needed(client_p, target_p);
 	return;
       }
       else
@@ -900,7 +829,7 @@ perform_nick_collides(struct Client *source_p, struct Client *client_p,
 
   /* its a client changing nick and causing a collide */
   if (!newts || !target_p->tsinfo || (newts == target_p->tsinfo))
-    {
+  {
       sendto_realops_flags(UMODE_ALL, L_ALL,
                  "Nick change collision from %s to %s(%s <- %s)(both killed)",
 		 source_p->name, target_p->name, target_p->from->name,
@@ -916,9 +845,6 @@ perform_nick_collides(struct Client *source_p, struct Client *client_p,
 				  me.name);
 
       ServerStats->is_kill++;
-      /* If we got the message from a LL, ensure it gets the kill */
-      if (ServerInfo.hub && IsCapable(client_p,CAP_LL))
-        add_lazylinkclient(client_p, target_p);
 
       kill_client_ll_serv_butone(NULL, target_p,
                                  "%s (Nick change collision)",

@@ -39,12 +39,12 @@
 #include "packet.h"
 #include "common.h"
 
-static void m_topic(struct Client *, struct Client *, int, char **);
-static void ms_topic(struct Client *, struct Client *, int, char **);
+static void m_topic(struct Client *, struct Client *, int, char *[]);
+static void ms_topic(struct Client *, struct Client *, int, char *[]);
 
 struct Message topic_msgtab = {
   "TOPIC", 0, 0, 2, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_topic, ms_topic, m_ignore, m_topic, m_ignore}
+  { m_unregistered, m_topic, ms_topic, m_ignore, m_topic, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -91,7 +91,7 @@ m_topic(struct Client *client_p, struct Client *source_p,
   if ((p = strchr(parv[1], ',')) != NULL)
     *p = '\0';
 
-  if (parv[1][0] == '\0')
+  if (*parv[1] == '\0')
   {
     sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
                from, to, "TOPIC");
@@ -105,22 +105,9 @@ m_topic(struct Client *client_p, struct Client *source_p,
   {
     if ((chptr = hash_find_channel(parv[1])) == NULL)
     {
-      /* if chptr isn't found locally, it =could= exist
-       * on the uplink. so forward reqeuest
-       */
-      if (!ServerInfo.hub && uplink && IsCapable(uplink, CAP_LL))
-      {
-        sendto_one(uplink, ":%s TOPIC %s %s",
-                   ID_or_name(source_p, uplink), chptr->chname,
-                   ((parc > 2) ? parv[2] : ""));
-        return;
-      }
-      else
-      {
-        sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL),
-                   from, to, parv[1]);
-        return;
-      }
+      sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL),
+                 from, to, parv[1]);
+      return;
     }
 
     /* setting topic */
@@ -132,10 +119,12 @@ m_topic(struct Client *client_p, struct Client *source_p,
                    to, parv[1]);
         return;
       }
-      if ((chptr->mode.mode & MODE_TOPICLIMIT) == 0 ||
+
+      if (!(chptr->mode.mode & MODE_TOPICLIMIT) ||
           has_member_flags(ms, CHFL_CHANOP|CHFL_HALFOP))
       {
         char topic_info[USERHOST_REPLYLEN]; 
+
         ircsprintf(topic_info, "%s!%s@%s",
                    source_p->name, source_p->username, source_p->host);
         set_channel_topic(chptr, parv[2], topic_info, CurrentTime);
@@ -173,24 +162,10 @@ m_topic(struct Client *client_p, struct Client *source_p,
                      from, to,
                      chptr->chname, chptr->topic);
 
-          /* client on LL needing the topic - if we have serverhide, say
-           * its the actual LL server that set the topic, not us the
-           * uplink -- fl_
-           */
-          if (ConfigServerHide.hide_servers && !MyClient(source_p)
-              && IsCapable(client_p, CAP_LL) && ServerInfo.hub)
-          {
-            sendto_one(source_p, form_str(RPL_TOPICWHOTIME),
-  	               from, to, chptr->chname,
-                       client_p->name, chptr->topic_time);
-          }
-          else
-          {
-            sendto_one(source_p, form_str(RPL_TOPICWHOTIME),
-                       from, to, chptr->chname,
-                       chptr->topic_info,
-                       chptr->topic_time);
-          }
+          sendto_one(source_p, form_str(RPL_TOPICWHOTIME),
+                     from, to, chptr->chname,
+                     chptr->topic_info,
+                     chptr->topic_time);
         }
       }
       else
@@ -233,7 +208,7 @@ ms_topic(struct Client *client_p, struct Client *source_p,
   if (parc < 5)
     return;
 
-  if (parv[1] && IsChanPrefix(*parv[1]))
+  if (IsChanPrefix(*parv[1]))
   {
     if ((chptr = hash_find_channel(parv[1])) == NULL)
       return;

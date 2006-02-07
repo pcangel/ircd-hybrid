@@ -538,15 +538,6 @@ build_target_list(struct Client *client_p, struct Client *source_p,
       }
 
       flags = CHFL_CHANOP;
-      if (!ServerInfo.hub)
-      {
-        if ((*chan != '&') && uplink && IsCapable(uplink, CAP_LL))
-        {
-          sendto_one(uplink, ":%s CBURST %s %s %s",
-                     me.name, chan, source_p->name, key ? key : "");
-          continue;
-        }
-      }
 
       if ((chptr = get_or_create_channel(source_p, chan, NULL)) == NULL)
       {

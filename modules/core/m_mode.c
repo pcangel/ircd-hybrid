@@ -89,7 +89,7 @@ m_mode(struct Client *client_p, struct Client *source_p,
        int parc, char *parv[])
 {
   struct Channel *chptr = NULL;
-  struct Membership *member;
+  struct Membership *member = NULL;
   static char modebuf[MODEBUFLEN];
   static char parabuf[MODEBUFLEN];
 
@@ -115,42 +115,14 @@ m_mode(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  chptr = hash_find_channel(parv[1]);
-
-  if (chptr == NULL)
+  if ((chptr = hash_find_channel(parv[1])) == NULL)
   {
-      /* if chptr isn't found locally, it =could= exist
-       * on the uplink. So ask.
-       */
-      
-      /* LazyLinks */
-      /* only send a mode upstream if a local client sent this request
-       * -davidt
-       */
-      if (MyClient(source_p) && !ServerInfo.hub && uplink &&
-	   IsCapable(uplink, CAP_LL))
-	{
-#if 0
-	  /* cache the channel if it exists on uplink */
-	  /* Lets not for now -db */
-
-	  sendto_one(uplink, ":%s CBURST %s",
-                     me.name, chptr->chname);
-#endif
-	  sendto_one(uplink, ":%s MODE %s %s",
-                     ID_or_name(source_p, uplink),
-		     chptr->chname, (parv[2] ? parv[2] : ""));
-	  return;
-	}
-      else
-	{
-	  sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL),
-		     ID_or_name(&me, source_p->from),
-		     ID_or_name(source_p, source_p->from),
-		     parv[1]);
-	  return;
-	}
-    }
+    sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL),
+               ID_or_name(&me, source_p->from),
+               ID_or_name(source_p, source_p->from),
+               parv[1]);
+    return;
+  }
 
   /* Now known the channel exists */
   if (parc < 3)
@@ -161,6 +133,7 @@ m_mode(struct Client *client_p, struct Client *source_p,
     sendto_one(source_p, form_str(RPL_CREATIONTIME),
                me.name, source_p->name, chptr->chname, chptr->channelts);
   }
+
   /* bounce all modes from people we deop on sjoin
    * servers have always gotten away with murder,
    * including telnet servers *g* - Dianora

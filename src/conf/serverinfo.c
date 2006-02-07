@@ -81,29 +81,6 @@ verify_serverinfo(va_list args)
   if (ServerInfo.network_desc == NULL)
     DupString(ServerInfo.network_desc, ServerInfo.network_name);
 
-  if (ServerInfo.hub && uplink)
-  {
-    ServerInfo.hub = NO;
-    parse_error("Ignoring hub=yes due to active LazyLeaf (%s)", uplink->name);
-  }
-  else if (!ServerInfo.hub)
-  {
-    dlink_node *ptr;
-
-    DLINK_FOREACH(ptr, serv_list.head)
-    {
-      struct Client *acptr = ptr->data;
-
-      if (IsCapable(acptr, CAP_LL))
-      {
-        ServerInfo.hub = YES;
-        parse_error("Ignoring hub=no due to active LazyLink (%s)",
-          acptr->name);
-        break;
-      }
-    }
-  }
-
   if (conf_cold && me.id[0])
   {
     hash_add_id(&me);

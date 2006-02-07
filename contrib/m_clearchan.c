@@ -83,10 +83,6 @@ mo_clearchan(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  /*
-   * XXX - we might not have CBURSTed this channel if we are a lazylink
-   * yet.
-   */
   if ((chptr = hash_find_channel(parv[1])) == NULL)
   {
     sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL),
