@@ -44,7 +44,6 @@
 #include "comm/comm.h"
 
 #include "mem/balloc.h"
-#include "mem/dalloca.h"
 #include "mem/dbuf.h"
 #include "mem/memory.h"
 
