@@ -42,7 +42,7 @@ static void mo_squit(struct Client *, struct Client *, int, char *[]);
 
 struct Message squit_msgtab = {
   "SQUIT", 0, 0, 1, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_not_oper, ms_squit, m_ignore, mo_squit, m_ignore}
+  { m_unregistered, m_not_oper, ms_squit, m_ignore, mo_squit, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -171,10 +171,10 @@ ms_squit(struct Client *client_p, struct Client *source_p,
   {
     sendto_wallops_flags(UMODE_WALLOP, &me, "Remote SQUIT %s from %s (%s)",
                          target_p->name, source_p->name, comment);
-    sendto_server(NULL, NULL, NULL, CAP_TS6, NOCAPS, NOFLAGS,
+    sendto_server(NULL, NULL, NULL, CAP_TS6, NOCAPS,
                   ":%s WALLOPS :Remote SQUIT %s from %s (%s)",
                   me.id, target_p->name, source_p->name, comment);
-    sendto_server(NULL, NULL, NULL, NOCAPS, CAP_TS6, NOFLAGS,
+    sendto_server(NULL, NULL, NULL, NOCAPS, CAP_TS6,
                   ":%s WALLOPS :Remote SQUIT %s from %s (%s)",
                   me.name, target_p->name, source_p->name, comment);
     ilog(L_TRACE, "SQUIT From %s : %s (%s)", parv[0],

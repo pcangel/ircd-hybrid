@@ -76,7 +76,7 @@ send_format(char *lsendbuf, int bufsize, const char *pattern, va_list args)
 
   lsendbuf[len++] = '\r';
   lsendbuf[len++] = '\n';
-  return (len);
+  return len;
 }
 
 /*
@@ -181,11 +181,11 @@ send_message_remote(struct Client *to, struct Client *from,
                          from->name, from->username, from->host,
                          to->from->name);
 
-    sendto_server(NULL, to, NULL, CAP_TS6, NOCAPS, NOFLAGS,
+    sendto_server(NULL, to, NULL, CAP_TS6, NOCAPS,
                   ":%s KILL %s :%s (%s[%s@%s] Ghosted %s)",
                   me.id, to->name, me.name, to->name,
                   to->username, to->host, to->from->name);
-    sendto_server(NULL, to, NULL, NOCAPS, CAP_TS6, NOFLAGS,
+    sendto_server(NULL, to, NULL, NOCAPS, CAP_TS6,
                   ":%s KILL %s :%s (%s[%s@%s] Ghosted %s)",
                   me.name, to->name, me.name, to->name,
                   to->username, to->host, to->from->name);
@@ -531,7 +531,6 @@ sendto_channel_butone(struct Client *one, struct Client *from,
  *              - pointer to channel required by LL (if any)
  *              - caps or'd together which must ALL be present
  *              - caps or'd together which must ALL NOT be present
- *              - LL flags: LL_ICLIENT | LL_ICHAN
  *              - printf style format string
  *              - args to format string
  * output       - NONE
@@ -554,7 +553,7 @@ sendto_channel_butone(struct Client *one, struct Client *from,
 void 
 sendto_server(struct Client *one, struct Client *source_p,
               struct Channel *chptr, unsigned long caps,
-              unsigned long nocaps, unsigned long llflags,
+              unsigned long nocaps,
               const char *format, ...)
 {
   va_list args;

@@ -43,7 +43,7 @@ static void m_kick(struct Client *, struct Client *, int, char *[]);
 
 struct Message kick_msgtab = {
   "KICK", 0, 0, 3, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_kick, m_kick, m_ignore, m_kick, m_ignore}
+  { m_unregistered, m_kick, m_kick, m_ignore, m_kick, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -223,10 +223,10 @@ m_kick(struct Client *client_p, struct Client *source_p,
                            source_p->name, source_p->username,
                            source_p->host, name, who->name, comment);
 
-    sendto_server(client_p, NULL, chptr, CAP_TS6, NOCAPS, NOFLAGS,
+    sendto_server(client_p, NULL, chptr, CAP_TS6, NOCAPS,
                   ":%s KICK %s %s :%s",
                   ID(source_p), chptr->chname, ID(who), comment);
-    sendto_server(client_p, NULL, chptr, NOCAPS, CAP_TS6, NOFLAGS,
+    sendto_server(client_p, NULL, chptr, NOCAPS, CAP_TS6,
                   ":%s KICK %s %s :%s", source_p->name, chptr->chname,
                   who->name, comment);
 

@@ -1052,9 +1052,9 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
   }
   else if (IsClient(source_p) && !IsKilled(source_p))
   {
-    sendto_server(NULL, source_p, NULL, CAP_TS6, NOCAPS, NOFLAGS,
+    sendto_server(NULL, source_p, NULL, CAP_TS6, NOCAPS,
                   ":%s QUIT :%s", ID(source_p), comment);
-    sendto_server(NULL, source_p, NULL, NOCAPS, CAP_TS6, NOFLAGS,
+    sendto_server(NULL, source_p, NULL, NOCAPS, CAP_TS6,
                   ":%s QUIT :%s", source_p->name, comment);
   }
 
@@ -1485,10 +1485,10 @@ change_local_nick(struct Client *client_p, struct Client *source_p, const char *
 	   * hubs might not propagate a nick change, if the leaf
 	   * does not know about that client yet.
 	   */
-    sendto_server(client_p, source_p, NULL, CAP_TS6, NOCAPS, NOFLAGS,
+    sendto_server(client_p, source_p, NULL, CAP_TS6, NOCAPS,
                   ":%s NICK %s :%lu",
                   ID(source_p), nick, (unsigned long)source_p->tsinfo);
-    sendto_server(client_p, source_p, NULL, NOCAPS, CAP_TS6, NOFLAGS,
+    sendto_server(client_p, source_p, NULL, NOCAPS, CAP_TS6,
                   ":%s NICK %s :%lu",
                   source_p->name, nick, (unsigned long)source_p->tsinfo);
   }

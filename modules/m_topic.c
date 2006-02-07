@@ -77,7 +77,7 @@ m_topic(struct Client *client_p, struct Client *source_p,
   const char *from = NULL, *to = NULL;
 
   /* Servers do not use TOPIC, they communicate via TBURST/TB instead */
-  if (IsServer(source_p))
+  if (!IsClient(source_p))
     return;
 
   if (!MyClient(source_p) && IsCapable(source_p->from, CAP_TS6) && HasID(source_p))
@@ -116,8 +116,8 @@ m_topic(struct Client *client_p, struct Client *source_p,
   {
     if ((ms = find_channel_link(source_p, chptr)) == NULL)
     {
-      sendto_one(source_p, form_str(ERR_NOTONCHANNEL), from,
-                 to, parv[1]);
+      sendto_one(source_p, form_str(ERR_NOTONCHANNEL),
+                 from, to, parv[1]);
       return;
     }
 
@@ -130,11 +130,11 @@ m_topic(struct Client *client_p, struct Client *source_p,
                  source_p->name, source_p->username, source_p->host);
       set_channel_topic(chptr, parv[2], topic_info, CurrentTime);
 
-      sendto_server(client_p, NULL, chptr, CAP_TS6, NOCAPS, NOFLAGS,
+      sendto_server(client_p, NULL, chptr, CAP_TS6, NOCAPS,
                     ":%s TOPIC %s :%s",
                     ID(source_p), chptr->chname,
                     chptr->topic == NULL ? "" : chptr->topic);
-      sendto_server(client_p, NULL, chptr, NOCAPS, CAP_TS6, NOFLAGS,
+      sendto_server(client_p, NULL, chptr, NOCAPS, CAP_TS6,
                     ":%s TOPIC %s :%s",
                     source_p->name, chptr->chname,
                     chptr->topic == NULL ? "" : chptr->topic);
@@ -172,7 +172,6 @@ m_topic(struct Client *client_p, struct Client *source_p,
     {
       sendto_one(source_p, form_str(ERR_NOTONCHANNEL),
                  from, to, chptr->chname);
-      return;
     }
   }
 }

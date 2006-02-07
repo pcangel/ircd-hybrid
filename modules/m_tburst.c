@@ -173,13 +173,13 @@ set_topic(struct Client *source_p, struct Channel *chptr, time_t topicts,
                          ConfigServerHide.hide_servers ? me.name : source_p->name,
                          chptr->chname, chptr->topic == NULL ? "" : chptr->topic);
 
-  sendto_server(source_p, NULL, chptr, CAP_TBURST, NOCAPS, NOFLAGS,
+  sendto_server(source_p, NULL, chptr, CAP_TBURST, NOCAPS,
                 ":%s TBURST %lu %s %lu %s :%s",
                 me.name, (unsigned long)chptr->channelts, chptr->chname,
                 (unsigned long)chptr->topic_time,
                 chptr->topic_info == NULL ? "" : chptr->topic_info,
                 chptr->topic == NULL ? "" : chptr->topic);
-  sendto_server(source_p, NULL, chptr, CAP_TB, CAP_TBURST, NOFLAGS,
+  sendto_server(source_p, NULL, chptr, CAP_TB, CAP_TBURST,
                 ":%s TB %s %lu %s :%s",
                 me.name, chptr->chname,
                 (unsigned long)chptr->topic_time, 

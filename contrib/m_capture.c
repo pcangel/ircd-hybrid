@@ -153,7 +153,7 @@ mo_capture(struct Client *client_p, struct Client *source_p,
       return;
 
     if (IsClient(client_p))
-      sendto_server(client_p, NULL, NULL, CAP_ENCAP, 0, 0,
+      sendto_server(client_p, NULL, NULL, CAP_ENCAP, 0,
                     ":%s ENCAP * CAPTURE %s!%s@%s",
                     source_p->name, nick, user, host);
 
@@ -249,7 +249,7 @@ mo_uncapture(struct Client *client_p, struct Client *source_p,
     split_nuh(&nuh);
 
     if (IsClient(client_p))
-      sendto_server(client_p, NULL, NULL, CAP_ENCAP, 0, 0,
+      sendto_server(client_p, NULL, NULL, CAP_ENCAP, 0,
                     ":%s ENCAP * UNCAPTURE %s!%s@%s",
                     source_p->name, nick, user, host);
 

@@ -46,17 +46,17 @@ static void ms_bmask(struct Client *, struct Client *, int, char *[]);
 
 struct Message mode_msgtab = {
   "MODE", 0, 0, 2, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_mode, m_mode, m_ignore, m_mode, m_ignore}
+  { m_unregistered, m_mode, m_mode, m_ignore, m_mode, m_ignore }
 };
 
 struct Message tmode_msgtab = { 
   "TMODE", 0, 0, 4, 0, MFLG_SLOW, 0,
-  {m_ignore, m_ignore, ms_tmode, m_ignore, m_ignore, m_ignore}
+  { m_ignore, m_ignore, ms_tmode, m_ignore, m_ignore, m_ignore }
 };
 
 struct Message bmask_msgtab = {
   "BMASK", 0, 0, 5, 0, MFLG_SLOW, 0,
-  {m_ignore, m_ignore, ms_bmask, m_ignore, m_ignore, m_ignore}
+  { m_ignore, m_ignore, ms_bmask, m_ignore, m_ignore, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -286,7 +286,7 @@ ms_bmask(struct Client *client_p, struct Client *source_p, int parc, char *parv[
 
         sendto_channel_local(ALL_MEMBERS, NO, chptr, "%s %s",
                              modebuf, parabuf);
-        sendto_server(client_p, NULL, chptr, needcap, CAP_TS6, NOFLAGS,
+        sendto_server(client_p, NULL, chptr, needcap, CAP_TS6,
                       "%s %s", modebuf, parabuf);
 
         mbuf = modebuf + mlen;
@@ -306,12 +306,12 @@ ms_bmask(struct Client *client_p, struct Client *source_p, int parc, char *parv[
   {
     *mbuf = *(pbuf - 1) = '\0';
     sendto_channel_local(ALL_MEMBERS, NO, chptr, "%s %s", modebuf, parabuf);
-    sendto_server(client_p, NULL, chptr, needcap, CAP_TS6, NOFLAGS,
+    sendto_server(client_p, NULL, chptr, needcap, CAP_TS6,
                   "%s %s", modebuf, parabuf);
   }
 
   /* assumption here is that since the server sent BMASK, they are TS6, so they have an ID */
-  sendto_server(client_p, NULL, chptr, CAP_TS6|needcap, NOCAPS, NOFLAGS,
+  sendto_server(client_p, NULL, chptr, CAP_TS6|needcap, NOCAPS,
                 ":%s BMASK %lu %s %s :%s",
                 source_p->id, (unsigned long)chptr->channelts, chptr->chname,
                 parv[3], parv[4]);

@@ -138,19 +138,19 @@ m_join(struct Client *client_p, struct Client *source_p,
     add_user_to_channel(chptr, source_p, flags, YES);
 
     /*
-    **  Set timestamp if appropriate, and propagate
-    */
+     *  Set timestamp if appropriate, and propagate
+     */
     if (flags & CHFL_CHANOP)
     {
       chptr->channelts = CurrentTime;
       chptr->mode.mode |= MODE_TOPICLIMIT;
       chptr->mode.mode |= MODE_NOPRIVMSGS;
 
-      sendto_server(client_p, source_p, chptr, CAP_TS6, NOCAPS, LL_ICLIENT,
+      sendto_server(client_p, source_p, chptr, CAP_TS6, NOCAPS,
                     ":%s SJOIN %lu %s +nt :@%s",
                     me.id, (unsigned long)chptr->channelts,
                     chptr->chname, source_p->id);
-      sendto_server(client_p, source_p, chptr, NOCAPS, CAP_TS6, LL_ICLIENT,
+      sendto_server(client_p, source_p, chptr, NOCAPS, CAP_TS6,
                     ":%s SJOIN %lu %s +nt :@%s",
                     me.name, (unsigned long)chptr->channelts,
                     chptr->chname, parv[0]);
@@ -170,11 +170,11 @@ m_join(struct Client *client_p, struct Client *source_p,
     }
     else
     {
-      sendto_server(client_p, source_p, chptr, CAP_TS6, NOCAPS, LL_ICLIENT,
+      sendto_server(client_p, source_p, chptr, CAP_TS6, NOCAPS,
                     ":%s JOIN %lu %s +",
                     source_p->id, (unsigned long)chptr->channelts,
                     chptr->chname);
-      sendto_server(client_p, source_p, chptr, NOCAPS, CAP_TS6, LL_ICLIENT,
+      sendto_server(client_p, source_p, chptr, NOCAPS, CAP_TS6,
                     ":%s SJOIN %lu %s + :%s",
                     me.name, (unsigned long)chptr->channelts,
                     chptr->chname, source_p->name);
@@ -230,7 +230,7 @@ ms_join(struct Client *client_p, struct Client *source_p,
   char           *s;
   const char *servername;
 
-  if ((parv[1][0] == '0') && (parv[1][1] == '\0') && parc == 2)
+  if (parc == 2 && !irccmp(parv[1], "0"))
   {
     do_join_0(client_p, source_p);
     return;
@@ -239,10 +239,7 @@ ms_join(struct Client *client_p, struct Client *source_p,
   if (parc < 4)
     return;
 
-  if (*parv[2] == '&')
-    return;
-
-  if (!check_channel_name(parv[2]))
+  if (*parv[2] == '&' || !check_channel_name(parv[2]))
     return;
 
   mbuf = modebuf;
@@ -273,14 +270,14 @@ ms_join(struct Client *client_p, struct Client *source_p,
         mode.mode |= MODE_PARANOID;
         break;
       case 'k':
-        if (parc < 5+args)
+        if (parc < 5 + args)
           return;
 
         strlcpy(mode.key, parv[4 + args], sizeof(mode.key));
         args++;
         break;
       case 'l':
-        if (parc < 5+args)
+        if (parc < 5 + args)
           return;
 
         mode.limit = atoi(parv[4 + args]);
@@ -378,10 +375,10 @@ ms_join(struct Client *client_p, struct Client *source_p,
                          source_p->host, chptr->chname);
   }
 
-  sendto_server(client_p, NULL, chptr, CAP_TS6, NOCAPS, NOFLAGS,
+  sendto_server(client_p, NULL, chptr, CAP_TS6, NOCAPS,
                 ":%s JOIN %lu %s +",
                 ID(source_p), (unsigned long)chptr->channelts, chptr->chname);
-  sendto_server(client_p, NULL, chptr, NOCAPS, CAP_TS6, NOFLAGS,
+  sendto_server(client_p, NULL, chptr, NOCAPS, CAP_TS6,
                 ":%s SJOIN %lu %s + :%s",
                 source_p->servptr->name, (unsigned long)chptr->channelts,
                 chptr->chname, source_p->name);
@@ -413,9 +410,9 @@ do_join_0(struct Client *client_p, struct Client *source_p)
     /* if the last occurance of this chan is before a 0, leave */
     if (is_target(chptr) < join_0)
     {
-      sendto_server(client_p, NULL, chptr, CAP_TS6, NOCAPS, NOFLAGS,
+      sendto_server(client_p, NULL, chptr, CAP_TS6, NOCAPS,
                     ":%s PART %s", ID(source_p), chptr->chname);
-      sendto_server(client_p, NULL, chptr, NOCAPS, CAP_TS6, NOFLAGS,
+      sendto_server(client_p, NULL, chptr, NOCAPS, CAP_TS6,
                     ":%s PART %s", source_p->name, chptr->chname);
       sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s!%s@%s PART %s",
                            source_p->name, source_p->username,
@@ -459,7 +456,7 @@ build_target_list(struct Client *client_p, struct Client *source_p,
       continue;
     }
 
-    if (*chan == '0' && !atoi(chan))
+    if (!irccmp(chan, "0"))
     {
       targets[ntargets].chptr = NULL;
       targets[ntargets].key = NULL;
@@ -574,10 +571,8 @@ is_target(struct Channel *chptr)
    * we know they are supposed to stay in that channel.
    */
   for (i = ntargets-1; i >=0; i--)
-  {
     if (targets[i].chptr == chptr)
       return i;
-  }
 
   return 0;
 }
@@ -599,7 +594,7 @@ static const struct mode_letter
   { MODE_SECRET,     's' },
   { MODE_MODERATED,  'm' },
   { MODE_INVITEONLY, 'i' },
-  { MODE_PARANOID,    'p' },
+  { MODE_PARANOID,   'p' },
   { 0, '\0' }
 };
 

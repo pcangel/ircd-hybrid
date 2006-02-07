@@ -676,10 +676,10 @@ nick_from_server(struct Client *client_p, struct Client *source_p, int parc,
                                  source_p->host, nick);
 
     add_history(source_p, 1);
-    sendto_server(client_p, source_p, NULL, CAP_TS6, NOCAPS, NOFLAGS,
+    sendto_server(client_p, source_p, NULL, CAP_TS6, NOCAPS,
                   ":%s NICK %s :%lu",
                   ID(source_p), nick, (unsigned long)source_p->tsinfo);
-    sendto_server(client_p, source_p, NULL, NOCAPS, CAP_TS6, NOFLAGS,
+    sendto_server(client_p, source_p, NULL, NOCAPS, CAP_TS6,
                   ":%s NICK %s :%lu",
                   parv[0], nick, (unsigned long)source_p->tsinfo);
   }
@@ -916,7 +916,8 @@ perform_nick_collides(struct Client *source_p, struct Client *client_p,
      }
    }
 
-  /* we should only ever call nick_from_server() here, as
+  /*
+   * we should only ever call nick_from_server() here, as
    * this is a client changing nick, not a new client
    */
   nick_from_server(client_p, source_p, parc, parv, newts, nick, gecos);

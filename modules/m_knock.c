@@ -170,8 +170,8 @@ m_knock(struct Client *client_p, struct Client *source_p,
                          source_p->name, source_p->username,
                          source_p->host);
 
-  sendto_server(client_p, source_p, chptr, CAP_KNOCK|CAP_TS6, NOCAPS, LL_ICLIENT,
+  sendto_server(client_p, source_p, chptr, CAP_KNOCK|CAP_TS6, NOCAPS,
                 ":%s KNOCK %s %s", ID(source_p), chptr->chname);
-  sendto_server(client_p, source_p, chptr, CAP_KNOCK, CAP_TS6, LL_ICLIENT,
+  sendto_server(client_p, source_p, chptr, CAP_KNOCK, CAP_TS6,
                 ":%s KNOCK %s %s", source_p->name, chptr->chname);
 }

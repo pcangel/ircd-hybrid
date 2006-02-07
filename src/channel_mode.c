@@ -1483,7 +1483,7 @@ send_cap_mode_changes(struct Client *client_p, struct Client *source_p,
     {
       if (nc != 0)
         sendto_server(client_p, source_p, chptr, cap, nocap,
-                      LL_ICHAN | LL_ICLIENT, "%s %s",
+                      "%s %s",
 		      modebuf, parabuf);
       nc = 0;
       mc = 0;
@@ -1525,7 +1525,7 @@ send_cap_mode_changes(struct Client *client_p, struct Client *source_p,
 
   if (nc != 0)
     sendto_server(client_p, source_p, chptr, cap, nocap,
-                  LL_ICLIENT, "%s %s", modebuf, parabuf);
+                  "%s %s", modebuf, parabuf);
 }
 
 /* void send_mode_changes(struct Client *client_p,

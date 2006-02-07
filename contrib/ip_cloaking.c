@@ -386,7 +386,7 @@ set_vhost(struct Client *client_p, struct Client *source_p,
   make_virthost(target_p->host, target_p->sockhost, target_p->host);
 
   if (IsClient(target_p))
-    sendto_server(client_p, source_p, NULL, CAP_ENCAP, NOCAPS, LL_ICLIENT,
+    sendto_server(client_p, source_p, NULL, CAP_ENCAP, NOCAPS,
                   ":%s ENCAP * CHGHOST %s %s",
                   me.name, target_p->name, target_p->host);
 
