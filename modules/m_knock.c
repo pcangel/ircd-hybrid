@@ -43,7 +43,7 @@ static void m_knock(struct Client *, struct Client *, int, char *[]);
 
 struct Message knock_msgtab = {
   "KNOCK", 0, 0, 2, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_knock, m_knock, m_ignore, m_knock, m_ignore}
+  { m_unregistered, m_knock, m_knock, m_ignore, m_knock, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -84,10 +84,9 @@ static void
 m_knock(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
 {
-  const char *name = parv[1];
   struct Channel *chptr = NULL;
 
-  if (*name == '\0')
+  if (*parv[1] == '\0')
   {
     sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
                me.name, source_p->name, "KNOCK");
@@ -101,18 +100,18 @@ m_knock(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if ((chptr = hash_find_channel(name)) == NULL)
+  if ((chptr = hash_find_channel(parv[1])) == NULL)
   {
     sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL),
-               me.name, source_p->name, name);
+               me.name, source_p->name, parv[1]);
     return;
   }
 
   /* Normal channel, just be sure they aren't on it */
   if (IsMember(source_p, chptr))
   {
-    sendto_one(source_p, form_str(ERR_KNOCKONCHAN),
-               me.name, source_p->name, name);
+    sendto_one(source_p, form_str(ERR_KNOCKONCHAN), me.name,
+               source_p->name, chptr->chname);
     return;
   }
 
@@ -120,8 +119,8 @@ m_knock(struct Client *client_p, struct Client *source_p,
         (chptr->mode.limit && dlink_list_length(&chptr->members) >=
          chptr->mode.limit)))
   {
-    sendto_one(source_p, form_str(ERR_CHANOPEN),
-               me.name, source_p->name, name);
+    sendto_one(source_p, form_str(ERR_CHANOPEN), me.name,
+               source_p->name, chptr->chname);
     return;
   }
 
@@ -131,11 +130,12 @@ m_knock(struct Client *client_p, struct Client *source_p,
     if ((chptr->mode.mode & MODE_PARANOID) || is_banned(chptr, source_p))
     {
       sendto_one(source_p, form_str(ERR_CANNOTSENDTOCHAN),
-                 me.name, source_p->name, name);
+                 me.name, source_p->name, chptr->chname);
       return;
     }
 
-    /* flood protection:
+    /*
+     * flood protection:
      * allow one knock per user per knock_delay
      * allow one knock per channel per knock_delay_channel
      *
@@ -144,34 +144,34 @@ m_knock(struct Client *client_p, struct Client *source_p,
     if ((source_p->localClient->last_knock + ConfigChannel.knock_delay) >
         CurrentTime)
     {
-      sendto_one(source_p, form_str(ERR_TOOMANYKNOCK),
-                 me.name, source_p->name, parv[1], "user");
+      sendto_one(source_p, form_str(ERR_TOOMANYKNOCK), me.name,
+                 source_p->name, chptr->chname, "user");
       return;
     }
 
-    if (chptr->last_knock + ConfigChannel.knock_delay_channel > CurrentTime)
+    if ((chptr->last_knock + ConfigChannel.knock_delay_channel) > CurrentTime)
     {
-      sendto_one(source_p, form_str(ERR_TOOMANYKNOCK),
-                 me.name, source_p->name, parv[1], "channel");
+      sendto_one(source_p, form_str(ERR_TOOMANYKNOCK), me.name,
+                 source_p->name, chptr->chname, "channel");
       return;
     }
 
     source_p->localClient->last_knock = CurrentTime;
 
-    sendto_one(source_p, form_str(RPL_KNOCKDLVR),
-               me.name, source_p->name, name);
+    sendto_one(source_p, form_str(RPL_KNOCKDLVR), me.name,
+               source_p->name, chptr->chname);
   }
 
   chptr->last_knock = CurrentTime;
 
   if (ConfigChannel.use_knock)
     sendto_channel_local(CHFL_CHANOP, NO, chptr, form_str(RPL_KNOCK),
-                         me.name, name, name,
+                         me.name, chptr->chname, chptr->chname,
                          source_p->name, source_p->username,
                          source_p->host);
 
   sendto_server(client_p, source_p, chptr, CAP_KNOCK|CAP_TS6, NOCAPS, LL_ICLIENT,
-                ":%s KNOCK %s %s", ID(source_p), name);
+                ":%s KNOCK %s %s", ID(source_p), chptr->chname);
   sendto_server(client_p, source_p, chptr, CAP_KNOCK, CAP_TS6, LL_ICLIENT,
-                ":%s KNOCK %s %s", source_p->name, name);
+                ":%s KNOCK %s %s", source_p->name, chptr->chname);
 }
