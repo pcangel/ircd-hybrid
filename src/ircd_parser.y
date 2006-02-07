@@ -218,7 +218,6 @@ unhook_hub_leaf_confs(void)
 %token  KLINE_WITH_REASON
 %token  KNOCK_DELAY
 %token  KNOCK_DELAY_CHANNEL
-%token  LAZYLINK
 %token  LEAF_MASK
 %token  LINKS_DELAY
 %token  LISTEN
@@ -2637,14 +2636,7 @@ connect_flags_items: connect_flags_items ',' connect_flags_item | connect_flags_
 connect_flags_item: NOT  { not_atom = 1; } connect_flags_item_atom
 			|  { not_atom = 0; } connect_flags_item_atom;
 
-connect_flags_item_atom: LAZYLINK
-{
-  if (ypass == 2)
-  {
-    if (not_atom)ClearConfLazyLink(yy_aconf);
-    else SetConfLazyLink(yy_aconf);
-  }
-} | COMPRESSED
+connect_flags_item_atom: COMPRESSED
 {
   if (ypass == 2)
 #ifndef HAVE_LIBZ

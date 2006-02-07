@@ -143,7 +143,6 @@ struct split_nuh_item
 #define CONF_FLAGS_NEED_PASSWORD        0x00200000
 /* server flags */
 #define CONF_FLAGS_ALLOW_AUTO_CONN      0x00004000
-#define CONF_FLAGS_LAZY_LINK            0x00008000
 #define CONF_FLAGS_ENCRYPTED            0x00010000
 #define CONF_FLAGS_COMPRESSED           0x00020000
 #define CONF_FLAGS_TEMPORARY            0x00040000
@@ -177,9 +176,6 @@ struct split_nuh_item
 #define IsConfCryptLink(x)      ((x)->flags & CONF_FLAGS_CRYPTLINK)
 #define SetConfCryptLink(x)     ((x)->flags |= CONF_FLAGS_CRYPTLINK)
 #define ClearConfCryptLink(x)   ((x)->flags &= ~CONF_FLAGS_CRYPTLINK)
-#define IsConfLazyLink(x)       ((x)->flags & CONF_FLAGS_LAZY_LINK)
-#define SetConfLazyLink(x)      ((x)->flags = CONF_FLAGS_LAZY_LINK)
-#define ClearConfLazyLink(x)	((x)->flags &= ~CONF_FLAGS_LAZY_LINK)
 #define IsConfAllowAutoConn(x)  ((x)->flags & CONF_FLAGS_ALLOW_AUTO_CONN)
 #define SetConfAllowAutoConn(x)	((x)->flags |= CONF_FLAGS_ALLOW_AUTO_CONN)
 #define ClearConfAllowAutoConn(x) ((x)->flags &= ~CONF_FLAGS_ALLOW_AUTO_CONN)
