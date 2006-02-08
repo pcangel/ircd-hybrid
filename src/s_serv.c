@@ -1574,49 +1574,6 @@ burst_members(struct Client *client_p, struct Channel *chptr)
   }
 }
 
-/* set_autoconn()
- *
- * inputs       - struct Client pointer to oper requesting change
- * output       - none
- * side effects - set autoconnect mode
- */
-void
-set_autoconn(struct Client *source_p, const char *name, int newval)
-{
-  struct ConfItem *conf;
-  struct AccessItem *aconf;
-
-  if (name != NULL)
-  {
-    conf = find_exact_name_conf(SERVER_TYPE, name, NULL, NULL);
-    if (conf != NULL)
-    {
-      aconf = &conf->conf.AccessItem;
-      if (newval)
-	SetConfAllowAutoConn(aconf);
-      else
-	ClearConfAllowAutoConn(aconf);
-
-      sendto_realops_flags(UMODE_ALL, L_ALL,
-			   "%s has changed AUTOCONN for %s to %i",
-			   source_p->name, name, newval);
-      sendto_one(source_p,
-		 ":%s NOTICE %s :AUTOCONN for %s is now set to %i",
-		 me.name, source_p->name, name, newval);
-    }
-    else
-    {
-      sendto_one(source_p, ":%s NOTICE %s :Can't find %s",
-		 me.name, source_p->name, name);
-    }
-  }
-  else
-  {
-    sendto_one(source_p, ":%s NOTICE %s :Please specify a server name!",
-               me.name, source_p->name);
-  }
-}
-
 /* New server connection code
  * Based upon the stuff floating about in s_bsd.c
  *   -- adrian

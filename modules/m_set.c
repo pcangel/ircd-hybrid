@@ -44,7 +44,7 @@ static void mo_set(struct Client *, struct Client *, int, char *[]);
 
 struct Message set_msgtab = {
   "SET", 0, 0, 0, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_not_oper, m_error, m_ignore, mo_set, m_ignore}
+  { m_unregistered, m_not_oper, m_error, m_ignore, mo_set, m_ignore }
 };
 
 #ifndef STATIC_MODULES
@@ -168,7 +168,38 @@ list_quote_commands(struct Client *source_p)
 static void
 quote_autoconn(struct Client *source_p, const char *arg, int newval)
 {
-  set_autoconn(source_p, arg, newval);
+  struct ConfItem *conf = NULL;
+  struct AccessItem *aconf = NULL;
+
+  if (arg != NULL)
+  {
+    conf = find_exact_name_conf(SERVER_TYPE, arg, NULL, NULL);
+    if (conf != NULL)
+    {
+      aconf = &conf->conf.AccessItem;
+      if (newval)
+        SetConfAllowAutoConn(aconf);
+      else
+        ClearConfAllowAutoConn(aconf);
+
+      sendto_realops_flags(UMODE_ALL, L_ALL,
+                           "%s has changed AUTOCONN for %s to %i",
+                           source_p->name, arg, newval);
+      sendto_one(source_p,
+                 ":%s NOTICE %s :AUTOCONN for %s is now set to %i",
+                 me.name, source_p->name, arg, newval);
+    }
+    else
+    {
+      sendto_one(source_p, ":%s NOTICE %s :Can't find %s",
+                 me.name, source_p->name, arg);
+    }
+  }
+  else
+  {
+    sendto_one(source_p, ":%s NOTICE %s :Please specify a server name!",
+               me.name, source_p->name);
+  }
 }
 
 /* SET AUTOCONNALL */
