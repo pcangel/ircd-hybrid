@@ -108,13 +108,6 @@ m_mode(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if (!check_channel_name(parv[1]))
-  { 
-    sendto_one(source_p, form_str(ERR_BADCHANNAME),
-               me.name, source_p->name, parv[1]);
-    return;
-  }
-
   if ((chptr = hash_find_channel(parv[1])) == NULL)
   {
     sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL),
