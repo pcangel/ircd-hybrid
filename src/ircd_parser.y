@@ -2380,11 +2380,7 @@ connect_entry: CONNECT
 	  yy_aconf->passwd && yy_aconf->spasswd)
 #endif /* !HAVE_LIBCRYPTO */
 	{
-	  if (conf_add_server(yy_conf, scount, class_name) >= 0)
-	  {
-	    ++scount;
-	  }
-	  else
+	  if (conf_add_server(yy_conf, class_name) == -1)
 	  {
 	    delete_conf_item(yy_conf);
 	    yy_conf = NULL;

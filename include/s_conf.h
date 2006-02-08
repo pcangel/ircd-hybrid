@@ -491,7 +491,6 @@ void read_conf_files(int);
 int yylex(void);
 void rebuild_cidr_class(struct ClassItem *, struct ClassItem *);
 
-EXTERN unsigned int scount;
 EXTERN int ypass;
 EXTERN dlink_list class_items;
 EXTERN dlink_list server_items;
@@ -537,7 +536,7 @@ EXTERN int remove_conf_line(ConfType, struct Client *, const char *,
 
 EXTERN const char *get_conf_name(ConfType);
 EXTERN int rehash(int);
-EXTERN int conf_add_server(struct ConfItem *, unsigned int, const char *);
+EXTERN int conf_add_server(struct ConfItem *, const char *);
 EXTERN void conf_add_class_to_conf(struct ConfItem *, const char *);
 EXTERN void conf_add_d_conf(struct AccessItem *);
 

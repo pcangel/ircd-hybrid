@@ -66,7 +66,6 @@ extern char linebuf[];
 extern char conffilebuf[IRCD_BUFSIZE];
 extern char yytext[];
 extern int yyparse(); /* defined in y.tab.c */
-unsigned int scount = 0; /* used by yyparse(), etc */
 int ypass  = 1; /* used by yyparse()      */
 
 /* internally defined functions */
@@ -1678,7 +1677,7 @@ set_default_conf(void)
 static void
 read_conf(FBFILE *file)
 {
-  scount = lineno = 0;
+  lineno = 0;
 
   set_default_conf(); /* Set default values prior to conf parsing */
   ypass = 1;
@@ -2345,8 +2344,6 @@ conf_add_class_to_conf(struct ConfItem *conf, const char *class_name)
   }
 }
 
-#define MAXCONFLINKS 150
-
 /* conf_add_server()
  *
  * inputs       - pointer to config item
@@ -2355,7 +2352,7 @@ conf_add_class_to_conf(struct ConfItem *conf, const char *class_name)
  * side effects - Add a connect block
  */
 int
-conf_add_server(struct ConfItem *conf, unsigned int lcount, const char *class_name)
+conf_add_server(struct ConfItem *conf, const char *class_name)
 {
   struct split_nuh_item nuh;
   struct AccessItem *aconf = &conf->conf.AccessItem;
@@ -2364,7 +2361,7 @@ conf_add_server(struct ConfItem *conf, unsigned int lcount, const char *class_na
 
   conf_add_class_to_conf(conf, class_name);
 
-  if (lcount > MAXCONFLINKS || !aconf->host || !conf->name)
+  if (!aconf->host || !conf->name)
   {
     sendto_realops_flags(UMODE_ALL, L_ALL, "Bad connect block");
     ilog(L_WARN, "Bad connect block");
