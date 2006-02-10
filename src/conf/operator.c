@@ -47,6 +47,38 @@ static const struct FlagMapping {
   { NULL, 0 }
 };
 
+void
+conf_operator_report(struct Client *source_p)
+{
+  dlink_node *ptr = NULL;
+
+  DLINK_FOREACH(ptr, oconf_items.head)
+  {
+    dlink_node *ptr_mask = NULL;
+    struct ConfItem *conf = ptr->data;
+    struct AccessItem *aconf = &conf->conf.AccessItem;
+    assert(aconf->class_ptr);
+
+    DLINK_FOREACH(ptr_mask, conf->mask_list.head)
+    {
+      const struct split_nuh_item *nuh = ptr_mask->data;
+
+      /* Don't allow non opers to see oper privs */
+      if (IsOper(source_p))
+        sendto_one(source_p, form_str(RPL_STATSOLINE), me.name,
+                   source_p->name, 'O', nuh->userptr, nuh->hostptr,
+                   conf->name, oper_privs_as_string(aconf->port),
+                   aconf->class_ptr->name);
+      else
+        sendto_one(source_p, form_str(RPL_STATSOLINE),
+                   me.name, source_p->name, 'O', nuh->userptr, nuh->hostptr,
+                   conf->name, "0",
+                   aconf->class_ptr->name);
+      }
+    }
+  }
+}
+
 static void
 reset_operator(void)
 {
