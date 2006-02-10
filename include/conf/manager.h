@@ -42,20 +42,21 @@ struct ConfParserContext {
   int lineno;
 };
 
-struct ConfSection {
-  const char *name;
-  CONFS_HANDLER *before;
-  CONFS_HANDLER *after;
-  int pass;
-  dlink_list fields;
-  dlink_node node;
-};
-
 struct ConfField {
   const char *name;
   int type;
   CONFF_HANDLER *handler;
   void *param;
+  dlink_node node;
+};
+
+struct ConfSection {
+  const char *name;
+  CONFS_HANDLER *before;
+  CONFS_HANDLER *after;
+  struct ConfField *def_field;
+  int pass;
+  dlink_list fields;
   dlink_node node;
 };
 

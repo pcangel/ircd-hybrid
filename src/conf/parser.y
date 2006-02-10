@@ -107,7 +107,7 @@ conf_block: IDENTIFIER
   }
   else
     yyerror("unknown conf section");
-} '{' conf_items '}' ';'
+} default_field '{' conf_items '}' ';'
 {
   if (conf_current_section != NULL)
   {
@@ -145,6 +145,7 @@ number_atom: NUMBER { conf_add_number($1); };
 number_range: NUMBER '.' '.' NUMBER
 {
   int i;
+  
   if ($4 - $1 < 0 || $4 - $1 >= 100)
     yyerror("invalid range");
   else for (i = $1; i <= $4; i++)
@@ -184,3 +185,13 @@ value: QSTRING {
          conf_assign(CT_NLIST, conf_field, &conf_list);
          conf_clear_list(0);
        };
+
+default_field: /* empty */
+               | _default_field
+               ;
+
+_default_field: {
+  conf_field = conf_current_section->def_field;
+  if (!conf_field && conf_pass == conf_current_section->pass)
+    parse_error("Section %s has no default field", conf_current_section->name);
+} value;
