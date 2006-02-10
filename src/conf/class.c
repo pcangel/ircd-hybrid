@@ -234,7 +234,7 @@ init_class(void)
 
   s->before = before_class;
 
-  add_conf_field(s, "name", CT_STRING, NULL, &tmpclass.name);
+  s->def_field = add_conf_field(s, "name", CT_STRING, NULL, &tmpclass.name);
   add_conf_field(s, "connectfreq", CT_TIME, NULL, &tmpclass.connectfreq);
   add_conf_field(s, "ping_time", CT_TIME, NULL, &tmpclass.ping_time);
   add_conf_field(s, "ping_warning", CT_TIME, NULL, &tmpclass.ping_warning);
