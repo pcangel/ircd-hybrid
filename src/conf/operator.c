@@ -263,7 +263,7 @@ init_operator(void)
 
     s->before = before_operator;
 
-    add_conf_field(s, "name", CT_STRING, NULL, &tmpoper.name);
+    s->def_field = add_conf_field(s, "name", CT_STRING, NULL, &tmpoper.name);
     add_conf_field(s, "user", CT_STRING, oper_user, NULL);
     add_conf_field(s, "class", CT_STRING, oper_class, NULL);
     add_conf_field(s, "password", CT_STRING, NULL, &tmpoper.conf->AccessItem->password);
