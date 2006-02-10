@@ -220,21 +220,25 @@ parse_flag_list(void *list, void *where)
 void
 init_operator(void)
 {
-  struct ConfSection *s = add_conf_section("operator", 2);
+  const char *alias[] = { "oper", "operator", NULL };
+  const char *p = alias;
 
   hreset = install_hook(reset_conf, reset_operator);
 
-  s->before = before_operator;
+  for (; p != NULL; ++p)
+  {
+    struct ConfSection *s = add_conf_section(p, 2);
 
+    s->before = before_operator;
 
-  add_conf_field(s, "name", CT_STRING, NULL, &tmpoper.name);
-  add_conf_field(s, "user", CT_STRING, oper_user, NULL);
-  add_conf_field(s, "class", CT_STRING, oper_class, NULL);
-  add_conf_field(s, "password", CT_STRING, NULL, &tmpoper.conf->AccessItem->password);
-  add_conf_field(s, "encrypted", CT_BOOL, oper_encrypted, NULL);
-  add_conf_field(s, "rsa_public_keyfile", CT_STRING, oper_rsa_public_key_file, NULL);
-  add_conf_field(s, "flags", CT_LIST, parse_flag_list, NULL);
+    add_conf_field(s, "name", CT_STRING, NULL, &tmpoper.name);
+    add_conf_field(s, "user", CT_STRING, oper_user, NULL);
+    add_conf_field(s, "class", CT_STRING, oper_class, NULL);
+    add_conf_field(s, "password", CT_STRING, NULL, &tmpoper.conf->AccessItem->password);
+    add_conf_field(s, "encrypted", CT_BOOL, oper_encrypted, NULL);
+    add_conf_field(s, "rsa_public_keyfile", CT_STRING, oper_rsa_public_key_file, NULL);
+    add_conf_field(s, "flags", CT_LIST, parse_flag_list, NULL);
 
-
-  s->after = after_operator;
+    s->after = after_operator;
+  }
 }
