@@ -330,7 +330,7 @@ conf_assign_string(void *value, void *var)
  *               is encountered (one argument: info)
  * output: none
  */
-void
+struct ConfField *
 add_conf_field(struct ConfSection *section, const char *name, int type,
                CONFF_HANDLER *handler, void *param)
 {
@@ -359,4 +359,5 @@ add_conf_field(struct ConfSection *section, const char *name, int type,
   field->handler = handler;
   field->param = param;
   dlinkAdd(field, &field->node, &section->fields);
+  return field;
 }
