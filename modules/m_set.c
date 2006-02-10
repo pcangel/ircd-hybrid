@@ -110,18 +110,18 @@ static struct SetStruct set_cmd_table[] =
   { "FLOODCOUNT",	quote_floodcount,	0,	1 },
   { "IDENTTIMEOUT",	quote_identtimeout,	0,	1 },
   { "IDLETIME",		quote_idletime,		0,	1 },
+  { "JFLOODCOUNT",	quote_jfloodcount,	0,	1 },
+  { "JFLOODTIME",	quote_jfloodtime,	0,	1 },
   { "LOG",		quote_log,		0,	1 },
   { "MAX",		quote_max,		0,	1 },
+  { "MAXLISTERS",	quote_maxlisters,	0,	1 },
   { "MSGLOCALE",	quote_msglocale,	1,	0 },
+  { "REJECTTIME",	quote_rejecttime,	0,	1 },
   { "SPAMNUM",		quote_spamnum,		0,	1 },
   { "SPAMTIME",		quote_spamtime,		0,	1 },
   { "SPLITMODE",	quote_splitmode,	1,	0 },
   { "SPLITNUM",		quote_splitnum,		0,	1 },
   { "SPLITUSERS",	quote_splitusers,	0,	1 },
-  { "JFLOODTIME",	quote_jfloodtime,	0,	1 },
-  { "JFLOODCOUNT",	quote_jfloodcount,	0,	1 },
-  { "REJECTTIME",	quote_rejecttime,	0,	1 },
-  { "MAXLISTERS",	quote_maxlisters,	0,	1 },
   /* -------------------------------------------------------- */
   { NULL,		NULL,		0,	0 }
 };
@@ -717,4 +717,3 @@ mo_set(struct Client *client_p, struct Client *source_p,
 
   list_quote_commands(source_p);
 }
-
