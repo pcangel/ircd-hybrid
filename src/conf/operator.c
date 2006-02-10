@@ -48,6 +48,15 @@ static const struct FlagMapping {
 };
 
 static void
+reset_operator(void)
+{
+  dlink_node *ptr = NULL, *ptr_next = NULL;
+
+  DLINK_FOREACH_SAFE(ptr, ptr_next, oconf_items.head)
+    delete_conf_item(ptr->data);
+}
+
+static void
 before_operator(void)
 {
   memset(&tmpoper, 0, sizeof(tmpoper));
@@ -67,10 +76,13 @@ after_operator(void)
     return;
 
   if (&tmpoper.conf->AccessItem->class_ptr == NULL)
+  {
+    parse_error("Invalid or non-existant class in operator{}");
     return;
+  }
 
   if (!yy_tmp->passwd && !yy_aconf->rsa_public_key)
-    return
+    return;
 
   oper = make_conf_item(OPER_TYPE);
 
@@ -122,8 +134,7 @@ oper_user(void *value, *void where)
 static void
 operator_class(void *value, void *where)
 {
-  if (!(tmpoper.conf->AccessItem->class_ptr = find_class(value)))
-    return; /* XXX error reporting goes here */
+  tmpoper.conf->AccessItem->class_ptr = find_class(value);
 }
 
 static void
@@ -150,7 +161,7 @@ oper_rsa_public_key_file(void *value, void *where)
 
   if (file == NULL)
   {
-    // yyerror("Ignoring rsa_public_key_file -- file doesn't exist");
+    parse_error("Ignoring rsa_public_key_file -- file doesn't exist");
     return;
   }
 
@@ -158,7 +169,7 @@ oper_rsa_public_key_file(void *value, void *where)
 
   if (yy_aconf->rsa_public_key == NULL)
   {
-    //yyerror("Ignoring rsa_public_key_file -- Key invalid; check key syntax.");
+    parse_error("Ignoring rsa_public_key_file -- Key invalid; check key syntax.");
     return;
   }
 
@@ -211,7 +222,7 @@ init_operator(void)
 {
   struct ConfSection *s = add_conf_section("operator", 2);
 
-//  hreset = install_hook(reset_conf, reset_operator);
+  hreset = install_hook(reset_conf, reset_operator);
 
   s->before = before_operator;
 
