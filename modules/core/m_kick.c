@@ -46,21 +46,15 @@ struct Message kick_msgtab = {
   { m_unregistered, m_kick, m_kick, m_ignore, m_kick, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_kick, "$Revision$")
 {
   mod_add_cmd(&kick_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&kick_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* m_kick()
  *  parv[0] = sender prefix

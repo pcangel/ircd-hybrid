@@ -43,21 +43,16 @@ struct Message time_msgtab = {
   {m_unregistered, m_time, mo_time, m_ignore, mo_time, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_time, "$Revision$")
 {
   mod_add_cmd(&time_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&time_msgtab);
 }
 
-const char *_version = "$Revision$";
-#endif
 /*
  * m_time
  *      parv[0] = sender prefix

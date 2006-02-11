@@ -45,8 +45,6 @@ struct Message links_msgtab = {
   {m_unregistered, m_links, ms_links, m_ignore, mo_links, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-const char *_version = "$Revision$";
 static struct Callback *links_cb;
 
 static void *
@@ -60,21 +58,17 @@ va_links(va_list args)
   return NULL;
 }
 
-void
-_modinit(void)
+INIT_MODULE(m_links, "$Revision$")
 {
   links_cb = register_callback("doing_links", va_links);
   mod_add_cmd(&links_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&links_msgtab);
   uninstall_hook(links_cb, va_links);
 }
-
-#endif
 
 static void
 do_links(struct Client *source_p, int parc, char **parv)

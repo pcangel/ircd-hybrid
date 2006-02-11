@@ -39,7 +39,6 @@
 #include "modules.h"
 #include "s_user.h"
 
-
 static void mo_set(struct Client *, struct Client *, int, char *[]);
 
 struct Message set_msgtab = {
@@ -47,21 +46,15 @@ struct Message set_msgtab = {
   { m_unregistered, m_not_oper, m_error, m_ignore, mo_set, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_set, "$Revision$")
 {
   mod_add_cmd(&set_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&set_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* Structure used for the SET table itself */
 struct SetStruct

@@ -42,21 +42,15 @@ struct Message restart_msgtab = {
   { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_restart, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_restart, "$Revision$")
 {
   mod_add_cmd(&restart_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&restart_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
  * mo_restart

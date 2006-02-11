@@ -42,21 +42,15 @@ struct Message eob_msgtab = {
   { m_unregistered, m_ignore, ms_eob, m_ignore, m_ignore, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_eob, "$Revision$")
 {
   mod_add_cmd(&eob_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&eob_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*! \brief EOB command handler (called for servers only)
  *

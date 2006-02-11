@@ -44,22 +44,15 @@ struct Message accept_msgtab = {
   { m_unregistered, m_accept, m_ignore, m_ignore, m_accept, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_accept, "$Revision$")
 {
   mod_add_cmd(&accept_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&accept_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
-
 
 /*! \brief ACCEPT command handler
  *

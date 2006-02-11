@@ -41,21 +41,15 @@ struct Message quit_msgtab = {
   {m_quit, m_quit, ms_quit, m_ignore, m_quit, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_quit, "$Revision$")
 {
   mod_add_cmd(&quit_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&quit_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
 ** m_quit

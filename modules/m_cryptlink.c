@@ -75,22 +75,15 @@ static struct CryptLinkStruct cryptlink_cmd_table[] =
   { (char *)0,	(void (*)())0,	}
 };
 
-#ifndef STATIC_MODULES
-void 
-_modinit(void)
+INIT_MODULE(m_cryptlink, "$Revision$")
 {
   mod_add_cmd(&cryptlink_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&cryptlink_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
-
 
 /* mr_cryptlink - CRYPTLINK message handler
  *      parv[0] == CRYPTLINK

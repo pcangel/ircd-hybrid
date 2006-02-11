@@ -54,23 +54,17 @@ struct Message uhelp_msgtab = {
   {m_unregistered, m_help, m_ignore, m_ignore, mo_uhelp, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_help, "$Revision$")
 {
   mod_add_cmd(&help_msgtab);
   mod_add_cmd(&uhelp_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&help_msgtab);
   mod_del_cmd(&uhelp_msgtab);
+  mod_del_cmd(&help_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
  * m_help - HELP message handler

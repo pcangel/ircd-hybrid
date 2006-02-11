@@ -38,21 +38,16 @@ struct Message close_msgtab = {
   "CLOSE", 0, 0, 0, 0, MFLG_SLOW, 0,
   {m_unregistered, m_not_oper, m_ignore, m_ignore, mo_close, m_ignore}
 };
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+
+INIT_MODULE(m_close, "$Revision$")
 {
   mod_add_cmd(&close_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&close_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*! \brief CLOSE command handler (called for operators only)
  *

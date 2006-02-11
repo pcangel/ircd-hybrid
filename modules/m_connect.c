@@ -43,21 +43,15 @@ struct Message connect_msgtab = {
   { m_unregistered, m_not_oper, ms_connect, m_ignore, mo_connect, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_connect, "$Revision$")
 {
   mod_add_cmd(&connect_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&connect_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*! \brief CONNECT command handler (called for operators only)
  *

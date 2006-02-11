@@ -46,21 +46,15 @@ struct Message invite_msgtab = {
   { m_unregistered, m_invite, m_invite, m_ignore, m_invite, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_invite, "$Revision$")
 {
   mod_add_cmd(&invite_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&invite_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*! \brief INVITE command handler (called for clients only)
  *

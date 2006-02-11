@@ -35,7 +35,6 @@
 #include "modules.h"
 #include "restart.h"
 
-
 static void mo_die(struct Client *, struct Client *, int, char *[]);
 
 struct Message die_msgtab = {
@@ -43,21 +42,15 @@ struct Message die_msgtab = {
   {m_unregistered, m_not_oper, m_ignore, m_ignore, mo_die, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_die, "$Revision$")
 {
   mod_add_cmd(&die_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&die_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
  * mo_die - DIE command handler

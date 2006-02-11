@@ -51,8 +51,6 @@ struct Message motd_msgtab = {
   {mr_motd, m_motd, mo_motd, m_ignore, mo_motd, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-const char *_version = "$Revision$";
 static struct Callback *motd_cb;
 
 static void *
@@ -64,20 +62,17 @@ do_motd(va_list args)
   return NULL;
 }
 
-void
-_modinit(void)
+INIT_MODULE(m_motd, "$Revision$")
 {
   motd_cb = register_callback("doing_motd", do_motd);
   mod_add_cmd(&motd_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&motd_msgtab);
   uninstall_hook(motd_cb, do_motd);
 }
-#endif
 
 /* mr_motd()
  *

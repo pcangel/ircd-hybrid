@@ -46,21 +46,15 @@ struct Message challenge_msgtab = {
   { m_unregistered, m_challenge, m_ignore, m_ignore, m_challenge, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_challenge, "$Revision$")
 {
   mod_add_cmd(&challenge_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&challenge_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*! \brief CHALLENGE command handler (called for local clients only)
  *

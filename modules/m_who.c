@@ -46,21 +46,15 @@ struct Message who_msgtab = {
   {m_unregistered, m_who, m_ignore, m_ignore, m_who, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_who, "$Revision$")
 {
   mod_add_cmd(&who_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&who_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 static void who_global(struct Client *, char *, int);
 static void do_who(struct Client *, struct Client *,

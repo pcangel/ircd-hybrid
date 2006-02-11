@@ -41,22 +41,15 @@ struct Message ison_msgtab = {
   { m_unregistered, m_ison, m_ignore, m_ignore, m_ison, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_ison, "$Revision$")
 {
   mod_add_cmd(&ison_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&ison_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
-
 
 /*
  * m_ison added by Darren Reed 13/8/91 to act as an efficent user indicator

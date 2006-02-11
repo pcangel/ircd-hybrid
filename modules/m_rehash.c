@@ -41,21 +41,15 @@ struct Message rehash_msgtab = {
   {m_unregistered, m_not_oper, m_ignore, m_ignore, mo_rehash, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_rehash, "$Revision$")
 {
   mod_add_cmd(&rehash_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&rehash_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
  * mo_rehash - REHASH message handler

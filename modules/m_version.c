@@ -60,21 +60,15 @@ struct Message version_msgtab = {
   { m_unregistered, m_version, ms_version, m_ignore, mo_version, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_version, "$Revision$")
 {
   mod_add_cmd(&version_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&version_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
  * m_version - VERSION command handler

@@ -46,25 +46,19 @@ struct Message list_msgtab = {
   {m_unregistered, m_list, m_ignore, m_ignore, mo_list, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_list, "$Revision$")
 {
   mod_add_cmd(&list_msgtab);
   add_isupport("ELIST", "CMNTU", -1);
   add_isupport("SAFELIST", NULL, -1);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&list_msgtab);
-  delete_isupport("ELIST");
   delete_isupport("SAFELIST");
+  delete_isupport("ELIST");
+  mod_del_cmd(&list_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 static void
 do_list(struct Client *source_p, int parc, char *parv[])

@@ -40,7 +40,6 @@
 #include "modules.h"
 #include "watch.h"
 
-
 static void m_watch(struct Client *, struct Client *, int, char *[]);
 
 struct Message watch_msgtab = {
@@ -48,21 +47,17 @@ struct Message watch_msgtab = {
   { m_unregistered, m_watch, m_watch, m_ignore, m_watch, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_watch, "$Revision: $")
 {
   mod_add_cmd(&watch_msgtab);
   add_isupport("WATCH", NULL, ConfigFileEntry.max_watch);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&watch_msgtab);
   delete_isupport("WATCH");
+  mod_del_cmd(&watch_msgtab);
 }
-#endif
 
 /*
  * RPL_NOWON        - Online at the moment (Succesfully added to WATCH-list)

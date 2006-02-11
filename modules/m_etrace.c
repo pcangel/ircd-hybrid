@@ -46,8 +46,6 @@ struct Message etrace_msgtab = {
   {m_unregistered, m_not_oper, m_ignore, m_ignore, mo_etrace, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-const char *_version = "$Revision$";
 static struct Callback *etrace_cb;
 
 static void *
@@ -61,20 +59,17 @@ va_etrace(va_list args)
   return NULL;
 }
 
-void
-_modinit(void)
+INIT_MODULE(m_etrace, "$Revision$")
 {
   etrace_cb = register_callback("doing_etrace", va_etrace);
   mod_add_cmd(&etrace_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&etrace_msgtab);
   uninstall_hook(etrace_cb, va_etrace);
 }
-#endif
 
 static void report_this_status(struct Client *, struct Client *);
 

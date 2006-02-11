@@ -45,24 +45,17 @@ struct Message away_msgtab = {
   { m_unregistered, m_away, ms_away, m_ignore, mo_away, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_away, "$Revision$")
 {
   mod_add_cmd(&away_msgtab);
   add_isupport("AWAYLEN", NULL, AWAYLEN);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&away_msgtab);
   delete_isupport("AWAYLEN");
+  mod_del_cmd(&away_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
-
 
 /*! \brief AWAY command handler (called for local clients only)
  *

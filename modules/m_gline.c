@@ -82,25 +82,19 @@ struct Message ungline_msgtab = {
   {m_unregistered, m_not_oper, m_error, m_ignore, mo_ungline, m_ignore}
 };
 		
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_gline, "$Revision$")
 {
-    mod_add_cmd(&gline_msgtab);
-    mod_add_cmd(&ungline_msgtab);
-    add_capability("GLN", CAP_GLN, 1);
+  mod_add_cmd(&gline_msgtab);
+  mod_add_cmd(&ungline_msgtab);
+  add_capability("GLN", CAP_GLN, 1);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&gline_msgtab);
-  mod_del_cmd(&ungline_msgtab);
   delete_capability("GLN");
+  mod_del_cmd(&ungline_msgtab);
+  mod_del_cmd(&gline_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*! \brief GLINE command handler (called for operators only)
  *

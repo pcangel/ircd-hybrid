@@ -43,22 +43,16 @@ struct Message wallops_msgtab = {
   { m_unregistered, m_not_oper, ms_wallops, m_ignore, mo_wallops, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_wallops, "$Revision$")
 {
   mod_add_cmd(&wallops_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&wallops_msgtab);
 }
  
-const char *_version = "$Revision$";
-#endif
-
 /*
  * mo_wallops (write to *all* opers currently online)
  *      parv[0] = sender prefix

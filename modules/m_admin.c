@@ -44,9 +44,7 @@ struct Message admin_msgtab = {
   { mr_admin, m_admin, ms_admin, m_ignore, ms_admin, m_ignore }
 };
 
-#ifndef STATIC_MODULES
 static struct Callback *admin_cb = NULL;
-const char *_version = "$Revision$";
 
 static void *
 va_admin(va_list args)
@@ -55,20 +53,17 @@ va_admin(va_list args)
   return NULL;
 }
 
-void
-_modinit(void)
+INIT_MODULE(m_admin, "$Revision$")
 {
   admin_cb = register_callback("doing_admin", va_admin);
   mod_add_cmd(&admin_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&admin_msgtab);
   uninstall_hook(admin_cb, va_admin);
 }
-#endif
 
 /*! \brief ADMIN command handler (called for unregistered clients only)
  *

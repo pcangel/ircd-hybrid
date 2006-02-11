@@ -49,21 +49,15 @@ struct Message whowas_msgtab = {
   { m_unregistered, m_whowas, mo_whowas, m_ignore, mo_whowas, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_whowas, "$Revision$")
 {
   mod_add_cmd(&whowas_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&whowas_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
 ** m_whowas

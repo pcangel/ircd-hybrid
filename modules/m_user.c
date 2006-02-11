@@ -35,7 +35,6 @@
 #include "parse.h"
 #include "modules.h"
 
-
 static void mr_user(struct Client*, struct Client*, int, char *[]);
 
 struct Message user_msgtab = {
@@ -43,21 +42,15 @@ struct Message user_msgtab = {
   { mr_user, m_registered, m_ignore, m_ignore, m_registered, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_user, "$Revision$")
 {
   mod_add_cmd(&user_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&user_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
 ** mr_user

@@ -38,21 +38,15 @@ struct Message capab_msgtab = {
   { mr_capab, m_ignore, m_ignore, m_ignore, m_ignore, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_capab, "$Revision$")
 {
   mod_add_cmd(&capab_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&capab_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*! \brief CAPAB command handler (called for unregistered connections only)
  *

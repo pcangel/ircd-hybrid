@@ -57,23 +57,17 @@ struct Message unresv_msgtab = {
   { m_ignore, m_not_oper, ms_unresv, m_ignore, mo_unresv, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_resv, "$Revision$")
 {
   mod_add_cmd(&resv_msgtab);
   mod_add_cmd(&unresv_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&resv_msgtab);
   mod_del_cmd(&unresv_msgtab);
+  mod_del_cmd(&resv_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* mo_resv()
  *   parv[0] = sender prefix

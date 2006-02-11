@@ -44,21 +44,15 @@ struct Message pong_msgtab = {
   {mr_pong, m_ignore, ms_pong, m_ignore, m_ignore, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_pong, "$Revision$")
 {
   mod_add_cmd(&pong_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&pong_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 static void
 ms_pong(struct Client *client_p, struct Client *source_p,

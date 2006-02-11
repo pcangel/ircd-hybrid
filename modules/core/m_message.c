@@ -101,12 +101,10 @@ struct Message notice_msgtab = {
   {m_unregistered, m_notice, m_notice, m_ignore, m_notice, m_ignore}
 };
 
-#ifndef STATIC_MODULES
 struct Callback *client_message;
 struct Callback *channel_message;
 
-void
-_modinit(void)
+INIT_MODULE(m_message, "$Revision$")
 {
   mod_add_cmd(&privmsg_msgtab);
   mod_add_cmd(&notice_msgtab);
@@ -114,15 +112,11 @@ _modinit(void)
   channel_message = register_callback("channel_message", NULL);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&privmsg_msgtab);
   mod_del_cmd(&notice_msgtab);
+  mod_del_cmd(&privmsg_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
 ** m_privmsg

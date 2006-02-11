@@ -69,22 +69,15 @@ struct Message join_msgtab = {
   { m_unregistered, m_join, ms_join, m_ignore, m_join, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-
-void
-_modinit(void)
+INIT_MODULE(m_join, "$Revision$")
 {
   mod_add_cmd(&join_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&join_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* m_join()
  *      parv[0] = sender prefix

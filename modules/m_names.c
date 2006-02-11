@@ -49,21 +49,15 @@ struct Message names_msgtab = {
   { m_unregistered, m_names, m_ignore, m_ignore, m_names, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_names, "$Revision$")
 {
   mod_add_cmd(&names_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&names_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /************************************************************************
  * m_names() - Added by Jto 27 Apr 1989

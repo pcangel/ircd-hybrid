@@ -33,7 +33,6 @@
 #include "parse.h"
 #include "modules.h"
 
-
 static void ms_svinfo(struct Client*, struct Client*, int, char**);
 
 struct Message svinfo_msgtab = {
@@ -41,21 +40,16 @@ struct Message svinfo_msgtab = {
   {m_unregistered, m_ignore, ms_svinfo, m_ignore, m_ignore, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_svinfo, "$Revision$")
 {
   mod_add_cmd(&svinfo_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&svinfo_msgtab);
 }
 
-const char *_version = "$Revision$";
-#endif
 /*
  * ms_svinfo - SVINFO message handler
  *      parv[0] = sender prefix

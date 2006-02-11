@@ -40,19 +40,15 @@ struct Message map_msgtab = {
   {m_unregistered, m_map, m_ignore, m_ignore, mo_map, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void _modinit(void)
+INIT_MODULE(m_map, "$Revision$")
 {
   mod_add_cmd(&map_msgtab);
 }
 
-void _moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&map_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 static char buf[IRCD_BUFSIZE];
 

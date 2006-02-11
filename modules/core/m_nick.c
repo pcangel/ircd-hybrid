@@ -75,23 +75,17 @@ struct Message uid_msgtab = {
   {m_ignore, m_ignore, ms_uid, m_ignore, m_ignore, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_nick, "$Revision$")
 {
   mod_add_cmd(&nick_msgtab);
   mod_add_cmd(&uid_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&nick_msgtab);
   mod_del_cmd(&uid_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* mr_nick()
  *

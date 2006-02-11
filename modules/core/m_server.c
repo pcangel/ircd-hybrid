@@ -56,24 +56,17 @@ struct Message sid_msgtab = {
   { m_error, m_ignore, ms_sid, m_ignore, m_ignore, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void 
-_modinit(void)
+INIT_MODULE(m_server, "$Revision$")
 {
   mod_add_cmd(&server_msgtab);
   mod_add_cmd(&sid_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&server_msgtab);
   mod_del_cmd(&sid_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
-
 
 /* mr_server()
  *  parv[0] = sender prefix

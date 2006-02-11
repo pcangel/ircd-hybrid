@@ -45,21 +45,15 @@ struct Message sjoin_msgtab = {
   { m_unregistered, m_ignore, ms_sjoin, m_ignore, m_ignore, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_sjoin, "$Revision$")
 {
   mod_add_cmd(&sjoin_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&sjoin_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 static char modebuf[MODEBUFLEN];
 static char parabuf[MODEBUFLEN];

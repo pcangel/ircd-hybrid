@@ -55,10 +55,7 @@ struct Message tb_msgtab = {
   { m_ignore, m_ignore, ms_tb, m_ignore, m_ignore, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-
-void
-_modinit(void)
+INIT_MODULE(m_tburst, "$Revision: 122 $")
 {
   mod_add_cmd(&tb_msgtab);
   add_capability("TB", CAP_TB, 1);
@@ -67,19 +64,14 @@ _modinit(void)
   add_capability("TBURST", CAP_TBURST, 1);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&tb_msgtab);
-  delete_capability("TB");
-
-  mod_del_cmd(&tburst_msgtab);
   delete_capability("TBURST");
+  mod_del_cmd(&tburst_msgtab);
+
+  delete_capability("TB");
+  mod_del_cmd(&tb_msgtab);
 }
-
-const char *_version = "$Revision: 122 $";
-
-#endif /* !STATIC_MODULES */
 
 /* ms_tburst()
  *

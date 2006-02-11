@@ -65,23 +65,17 @@ struct Message unrkline_msgtab = {
    {m_unregistered, m_not_oper, ms_unrkline, me_unrkline, mo_unrkline, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_rkline, "$Revision$")
 {
   mod_add_cmd(&rkline_msgtab);
   mod_add_cmd(&unrkline_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&rkline_msgtab);
   mod_del_cmd(&unrkline_msgtab);
+  mod_del_cmd(&rkline_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* mo_rkline()
  *

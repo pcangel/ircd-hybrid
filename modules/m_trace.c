@@ -46,8 +46,6 @@ struct Message trace_msgtab = {
   {m_unregistered, m_trace, ms_trace, m_ignore, mo_trace, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-const char *_version = "$Revision$";
 static struct Callback *trace_cb;
 
 static void *
@@ -61,20 +59,17 @@ va_actual_trace(va_list args)
   return NULL;
 }
 
-void
-_modinit(void)
+INIT_MODULE(m_trace, "$Revision$")
 {
   trace_cb = register_callback("doing_trace", va_actual_trace);
   mod_add_cmd(&trace_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&trace_msgtab);
   uninstall_hook(trace_cb, va_actual_trace);
 }
-#endif
 
 static int report_this_status(struct Client *source_p, struct Client *target_p,
 			      int dow, int link_u_p, int link_u_s);

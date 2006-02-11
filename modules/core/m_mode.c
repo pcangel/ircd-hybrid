@@ -59,25 +59,19 @@ struct Message bmask_msgtab = {
   { m_ignore, m_ignore, ms_bmask, m_ignore, m_ignore, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_mode, "$Revision$")
 {
   mod_add_cmd(&mode_msgtab);
   mod_add_cmd(&tmode_msgtab);
   mod_add_cmd(&bmask_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&mode_msgtab);
   mod_del_cmd(&tmode_msgtab);
   mod_del_cmd(&bmask_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
  * m_mode - MODE command handler

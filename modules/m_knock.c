@@ -46,25 +46,19 @@ struct Message knock_msgtab = {
   { m_unregistered, m_knock, m_knock, m_ignore, m_knock, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_knock, "$Revision$")
 {
   mod_add_cmd(&knock_msgtab);
   add_capability("KNOCK", CAP_KNOCK, 1);
   add_isupport("KNOCK", NULL, -1);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&knock_msgtab);
-  delete_capability("KNOCK");
   delete_isupport("KNOCK");
+  delete_capability("KNOCK");
+  mod_del_cmd(&knock_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* m_knock
  *    parv[0] = sender prefix

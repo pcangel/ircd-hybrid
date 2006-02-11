@@ -51,26 +51,19 @@ struct Message put_msgtab = {
   {mr_dumb_proxy, m_ignore, m_ignore, m_ignore, m_ignore, m_ignore}
 };
 
-
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_post, "$Revision$")
 {
   mod_add_cmd(&post_msgtab);
   mod_add_cmd(&get_msgtab);
   mod_add_cmd(&put_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&post_msgtab);
-  mod_del_cmd(&get_msgtab);
   mod_del_cmd(&put_msgtab);
+  mod_del_cmd(&get_msgtab);
+  mod_del_cmd(&post_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
 ** mr_dumb_proxy

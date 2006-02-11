@@ -43,21 +43,15 @@ struct Message ping_msgtab = {
   { m_unregistered, m_ping, ms_ping, m_ignore, m_ping, m_ping }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_ping, "$Revision$")
 {
   mod_add_cmd(&ping_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&ping_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
 ** m_ping

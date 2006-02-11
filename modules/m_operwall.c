@@ -43,22 +43,15 @@ struct Message operwall_msgtab = {
   { m_unregistered, m_not_oper, ms_operwall, me_operwall, mo_operwall, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_operwall, "$Revision$")
 {
   mod_add_cmd(&operwall_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&operwall_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
-
 
 /*
  * mo_operwall - OPERWALL message handler

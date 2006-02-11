@@ -52,24 +52,18 @@ struct Message testgecos_msgtab = {
   {m_unregistered, m_not_oper, m_ignore, m_ignore, mo_testgecos, m_ignore}
 };
  
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_testline, "$Revision$")
 {
   mod_add_cmd(&testline_msgtab);
   mod_add_cmd(&testgecos_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&testline_msgtab);
   mod_del_cmd(&testgecos_msgtab);
+  mod_del_cmd(&testline_msgtab);
 }
  
-const char *_version = "$Revision$";
-#endif
-
 /* mo_testline()
  *
  * inputs       - pointer to physical connection request is coming from

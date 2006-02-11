@@ -41,21 +41,15 @@ struct Message pass_msgtab = {
   {mr_pass, m_registered, m_ignore, m_ignore, m_registered, mr_pass}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_pass, "$Revision$")
 {
   mod_add_cmd(&pass_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&pass_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
  * m_pass() - Added Sat, 4 March 1989

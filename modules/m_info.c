@@ -50,8 +50,6 @@ struct Message info_msgtab = {
   { m_unregistered, m_info, ms_info, m_ignore, ms_info, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-const char *_version = "$Revision$";
 static struct Callback *info_cb = NULL;
 
 static void *
@@ -61,26 +59,17 @@ va_send_info_text(va_list args)
   return NULL;
 }
 
-void
-#ifndef _WIN32
-_modinit(void)
-#else
-info_modinit(void)
-#endif
+INIT_MODULE(m_info, "$Revision$")
 {
   info_cb = register_callback("doing_info", va_send_info_text);
   mod_add_cmd(&info_msgtab);
 }
 
-#ifndef _WIN32
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&info_msgtab);
   uninstall_hook(info_cb, va_send_info_text);
+  mod_del_cmd(&info_msgtab);
 }
-#endif
-#endif
 
 /*
  * jdc -- Structure for our configuration value table

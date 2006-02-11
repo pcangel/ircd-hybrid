@@ -42,21 +42,15 @@ struct Message users_msgtab = {
   { m_unregistered, m_users, mo_users, m_ignore, mo_users, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_users, "$Revision$")
 {
   mod_add_cmd(&users_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&users_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
  * m_users

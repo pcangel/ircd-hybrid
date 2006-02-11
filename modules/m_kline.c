@@ -76,9 +76,7 @@ struct Message undline_msgtab = {
    {m_unregistered, m_not_oper, m_error, m_ignore, mo_undline, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_kline, "$Revision$")
 {
   mod_add_cmd(&kline_msgtab);
   mod_add_cmd(&unkline_msgtab);
@@ -88,19 +86,15 @@ _modinit(void)
   add_capability("UNKLN", CAP_UNKLN, 1);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&kline_msgtab);
-  mod_del_cmd(&unkline_msgtab);
-  mod_del_cmd(&dline_msgtab);
-  mod_del_cmd(&undline_msgtab);
   delete_capability("UNKLN");
   delete_capability("KLN");
+  mod_del_cmd(&undline_msgtab);
+  mod_del_cmd(&dline_msgtab);
+  mod_del_cmd(&unkline_msgtab);
+  mod_del_cmd(&kline_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* Local function prototypes */
 static int already_placed_kline(struct Client *, const char *, const char *, int);

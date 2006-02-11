@@ -49,21 +49,15 @@ struct Message kill_msgtab = {
   { m_unregistered, m_not_oper, ms_kill, m_ignore, mo_kill, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_kill, "$Revision$")
 {
   mod_add_cmd(&kill_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&kill_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* mo_kill()
  *  parv[0] = sender prefix

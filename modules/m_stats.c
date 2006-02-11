@@ -54,8 +54,6 @@ struct Message stats_msgtab = {
   { m_unregistered, m_stats, ms_stats, m_ignore, mo_stats, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-const char *_version = "$Revision$";
 static struct Callback *stats_cb;
 
 static void *
@@ -69,20 +67,17 @@ va_stats(va_list args)
   return NULL;
 }
 
-void
-_modinit(void)
+INIT_MODULE(m_stats, "$Revision$")
 {
   stats_cb = register_callback("doing_stats", va_stats);
   mod_add_cmd(&stats_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&stats_msgtab);
   uninstall_hook(stats_cb, va_stats);
 }
-#endif
 
 static char *parse_stats_args(int, char **, int *, int *);
 static void stats_L(struct Client *, char *, int, int, char);

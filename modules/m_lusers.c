@@ -43,21 +43,15 @@ struct Message lusers_msgtab = {
   {m_unregistered, m_lusers, ms_lusers, m_ignore, ms_lusers, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_lusers, "$Revision$")
 {
   mod_add_cmd(&lusers_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&lusers_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* m_lusers - LUSERS message handler
  * parv[0] = sender

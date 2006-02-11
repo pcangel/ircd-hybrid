@@ -38,23 +38,17 @@ struct Message encap_msgtab = {
   { m_ignore, m_ignore, ms_encap, m_ignore, m_ignore, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_encap, "$Revision$")
 {
   mod_add_cmd(&encap_msgtab);
   add_capability("ENCAP", CAP_ENCAP, 1);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&encap_msgtab);
   delete_capability("ENCAP");
+  mod_del_cmd(&encap_msgtab);
 }
-const char *_version = "$Revision$";
-#endif
-
 
 /*! \brief ENCAP command handler (called for servers only)
  *

@@ -34,7 +34,6 @@
 #include "modules.h"
 #include "s_conf.h"
 
-
 static void m_userhost(struct Client *, struct Client *, int, char *[]);
 
 struct Message userhost_msgtab = {
@@ -42,21 +41,15 @@ struct Message userhost_msgtab = {
   { m_unregistered, m_userhost, m_userhost, m_ignore, m_userhost, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_userhost, "$Revision$")
 {
   mod_add_cmd(&userhost_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&userhost_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
  * m_userhost added by Darren Reed 13/8/91 to aid clients and reduce

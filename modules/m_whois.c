@@ -51,8 +51,6 @@ struct Message whois_msgtab = {
   { m_unregistered, m_whois, mo_whois, m_ignore, mo_whois, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-const char *_version = "$Revision$";
 static struct Callback *whois_cb;
 
 static void *
@@ -66,20 +64,17 @@ va_whois(va_list args)
   return NULL;
 }
 
-void
-_modinit(void)
+INIT_MODULE(m_whois, "$Revision$")
 {
   whois_cb = register_callback("doing_whois", va_whois);
   mod_add_cmd(&whois_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&whois_msgtab);
   uninstall_hook(whois_cb, va_whois);
 }
-#endif
 
 /*
 ** m_whois
