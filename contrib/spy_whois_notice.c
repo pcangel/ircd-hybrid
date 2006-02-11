@@ -22,7 +22,6 @@
  *  $Id$
  */
 #include "stdinc.h"
-#ifndef STATIC_MODULES
 #include "modules.h"
 #include "hash.h"
 #include "client.h"
@@ -34,21 +33,17 @@ static dlink_node *prev_hook;
 
 static void *show_notice(va_list);
 
-void
-_modinit(void)
+INIT_MODULE(spy_whois_notice, "$Revision$")
 {
   if ((whois_cb = find_callback("doing_whois")))
     prev_hook = install_hook(whois_cb, show_notice);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   if (whois_cb)
     uninstall_hook(whois_cb, show_notice);
 }
-
-const char *_version = "$Revision$";
 
 /* show_notice
  *
@@ -77,4 +72,3 @@ show_notice(va_list args)
 
   return pass_callback(prev_hook, source_p, parc, parv);
 }
-#endif

@@ -45,8 +45,6 @@ struct Message ltrace_msgtab = {
   {m_unregistered, m_ltrace, mo_ltrace, m_ignore, mo_ltrace, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-const char *_version = "$Revision$";
 static struct Callback *ltrace_cb;
 
 static void *
@@ -60,20 +58,17 @@ va_ltrace(va_list args)
   return NULL;
 }
 
-void
-_modinit(void)
+INIT_MODULE(m_ltrace, "$Revision$")
 {
   ltrace_cb = register_callback("doing_ltrace", va_ltrace);
   mod_add_cmd(&ltrace_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&ltrace_msgtab);
   uninstall_hook(ltrace_cb, va_ltrace);
 }
-#endif
 
 static int report_this_status(struct Client *source_p, struct Client *target_p,int dow,
                               int link_u_p, int link_u_s);

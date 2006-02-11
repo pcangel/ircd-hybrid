@@ -121,20 +121,15 @@ static const struct operspy_s {
   { NULL, NULL }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_operspy, "$Revision$")
 {
   mod_add_cmd(&operspy_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&operspy_msgtab);
 }
-const char *_version = "$Revision$";
-#endif
 
 #ifdef OPERSPY_LOG
 static void operspy_log(struct Client *, const char *, const char *);

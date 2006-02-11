@@ -68,12 +68,10 @@ static int vhost_ipv6_err;
 static dlink_node *prev_enter_umode;
 static dlink_node *prev_umode;
 
-const char *_version = "$Revision: 33 $";
-
 static void *reset_ipv6err_flag(va_list);
 static void *h_set_user_mode(va_list);
 
-void _modinit(void)
+INIT_MODULE(ip_cloaking, "$Revision: 33 $")
 {
   if (!user_modes['h'])
   {
@@ -109,7 +107,7 @@ void _modinit(void)
   prev_umode = install_hook(umode_cb, h_set_user_mode);
 }
 
-void _moddeinit(void)
+CLEANUP_MODULE
 {
   if (umode_vhost)
   {

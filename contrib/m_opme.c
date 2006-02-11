@@ -38,6 +38,9 @@
 #include "modules.h"
 #include "common.h"
 
+// Change to #define to allow /OPME use on any channel, even if it's not opless
+#undef NO_OPLESS_CHECK
+
 static void mo_opme(struct Client *, struct Client *, int, char *[]);
 
 struct Message opme_msgtab = {
@@ -45,32 +48,28 @@ struct Message opme_msgtab = {
   { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_opme, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_opme, "$Revision$")
 {
   mod_add_cmd(&opme_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&opme_msgtab);
 }
 
-const char *_version = "$Revision$";
-#endif
-
 static int
 chan_is_opless(const struct Channel *const chptr)
 {
+#ifndef NO_OPLESS_CHECK
   const dlink_node *ptr = NULL;
 
   DLINK_FOREACH(ptr, chptr->members.head)
     if (((struct Membership *)ptr->data)->flags & CHFL_CHANOP)
-      return(0);
+      return 0;
+#endif
 
-  return(1);
+  return 1;
 }
 
 /*

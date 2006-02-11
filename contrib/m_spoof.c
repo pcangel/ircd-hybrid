@@ -107,23 +107,17 @@ struct Message delspoof_msgtab = {
 #endif
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_spoof, "$Revision$")
 {
   mod_add_cmd(&spoof_msgtab);
   mod_add_cmd(&delspoof_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&delspoof_msgtab);
   mod_del_cmd(&spoof_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 #ifdef SPOOF_FILE
 static void

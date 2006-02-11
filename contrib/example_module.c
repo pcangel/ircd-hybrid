@@ -110,27 +110,19 @@ struct Message test_msgtab = {
 };
 /* That's the msgtab finished */
 
-#ifndef STATIC_MODULES
 /* Here we tell it what to do when the module is loaded */
-void
-_modinit(void)
+INIT_MODULE(example_module, "$Revision: 33 $")
 {
   /* This will add the commands in test_msgtab (which is above) */
   mod_add_cmd(&test_msgtab);
 }
 
 /* here we tell it what to do when the module is unloaded */
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   /* This will remove the commands in test_msgtab (which is above) */
   mod_del_cmd(&test_msgtab);
 }
-
-/* When we last modified the file (shown in /modlist), this is usually:
- */
-const char *_version = "$Revision: 33 $";
-#endif
 
 /*
  * mr_test

@@ -45,8 +45,6 @@ struct Message ctrace_msgtab = {
   {m_unregistered, m_not_oper, m_ignore, m_ignore, mo_ctrace, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-const char *_version = "$Revision$";
 static struct Callback *ctrace_cb;
 
 static void *
@@ -60,20 +58,17 @@ va_ctrace(va_list args)
   return NULL;
 }
 
-void
-_modinit(void)
+INIT_MODULE(m_ctrace, "$Revision$")
 {
   ctrace_cb = register_callback("doing_ctrace", va_ctrace);
   mod_add_cmd(&ctrace_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&ctrace_msgtab);
   uninstall_hook(ctrace_cb, va_ctrace);
 }
-#endif
 
 static int report_this_status(struct Client *, struct Client *);
 

@@ -38,7 +38,6 @@
 #include "parse.h"
 #include "modules.h"
 
-
 static void mo_classlist(struct Client *, struct Client *, int, char *[]);
 
 struct Message classlist_msgtab = {
@@ -46,21 +45,15 @@ struct Message classlist_msgtab = {
   {m_unregistered, m_not_oper, m_ignore, m_ignore, mo_classlist, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_classlist, "$Revision$")
 {
   mod_add_cmd(&classlist_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&classlist_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* mo_classlist()
  *

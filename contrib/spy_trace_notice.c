@@ -23,7 +23,6 @@
  */
 
 #include "stdinc.h"
-#ifndef STATIC_MODULES
 #include "modules.h"
 #include "client.h"
 #include "ircd.h"
@@ -39,8 +38,7 @@ static void *show_ltrace(va_list);
 static void *show_ctrace(va_list);
 static void *show_etrace(va_list);
 
-void
-_modinit(void)
+INIT_MODULE(spy_trace_notice, "$Revision$")
 {
   if ((trace_cb = find_callback("doing_trace")))
     prev_trace = install_hook(trace_cb, show_trace);
@@ -55,8 +53,7 @@ _modinit(void)
     prev_etrace = install_hook(etrace_cb, show_etrace);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   if (trace_cb)
     uninstall_hook(trace_cb, show_trace);
@@ -66,9 +63,10 @@ _moddeinit(void)
 
   if (ctrace_cb)
     uninstall_hook(ctrace_cb, show_ctrace);
-}
 
-const char *_version = "$Revision$";
+  if (etrace_cb)
+    uninstall_hook(etrace_cb, show_etrace);
+}
 
 static void *
 show_trace(va_list args)
@@ -133,4 +131,3 @@ show_etrace(va_list args)
 
   return pass_callback(prev_etrace, source_p, parc, parv);
 }
-#endif

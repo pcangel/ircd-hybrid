@@ -43,21 +43,15 @@ struct Message ojoin_msgtab = {
   { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_ojoin, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_ojoin, "$Revision$")
 {
   mod_add_cmd(&ojoin_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&ojoin_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* mo_ojoin()
  *      parv[0] = sender prefix

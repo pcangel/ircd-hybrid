@@ -57,23 +57,17 @@ struct Message forcepart_msgtab = {
   { m_ignore, m_not_oper, mo_forcepart, mo_forcepart, mo_forcepart, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_force, "$Revision$")
 {
   mod_add_cmd(&forcejoin_msgtab);
   mod_add_cmd(&forcepart_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&forcejoin_msgtab);
   mod_del_cmd(&forcepart_msgtab);
+  mod_del_cmd(&forcejoin_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* m_forcejoin()
  *  parv[0] = sender prefix

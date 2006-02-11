@@ -53,23 +53,17 @@ struct Message uncapture_msgtab = {
   { m_unregistered, m_ignore, mo_uncapture, mo_uncapture, mo_uncapture, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_capture, "$Revision$")
 {
   mod_add_cmd(&capture_msgtab);
   mod_add_cmd(&uncapture_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
-  mod_del_cmd(&capture_msgtab);
   mod_del_cmd(&uncapture_msgtab);
+  mod_del_cmd(&capture_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* mo_capture
  *      parv[0] = sender prefix

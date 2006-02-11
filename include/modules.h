@@ -42,7 +42,7 @@ struct module
 {
   char *name;
   const char *version;
-  int (* modinit) (void);
+  void (* modinit) (void);
   void (* modremove) (void);
   void *handle;
   void *address;
@@ -51,13 +51,13 @@ struct module
 };
 
 #define INIT_MODULE(NAME, REV) \
-  static int _modinit(void); \
+  static void _modinit(void); \
   static void _moddeinit(void); \
-  struct Module NAME ## _module = {NAME, REV, _modinit, _moddeinit}; \
-  static int _modinit(void)
+  struct module NAME ## _module = {#NAME, REV, _modinit, _moddeinit}; \
+  static void _modinit(void)
 
 #define CLEANUP_MODULE \
-  static void _modcleanup(void)
+  static void _moddeinit(void)
 
 struct module_path
 {

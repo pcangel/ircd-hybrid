@@ -56,21 +56,15 @@ struct Message flags_msgtab = {
   {m_unregistered, m_flags, m_ignore, m_ignore, mo_flags, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_flags, "$Revision$")
 {
   mod_add_cmd(&flags_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&flags_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* FLAGS requires it's own mini parser, since the last parameter in it can
  * contain a number of FLAGS.  CS handles FLAGS mode1 mode2 OR

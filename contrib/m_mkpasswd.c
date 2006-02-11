@@ -30,21 +30,15 @@ struct Message mkpasswd_msgtab = {
   { m_unregistered, m_mkpasswd, m_ignore, m_ignore, mo_mkpasswd, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_mkpasswd, "$Revision$")
 {
   mod_add_cmd(&mkpasswd_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&mkpasswd_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 static void
 m_mkpasswd(struct Client *client_p, struct Client *source_p,

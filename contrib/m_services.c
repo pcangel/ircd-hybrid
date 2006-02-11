@@ -175,9 +175,7 @@ struct Message os_msgtab = {
   {m_unregistered, m_operserv, m_ignore, m_ignore, m_operserv, m_ignore}
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_services, "$Revision$")
 {
   mod_add_cmd(&svsnick_msgtab);
   mod_add_cmd(&botserv_msgtab);
@@ -197,8 +195,7 @@ _modinit(void)
   mod_add_cmd(&os_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&svsnick_msgtab);
   mod_del_cmd(&botserv_msgtab);
@@ -217,9 +214,6 @@ _moddeinit(void)
   mod_del_cmd(&ms_msgtab);
   mod_del_cmd(&os_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /*
  * mo_svsnick()

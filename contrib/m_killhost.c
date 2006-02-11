@@ -49,21 +49,15 @@ struct Message killhost_msgtab = {
   { m_unregistered, m_ignore, m_ignore, m_ignore, mo_killhost, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_killhost, "$Revision$")
 {
   mod_add_cmd(&killhost_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&killhost_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 /* mo_killhost()
  * Created May 5, 2003

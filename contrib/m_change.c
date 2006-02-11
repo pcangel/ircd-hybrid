@@ -57,25 +57,19 @@ struct Message chgname_msgtab = {
   { m_unregistered, m_not_oper, mo_chgname, mo_chgname, mo_chgname, m_ignore }
 };
 
-#ifndef STATIC_MODULES
-void
-_modinit(void)
+INIT_MODULE(m_change, "$Revision$")
 {
   mod_add_cmd(&chgident_msgtab);
   mod_add_cmd(&chghost_msgtab);
   mod_add_cmd(&chgname_msgtab);
 }
 
-void
-_moddeinit(void)
+CLEANUP_MODULE
 {
   mod_del_cmd(&chgname_msgtab);
   mod_del_cmd(&chghost_msgtab);
   mod_del_cmd(&chgident_msgtab);
 }
-
-const char *_version = "$Revision$";
-#endif
 
 static void
 mo_chgident(struct Client *client_p, struct Client *source_p,
