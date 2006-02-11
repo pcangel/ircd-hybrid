@@ -95,11 +95,11 @@ lookup_fd(int fd)
   while (F)
   {
     if (F->fd == fd)
-      return (F);
+      return F;
     F = F->hnext;
   }
 
-  return (NULL);
+  return NULL;
 }
 
 /* Called to open a given filedescriptor */
@@ -111,8 +111,10 @@ fd_open(fde_t *F, int fd, int is_socket, const char *desc)
 
   F->fd = fd;
   F->comm_index = -1;
+
   if (desc)
     strlcpy(F->desc, desc, sizeof(F->desc));
+
   /* Note: normally we'd have to clear the other flags,
    * but currently F is always cleared before calling us.. */
   F->flags.open = 1;
@@ -120,7 +122,7 @@ fd_open(fde_t *F, int fd, int is_socket, const char *desc)
   F->hnext = fd_hash[hashv];
   fd_hash[hashv] = F;
 
-  number_fd++;
+  ++number_fd;
 }
 
 /* Called to close a given filedescriptor */
@@ -166,10 +168,10 @@ fd_close(fde_t *F)
 #else
   close(F->fd);
 #endif
-  number_fd--;
-#ifdef INVARIANTS
-  memset(F, '\0', sizeof(fde_t));
-#endif
+  --number_fd;
+
+  /* Wouldn't be "F->flags.open = 0" enough? */
+  memset(F, 0, sizeof(fde_t));
 }
 
 /*
@@ -205,6 +207,7 @@ close_standard_fds(void)
   for (i = 0; i < LOWEST_SAFE_FD; i++)
   {
     close(i);
+
     if (open(PATH_DEVNULL, O_RDWR) < 0)
       exit(-1); /* we're hosed if we can't even open /dev/null */
   }
