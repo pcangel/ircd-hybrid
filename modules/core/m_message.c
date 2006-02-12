@@ -463,13 +463,11 @@ msg_channel(int p_or_n, const char *command, struct Client *client_p,
   execute_callback(channel_message, source_p, chptr, text);
 
   /* chanops and voiced can flood their own channel with impunity */
-  if ((result = can_send(chptr, source_p)))
+  if ((result = can_send(chptr, source_p, NULL)))
   {
     if (result == CAN_SEND_OPV ||
         !flood_attack_channel(p_or_n, source_p, chptr, chptr->chname))
-    {
       sendto_channel_butone(client_p, source_p, chptr, command, ":%s", text);
-    }
   }
   else
   {
