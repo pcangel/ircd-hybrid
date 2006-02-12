@@ -100,7 +100,7 @@ mr_nick(struct Client *client_p, struct Client *source_p,
   char nick[NICKLEN];
   char *s;
 
-  if (parc < 2 || EmptyString(parv[1]))
+  if (EmptyString(parv[1]))
   {
     sendto_one(source_p, form_str(ERR_NONICKNAMEGIVEN),
                me.name, EmptyString(parv[0]) ? "*" : parv[0]);
@@ -132,15 +132,9 @@ mr_nick(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if ((target_p = find_client(nick)) == NULL)
+  if ((target_p = find_client(nick)) == NULL || source_p == target_p)
   {
     set_initial_nick(client_p, source_p, nick);
-    return;
-  }
-
-  if (source_p == target_p)
-  {
-    strlcpy(source_p->name, nick, sizeof(source_p->name));
     return;
   }
 

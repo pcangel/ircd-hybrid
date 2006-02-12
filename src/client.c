@@ -1402,13 +1402,10 @@ del_all_accepts(struct Client *client_p)
  * client. 
  */
 void
-set_initial_nick(struct Client *client_p, struct Client *source_p,
-                 const char *nick)
+set_initial_nick(struct Client *source_p, const char *nick)
 {
   char buf[USERLEN + 1];
 
-  /* Client setting NICK the first time */
-  
   /* This had to be copied here to avoid problems.. */
   source_p->tsinfo = CurrentTime;
 
@@ -1433,7 +1430,7 @@ set_initial_nick(struct Client *client_p, struct Client *source_p,
      * may reject the client and call exit_client for it
      * --must test this and exit m_nick too!!!
      */
-    register_local_user(client_p, source_p, nick, buf);
+    register_local_user(source_p, source_p, nick, buf);
   }
 }
 
