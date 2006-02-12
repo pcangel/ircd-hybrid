@@ -705,7 +705,7 @@ find_channel_link(struct Client *client_p, struct Channel *chptr)
  *         CAN_SEND_NO if they cannot send to channel\n
  */
 int
-can_send(struct Channel *chptr, struct Client *source_p, struct Membersip *ms)
+can_send(struct Channel *chptr, struct Client *source_p, struct Membership *ms)
 {
   if (IsServer(source_p))
     return CAN_SEND_OPV;

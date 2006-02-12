@@ -134,7 +134,7 @@ mr_nick(struct Client *client_p, struct Client *source_p,
 
   if ((target_p = find_client(nick)) == NULL || source_p == target_p)
   {
-    set_initial_nick(client_p, source_p, nick);
+    set_initial_nick(source_p, nick);
     return;
   }
 

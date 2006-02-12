@@ -1416,7 +1416,7 @@ set_initial_nick(struct Client *source_p, const char *nick)
   hash_add_client(source_p);
 
   /* fd_desc is long enough */
-  fd_note(&client_p->localClient->fd, "Nick: %s", nick);
+  fd_note(&source_p->localClient->fd, "Nick: %s", nick);
 
   if (source_p->flags & FLAGS_GOTUSER)
   {
