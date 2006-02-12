@@ -634,12 +634,15 @@ find_bmask(const struct Client *who, const dlink_list *const list)
  * \return 0 if not banned, 1 otherwise
  */
 int
-is_banned(struct Channel *chptr, struct Client *who)
+is_banned(const struct Channel *chptr, const struct Client *who)
 {
   assert(IsClient(who));
 
-  return find_bmask(who, &chptr->banlist) && (!ConfigChannel.use_except ||
-         !find_bmask(who, &chptr->exceptlist));
+  if (find_bmask(who, &chptr->banlist))
+    if (!ConfigChannel.use_except || !find_bmask(who, &chptr->exceptlist))
+      return 1;
+
+  return 0;
 }
 
 /*!
@@ -652,9 +655,8 @@ is_banned(struct Channel *chptr, struct Client *who)
 int
 can_join(struct Client *source_p, struct Channel *chptr, const char *key)
 {
-  if (find_bmask(source_p, &chptr->banlist))
-    if (!ConfigChannel.use_except || !find_bmask(source_p, &chptr->exceptlist))
-      return ERR_BANNEDFROMCHAN;
+  if (is_banned(chptr, source_p))
+   return ERR_BANNEDFROMCHAN;
 
   if (chptr->mode.mode & MODE_INVITEONLY)
     if (!dlinkFind(&source_p->localClient->invited, chptr))
@@ -874,9 +876,7 @@ static void
 allocate_topic(struct Channel *chptr)
 {
   void *ptr = NULL;
-
-  if (chptr == NULL)
-    return;
+  assert(chptr);
 
   ptr = BlockHeapAlloc(topic_heap);  
 
