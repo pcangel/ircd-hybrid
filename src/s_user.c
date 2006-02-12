@@ -270,8 +270,7 @@ show_isupport(struct Client *source_p)
 **         nick from local user or kill him/her...
 */
 void
-register_local_user(struct Client *client_p, struct Client *source_p, 
-                    const char *nick, const char *username)
+register_local_user(struct Client *source_p, const char *username)
 {
   struct AccessItem *aconf = NULL;
   char ipaddr[HOSTIPLEN];
@@ -379,7 +378,7 @@ register_local_user(struct Client *client_p, struct Client *source_p,
   {
     sendto_realops_flags(UMODE_FULL, L_ALL,
                          "Too many clients, rejecting %s[%s].",
-                         nick, source_p->host);
+                         source_p->name, source_p->host);
     ServerStats->is_ref++;
     exit_client(source_p, &me, "Sorry, server is full - try later");
     return;
@@ -391,20 +390,18 @@ register_local_user(struct Client *client_p, struct Client *source_p,
     char tmpstr2[IRCD_BUFSIZE];
 
     sendto_realops_flags(UMODE_REJ, L_ALL, "Invalid username: %s (%s@%s)",
-                         nick, source_p->username, source_p->host);
+                         source_p->name, source_p->username, source_p->host);
     ServerStats->is_ref++;
     ircsprintf(tmpstr2, "Invalid username [%s]", source_p->username);
     exit_client(source_p, &me, tmpstr2);
     return;
   }
 
-  assert(source_p == client_p);
-
   /* end of valid user name check */
   if (check_xline(source_p) || check_regexp_xline(source_p))
     return;
 
-  if (IsDead(client_p))
+  if (IsDead(source_p))
     return;
 
   if (source_p->id[0] == '\0' && me.id[0])
@@ -423,7 +420,7 @@ register_local_user(struct Client *client_p, struct Client *source_p,
 
   sendto_realops_flags(UMODE_CCONN, L_ALL,
                        "Client connecting: %s (%s@%s) [%s] {%s} [%s]",
-                       nick, source_p->username, source_p->host,
+                       source_p->name, source_p->username, source_p->host,
                        ConfigFileEntry.hide_spoof_ips && IsIPSpoof(source_p) ?
                        "255.255.255.255" : ipaddr, get_client_className(source_p),
                        source_p->info);
@@ -455,7 +452,7 @@ register_local_user(struct Client *client_p, struct Client *source_p,
   /* Increment our total user count here */
   if (++Count.total > Count.max_tot)
     Count.max_tot = Count.total;
-  Count.totalrestartcount++;
+  ++Count.totalrestartcount;
 
   source_p->localClient->allow_read = MAX_FLOOD_BURST;
 
@@ -470,7 +467,7 @@ register_local_user(struct Client *client_p, struct Client *source_p,
   add_user_host(source_p->username, source_p->host, 0);
   SetUserHost(source_p);
 
-  introduce_client(client_p, source_p);
+  introduce_client(source_p, source_p);
 }
 
 /* register_remote_user()

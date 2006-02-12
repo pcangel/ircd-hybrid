@@ -64,7 +64,9 @@ static void
 mr_user(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
 {
-  char *p;
+  char *p = NULL;
+
+  assert(source_p == client_p);
 
   if ((p = strchr(parv[1],'@')) != NULL)
     *p = '\0'; 
@@ -104,6 +106,6 @@ mr_user(struct Client *client_p, struct Client *source_p,
   if (source_p->name[0] != '\0')
   {
     /* NICK already received, now I have USER... */
-    register_local_user(client_p, source_p, source_p->name, parv[1]);
+    register_local_user(source_p, parv[1]);
   }
 }

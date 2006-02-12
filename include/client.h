@@ -542,7 +542,7 @@ EXTERN int accept_message(struct Client *, struct Client *);
 EXTERN struct Accept *find_accept(const char *, const char *,
                                   const char *, struct Client *, int);
 EXTERN void del_accept(struct Accept *, struct Client *);
-EXTERN void set_initial_nick(struct Client *, struct Client *, const char *);
+EXTERN void set_initial_nick(struct Client *, const char *);
 EXTERN void exit_client(struct Client *, struct Client *, const char *);
 EXTERN void check_conf_klines(void);
 EXTERN void change_local_nick(struct Client *, struct Client *, const char *);

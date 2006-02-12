@@ -1430,7 +1430,7 @@ set_initial_nick(struct Client *source_p, const char *nick)
      * may reject the client and call exit_client for it
      * --must test this and exit m_nick too!!!
      */
-    register_local_user(source_p, source_p, nick, buf);
+    register_local_user(source_p, buf);
   }
 }
 
