@@ -795,16 +795,7 @@ res_readreply(fde_t *fd, void *data)
 
   if ((header->rcode != NO_ERRORS) || (header->ancount == 0))
   {
-    if ((SERVFAIL == header->rcode) || (NXDOMAIN == header->rcode))
-    {
-      /*
-       * If a bad error was returned, we stop here and dont send
-       * send any more (no retries granted).
-       */
-      (*request->query->callback)(request->query->ptr, NULL);
-      rem_request(request);
-    } 
-    else
+    if (NXDOMAIN == header->rcode)
     {
       /* 
        * If we havent already tried this, and we're looking up AAAA, try A
@@ -825,9 +816,22 @@ res_readreply(fde_t *fd, void *data)
 	request->retries--;
         resend_query(request);
       }
+      else
 #endif
+      {
+	(*request->query->callback)(request->query->ptr, NULL);
+	rem_request(request);
+      }
     }
-
+    else
+    {
+      /*
+       * If a bad error was returned, we stop here and dont send
+       * send any more (no retries granted).
+       */
+      (*request->query->callback)(request->query->ptr, NULL);
+      rem_request(request);
+    } 
     return;
   }
   /*
