@@ -446,8 +446,8 @@ static void
 init_ssl(void)
 {
 #ifdef HAVE_LIBCRYPTO
+  SSL_library_init();
   SSL_load_error_strings();
-  SSLeay_add_ssl_algorithms();
 
   ServerInfo.ctx = SSL_CTX_new(SSLv23_server_method());
 
