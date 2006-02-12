@@ -114,11 +114,7 @@ m_motd(struct Client *client_p, struct Client *source_p,
       return;
   }
 
-#ifdef STATIC_MODULES
-  send_message_file(source_p, &ConfigFileEntry.motd);
-#else
   execute_callback(motd_cb, source_p, parc, parv);
-#endif
 }
 
 /*
@@ -136,9 +132,5 @@ mo_motd(struct Client *client_p, struct Client *source_p,
   if (hunt_server(client_p, source_p, ":%s MOTD :%s",1,parc,parv)!=HUNTED_ISME)
     return;
 
-#ifdef STATIC_MODULES
-  send_message_file(source_p, &ConfigFileEntry.motd);
-#else
   execute_callback(motd_cb, source_p, parc, parv);
-#endif
 }

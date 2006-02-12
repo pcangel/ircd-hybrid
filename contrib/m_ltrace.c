@@ -36,7 +36,7 @@
 #include "parse.h"
 #include "modules.h"
 
-static void do_ltrace(struct Client *, int, char **);
+static void *do_ltrace(va_list);
 static void m_ltrace(struct Client *, struct Client *, int, char **);
 static void mo_ltrace(struct Client *, struct Client *, int, char **);
 
@@ -47,27 +47,16 @@ struct Message ltrace_msgtab = {
 
 static struct Callback *ltrace_cb;
 
-static void *
-va_ltrace(va_list args)
-{
-  struct Client *source_p = va_arg(args, struct Client *);
-  int parc = va_arg(args, int);
-  char **parv = va_arg(args, char **);
-
-  do_ltrace(source_p, parc, parv);
-  return NULL;
-}
-
 INIT_MODULE(m_ltrace, "$Revision$")
 {
-  ltrace_cb = register_callback("doing_ltrace", va_ltrace);
+  ltrace_cb = register_callback("doing_ltrace", do_ltrace);
   mod_add_cmd(&ltrace_msgtab);
 }
 
 CLEANUP_MODULE
 {
   mod_del_cmd(&ltrace_msgtab);
-  uninstall_hook(ltrace_cb, va_ltrace);
+  uninstall_hook(ltrace_cb, do_ltrace);
 }
 
 static int report_this_status(struct Client *source_p, struct Client *target_p,int dow,
@@ -96,9 +85,12 @@ m_ltrace(struct Client *client_p, struct Client *source_p,
 /*
  * do_ltrace
  */
-static void
-do_ltrace(struct Client *source_p, int parc, char **parv)
+static void *
+do_ltrace(va_list args)
 {
+  struct Client *source_p = va_arg(args, struct Client *);
+  int   parc = va_arg(args, int);
+  char **parv = va_arg(args, char **);
   struct Client *target_p = NULL;
   int   doall;
   int   wilds, dow;
@@ -129,12 +121,12 @@ do_ltrace(struct Client *source_p, int parc, char **parv)
       else
         sendto_one(source_p, form_str(RPL_TRACELINK), me.name, looking_for,
                    ircd_version, tname, "ac2ptr_is_NULL!!");
-      return;
+      return NULL;
     }
     case HUNTED_ISME:
       break;
     default:
-      return;
+      return NULL;
   }
 
   doall = (parv[1] && (parc > 1)) ? match(tname, me.name): TRUE;
@@ -178,7 +170,7 @@ do_ltrace(struct Client *source_p, int parc, char **parv)
 
     sendto_one(source_p, form_str(RPL_ENDOFTRACE),
                me.name, source_p->name, tname);
-    return;
+    return NULL;
   }
 
   /* report all opers */
@@ -213,6 +205,7 @@ do_ltrace(struct Client *source_p, int parc, char **parv)
   }
 
   sendto_one(source_p, form_str(RPL_ENDOFTRACE), me.name, parv[0], tname);
+  return NULL;
 }
 
 /*
@@ -235,11 +228,7 @@ mo_ltrace(struct Client *client_p, struct Client *source_p,
     if (hunt_server(client_p, source_p, ":%s LTRACE %s :%s", 2, parc, parv))
       return;
 
-#ifdef STATIC_MODULES
-  do_ltrace(source_p, parc, parv);
-#else
   execute_callback(ltrace_cb, source_p, parc, parv);
-#endif
 }
 
 /*

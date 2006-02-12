@@ -39,7 +39,7 @@
 static void m_trace(struct Client *, struct Client *, int, char **);
 static void ms_trace(struct Client*, struct Client*, int, char**);
 static void mo_trace(struct Client*, struct Client*, int, char**);
-static void do_actual_trace(struct Client *, int, char **);
+static void *do_actual_trace(va_list);
 
 struct Message trace_msgtab = {
   "TRACE", 0, 0, 0, 0, MFLG_SLOW, 0,
@@ -48,27 +48,16 @@ struct Message trace_msgtab = {
 
 static struct Callback *trace_cb;
 
-static void *
-va_actual_trace(va_list args)
-{
-  struct Client *source_p = va_arg(args, struct Client *);
-  int parc = va_arg(args, int);
-  char **parv = va_arg(args, char **);
-
-  do_actual_trace(source_p, parc, parv);
-  return NULL;
-}
-
 INIT_MODULE(m_trace, "$Revision$")
 {
-  trace_cb = register_callback("doing_trace", va_actual_trace);
+  trace_cb = register_callback("doing_trace", do_actual_trace);
   mod_add_cmd(&trace_msgtab);
 }
 
 CLEANUP_MODULE
 {
   mod_del_cmd(&trace_msgtab);
-  uninstall_hook(trace_cb, va_actual_trace);
+  uninstall_hook(trace_cb, do_actual_trace);
 }
 
 static int report_this_status(struct Client *source_p, struct Client *target_p,
@@ -94,7 +83,6 @@ m_trace(struct Client *client_p, struct Client *source_p,
   sendto_one(source_p, form_str(RPL_ENDOFTRACE),
              me.name, source_p->name, tname);
 }
-
 
 /* mo_trace()
  *      parv[0] = sender prefix
@@ -156,20 +144,19 @@ mo_trace(struct Client *client_p, struct Client *source_p,
       return;
     }
     case HUNTED_ISME:
-#ifdef STATIC_MODULES
-      do_actual_trace(source_p, parc, parv);
-#else
       execute_callback(trace_cb, source_p, parc, parv);
-#endif
       break;
     default:
       return;
   }
 }
 
-static void
-do_actual_trace(struct Client *source_p, int parc, char **parv)
+static void *
+do_actual_trace(va_list args)
 {
+  struct Client *source_p = va_arg(args, struct Client *);
+  int parc = va_arg(args, int);
+  char **parv = va_arg(args, char **);
   struct Client *target_p = NULL;
   struct ConfItem *conf;
   struct ClassItem *cltmp;
@@ -245,7 +232,7 @@ do_actual_trace(struct Client *source_p, int parc, char **parv)
       
     sendto_one(source_p, form_str(RPL_ENDOFTRACE),
                from, to, tname);
-    return;
+    return NULL;
   }
 
   /* report all direct connections */
@@ -301,8 +288,8 @@ do_actual_trace(struct Client *source_p, int parc, char **parv)
   }
 
   sendto_one(source_p, form_str(RPL_ENDOFTRACE), from, to, tname);
+  return NULL;
 }
-
 
 /*
 ** ms_trace

@@ -37,7 +37,7 @@
 static void m_admin(struct Client *, struct Client *, int, char *[]);
 static void mr_admin(struct Client *, struct Client *, int, char *[]);
 static void ms_admin(struct Client *, struct Client *, int, char *[]);
-static void do_admin(struct Client *);
+static void *do_admin(va_list);
 
 struct Message admin_msgtab = {
   "ADMIN", 0, 0, 0, 0, MFLG_SLOW | MFLG_UNREG, 0, 
@@ -46,23 +46,16 @@ struct Message admin_msgtab = {
 
 static struct Callback *admin_cb = NULL;
 
-static void *
-va_admin(va_list args)
-{
-  do_admin(va_arg(args, struct Client *));
-  return NULL;
-}
-
 INIT_MODULE(m_admin, "$Revision$")
 {
-  admin_cb = register_callback("doing_admin", va_admin);
+  admin_cb = register_callback("doing_admin", do_admin);
   mod_add_cmd(&admin_msgtab);
 }
 
 CLEANUP_MODULE
 {
   mod_del_cmd(&admin_msgtab);
-  uninstall_hook(admin_cb, va_admin);
+  uninstall_hook(admin_cb, do_admin);
 }
 
 /*! \brief ADMIN command handler (called for unregistered clients only)
@@ -93,11 +86,7 @@ mr_admin(struct Client *client_p, struct Client *source_p,
 
   last_used = CurrentTime;
 
-#ifdef STATIC_MODULES
-  do_admin(client_p);
-#else
   execute_callback(admin_cb, source_p, parc, parv);
-#endif
 }
 
 /*! \brief ADMIN command handler (called for local clients only)
@@ -134,11 +123,7 @@ m_admin(struct Client *client_p, struct Client *source_p,
                     parc, parv) != HUNTED_ISME)
       return;
 
-#ifdef STATIC_MODULES
-  do_admin(client_p);
-#else
   execute_callback(admin_cb, source_p, parc, parv);
-#endif
 }
 
 /*! \brief ADMIN command handler (called for remote clients and servers)
@@ -164,11 +149,7 @@ ms_admin(struct Client *client_p, struct Client *source_p,
     return;
 
   if (IsClient(source_p))
-#ifdef STATIC_MODULES
-    do_admin(source_p);
-#else
     execute_callback(admin_cb, source_p, parc, parv);
-#endif
 }
 
 /* do_admin()
@@ -177,9 +158,10 @@ ms_admin(struct Client *client_p, struct Client *source_p,
  * output	- none
  * side effects	- admin info is sent to client given
  */
-static void
-do_admin(struct Client *source_p)
+static void *
+do_admin(va_list args)
 {
+  struct Client *source_p = va_arg(args, struct Client *);
   const char *me_name;
   const char *nick;
 
@@ -197,4 +179,6 @@ do_admin(struct Client *source_p)
   if (AdminInfo.email != NULL)
     sendto_one(source_p, form_str(RPL_ADMINEMAIL),
                me_name, nick, AdminInfo.email);
+
+  return NULL;
 }

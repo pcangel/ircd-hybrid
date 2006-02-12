@@ -23,14 +23,10 @@
  * These ones are necessary to build THIS module...
  */
 
-#include "stdinc.h" /* includes setup.h, for STATIC_MODULES */
-
-#include "client.h" /* Required for IsClient, etc. */
-
-#include "send.h" /* sendto_one, most useful function of all time */
-
-#include "modules.h" /* includes msg.h; use for the msgtab */
-
+#include "stdinc.h"
+#include "client.h"   /* Required for IsClient, etc. */
+#include "send.h"     /* sendto_one, most useful function of all time */
+#include "modules.h"  /* includes msg.h; use for the msgtab */
 #include "handlers.h" /* m_ignore */
 
 /* OTHER USEFUL INCLUDES:

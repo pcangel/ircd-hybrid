@@ -38,7 +38,7 @@
 #include "parse.h"
 #include "modules.h"
 
-static void do_whois(struct Client *, int, char **);
+static void *do_whois(va_list);
 static int single_whois(struct Client *, struct Client *);
 static void whois_person(struct Client *, struct Client *);
 static int global_whois(struct Client *, const char *);
@@ -53,27 +53,16 @@ struct Message whois_msgtab = {
 
 static struct Callback *whois_cb;
 
-static void *
-va_whois(va_list args)
-{
-  struct Client *source_p = va_arg(args, struct Client *);
-  int parc = va_arg(args, int);
-  char **parv = va_arg(args, char **);
-
-  do_whois(source_p, parc, parv);
-  return NULL;
-}
-
 INIT_MODULE(m_whois, "$Revision$")
 {
-  whois_cb = register_callback("doing_whois", va_whois);
+  whois_cb = register_callback("doing_whois", do_whois);
   mod_add_cmd(&whois_msgtab);
 }
 
 CLEANUP_MODULE
 {
   mod_del_cmd(&whois_msgtab);
-  uninstall_hook(whois_cb, va_whois);
+  uninstall_hook(whois_cb, do_whois);
 }
 
 /*
@@ -120,11 +109,7 @@ m_whois(struct Client *client_p, struct Client *source_p,
     parv[1] = parv[2];
   }
 
-#ifdef STATIC_MODULES
-  do_whois(source_p, parc, parv);
-#else
   execute_callback(whois_cb, source_p, parc, parv);
-#endif
 }
 
 /*
@@ -152,11 +137,7 @@ mo_whois(struct Client *client_p, struct Client *source_p,
     parv[1] = parv[2];
   }
 
-#ifdef STATIC_MODULES
-  do_whois(source_p, parc, parv);
-#else
   execute_callback(whois_cb, source_p, parc, parv);
-#endif
 }
 
 /* do_whois()
@@ -167,14 +148,19 @@ mo_whois(struct Client *client_p, struct Client *source_p,
  * output	- pointer to void
  * side effects - Does whois
  */
-static void
-do_whois(struct Client *source_p, int parc, char **parv)
+static void *
+do_whois(va_list args)
 {
+  struct Client *source_p = va_arg(args, struct Client *);
+  char **parv;
   static time_t last_used = 0;
   struct Client *target_p;
   char *nick;
   char *p = NULL;
   int found = 0;
+
+  va_arg(args, int);
+  parv = va_arg(args, char **);
 
   nick = parv[1];
   while (*nick == ',')
@@ -183,7 +169,7 @@ do_whois(struct Client *source_p, int parc, char **parv)
     *p = '\0';
 
   if (*nick == '\0')
-    return;
+    return NULL;
 
   collapse(nick);
 
@@ -203,7 +189,7 @@ do_whois(struct Client *source_p, int parc, char **parv)
       {
         sendto_one(source_p, form_str(RPL_LOAD2HI),
                    me.name, source_p->name);
-        return;
+        return NULL;
       }
 
       last_used = CurrentTime;
@@ -223,6 +209,7 @@ do_whois(struct Client *source_p, int parc, char **parv)
 
   sendto_one(source_p, form_str(RPL_ENDOFWHOIS),
              me.name, source_p->name, parv[1]);
+  return NULL;
 }
 
 /* global_whois()

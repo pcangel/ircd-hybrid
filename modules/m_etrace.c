@@ -38,7 +38,7 @@
 
 #define FORM_STR_RPL_ETRACE	":%s 709 %s %s %s %s %s %s :%s"
 
-static void do_etrace(struct Client *, int, char **);
+static void *do_etrace(va_list);
 static void mo_etrace(struct Client *, struct Client *, int, char *[]);
 
 struct Message etrace_msgtab = {
@@ -48,27 +48,16 @@ struct Message etrace_msgtab = {
 
 static struct Callback *etrace_cb;
 
-static void *
-va_etrace(va_list args)
-{
-  struct Client *source_p = va_arg(args, struct Client *);
-  int parc = va_arg(args, int);
-  char **parv = va_arg(args, char **);
-
-  do_etrace(source_p, parc, parv);
-  return NULL;
-}
-
 INIT_MODULE(m_etrace, "$Revision$")
 {
-  etrace_cb = register_callback("doing_etrace", va_etrace);
+  etrace_cb = register_callback("doing_etrace", do_etrace);
   mod_add_cmd(&etrace_msgtab);
 }
 
 CLEANUP_MODULE
 {
   mod_del_cmd(&etrace_msgtab);
-  uninstall_hook(etrace_cb, va_etrace);
+  uninstall_hook(etrace_cb, do_etrace);
 }
 
 static void report_this_status(struct Client *, struct Client *);
@@ -76,9 +65,12 @@ static void report_this_status(struct Client *, struct Client *);
 /*
  * do_etrace()
  */
-static void
-do_etrace(struct Client *source_p, int parc, char **parv)
+static void *
+do_etrace(va_list args)
 {
+  struct Client *source_p = va_arg(args, struct Client *);
+  int parc = va_arg(args, int);
+  char **parv = va_arg(args, char **);
   const char *tname = NULL;
   struct Client *target_p = NULL;
   int wilds = 0;
@@ -108,7 +100,7 @@ do_etrace(struct Client *source_p, int parc, char **parv)
       
     sendto_one(source_p, form_str(RPL_ENDOFTRACE), me.name, 
 	       source_p->name, tname);
-    return;
+    return NULL;
   }
 
   DLINK_FOREACH(ptr, local_client_list.head)
@@ -126,6 +118,7 @@ do_etrace(struct Client *source_p, int parc, char **parv)
 
   sendto_one(source_p, form_str(RPL_ENDOFTRACE), me.name,
 	     source_p->name, tname);
+  return NULL;
 }
 
 /* mo_etrace()
@@ -136,11 +129,7 @@ static void
 mo_etrace(struct Client *client_p, struct Client *source_p,
 	  int parc, char *parv[])
 {
-#ifdef STATIC_MODULES
-  do_etrace(source_p, parc, parv);
-#else
   execute_callback(etrace_cb, source_p, parc, parv);
-#endif
 }
 
 /* report_this_status()

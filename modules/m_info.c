@@ -40,7 +40,7 @@
 
 static void send_conf_options(struct Client *);
 static void send_birthdate_online_time(struct Client *);
-static void send_info_text(struct Client *);
+static void *send_info_text(va_list args);
 
 static void m_info(struct Client *, struct Client *, int, char *[]);
 static void ms_info(struct Client *, struct Client *, int, char *[]);
@@ -52,22 +52,15 @@ struct Message info_msgtab = {
 
 static struct Callback *info_cb = NULL;
 
-static void *
-va_send_info_text(va_list args)
-{
-  send_info_text(va_arg(args, struct Client *));
-  return NULL;
-}
-
 INIT_MODULE(m_info, "$Revision$")
 {
-  info_cb = register_callback("doing_info", va_send_info_text);
+  info_cb = register_callback("doing_info", send_info_text);
   mod_add_cmd(&info_msgtab);
 }
 
 CLEANUP_MODULE
 {
-  uninstall_hook(info_cb, va_send_info_text);
+  uninstall_hook(info_cb, send_info_text);
   mod_del_cmd(&info_msgtab);
 }
 
@@ -599,11 +592,7 @@ m_info(struct Client *client_p, struct Client *source_p,
                     1, parc, parv) != HUNTED_ISME)
       return;
 
-#ifdef STATIC_MODULES
-  send_info_text(source_p);
-#else
   execute_callback(info_cb, source_p, parc, parv);
-#endif
 }
 
 /*! \brief INFO command handler (called for remote clients and operators)
@@ -628,11 +617,7 @@ ms_info(struct Client *client_p, struct Client *source_p,
                   1, parc, parv) != HUNTED_ISME)
     return;
 
-#ifdef STATIC_MODULES
-  send_info_text(source_p);
-#else
   execute_callback(info_cb, source_p, parc, parv);
-#endif
 }
 
 /* send_info_text()
@@ -641,9 +626,10 @@ ms_info(struct Client *client_p, struct Client *source_p,
  * output	- NONE
  * side effects	- info text is sent to client
  */
-static void
-send_info_text(struct Client *source_p)
+static void *
+send_info_text(va_list args)
 {
+  struct Client *source_p = va_arg(args, struct Client *);
   const char **text = infotext;
   char *source, *target;
   
@@ -671,6 +657,7 @@ send_info_text(struct Client *source_p)
 
   sendto_one(source_p, form_str(RPL_ENDOFINFO),
              me.name, source_p->name);
+  return NULL;
 }
 
 /* send_birthdate_online_time()

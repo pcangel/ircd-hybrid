@@ -44,7 +44,7 @@
 #include "whowas.h"
 #include "watch.h"
 
-static void do_stats(struct Client *, int, char **);
+static void *do_stats(va_list args);
 static void m_stats(struct Client *, struct Client *, int, char *[]);
 static void mo_stats(struct Client *, struct Client *, int, char *[]);
 static void ms_stats(struct Client *, struct Client *, int, char *[]);
@@ -56,27 +56,16 @@ struct Message stats_msgtab = {
 
 static struct Callback *stats_cb;
 
-static void *
-va_stats(va_list args)
-{
-  struct Client *source_p = va_arg(args, struct Client *);
-  int parc = va_arg(args, int);
-  char **parv = va_arg(args, char **);
-
-  do_stats(source_p, parc, parv);
-  return NULL;
-}
-
 INIT_MODULE(m_stats, "$Revision$")
 {
-  stats_cb = register_callback("doing_stats", va_stats);
+  stats_cb = register_callback("doing_stats", do_stats);
   mod_add_cmd(&stats_msgtab);
 }
 
 CLEANUP_MODULE
 {
   mod_del_cmd(&stats_msgtab);
-  uninstall_hook(stats_cb, va_stats);
+  uninstall_hook(stats_cb, do_stats);
 }
 
 static char *parse_stats_args(int, char **, int *, int *);
@@ -174,9 +163,12 @@ static const struct StatsStruct
 
 const char *from, *to;
 
-static void
-do_stats(struct Client *source_p, int parc, char **parv)
+static void *
+do_stats(va_list args)
 {
+  struct Client *source_p = va_arg(args, struct Client *);
+  int parc = va_arg(args, int);
+  char **parv = va_arg(args, char **);
   char statchar = *parv[1];
   int i;
 
@@ -184,7 +176,7 @@ do_stats(struct Client *source_p, int parc, char **parv)
   {
     sendto_one(source_p, form_str(RPL_ENDOFSTATS),
                from, to, '*');
-    return;
+    return NULL;
   }
 
   for (i = 0; stats_cmd_table[i].handler; i++)
@@ -212,6 +204,7 @@ do_stats(struct Client *source_p, int parc, char **parv)
 
   sendto_one(source_p, form_str(RPL_ENDOFSTATS),
              from, to, statchar);
+  return NULL;
 }
 
 /*
@@ -256,11 +249,7 @@ m_stats(struct Client *client_p, struct Client *source_p,
   else
     last_used = CurrentTime;
 
-#ifdef STATIC_MODULES
-  do_stats(source_p, parc, parv);
-#else
   execute_callback(stats_cb, source_p, parc, parv);
-#endif
 }
 
 /*
@@ -291,11 +280,7 @@ mo_stats(struct Client *client_p, struct Client *source_p,
     to = source_p->name;
   }
 
-#ifdef STATIC_MODULES
-  do_stats(source_p, parc, parv);
-#else
   execute_callback(stats_cb, source_p, parc, parv);
-#endif
 }
 
 /*

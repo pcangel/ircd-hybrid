@@ -37,7 +37,7 @@
 #include "modules.h"
 #include "parse_aline.h"
 
-static void do_ctrace(struct Client *, int, char **);
+static void *do_ctrace(va_list);
 static void mo_ctrace(struct Client *, struct Client *, int, char *[]);
 
 struct Message ctrace_msgtab = {
@@ -47,27 +47,16 @@ struct Message ctrace_msgtab = {
 
 static struct Callback *ctrace_cb;
 
-static void *
-va_ctrace(va_list args)
-{
-  struct Client *source_p = va_arg(args, struct Client *);
-  int parc = va_arg(args, int);
-  char **parv = va_arg(args, char **);
-
-  do_ctrace(source_p, parc, parv);
-  return NULL;
-}
-
 INIT_MODULE(m_ctrace, "$Revision$")
 {
-  ctrace_cb = register_callback("doing_ctrace", va_ctrace);
+  ctrace_cb = register_callback("doing_ctrace", do_ctrace);
   mod_add_cmd(&ctrace_msgtab);
 }
 
 CLEANUP_MODULE
 {
   mod_del_cmd(&ctrace_msgtab);
-  uninstall_hook(ctrace_cb, va_ctrace);
+  uninstall_hook(ctrace_cb, do_ctrace);
 }
 
 static int report_this_status(struct Client *, struct Client *);
@@ -88,24 +77,24 @@ mo_ctrace(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-#ifdef STATIC_MODULES
-  do_ctrace(source_p, parc, parv);
-#else
   execute_callback(ctrace_cb, source_p, parc, parv);
-#endif
 }
 
 /*
  * do_ctrace
  */
-static void
-do_ctrace(struct Client *source_p, int parc, char **parv)
+static void *
+do_ctrace(va_list args)
 {
-  struct Client *target_p = NULL;
-  char *class_looking_for = NULL;
-  const char *class_name = NULL;
-  dlink_node *ptr = NULL;
+  struct Client *source_p = va_arg(args, struct Client *);
+  char **parv;
+  struct Client *target_p;
+  char *class_looking_for;
+  const char *class_name;
+  dlink_node *ptr;
 
+  va_arg(args, int);
+  parv = va_arg(args, char **);
   class_looking_for = parv[1];
 
   /* report all direct connections */
@@ -121,6 +110,7 @@ do_ctrace(struct Client *source_p, int parc, char **parv)
 
   sendto_one(source_p, form_str(RPL_ENDOFTRACE), me.name,
              parv[0], class_looking_for);
+  return NULL;
 }
 
 /*
@@ -146,7 +136,7 @@ report_this_status(struct Client *source_p, struct Client *target_p)
   name = get_client_name(target_p, HIDE_IP);
   class_name  = ((struct ConfItem *)target_p->localClient->class->conf_ptr)->name;
 
-  switch(target_p->status)
+  switch (target_p->status)
   {
     case STAT_CLIENT:
 

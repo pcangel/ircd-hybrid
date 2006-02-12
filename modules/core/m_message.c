@@ -460,9 +460,7 @@ msg_channel(int p_or_n, const char *command, struct Client *client_p,
       source_p->localClient->last = CurrentTime;
   }
 
-#ifndef STATIC_MODULES
   execute_callback(channel_message, source_p, chptr, text);
-#endif
 
   /* chanops and voiced can flood their own channel with impunity */
   if ((result = can_send(chptr, source_p)))
@@ -581,9 +579,7 @@ msg_client(int p_or_n, const char *command, struct Client *source_p,
       source_p->localClient->last = CurrentTime;
   }
 
-#ifndef STATIC_MODULES
   execute_callback(client_message, source_p, target_p, text);
-#endif
 
   if (MyConnect(source_p) && (p_or_n != NOTICE) && target_p->away)
     sendto_one(source_p, form_str(RPL_AWAY), me.name,
