@@ -83,7 +83,6 @@ char ircd_platform[PLATFORMLEN];
 
 int dorehash = 0;
 int doremotd = 0;
-time_t nextconnect = 1;       /* time for next try_connections call */
 
 /* Set to zero because it should be initialized later using
  * initialize_server_capabs
@@ -250,6 +249,7 @@ io_loop(void)
       rehash(1);
       dorehash = 0;
     }
+
     if (doremotd)
     {
       read_message_file(&ConfigFileEntry.motd);
@@ -298,7 +298,6 @@ initialize_global_set_options(void)
   GlobalSetOptions.ident_timeout = IDENT_TIMEOUT;
   GlobalSetOptions.idletime = ConfigFileEntry.idletime;
   GlobalSetOptions.maxlisters = 10; /* XXX ya ya ya - db */
-  /* End of global set options */
 }
 
 /* initialize_message_files()
@@ -362,7 +361,6 @@ write_pidfile(const char *filename)
            pid, filename, strerror(errno));
 
     fbclose(fb);
-    return;
   }
   else
   {
@@ -452,6 +450,7 @@ init_ssl(void)
   SSLeay_add_ssl_algorithms();
 
   ServerInfo.ctx = SSL_CTX_new(SSLv23_server_method());
+
   if (!ServerInfo.ctx)
   {
     const char *s;
@@ -616,6 +615,7 @@ main(int argc, char *argv[])
     ilog(L_CRIT, "No server name specified in serverinfo block.");
     exit(EXIT_FAILURE);
   }
+
   strlcpy(me.name, ServerInfo.name, sizeof(me.name));
 
   /* serverinfo{} description must exist.  If not, error out.*/
@@ -625,6 +625,7 @@ main(int argc, char *argv[])
       "ERROR: No server description specified in serverinfo block.");
     exit(EXIT_FAILURE);
   }
+
   strlcpy(me.info, ServerInfo.description, sizeof(me.info));
 
   hash_add_client(&me);
@@ -680,7 +681,7 @@ main(int argc, char *argv[])
     eventAddIsh("check_splitmode", check_splitmode, NULL, 60);
 
   io_loop();
-  return(0);
+  return 0;
 }
 
 #else

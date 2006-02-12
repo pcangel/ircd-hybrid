@@ -79,7 +79,6 @@ EXTERN const char *pidFileName;
 EXTERN int dorehash;
 EXTERN int doremotd;
 EXTERN struct Counter Count;
-EXTERN time_t nextconnect;
 EXTERN int default_server_capabs;
 #ifdef HAVE_LIBCRYPTO
 EXTERN int bio_spare_fd;

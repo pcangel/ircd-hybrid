@@ -604,10 +604,10 @@ find_chasing(struct Client *client_p, struct Client *source_p, const char *user,
     *chasing = 0;
 
   if (who)
-    return(who);
+    return who;
 
   if (IsDigit(*user))
-    return(NULL);
+    return NULL;
 
   if ((who = get_history(user,
 			(time_t)ConfigFileEntry.kill_chase_time_limit))
@@ -615,13 +615,13 @@ find_chasing(struct Client *client_p, struct Client *source_p, const char *user,
   {
     sendto_one(source_p, form_str(ERR_NOSUCHNICK),
                me.name, source_p->name, user);
-    return(NULL);
+    return NULL;
   }
 
   if (chasing)
     *chasing = 1;
 
-  return(who);
+  return who;
 }
 
 /*
@@ -650,7 +650,7 @@ get_client_name(struct Client *client, int showip)
   assert(client != NULL);
 
   if (irccmp(client->name, client->host) == 0)
-    return(client->name);
+    return client->name;
 
   if (ConfigServerHide.hide_server_ips)
     if (IsServer(client) || IsConnecting(client) || IsHandshake(client))
@@ -679,7 +679,7 @@ get_client_name(struct Client *client, int showip)
                  client->host);
   }
 
-  return(nbuf);
+  return nbuf;
 }
 
 void
@@ -955,7 +955,7 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
     }
     else if (IsClient(source_p))
     {
-      Count.local--;
+      --Count.local;
 
       if (IsOper(source_p))
       {
@@ -1111,8 +1111,6 @@ close_connection(struct Client *client_p)
       aconf->hold = time(NULL);
       aconf->hold += (aconf->hold - client_p->since > HANGONGOODLINK) ?
         HANGONRETRYDELAY : ConFreq(aclass);
-      if (nextconnect > aconf->hold)
-        nextconnect = aconf->hold;
     }
   }
   else if (IsClient(client_p))
