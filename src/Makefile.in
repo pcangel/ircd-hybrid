@@ -50,7 +50,6 @@ SRCS = \
  channel_mode.c \
  client.c \
  csvlib.c \
- @DYNLINK_C@ \
  getopt.c \
  hash.c	\
  hostmask.c \

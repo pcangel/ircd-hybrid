@@ -15,6 +15,7 @@ CPPFLAGS	= ${INCLUDES} -DIN_LIBIO @CPPFLAGS@
 
 SRCS = \
   @BALLOC_C@ \
+  @DYNLINK_C@ \
   dbuf.c \
   memory.c
 

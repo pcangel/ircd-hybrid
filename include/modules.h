@@ -27,14 +27,6 @@
 
 #include "setup.h"
 #include "parse.h"
-
-#ifdef HAVE_SHL_LOAD
-#include <dl.h>
-#endif
-#if !defined(STATIC_MODULES) && defined(HAVE_DLFCN_H)
-#include <dlfcn.h>
-#endif
-
 #include "ircd_handler.h"
 #include "msg.h"
 
