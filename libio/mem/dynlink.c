@@ -56,7 +56,7 @@ modload(const char *name, void **base)
       *base = map->l_addr;
     else
 #endif
-      *base = handle;
+      *base = NULL;
   }
 
   return handle;
@@ -125,6 +125,10 @@ moderror(void)
 
 #ifdef HAVE_MACH_O_DYLD_H
 
+/*
+ * NSModule(3) interface
+ */
+
 #include <mach-o/dyld.h>
 
 static int myDlError;
@@ -186,8 +190,10 @@ modload(const char *name, void **base)
   if (myDlError != NSObjectFileImageSuccess)
     return NULL;
 
-  return (*base = (void *) NSLinkModule(myImage, name,
-    NSLINKMODULE_OPTION_PRIVATE));
+  *base = NULL;
+
+  return (void *) NSLinkModule(myImage, name,
+    NSLINKMODULE_OPTION_PRIVATE);
 }
 
 void *
