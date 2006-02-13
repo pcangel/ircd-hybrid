@@ -140,6 +140,29 @@ static const char *myErrorTable[] =
   NULL
 };
 
+void
+undefinedErrorHandler(const char *symbolName)
+{
+  return;
+}
+
+NSModule
+multipleErrorHandler(NSSymbol s, NSModule old, NSModule new)
+{
+  /*
+   * XXX This results in substantial leaking of memory... Should free
+   * one module, maybe?
+   */
+  return new;
+}
+
+void
+linkEditErrorHandler(NSLinkEditErrors errorClass, int errnum,
+             const char *fileName, const char *errorString)
+{
+  return;
+}
+
 void *
 modload(const char *name, void **base)
 {
