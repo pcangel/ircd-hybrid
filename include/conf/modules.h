@@ -22,13 +22,26 @@
  *  $Id$
  */
 
-/*
- * XXX move path/conflist stuff from src/modules.c here!
- *
- * These area has to be reworked anyway, perhaps:
- * src/modules.c + conf/modules.c ? ..
- *  -- adx
- */
+struct Module
+{
+  char *name;
+  const char *version;
+  void (* modinit) (void);
+  void (* modremove) (void);
+  void *handle;
+  void *address;
+  int core;
+  dlink_node node;
+};
+
+#define INIT_MODULE(NAME, REV) \
+  static void _modinit(void); \
+  static void _moddeinit(void); \
+  struct Module NAME ## _module = {#NAME, REV, _modinit, _moddeinit}; \
+  static void _modinit(void)
+
+#define CLEANUP_MODULE \
+  static void _moddeinit(void)
 
 #ifdef IN_CONF_C
 void init_modules(void);
