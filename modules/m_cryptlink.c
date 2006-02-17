@@ -33,7 +33,7 @@
 #include "handlers.h"
 #include "client.h"      /* client struct */
 #include "ircd.h"        /* me */
-#include "modules.h"
+#include "conf/modules.h"
 #include "numeric.h"     /* ERR_xxx */
 #include "send.h"        /* sendto_one */
 #include <openssl/rsa.h> /* rsa.h is implicit when building this */

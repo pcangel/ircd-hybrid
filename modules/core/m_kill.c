@@ -34,7 +34,7 @@
 #include "whowas.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 
 static char buf[IRCD_BUFSIZE];

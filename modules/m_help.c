@@ -32,7 +32,7 @@
 #include "send.h"
 #include "s_conf.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 #define HPATH  IRCD_PREFIX "/help/opers"
 #define UHPATH IRCD_PREFIX "/help/users"

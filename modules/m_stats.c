@@ -39,7 +39,7 @@
 #include "s_stats.h"     /* tstats */
 #include "s_user.h"      /* show_opers */
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "resv.h"  /* report_resv */
 #include "whowas.h"
 #include "watch.h"

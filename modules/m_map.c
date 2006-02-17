@@ -24,7 +24,9 @@
 
 #include "stdinc.h"
 #include "client.h"
-#include "modules.h"
+#include "parse.h"
+#include "msg.h"
+#include "conf/modules.h"
 #include "handlers.h"
 #include "numeric.h"
 #include "send.h"

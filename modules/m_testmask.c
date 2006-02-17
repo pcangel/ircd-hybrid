@@ -45,7 +45,7 @@
 #include "hostmask.h"
 #include "numeric.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 static void mo_testmask(struct Client *, struct Client *, int, char *[]);
 

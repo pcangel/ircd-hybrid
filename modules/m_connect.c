@@ -33,7 +33,7 @@
 #include "msg.h"
 #include "parse.h"
 #include "hash.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 static void mo_connect(struct Client *, struct Client *, int, char *[]);
 static void ms_connect(struct Client *, struct Client *, int, char *[]);

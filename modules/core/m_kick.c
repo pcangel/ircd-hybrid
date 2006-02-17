@@ -32,7 +32,7 @@
 #include "numeric.h"
 #include "send.h"
 #include "msg.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "parse.h"
 #include "hash.h"
 #include "packet.h"

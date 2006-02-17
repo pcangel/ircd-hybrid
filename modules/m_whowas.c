@@ -37,7 +37,7 @@
 #include "s_conf.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 
 static void m_whowas(struct Client *, struct Client *, int, char *[]);

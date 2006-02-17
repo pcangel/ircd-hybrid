@@ -31,7 +31,7 @@
 #include "s_conf.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 static void ms_svinfo(struct Client*, struct Client*, int, char**);
 

@@ -33,7 +33,7 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 static void mo_restart(struct Client *, struct Client *, int, char *[]);
 

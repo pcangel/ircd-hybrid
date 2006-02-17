@@ -38,7 +38,7 @@
 #include "msg.h"
 #include "s_gline.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 static void me_rkline(struct Client *, struct Client *, int, char *[]);
 static void mo_rkline(struct Client *, struct Client *, int, char *[]);

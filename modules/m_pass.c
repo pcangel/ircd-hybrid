@@ -30,7 +30,7 @@
 #include "ircd.h"        /* me */
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "s_serv.h"
 #include "hash.h"
 

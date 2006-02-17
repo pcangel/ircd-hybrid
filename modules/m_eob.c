@@ -32,7 +32,7 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include <stdlib.h>
 
 static void ms_eob(struct Client *, struct Client *, int, char *[]);

@@ -26,7 +26,7 @@
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "numeric.h"
 #include "send.h"
 #include "s_conf.h"

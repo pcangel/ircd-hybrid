@@ -38,7 +38,7 @@
 #include "s_serv.h"
 #include "hash.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 #define GLINE_NOT_PLACED     0
 #ifdef GLINE_VOTING

@@ -29,7 +29,7 @@
 #include "parse.h"
 #include "s_serv.h"
 #include "send.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 static void ms_encap(struct Client *, struct Client *, int, char *[]);
 

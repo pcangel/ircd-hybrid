@@ -33,7 +33,7 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "packet.h"
 
 static struct ConfItem *find_password_conf(const char *, struct Client *);

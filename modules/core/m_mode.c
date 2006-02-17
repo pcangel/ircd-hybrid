@@ -36,7 +36,7 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "packet.h"
 #include "common.h"
 

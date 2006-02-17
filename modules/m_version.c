@@ -33,7 +33,7 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 static char *confopts(struct Client *);
 static void m_version(struct Client *, struct Client *, int, char *[]);

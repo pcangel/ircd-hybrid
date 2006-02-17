@@ -34,7 +34,7 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "s_user.h"
 #include "resv.h"
 #include "userhost.h"

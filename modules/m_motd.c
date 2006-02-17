@@ -32,7 +32,7 @@
 #include "msg.h"
 #include "s_serv.h"     /* hunt_server */
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "s_conf.h"
 
 static void mr_motd(struct Client *, struct Client *, int, char **);

@@ -29,7 +29,7 @@
 #include "client.h"
 #include "common.h"
 #include "handlers.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "hash.h"
 #include "resv.h"
 #include "userhost.h"

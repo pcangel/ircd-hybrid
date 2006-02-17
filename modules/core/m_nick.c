@@ -38,7 +38,7 @@
 #include "resv.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "common.h"
 #include "packet.h"
 #include "watch.h"

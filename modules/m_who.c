@@ -35,7 +35,7 @@
 #include "s_conf.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 static time_t last_used = 0;
 

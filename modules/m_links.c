@@ -33,7 +33,7 @@
 #include "msg.h"
 #include "motd.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 static void *do_links(va_list);
 static void m_links(struct Client*, struct Client*, int, char**);

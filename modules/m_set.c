@@ -36,7 +36,7 @@
 #include "s_conf.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "s_user.h"
 
 static void mo_set(struct Client *, struct Client *, int, char *[]);

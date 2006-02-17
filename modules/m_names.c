@@ -36,7 +36,7 @@
 #include "s_conf.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 
 static void names_all_visible_channels(struct Client *);
