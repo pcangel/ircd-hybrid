@@ -401,9 +401,6 @@ register_local_user(struct Client *source_p, const char *username)
   if (check_xline(source_p) || check_regexp_xline(source_p))
     return;
 
-  if (IsDead(source_p))
-    return;
-
   if (source_p->id[0] == '\0' && me.id[0])
   {
     char *id = (char *) execute_callback(uid_get_cb, source_p);
@@ -424,10 +421,6 @@ register_local_user(struct Client *source_p, const char *username)
                        ConfigFileEntry.hide_spoof_ips && IsIPSpoof(source_p) ?
                        "255.255.255.255" : ipaddr, get_client_className(source_p),
                        source_p->info);
-
-  /* If they have died in send_* don't do anything. */
-  if (IsDead(source_p))
-    return;
 
   if (ConfigFileEntry.invisible_on_connect)
   {
@@ -456,12 +449,10 @@ register_local_user(struct Client *source_p, const char *username)
 
   source_p->localClient->allow_read = MAX_FLOOD_BURST;
 
-  if ((m = dlinkFindDelete(&unknown_list, source_p)) != NULL)
-  {
-    free_dlink_node(m);
-    dlinkAdd(source_p, &source_p->localClient->lclient_node, &local_client_list);
-  }
-  else assert(0);
+  assert(dlinkFind(&unknown_list, source_p) != NULL);
+
+  dlinkDelete(&source_p->localClient->lclient_node, &unknown_list);
+  dlinkAdd(source_p, &source_p->localClient->lclient_node, &local_client_list);
 
   user_welcome(source_p);
   add_user_host(source_p->username, source_p->host, 0);

@@ -114,7 +114,7 @@ make_client(struct Client *from)
 
     client_p->localClient = BlockHeapAlloc(lclient_heap);
     /* as good a place as any... */
-    dlinkAdd(client_p, make_dlink_node(), &unknown_list);
+    dlinkAdd(client_p, &client_p->localClient->lclient_node, &unknown_list);
   }
   else
     client_p->from = from;
@@ -942,18 +942,7 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
 
     delete_auth(source_p);
 
-    /* This source_p could have status of one of STAT_UNKNOWN, STAT_CONNECTING
-     * STAT_HANDSHAKE or STAT_UNKNOWN
-     * all of which are lumped together into unknown_list
-     *
-     * In all above cases IsRegistered() will not be true.
-     */
-    if (!IsRegistered(source_p))
-    {
-      if ((m = dlinkFindDelete(&unknown_list, source_p)) != NULL)
-        free_dlink_node(m);
-    }
-    else if (IsClient(source_p))
+    if (IsClient(source_p))
     {
       --Count.local;
 
@@ -966,11 +955,23 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
       dlinkDelete(&source_p->localClient->lclient_node, &local_client_list);
       if (source_p->localClient->list_task != NULL)
         free_list_task(source_p->localClient->list_task, source_p);
+
       hash_del_watch_list(source_p);
       sendto_realops_flags(UMODE_CCONN, L_ALL, "Client exiting: %s (%s@%s) [%s] [%s]",
                            source_p->name, source_p->username, source_p->host, comment,
                            ConfigFileEntry.hide_spoof_ips && IsIPSpoof(source_p) ?
                            "255.255.255.255" : source_p->sockhost);
+    }
+    else if (!IsRegistered(source_p))
+    {
+      /*
+       * This source_p could have status of one of STAT_UNKNOWN, STAT_CONNECTING
+       * STAT_HANDSHAKE or STAT_UNKNOWN
+       * all of which are lumped together into unknown_list
+       *
+       * In all above cases IsRegistered() will not be true.
+       */
+      dlinkDelete(&source_p->localClient->lclient_node, &unknown_list);
     }
 
     /* As soon as a client is known to be a server of some sort

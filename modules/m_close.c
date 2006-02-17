@@ -32,11 +32,11 @@
 #include "parse.h"
 #include "conf/modules.h"
 
-static void mo_close(struct Client *, struct Client *, int, char **);
+static void mo_close(struct Client *, struct Client *, int, char *[]);
 
 struct Message close_msgtab = {
   "CLOSE", 0, 0, 0, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_not_oper, m_ignore, m_ignore, mo_close, m_ignore}
+  { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_close, m_ignore }
 };
 
 INIT_MODULE(m_close, "$Revision$")
@@ -72,12 +72,6 @@ mo_close(struct Client *client_p, struct Client *source_p,
   {
     struct Client *target_p = ptr->data;
 
-  /* Which list would connecting servers be found in? serv_list ? */
-#if 0
-      if (!IsUnknown(target_p) && !IsConnecting(target_p) &&
-          !IsHandshake(target_p) && !IsDoingKauth(target_p))
-        continue;
-#endif
     sendto_one(source_p, form_str(RPL_CLOSING), me.name, source_p->name,
                get_client_name(target_p, SHOW_IP), target_p->status);
     /*
@@ -91,4 +85,3 @@ mo_close(struct Client *client_p, struct Client *source_p,
   sendto_one(source_p, form_str(RPL_CLOSEEND),
              me.name, source_p->name, closed);
 }
-
