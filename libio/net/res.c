@@ -816,9 +816,13 @@ res_readreply(fde_t *fd, void *data)
 	request->retries--;
         resend_query(request);
       }
-      else
+      else	/* Some other error other than NXDOMAIN */
 #endif
       {
+	/*
+	 * If a bad error was returned, we stop here and dont send
+	 * send any more (no retries granted).
+	 */
 	(*request->query->callback)(request->query->ptr, NULL);
 	rem_request(request);
       }
