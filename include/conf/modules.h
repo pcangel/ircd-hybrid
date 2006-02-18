@@ -28,9 +28,9 @@ struct Module
   const char *version;
   void (* modinit) (void);
   void (* modremove) (void);
+  char *fullname;
   void *handle;
   void *address;
-  int core;
   dlink_node node;
 };
 
@@ -46,3 +46,11 @@ struct Module
 #ifdef IN_CONF_C
 void init_modules(void);
 #endif
+
+EXTERN dlink_list loaded_modules;
+EXTERN const char *core_modules[];
+
+EXTERN struct Module *find_module(const char *);
+EXTERN int load_module(const char *);
+EXTERN void unload_module(struct Module *);
+EXTERN void boot_modules(char);

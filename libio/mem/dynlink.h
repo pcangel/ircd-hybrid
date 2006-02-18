@@ -24,7 +24,7 @@
 
 #if defined(HAVE_DLOPEN) || defined(_WIN32) || defined(HAVE_MACH_O_DYLD_H)
 
-#define HAVE_MODLOAD
+#define SHARED_MODULES
 
 // Loads a module given by name. void ** receives module base address
 // (best we can determine). Return value: module handle or NULL.

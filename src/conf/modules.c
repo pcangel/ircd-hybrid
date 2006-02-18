@@ -31,14 +31,7 @@
 
 dlink_list loaded_modules = {NULL, NULL, 0};
 
-#ifdef STATIC_MODULES
-static struct Module statmods[] = {STATIC_MODULES, NULL};
-#endif
-static dlink_list mod_paths = {NULL, NULL, 0};
-static dlink_list mod_extra = {NULL, NULL, 0};
-static dlink_node *hreset, *hpass;
-
-static const char *core_modules[] =
+const char *core_modules[] =
 {
   "m_die",
   "m_join",
@@ -54,6 +47,13 @@ static const char *core_modules[] =
   "m_squit",
   NULL
 };
+
+#ifdef BUILTIN_MODULES
+static struct Module builtin_mods[] = {BUILTIN_MODULES, NULL};
+#endif
+static dlink_list mod_paths = {NULL, NULL, 0};
+static dlink_list mod_extra = {NULL, NULL, 0};
+static dlink_node *hreset, *hpass;
 
 //
 // Windows ignores case in file names, so using M_PART for m_part
@@ -71,7 +71,7 @@ static const char *core_modules[] =
 /*
  * find_module()
  *
- * Checks if a module is loaded.
+ * [API] Checks whether a module is loaded.
  *
  * inputs: module name (with or without path/suffix)
  * output: pointer to struct Module or NULL
@@ -95,132 +95,141 @@ find_module(const char *filename)
 }
 
 /*
- * load_module()
+ * init_module()
  *
- * A module is loaded from a file or taken from the static pool, if available.
+ * Deals with initializing an already loaded module.
  *
  * inputs:
- *   - module name (without path, with suffix if needed)
- *   - core module flag [YES/NO]
+ *   - pointer to struct Module
+ *   - name that will be passed to load_module on reloading
+ *     (contains suffix for shared modules)
+ * output: none, except success report
+ */
+static void
+init_module(struct Module *mod, const char *fullname)
+{
+  char message[IRCD_BUFSIZE];
+
+  if (mod->address != NULL)
+    snprintf(message, sizeof(message), "Shared module %s loaded at %p",
+      mod->name, mod->address);
+  else
+    snprintf(message, sizeof(message), "Loaded %s module %s",
+      mod->name, mod->handle ? "shared" : "built-in");
+
+  ilog(L_NOTICE, "%s", message);
+  sendto_realops_flags(UMODE_ALL, L_ALL, "%s", message);
+
+  DupString(mod->fullname, fullname);
+  dlinkAdd(mod, &mod->node, &loaded_modules);
+  mod->modinit();
+}
+
+/*
+ * load_shared_module()
+ *
+ * Loads a shared module from given directory.
+ * WARNING: We don't check for already loaded modules!
+ *
+ * inputs:
+ *   - canonical module name (without suffix)
+ *   - directory to load from
+ *   - file name
+ * output: 1 if ok, 0 otherwise
+ */
+#ifdef SHARED_MODULES
+static int
+load_shared_module(const char *name, const char *dir, const char *fname)
+{
+  char path[PATH_MAX];
+  char sym[PATH_MAX];
+  void *handle, *base;
+  struct Module *mod;
+
+  snprintf(path, sizeof(path), "%s/%s", dir, fname);
+  if (!(handle = modload(path, &base)))
+    return 0;
+
+  snprintf(sym, sizeof(sym), "%s_module", name);
+  if (!(mod = modsym(handle, sym)))
+  {
+    char error[IRCD_BUFSIZE];
+
+    modunload(handle);
+    snprintf(error, sizeof(error), "%s contains no %s export!", path, sym);
+
+    ilog(L_WARN, "%s", error);
+    sendto_realops_flags(UMODE_ALL, L_ALL, "%s", error);
+    return 0;
+  }
+
+  mod->handle = handle;
+  mod->address = base;
+  init_module(mod, fname);
+  return 1;
+}
+#endif
+
+/*
+ * load_module()
+ *
+ * [API] A module is loaded from a file or taken from the static pool.
+ *
+ * inputs: module name (without path, with suffix if needed)
  * output:
  *   -1 if the module was already loaded (no error message),
  *    0 if loading failed (errors reported),
  *    1 if ok (success reported)
  */
 int
-load_module(const char *filename, int core)
+load_module(const char *filename)
 {
   char name[PATH_MAX], *p;
-  struct Module *mod = NULL;
 
   if (find_module(filename) != NULL)
     return -1;
 
-  if (strpbrk(filename, "\\/"))   
-    goto NotFound;
-
-  //
-  // Extract module name e.g. "m_part"
-  //
-  strlcpy(name, basename(filename), sizeof(name));
-  if ((p = strchr(name, '.')) != NULL)
-    *p = 0;
-
-#ifdef DYNAMIC_MODULES
+  if (strpbrk(filename, "\\/") == NULL)
   {
-    void *handle = NULL, *base;
+    strlcpy(name, basename(filename), sizeof(name));
+    if ((p = strchr(name, '.')) != NULL)
+      *p = 0;
 
-    //
-    // Try all paths specified in ircd.conf
-    //
-    DLINK_FOREACH(ptr, mod_paths.head)
+#ifdef SHARED_MODULES
     {
-      char buf[PATH_MAX];
+      dlink_node *ptr;
 
-      snprintf(buf, sizeof(buf), "%s/%s", ptr->data, filename);
-      if ((handle = modload(buf, &base)) != NULL)
-        break;
+      DLINK_FOREACH(ptr, mod_paths.head)
+        if (load_shared_module(name, ptr->data, filename))
+          return 1;
     }
-
-    //
-    // Set 'mod' variable if mapped successfully
-    //
-    if (handle != NULL)
-    {
-      int cnt = strlen(name);
-      struct Module *mod;
-
-      strlcat(name, "_module", sizeof(name));
-
-      if ((mod = modsym(handle, name)) == NULL)
-      {
-        ilog(L_CRIT, "File %s is not a hybrid module", filename);
-        sendto_realops_flags(UMODE_ALL, L_ALL,
-          "File %s is not a hybrid module", filename);
-
-        modclose(handle);
-        return 0;
-      }
-
-      mod->handle = handle;
-      mod->address = address;
-    }
-  }
 #endif
 
-#ifdef STATIC_MODULES
-  if (mod == NULL)
-  {
-    struct Module **mptr;
+#ifdef BUILTIN_MODULES
+    if (mod == NULL)
+    {
+      struct Module **mptr;
 
-    //
-    // Try static modules if there are any
-    //
-    for (mptr = statmods; *mptr; mptr++)
-      if (!_COMPARE((*mptr)->name, filename))
-      {
-        mod = *mptr;
-        break;
-      }
-  }
+      for (mptr = builtin_mods; *mptr; mptr++)
+        if (!_COMPARE((*mptr)->name, filename))
+        {
+          init_module(*mptr, mod->name);
+          return 1;
+        }
+    }
 #endif
-
-  //
-  // Generate the final message
-  //
-  if (mod == NULL)
-  {
-    NotFound:
-    ilog(L_CRIT, "Cannot locate module %s", filename);
-    sendto_realops_flags(UMODE_ALL, L_ALL, "Cannot locate module %s",
-      filename);
-  }
-  else
-  {
-    char message[IRCD_BUFSIZE];
-
-    if (mod->address != NULL)
-      snprintf(message, sizeof(message), "Module %s loaded at %p",
-        mod->name, mod->address);
-    else
-      snprintf(message, sizeof(message), "Module %s loaded %s",
-        mod->name, mod->handle ? "dynamically" : "statically");
-
-    ilog(L_NOTICE, "%s", message);
-    sendto_realops_flags(UMODE_ALL, L_ALL, "%s", message);
-
-    dlinkAdd(mod, &mod->node, &loaded_modules);
-    mod->core = core;
-    mod->modinit();
   }
 
-  return !!mod;
+  ilog(L_CRIT, "Cannot locate module %s", filename);
+  sendto_realops_flags(UMODE_ALL, L_ALL, "Cannot locate module %s",
+    filename);
+  return 0;
 }
 
 /*
  * unload_module()
  *
- * A module is unloaded. This is actually MUCH simplier.
+ * [API] A module is unloaded. This is actually MUCH simplier.
  *
  * inputs: pointer to struct Module
  * output: none
@@ -230,36 +239,115 @@ unload_module(struct Module *mod)
 {
   mod->modremove();
 
+  MyFree(mod->fullname);
+  mod->fullname = NULL;
+
   dlinkDelete(&mod->node, &loaded_modules);
 
-#ifdef DYNAMIC_MODULES
+#ifdef SHARED_MODULES
   if (mod->handle != NULL)
-    modclose(mod->handle);
+    modunload(mod->handle);
 #endif
 }
 
 /*
- * boot_static_modules()
+ * boot_modules()
  *
- * Run modinit and link these statically linked modules which
- * are not already overridden by dynamic ones.
+ * [API] Initializes core, autoload and conf (extra) modules.
  *
- * inputs: none
+ * inputs: 0 if we should load only conf modules, 1 otherwise
  * output: none
  */
+void
+boot_modules(char cold)
+{
+  dlink_node *ptr;
+  const char **p;
 
+  if (cold)
+  {
+#ifdef SHARED_MODULES
+    {
+      char buf[PATH_MAX], *p;
+      const char **cp;
+      struct dirent *ldirent;
+      DIR *moddir;
+
+      for (cp = core_modules; *cp; cp++)
+      {
+        snprintf(buf, sizeof(buf), "%s%s", *cp, SHARED_SUFFIX);
+        load_shared_module(*cp, MODPATH, buf);
+      }
+
+      if ((moddir = opendir(AUTOMODPATH)) == NULL)
+        ilog(L_WARN, "Could not load modules from %s: %s", AUTOMODPATH,
+          strerror(errno));
+      else
+      {
+        while ((ldirent = readdir(moddir)) != NULL)
+        {
+          strlcpy(buf, ldirent->d_name, sizeof(buf));
+          if ((p = strchr(buf, '.')) != NULL)
+            *p = 0;
+          load_shared_module(buf, AUTOMODPATH, ldirent->d_name);
+        }
+        closedir(moddir);
+      }
+    }
+#endif
+
+#ifdef BUILTIN_MODULES
+    {
+      struct Module *mptr;
+
+      for (mptr = builtin_mods; *mptr; mptr++)
+        if (!find_module(mptr->name))
+          init_module(mptr);
+    }
+#endif
+  }
+
+  DLINK_FOREACH(ptr, mod_extra.head)
+    if (!find_module(ptr->data))
+      load_module(ptr->data);
+
+  for (p = core_modules; *p; p++)
+    if (!find_module(*p))
+    {
+      ilog(L_CRIT, "Core module %s is missing", *p);
+      server_die("No core modules", 0);
+    }
+}
 
 /*
- * reset_modules()
+ * h_switch_conf_pass()
  *
- * Called before entering the conf parser.
- * Clears out module paths.
+ * Hook function called after switching to conf_pass.
+ * (After pass 1 we boot all modules.)
  *
  * inputs: none
  * output: none
  */
 static void *
-reset_modules(va_list args)
+h_switch_conf_pass(va_list args)
+{
+  if (conf_pass == 2)
+    boot_modules(conf_cold);
+
+  return pass_callback(hpass);
+}
+
+/*
+ * h_reset_conf()
+ *
+ * Hook function called before parsing the conf file.
+ * Clears out old paths/extra modules.
+ *
+ * inputs: none
+ * output: none
+ */
+static void *
+h_reset_conf(va_list args)
 {
   dlink_node *ptr, *ptr_next;
 
@@ -278,45 +366,6 @@ reset_modules(va_list args)
   }
 
   return pass_callback(hreset);
-}
-
-/*
- * load_modules()
- *
- * Called just after switching to pass 2 parsing.  Implements module
- * bootup, loads extra modules, verifies that core modules are loaded.
- *
- * inputs: none
- * output: none
- */
-static void *
-load_modules(va_list args)
-{
-  if (conf_pass == 2)
-  {
-    dlink_node *ptr;
-    const char **p;
-
-    if (conf_cold)
-    {
-      boot_dynamic_modules();
-      boot_static_modules();
-    }
-
-    DLINK_FOREACH_SAFE(ptr, mod_extra.head)
-      if (!find_module(ptr->data))
-        load_module(ptr->data, 0);
-
-    for (p = core_modules; *p; p++)
-      if (!find_module(*p))
-      {
-        ilog(L_CRIT, "Core module %s is missing", *p);
-        if (conf_cold)
-          server_die("No core modules", 0);
-      }
-  }
-
-  return pass_callback(hpass);
 }
 
 /*
@@ -373,8 +422,8 @@ init_modules(void)
 {
   struct ConfSection *s = add_conf_section("modules", 1);
 
-  hreset = install_hook(reset_conf, reset_modules);
-  hpass = install_hook(switch_conf_pass, load_modules);
+  hreset = install_hook(reset_conf, h_reset_conf);
+  hpass = install_hook(switch_conf_pass, h_switch_conf_pass);
 
   add_conf_field(s, "path", CT_STRING, mod_add_path, NULL);
   add_conf_field(s, "module", CT_STRING, mod_add_module, NULL);
