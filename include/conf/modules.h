@@ -50,7 +50,7 @@ void init_modules(void);
 EXTERN dlink_list loaded_modules;
 EXTERN const char *core_modules[];
 
-EXTERN struct Module *find_module(const char *);
+EXTERN struct Module *find_module(const char *, int);
 EXTERN int load_module(const char *);
 EXTERN void unload_module(struct Module *);
 EXTERN void boot_modules(char);

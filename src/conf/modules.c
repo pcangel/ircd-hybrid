@@ -73,11 +73,13 @@ static dlink_node *hreset, *hpass;
  *
  * [API] Checks whether a module is loaded.
  *
- * inputs: module name (with or without path/suffix)
+ * inputs:
+ *   - module name (with or without path/suffix)
+ *   - 1 if we should match exact fullname, 0 if only the canonical name
  * output: pointer to struct Module or NULL
  */
 struct Module *
-find_module(const char *filename)
+find_module(const char *filename, int exact)
 {
   dlink_node *ptr;
   char *name = basename(name), *p;
@@ -88,7 +90,11 @@ find_module(const char *filename)
     struct Module *mod = ptr->data;
 
     if (!_NCOMPARE(mod->name, name, cnt) && !mod->name[cnt])
+    {
+      if (exact && _COMPARE(mod->fullname, filename) != 0)
+        continue;
       return mod;
+    }
   }
 
   return NULL;
@@ -112,10 +118,10 @@ init_module(struct Module *mod, const char *fullname)
 
   if (mod->address != NULL)
     snprintf(message, sizeof(message), "Shared module %s loaded at %p",
-      mod->name, mod->address);
+      fullname, mod->address);
   else
     snprintf(message, sizeof(message), "Loaded %s module %s",
-      mod->name, mod->handle ? "shared" : "built-in");
+      fullname, mod->handle ? "shared" : "built-in");
 
   ilog(L_NOTICE, "%s", message);
   sendto_realops_flags(UMODE_ALL, L_ALL, "%s", message);
@@ -156,7 +162,7 @@ load_shared_module(const char *name, const char *dir, const char *fname)
     char error[IRCD_BUFSIZE];
 
     modunload(handle);
-    snprintf(error, sizeof(error), "%s contains no %s export!", path, sym);
+    snprintf(error, sizeof(error), "%s contains no %s export!", fname, sym);
 
     ilog(L_WARN, "%s", error);
     sendto_realops_flags(UMODE_ALL, L_ALL, "%s", error);
@@ -186,7 +192,7 @@ load_module(const char *filename)
 {
   char name[PATH_MAX], *p;
 
-  if (find_module(filename) != NULL)
+  if (find_module(filename, NO) != NULL)
     return -1;
 
   if (strpbrk(filename, "\\/") == NULL)
@@ -289,7 +295,8 @@ boot_modules(char cold)
           strlcpy(buf, ldirent->d_name, sizeof(buf));
           if ((p = strchr(buf, '.')) != NULL)
             *p = 0;
-          load_shared_module(buf, AUTOMODPATH, ldirent->d_name);
+          if (!find_module(buf, NO))
+            load_shared_module(buf, AUTOMODPATH, ldirent->d_name);
         }
         closedir(moddir);
       }
@@ -301,18 +308,18 @@ boot_modules(char cold)
       struct Module *mptr;
 
       for (mptr = builtin_mods; *mptr; mptr++)
-        if (!find_module(mptr->name))
+        if (!find_module(mptr->name, NO))
           init_module(mptr);
     }
 #endif
   }
 
   DLINK_FOREACH(ptr, mod_extra.head)
-    if (!find_module(ptr->data))
+    if (!find_module(ptr->data, NO))
       load_module(ptr->data);
 
   for (p = core_modules; *p; p++)
-    if (!find_module(*p))
+    if (!find_module(*p, NO))
     {
       ilog(L_CRIT, "Core module %s is missing", *p);
       server_die("No core modules", 0);
