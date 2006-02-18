@@ -100,9 +100,12 @@ find_module(const char *filename)
  * A module is loaded from a file or taken from the static pool, if available.
  *
  * inputs:
- *   - module name (with or without path/suffix)
+ *   - module name (without path, with suffix if needed)
  *   - core module flag [YES/NO]
- * output: -1 if the module was already loaded, 0 if loading failed, 1 if ok
+ * output:
+ *   -1 if the module was already loaded (no error message),
+ *    0 if loading failed (errors reported),
+ *    1 if ok (success reported)
  */
 int
 load_module(const char *filename, int core)
@@ -113,6 +116,9 @@ load_module(const char *filename, int core)
   if (find_module(filename) != NULL)
     return -1;
 
+  if (strpbrk(filename, "\\/"))   
+    goto NotFound;
+
   //
   // Extract module name e.g. "m_part"
   //
@@ -122,39 +128,22 @@ load_module(const char *filename, int core)
 
 #ifdef DYNAMIC_MODULES
   {
-    void *handle, *base;
+    void *handle = NULL, *base;
 
-#ifdef _WIN32
-    if (!strpbrk(filename, "\\/"))
-#else
-    if (!strchr(filename, '/'))
-#endif
+    //
+    // Try all paths specified in ircd.conf
+    //
+    DLINK_FOREACH(ptr, mod_paths.head)
     {
-      //
-      // If path is not given, try paths specified in ircd.conf
-      //
-      DLINK_FOREACH(ptr, mod_paths.head)
-      {
-        char buf[PATH_MAX];
+      char buf[PATH_MAX];
 
-        snprintf(buf, sizeof(buf), "%s/%s", ptr->data, filename);
-        if ((handle = modload(buf, &base)) != NULL)
-          break;
-      }
-    }
-    else if ((handle = modload(filename, &base)) == NULL)
-    {
-      //
-      // They entered a path and modload failed, give up
-      //
-      ilog(L_CRIT, "Error loading module %s: %s", filename, moderror());
-      sendto_realops_flags(UMODE_ALL, L_ALL, "Error loading module %s: %s",
-        filename, moderror());
-      return 0;
+      snprintf(buf, sizeof(buf), "%s/%s", ptr->data, filename);
+      if ((handle = modload(buf, &base)) != NULL)
+        break;
     }
 
     //
-    // Set 'mod' variable if appropriate
+    // Set 'mod' variable if mapped successfully
     //
     if (handle != NULL)
     {
@@ -201,6 +190,7 @@ load_module(const char *filename, int core)
   //
   if (mod == NULL)
   {
+    NotFound:
     ilog(L_CRIT, "Cannot locate module %s", filename);
     sendto_realops_flags(UMODE_ALL, L_ALL, "Cannot locate module %s",
       filename);
