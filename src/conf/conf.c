@@ -364,3 +364,9 @@ add_conf_field(struct ConfSection *section, const char *name, int type,
   dlinkAdd(field, &field->node, &section->fields);
   return field;
 }
+
+struct ConfItem *
+make_conf_item2(ConfType type)
+{
+  return NULL;
+}

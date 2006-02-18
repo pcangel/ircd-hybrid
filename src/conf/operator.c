@@ -23,14 +23,37 @@
  */
 
 #include "stdinc.h"
+#include "ircd_defs.h"
 #include "client.h"
+#include "s_serv.h"
+#include "resv.h"
+#include "s_stats.h"
+#include "channel.h"
+#include "parse_aline.h"
+#include "common.h"
+#include "hash.h"
+#include "ircd.h"
+#include "listener.h"
+#include "hostmask.h"
+#include "numeric.h"
+#include "send.h"
+#include "s_gline.h"
+#include "userhost.h"
+#include "s_user.h"
+#include "channel_mode.h"
+#include "conf/conf.h"
+
+
+extern struct ConfItem *
+make_conf_item2(ConfType type);
+extern dlink_list oconf_items; /* XXX */
 
 static dlink_node *hreset = NULL;
-static struct AccessItem tmpoper;
+static struct ConfItem tmpoper;
 
 static const struct FlagMapping {
   const char *name;
-  unsigned int flags;
+  unsigned int flag;
 } flag_mappings[] = {
   {"global_kill", OPER_FLAG_GLOBAL_KILL},
   {"remote", OPER_FLAG_REMOTE},
@@ -76,7 +99,6 @@ conf_operator_report(struct Client *source_p)
                    me.name, source_p->name, 'O', nuh->userptr, nuh->hostptr,
                    conf->name, "0",
                    aconf->class_ptr->name);
-      }
     }
   }
 }
@@ -95,36 +117,36 @@ before_operator(void)
 {
   memset(&tmpoper, 0, sizeof(tmpoper));
 
-  SetConfEncrypted(&tmpoper.conf->AccessItem);
+  SetConfEncrypted(&tmpoper.conf.AccessItem);
 }
 
 static void
 after_operator(void)
 {
   struct ConfItem *oper = NULL;
-  struct AccessItem *yy_tmp = &tmpoper.conf->AccessItem;
+  struct AccessItem *yy_tmp = &tmpoper.conf.AccessItem;
 
   if (tmpoper.name == NULL ||
       yy_tmp->host == NULL ||
       yy_tmp->user == NULL)
     return;
 
-  if (&tmpoper.conf->AccessItem->class_ptr == NULL)
+  if (yy_tmp->class_ptr == NULL)
   {
     parse_error("Invalid or non-existant class in operator{}");
     return;
   }
 
-  if (!yy_tmp->passwd && !yy_aconf->rsa_public_key)
+  if (!yy_tmp->passwd && !yy_tmp->rsa_public_key)
     return;
 
-  oper = make_conf_item(OPER_TYPE);
+  oper = make_conf_item2(OPER_TYPE);
 
   /* XXX Temporary hack until we changed make_conf_item() so it doesn't add
    * newly created items onto doubly linked lists immediately after creation */
-  &tmpoper.node->head = oper->node.head;
-  &tmpoper.node->tail = oper->node.tail;
-  &tmpoper.node->data = oper->node.data;
+  tmpoper.node.data = oper->node.data;
+  tmpoper.node.prev = oper->node.prev;
+  tmpoper.node.next = oper->node.next;
 
   memcpy(oper, &tmpoper, sizeof(*oper));
 }
@@ -134,13 +156,13 @@ oper_encrypted(void *value, void *where)
 {
 
   if (*(int *)value)
-    SetConfEncrypted(&tmpoper.conf->AccessItem);
+    SetConfEncrypted(&tmpoper.conf.AccessItem);
   else
-    ClearConfEncrypted(&tmpoper.conf->AccessItem);
+    ClearConfEncrypted(&tmpoper.conf.AccessItem);
 }
 
 static void
-oper_user(void *value, *void where)
+oper_user(void *value, void *where)
 {
   char *str = value;
   char userbuf[USERLEN + 1];
@@ -162,20 +184,20 @@ oper_user(void *value, *void where)
   DupString(cuh->userptr, nuh.userptr);
   DupString(cuh->hostptr, nuh.hostptr);
 
-  dlinkAdd(cuh, &cuh->node, &tmpoper.conf->AccessItem->mask_list);
+  dlinkAdd(cuh, &cuh->node, &tmpoper.mask_list);
 }
 
 static void
-operator_class(void *value, void *where)
+oper_class(void *value, void *where)
 {
-  tmpoper.conf->AccessItem->class_ptr = find_class(value);
+  tmpoper.conf.AccessItem.class_ptr = find_class(value);
 }
 
 static void
 oper_rsa_public_key_file(void *value, void *where)
 {
   const char *str = value;
-  struct AccessItem *yy_tmp = &tmpoper.conf->AccessItem;
+  struct AccessItem *yy_aconf = &tmpoper.conf.AccessItem;
   BIO *file = NULL;
 
   if (yy_aconf->rsa_public_key != NULL)
@@ -234,7 +256,7 @@ parse_flag_list(void *list, void *where)
     const char *str = ptr->data;
 
     found = 0;
-    for (p = flags_mappings; p->name; ++p)
+    for (p = flag_mappings; p->name; ++p)
     {
       if (!irccmp(str, p->name))
       {
@@ -248,7 +270,7 @@ parse_flag_list(void *list, void *where)
       parse_error("Unknown flag [%s]", str);
   }
 
-  &tmpoper.conf->AccessItem->port = flags;
+  tmpoper.conf.AccessItem.port = flags;
 }
 
 void
@@ -268,7 +290,7 @@ init_operator(void)
     s->def_field = add_conf_field(s, "name", CT_STRING, NULL, &tmpoper.name);
     add_conf_field(s, "user", CT_STRING, oper_user, NULL);
     add_conf_field(s, "class", CT_STRING, oper_class, NULL);
-    add_conf_field(s, "password", CT_STRING, NULL, &tmpoper.conf->AccessItem->password);
+    add_conf_field(s, "password", CT_STRING, NULL, tmpoper.conf.AccessItem.passwd);
     add_conf_field(s, "encrypted", CT_BOOL, oper_encrypted, NULL);
     add_conf_field(s, "rsa_public_keyfile", CT_STRING, oper_rsa_public_key_file, NULL);
     add_conf_field(s, "flags", CT_LIST, parse_flag_list, NULL);
