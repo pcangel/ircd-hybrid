@@ -30,7 +30,10 @@
 #include "restart.h"
 #include "send.h"
 
-int conf_cold = YES;
+int conf_pass, conf_cold = YES;
+struct ConfParserContext conf_curctx;
+char conf_linebuf[CONF_BUFSIZE];
+
 struct Callback *reset_conf = NULL;
 struct Callback *verify_conf = NULL;
 struct Callback *switch_conf_pass = NULL;

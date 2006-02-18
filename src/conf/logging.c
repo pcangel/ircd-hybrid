@@ -26,6 +26,8 @@
 #include "conf/conf.h"
 #include "ircd.h"
 
+struct LoggingConf Logging;
+
 static dlink_node *hreset, *hverify;
 
 /*

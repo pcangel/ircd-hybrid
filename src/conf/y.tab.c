@@ -90,7 +90,6 @@
 #define YY_NO_UNPUT
 
 struct ConfSection *conf_current_section;
-int conf_pass;
 
 static dlink_list conf_list = {NULL, NULL, 0};
 static struct ConfField *conf_field;
@@ -137,13 +136,13 @@ void conf_add_number(int number)
 #endif
 
 #ifndef YYSTYPE
-#line 67 "parser.y"
+#line 66 "parser.y"
 typedef union {
     int number;
     char *string;
 } yystype;
 /* Line 193 of /usr/local/share/bison/yacc.c.  */
-#line 147 "y.tab.c"
+#line 146 "y.tab.c"
 # define YYSTYPE yystype
 # define YYSTYPE_IS_TRIVIAL 1
 #endif
@@ -164,7 +163,7 @@ typedef struct yyltype
 
 
 /* Line 213 of /usr/local/share/bison/yacc.c.  */
-#line 168 "y.tab.c"
+#line 167 "y.tab.c"
 
 #if ! defined (yyoverflow) || YYERROR_VERBOSE
 
@@ -345,11 +344,11 @@ static const yysigned_char yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const unsigned char yyrline[] =
 {
-       0,    96,    96,    97,   101,   100,   121,   122,   124,   124,
-     125,   126,   127,   128,   129,   131,   131,   132,   133,   134,
-     136,   137,   138,   144,   145,   154,   154,   155,   155,   156,
-     157,   158,   161,   162,   165,   165,   169,   171,   173,   175,
-     177,   179,   181,   184,   189,   190,   193,   193
+       0,    95,    95,    96,   100,    99,   120,   121,   123,   123,
+     124,   125,   126,   127,   128,   130,   130,   131,   132,   133,
+     135,   136,   137,   143,   144,   153,   153,   154,   154,   155,
+     156,   157,   160,   161,   164,   164,   168,   170,   172,   174,
+     176,   178,   180,   183,   188,   189,   192,   192
 };
 #endif
 
@@ -1034,7 +1033,7 @@ yyreduce:
   switch (yyn)
     {
         case 4:
-#line 101 "parser.y"
+#line 100 "parser.y"
     {
   if ((conf_current_section = find_conf_section(yyvsp[0].string)) != NULL)
   {
@@ -1048,7 +1047,7 @@ yyreduce:
     break;
 
   case 5:
-#line 111 "parser.y"
+#line 110 "parser.y"
     {
   if (conf_current_section != NULL)
   {
@@ -1061,67 +1060,67 @@ yyreduce:
     break;
 
   case 8:
-#line 124 "parser.y"
+#line 123 "parser.y"
     { yyval.number = 0; }
     break;
 
   case 10:
-#line 125 "parser.y"
+#line 124 "parser.y"
     { yyval.number = yyvsp[-2].number + yyvsp[0].number; }
     break;
 
   case 11:
-#line 126 "parser.y"
+#line 125 "parser.y"
     { yyval.number = yyvsp[-2].number*60 + yyvsp[0].number; }
     break;
 
   case 12:
-#line 127 "parser.y"
+#line 126 "parser.y"
     { yyval.number = yyvsp[-2].number*3600 + yyvsp[0].number; }
     break;
 
   case 13:
-#line 128 "parser.y"
+#line 127 "parser.y"
     { yyval.number = yyvsp[-2].number*86400 + yyvsp[0].number; }
     break;
 
   case 14:
-#line 129 "parser.y"
+#line 128 "parser.y"
     { yyval.number = yyvsp[-2].number*604800 + yyvsp[0].number; }
     break;
 
   case 15:
-#line 131 "parser.y"
+#line 130 "parser.y"
     { yyval.number = 0; }
     break;
 
   case 17:
-#line 132 "parser.y"
+#line 131 "parser.y"
     { yyval.number = yyvsp[-2].number + yyvsp[0].number; }
     break;
 
   case 18:
-#line 133 "parser.y"
+#line 132 "parser.y"
     { yyval.number = yyvsp[-2].number*1024 + yyvsp[0].number; }
     break;
 
   case 19:
-#line 134 "parser.y"
+#line 133 "parser.y"
     { yyval.number = yyvsp[-2].number*1048576 + yyvsp[0].number; }
     break;
 
   case 20:
-#line 136 "parser.y"
+#line 135 "parser.y"
     { conf_add_ident(yyvsp[0].string); }
     break;
 
   case 23:
-#line 144 "parser.y"
+#line 143 "parser.y"
     { conf_add_number(yyvsp[0].number); }
     break;
 
   case 24:
-#line 146 "parser.y"
+#line 145 "parser.y"
     {
   int i;
   
@@ -1133,49 +1132,49 @@ yyreduce:
     break;
 
   case 34:
-#line 165 "parser.y"
+#line 164 "parser.y"
     {
   conf_field = find_conf_field(conf_current_section, yyvsp[0].string);
 }
     break;
 
   case 37:
-#line 171 "parser.y"
+#line 170 "parser.y"
     {
          conf_assign(CT_STRING, conf_field, yyvsp[0].string);
        }
     break;
 
   case 38:
-#line 173 "parser.y"
+#line 172 "parser.y"
     {
          conf_assign(CT_NUMBER, conf_field, &yyvsp[0].number);
        }
     break;
 
   case 39:
-#line 175 "parser.y"
+#line 174 "parser.y"
     {
          conf_assign(CT_BOOL, conf_field, &yyvsp[0].number);
        }
     break;
 
   case 40:
-#line 177 "parser.y"
+#line 176 "parser.y"
     {
          conf_assign(CT_TIME, conf_field, &yyvsp[0].number);
        }
     break;
 
   case 41:
-#line 179 "parser.y"
+#line 178 "parser.y"
     {
          conf_assign(CT_SIZE, conf_field, &yyvsp[0].number);
        }
     break;
 
   case 42:
-#line 181 "parser.y"
+#line 180 "parser.y"
     {
          conf_assign(CT_LIST, conf_field, &conf_list);
          conf_clear_list(1);
@@ -1183,7 +1182,7 @@ yyreduce:
     break;
 
   case 43:
-#line 184 "parser.y"
+#line 183 "parser.y"
     {
          conf_assign(CT_NLIST, conf_field, &conf_list);
          conf_clear_list(0);
@@ -1191,7 +1190,7 @@ yyreduce:
     break;
 
   case 46:
-#line 193 "parser.y"
+#line 192 "parser.y"
     {
   conf_field = conf_current_section->def_field;
   if (!conf_field && conf_pass == conf_current_section->pass)
@@ -1203,7 +1202,7 @@ yyreduce:
     }
 
 /* Line 1016 of /usr/local/share/bison/yacc.c.  */
-#line 1207 "y.tab.c"
+#line 1206 "y.tab.c"
 
   yyvsp -= yylen;
   yyssp -= yylen;
@@ -1422,5 +1421,5 @@ yyreturn:
 }
 
 
-#line 96 "parser.y"
+#line 95 "parser.y"
 

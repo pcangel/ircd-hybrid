@@ -274,7 +274,6 @@ register_local_user(struct Client *source_p, const char *username)
 {
   struct AccessItem *aconf = NULL;
   char ipaddr[HOSTIPLEN];
-  dlink_node *m = NULL;
 
   assert(source_p != NULL);
   assert(MyConnect(source_p));

@@ -31,7 +31,6 @@
 #define YY_NO_UNPUT
 
 struct ConfSection *conf_current_section;
-int conf_pass;
 
 static dlink_list conf_list = {NULL, NULL, 0};
 static struct ConfField *conf_field;

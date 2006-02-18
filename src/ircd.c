@@ -640,9 +640,7 @@ main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
-  load_all_modules(1);
-  load_conf_modules();
-  load_core_modules(1);
+  boot_modules(1);
 
   /* Go back to DPATH after checking to see if we can chdir to MODPATH */
   chdir(ConfigFileEntry.dpath);

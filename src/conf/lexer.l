@@ -33,8 +33,6 @@
 #include "conf/conf.h"
 #include "y.tab.h"
 
-struct ConfParserContext conf_curctx;
-char conf_linebuf[CONF_BUFSIZE];
 int conf_include_sptr = 0;
 
 #undef  YY_INPUT
@@ -65,83 +63,83 @@ identifier	[a-zA-Z_][a-zA-Z0-9_:]*
 
 {include}	{ conf_include(); }
 "/*"		{
-                  int c;
+              int c;
 
-                  while (1)
-		  {
-		    while ((c = input()) != '*' && c != EOF)
-		      if (c == '\n')
-		      {
-		        conf_curctx.lineno++;
-			conf_linebuf[0] = '\0';
-		      }
-                    while (c == '*')
-		      c = input();
-		    if (c == '/')
-		      break;
-                    if (c == EOF)
-	            {
-	              yyerror("EOF in comment");
-	              break;
-		    }
-		  }
-		}
+              while (1)
+              {
+                while ((c = input()) != '*' && c != EOF)
+                  if (c == '\n')
+                  {
+                    conf_curctx.lineno++;
+                    conf_linebuf[0] = '\0';
+                  }
+                while (c == '*')
+                  c = input();
+                if (c == '/')
+                  break;
+                if (c == EOF)
+                {
+                  yyerror("EOF in comment");
+                  break;
+                }
+              }
+        	}
 \n.*		{
-		  conf_curctx.lineno++;
-                  strlcpy(conf_linebuf, yytext + 1, CONF_BUFSIZE);
-		  yyless(1);
-		}
+              conf_curctx.lineno++;
+              strlcpy(conf_linebuf, yytext + 1, CONF_BUFSIZE);
+              yyless(1);
+            }
 {ws}		;
 #.*		{
-                  if (!strncasecmp(yytext, "#include", 8))
-		    yyerror("You probably meant '.include', ignoring");
+          if (!strncasecmp(yytext, "#include", 8))
+          yyerror("You probably meant '.include', ignoring");
 		}
 [0-9]+		{ yylval.number = atoi(yytext); return NUMBER; }
 {qstring}	{
-                  yytext[yyleng - 1] = '\0';
-		  yylval.string = yytext + 1;
-		  return QSTRING;
-		}
-b		{ return BYTES; }
-byte		{ return BYTES; }
-bytes		{ return BYTES; }
-d		{ return DAYS; }
-day		{ return DAYS; }
-days		{ return DAYS; }
+              yytext[yyleng - 1] = '\0';
+              yylval.string = yytext + 1;
+              return QSTRING;
+            }
+b           { return BYTES; }
+byte        { return BYTES; }
+bytes       { return BYTES; }
+d           { return DAYS; }
+day	        { return DAYS; }
+days        { return DAYS; }
 false		{ yylval.number = 0; return BOOL; }
-h		{ return HOURS; }
+h           { return HOURS; }
 hour		{ return HOURS; }
 hours		{ return HOURS; }
-kb		{ return KBYTES; }
+kb          { return KBYTES; }
 kbyte		{ return KBYTES; }
 kbytes		{ return KBYTES; }
 kilobyte	{ return KBYTES; }
 kilobytes	{ return KBYTES; }
-mb		{ return MBYTES; }
+mb          { return MBYTES; }
 mbyte		{ return MBYTES; }
 mbytes		{ return MBYTES; }
 megabyte	{ return MBYTES; }
 megabytes	{ return MBYTES; }
-m		{ return MINUTES; }
-min		{ return MINUTES; }
+m           { return MINUTES; }
+min         { return MINUTES; }
 mins		{ return MINUTES; }
 minute		{ return MINUTES; }
 minutes		{ return MINUTES; }
-no		{ yylval.number = 0; return BOOL; }
-off		{ yylval.number = 0; return BOOL; }
-on		{ yylval.number = 1; return BOOL; }
-s		{ return SECONDS; }
-sec		{ return SECONDS; }
+no          { yylval.number = 0; return BOOL; }
+off         { yylval.number = 0; return BOOL; }
+on          { yylval.number = 1; return BOOL; }
+s           { return SECONDS; }
+sec         { return SECONDS; }
 secs		{ return SECONDS; }
 second		{ return SECONDS; }
 seconds		{ return SECONDS; }
 true		{ yylval.number = 1; return BOOL; }
-w		{ return WEEKS; }
+w           { return WEEKS; }
 week		{ return WEEKS; }
 weeks		{ return WEEKS; }
-yes		{ yylval.number = 1; return BOOL; }
+yes         { yylval.number = 1; return BOOL; }
 {identifier}	{ yylval.string = yytext; return IDENTIFIER; }
-.		{ return yytext[0]; }
+.           { return yytext[0]; }
 <<EOF>>		{ if (conf_eof()) yyterminate(); }
 
 %%

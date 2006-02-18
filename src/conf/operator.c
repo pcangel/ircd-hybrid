@@ -22,6 +22,8 @@
  *  $Id$
  */
 
+#include "stdinc.h"
+#include "client.h"
 
 static dlink_node *hreset = NULL;
 static struct AccessItem tmpoper;

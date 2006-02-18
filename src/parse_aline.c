@@ -36,7 +36,7 @@
 #include "ircd.h"
 #include "listener.h"
 #include "hostmask.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "numeric.h"
 #include "send.h"
 #include "s_gline.h"

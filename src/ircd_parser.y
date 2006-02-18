@@ -31,7 +31,6 @@
 #include "ircd.h"
 #include "s_conf.h"
 #include "client.h"	/* for UMODE_ALL only */
-#include "modules.h"
 #include "s_serv.h" /* for CAP_LL / IsCapable */
 #include "hostmask.h"
 #include "send.h"
@@ -454,27 +453,10 @@ modules_item:   modules_module | modules_path | error ';' ;
 
 modules_module: MODULE '=' QSTRING ';'
 {
-#ifndef STATIC_MODULES /* NOOP in the static case */
-  if (ypass == 2)
-  {
-    char *m_bn;
-
-    m_bn = basename(yylval.string);
-
-    /* I suppose we should just ignore it if it is already loaded(since
-     * otherwise we would flood the opers on rehash) -A1kmm.
-     */
-    add_conf_module(yylval.string);
-  }
-#endif
 };
 
 modules_path: PATH '=' QSTRING ';'
 {
-#ifndef STATIC_MODULES
-  if (ypass == 2)
-    mod_add_path(yylval.string);
-#endif
 };
 
 /***************************************************************************

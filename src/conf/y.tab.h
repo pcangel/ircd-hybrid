@@ -63,7 +63,7 @@
 
 
 #ifndef YYSTYPE
-#line 67 "parser.y"
+#line 66 "parser.y"
 typedef union {
     int number;
     char *string;

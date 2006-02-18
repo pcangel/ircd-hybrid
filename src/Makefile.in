@@ -46,6 +46,15 @@ lex.yy.o:	y.tab.c lex.yy.c ircd_lexer.l
 SSL_SRCS = rsa.c
 
 SRCS = \
+ conf/admin.c \
+ conf/channel.c \
+ conf/conf.c \
+ conf/general.c \
+ conf/logging.c \
+ conf/modules.c \
+ conf/operator.c \
+ conf/serverhide.c \
+ conf/serverinfo.c \
  channel.c \
  channel_mode.c \
  client.c \
@@ -59,7 +68,6 @@ SRCS = \
  listener.c \
  m_error.c \
  metadata.c \
- modules.c \
  motd.c \
  numeric.c \
  packet.c \

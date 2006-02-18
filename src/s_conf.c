@@ -36,7 +36,7 @@
 #include "ircd.h"
 #include "listener.h"
 #include "hostmask.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "numeric.h"
 #include "send.h"
 #include "s_gline.h"
@@ -1511,10 +1511,6 @@ rehash(int sig)
   if (ServerInfo.description != NULL)
     strlcpy(me.info, ServerInfo.description, sizeof(me.info));
 
-#ifndef STATIC_MODULES
-  load_conf_modules();
-#endif
-
   rehashed_klines = 1;
 
   if (ConfigLoggingEntry.use_logging)
@@ -2047,11 +2043,6 @@ clear_out_old_conf(void)
   }
 
   clear_out_address_conf();
-
-  /* clean out module paths */
-#ifndef STATIC_MODULES
-  mod_clear_paths();
-#endif
 
   /* clean out ServerInfo */
   MyFree(ServerInfo.description);
