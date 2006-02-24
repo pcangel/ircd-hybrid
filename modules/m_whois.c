@@ -76,6 +76,11 @@ m_whois(struct Client *client_p, struct Client *source_p,
 {
   static time_t last_used = 0;
 
+  if (parv[1] != NULL)
+    parv[1] = stripws(parv[1]);
+  if (parv[2] != NULL)
+    parv[2] = stripws(parv[2]);
+
   if (parc < 2 || EmptyString(parv[1]))
   {
     sendto_one(source_p, form_str(ERR_NONICKNAMEGIVEN),
@@ -121,6 +126,11 @@ static void
 mo_whois(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
+  if (parv[1] != NULL)
+    parv[1] = stripws(parv[1]);
+  if (parv[2] != NULL)
+    parv[2] = stripws(parv[2]);
+
   if (parc < 2 || EmptyString(parv[1]))
   {
     sendto_one(source_p, form_str(ERR_NONICKNAMEGIVEN),
