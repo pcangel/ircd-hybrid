@@ -48,7 +48,7 @@ static struct entity
 
 static int ntargets, join_0;
 
-static void build_target_list(struct Client *, struct Client *, char *, char *);
+static void build_target_list(struct Client *, char *, char *);
 static int is_target(struct Channel *);
 
 static void m_join(struct Client *, struct Client *, int, char **);
@@ -100,7 +100,9 @@ m_join(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  build_target_list(client_p, source_p, parv[1], ((parc > 2) ? parv[2] : NULL));
+  assert(client_p == source_p);
+
+  build_target_list(source_p, parv[1], parv[2]);
 
   if ((a = (join_0 >= 0) ? join_0 : 0))
     do_join_0(client_p, source_p);
@@ -239,10 +241,9 @@ ms_join(struct Client *client_p, struct Client *source_p,
   mode.mode = mode.limit = 0;
   mode.key[0] = '\0';
 
-  s = parv[3];
-  while (*s)
+  for (s = parv[3]; *s; ++s)
   {
-    switch (*(s++))
+    switch (*s)
     {
       case 't':
         mode.mode |= MODE_TOPICLIMIT;
@@ -267,22 +268,22 @@ ms_join(struct Client *client_p, struct Client *source_p,
           return;
 
         strlcpy(mode.key, parv[4 + args], sizeof(mode.key));
-        args++;
+        ++args;
         break;
       case 'l':
         if (parc < 5 + args)
           return;
 
         mode.limit = atoi(parv[4 + args]);
-        args++;
+        ++args;
         break;
     }
   }
 
   if ((chptr = get_or_create_channel(source_p, parv[2], &isnew)) == NULL)
-    return; /* channel name too long? */
+    return;    /* channel name too long? */
 
-  newts = atol(parv[1]);
+  newts   = atol(parv[1]);
   oldts   = chptr->channelts;
   oldmode = &chptr->mode;
 
@@ -428,18 +429,19 @@ do_join_0(struct Client *client_p, struct Client *source_p)
  *
  */
 static void
-build_target_list(struct Client *client_p, struct Client *source_p,
-                  char *channels, char *keys)
+build_target_list(struct Client *source_p, char *channels, char *keys)
 {
-  int error_reported, flags = 0;
-  char *p, *p2, *chan, *key = keys;
+  int error_reported = 0, flags = 0;
+  char *p = NULL, *p2 = NULL, *chan, *key = keys;
   struct Channel *chptr = NULL;
 
-  ntargets = error_reported = 0;
+  ntargets = 0;
   join_0 = -1;
 
+  key = key ? strtoken(&p2, keys, ",") : NULL;
+
   for (chan = strtoken(&p, channels, ","); chan;
-       key  = (key) ? strtoken(&p2, keys, ",") : NULL,
+       key  = key ? strtoken(&p2, NULL, ",") : NULL,
        chan = strtoken(&p, NULL, ","))
   {
     if (!check_channel_name(chan))
@@ -563,7 +565,7 @@ is_target(struct Channel *chptr)
    * if the returned value is > join_0 (the highest 0 in the targets)
    * we know they are supposed to stay in that channel.
    */
-  for (i = ntargets-1; i >=0; i--)
+  for (i = ntargets-1; i >= 0; --i)
     if (targets[i].chptr == chptr)
       return i;
 
