@@ -313,7 +313,7 @@ send_channel_modes(struct Client *client_p, struct Channel *chptr)
 int
 check_channel_name(const char *name, int local)
 {
-  const unsigned char *p = (const unsigned char *)name;
+  const char *p = name;
   int max_length = local ? LOCAL_CHANNELLEN : CHANNELLEN;
   assert(name != NULL);
 
