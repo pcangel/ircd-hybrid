@@ -320,7 +320,7 @@ check_channel_name(const char *name, int local)
   if (!IsChanPrefix(*p))
     return 0;
 
-  for (; *p; ++p)
+  while (*++p)
     if (!IsChanChar(*p))
       return 0;
 
