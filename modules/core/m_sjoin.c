@@ -88,7 +88,7 @@ ms_sjoin(struct Client *client_p, struct Client *source_p,
   time_t         newts;
   time_t         oldts;
   time_t         tstosend;
-  static         struct Mode mode, *oldmode;
+  struct Mode mode, *oldmode;
   int            args = 0;
   char           keep_our_modes = YES;
   char           keep_new_modes = YES;
@@ -99,7 +99,7 @@ ms_sjoin(struct Client *client_p, struct Client *source_p,
   char           *np, *up;
   int            len_nick = 0;
   int            len_uid = 0;
-  int            isnew;
+  int            isnew = 0;
   int            buflen = 0;
   int	         slen;
   unsigned       int fl;
@@ -120,8 +120,13 @@ ms_sjoin(struct Client *client_p, struct Client *source_p,
   if (*parv[2] != '#')
     return;
 
-  if (!check_channel_name(parv[2]))
+  if (!check_channel_name(parv[2], 0))
+  {
+    sendto_realops_flags(UMODE_DEBUG, L_ALL,
+                         "*** Too long or invalid channel name from %s: %s",
+                         client_p->name, parv[2]);
     return;
+  }
 
   modebuf[0] = '\0';
   mbuf = modebuf;
@@ -172,8 +177,11 @@ ms_sjoin(struct Client *client_p, struct Client *source_p,
 
   parabuf[0] = '\0';
 
-  if ((chptr = get_or_create_channel(source_p, parv[2], &isnew)) == NULL)
-    return; /* channel name too long? */
+  if ((chptr = hash_find_channel(parv[2])) == NULL)
+  {
+    isnew = 1;
+    chptr = make_channel(parv[2]);
+  }
 
   oldts   = chptr->channelts;
   oldmode = &chptr->mode;

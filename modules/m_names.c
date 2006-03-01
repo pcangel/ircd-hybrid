@@ -87,7 +87,7 @@ m_names(struct Client *client_p, struct Client *source_p,
     if (*para == '\0')
       return;
 
-    if (!check_channel_name(para))
+    if (!check_channel_name(para, 0))
     { 
       sendto_one(source_p, form_str(ERR_BADCHANNAME),
                  me.name, source_p->name, para);
@@ -118,19 +118,14 @@ m_names(struct Client *client_p, struct Client *source_p,
 static void
 names_all_visible_channels(struct Client *source_p)
 {
-  dlink_node *ptr;
-  struct Channel *chptr;
+  dlink_node *ptr = NULL;
 
   /* 
    * First, do all visible channels (public and the one user self is)
    */
   DLINK_FOREACH(ptr, global_channel_list.head)
-  {
-    chptr = ptr->data;
-
     /* Find users on same channel (defined by chptr) */
-    channel_member_names(source_p, chptr, 0);
-  }
+    channel_member_names(source_p, ptr->data, 0);
 }
 
 /* names_non_public_non_secret()
@@ -151,7 +146,7 @@ names_non_public_non_secret(struct Client *source_p)
   char buf[IRCD_BUFSIZE];
   char *t;
 
-  mlen = ircsprintf(buf,form_str(RPL_NAMREPLY),
+  mlen = ircsprintf(buf, form_str(RPL_NAMREPLY),
                     me.name, source_p->name, "*", "*");
   cur_len = mlen;
   t = buf + mlen;

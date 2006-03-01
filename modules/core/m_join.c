@@ -143,7 +143,7 @@ m_join(struct Client *client_p, struct Client *source_p,
     if (key && *key == '\0')
       key = NULL;
 
-    if (!IsChanPrefix(*chan) || !check_channel_name(chan))
+    if (!check_channel_name(chan, 1))
     {
       sendto_one(source_p, form_str(ERR_BADCHANNAME),
                  me.name, source_p->name, chan);
@@ -153,13 +153,6 @@ m_join(struct Client *client_p, struct Client *source_p,
     if (ConfigChannel.disable_local_channels && (*chan == '&'))
     {
       sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL),
-                 me.name, source_p->name, chan);
-      continue;
-    }
-
-    if (strlen(chan) > LOCAL_CHANNELLEN)
-    {
-      sendto_one(source_p, form_str(ERR_BADCHANNAME),
                  me.name, source_p->name, chan);
       continue;
     }
@@ -219,13 +212,7 @@ m_join(struct Client *client_p, struct Client *source_p,
       }
 
       flags = CHFL_CHANOP;
-
-      if ((chptr = get_or_create_channel(source_p, chan, NULL)) == NULL)
-      {
-        sendto_one(source_p, form_str(ERR_UNAVAILRESOURCE),
-                   me.name, source_p->name, chan);
-        continue;
-      }
+      chptr = make_channel(chan);
     }
 
     if (!IsOper(source_p))
@@ -320,16 +307,16 @@ static void
 ms_join(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
 {
-  struct Channel *chptr;
-  time_t         newts;
-  time_t         oldts;
-  static         struct Mode mode, *oldmode;
-  int            args = 0;
-  int            keep_our_modes = 1;
-  int            keep_new_modes = 1;
-  int            isnew;
-  char           *s;
-  const char *servername;
+  struct Channel *chptr = NULL;
+  time_t newts = 0;
+  time_t oldts = 0;
+  struct Mode mode, *oldmode;
+  int args = 0;
+  int keep_our_modes = 1;
+  int keep_new_modes = 1;
+  int isnew = 0;
+  char *s = NULL;
+  const char *servername = NULL;
 
   if (parc == 2 && !irccmp(parv[1], "0"))
   {
@@ -337,11 +324,16 @@ ms_join(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if (parc < 4)
+  if (parc < 4 || *parv[2] == '&')
     return;
 
-  if (*parv[2] == '&' || !check_channel_name(parv[2]))
+  if (!check_channel_name(parv[2], 0))
+  {
+    sendto_realops_flags(UMODE_DEBUG, L_ALL,
+                         "*** Too long or invalid channel name from %s: %s",
+                         client_p->name, parv[2]);
     return;
+  }
 
   mbuf = modebuf;
   mode.mode = mode.limit = 0;
@@ -386,8 +378,11 @@ ms_join(struct Client *client_p, struct Client *source_p,
     }
   }
 
-  if ((chptr = get_or_create_channel(source_p, parv[2], &isnew)) == NULL)
-    return;    /* channel name too long? */
+  if ((chptr = hash_find_channel(parv[2])) == NULL)
+  {
+    isnew = 1;
+    chptr = make_channel(parv[2]);
+  }
 
   newts   = atol(parv[1]);
   oldts   = chptr->channelts;

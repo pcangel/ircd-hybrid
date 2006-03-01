@@ -84,7 +84,7 @@ mo_forcejoin(struct Client *client_p, struct Client *source_p,
   char mode = '\0';
   char sjmode = '\0';
   char *newch = NULL;
-  dlink_node *ptr;
+  dlink_node *ptr = NULL;
 
   if (!IsAdmin(source_p))
   {
@@ -93,7 +93,7 @@ mo_forcejoin(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if ((target_p = find_client(parv[1])) == NULL)
+  if ((target_p = find_client(parv[1])) == NULL || !IsClient(target_p))
   {
     sendto_one(source_p, form_str(ERR_NOSUCHNICK),
                me.name, source_p->name, parv[1]);
@@ -167,6 +167,7 @@ mo_forcejoin(struct Client *client_p, struct Client *source_p,
     if (chptr->chname[0] == '#')
     {
       if (sjmode)
+      {
         DLINK_FOREACH (ptr, serv_list.head)
         {
           struct Client *serv_p = ptr->data;
@@ -179,6 +180,7 @@ mo_forcejoin(struct Client *client_p, struct Client *source_p,
                      !IsCapable(serv_p, CAP_HOPS)) ? '@' : sjmode,
                      ID_or_name(target_p, serv_p));
         }
+      }
       else
       {
         sendto_server(target_p, target_p, chptr, CAP_TS6, NOCAPS,
@@ -209,22 +211,15 @@ mo_forcejoin(struct Client *client_p, struct Client *source_p,
   {
     newch = parv[2];
 
-    if (check_channel_name(newch) == 0)
+    if (!check_channel_name(newch, 1))
     {
       sendto_one(source_p, form_str(ERR_BADCHANNAME),
                  me.name, source_p->name, newch);
       return;
     }
 
-    /* channel name must begin with & or # */
-    if (!IsChanPrefix(*newch))
-    {
-      sendto_one(source_p, form_str(ERR_BADCHANNAME),
-                 me.name, source_p->name, newch);
-      return;
-    }
-
-    /* it would be interesting here to allow an oper
+    /*
+     * it would be interesting here to allow an oper
      * to force target_p into a channel that doesn't exist
      * even more so, into a local channel when we disable
      * local channels... but...
@@ -237,15 +232,7 @@ mo_forcejoin(struct Client *client_p, struct Client *source_p,
       return;
     }
 
-    /* newch can't be longer than LOCAL_CHANNELLEN */
-    if (strlen(newch) > LOCAL_CHANNELLEN)
-    {
-      sendto_one(source_p, form_str(ERR_BADCHANNAME),
-                 me.name, source_p->name, newch);
-      return;
-    }
-
-    chptr = get_or_create_channel(target_p, newch, NULL);
+    chptr = make_channel(newch);
     add_user_to_channel(chptr, target_p, CHFL_CHANOP, NO);
 
     /* send out a join, make target_p join chptr */
@@ -273,7 +260,8 @@ mo_forcejoin(struct Client *client_p, struct Client *source_p,
     target_p->localClient->last_join_time = CurrentTime;
     channel_member_names(target_p, chptr, 1);
 
-    /* we do this to let the oper know that a channel was created, this will be
+    /*
+     * We do this to let the oper know that a channel was created, this will be
      * seen from the server handling the command instead of the server that
      * the oper is on.
      */

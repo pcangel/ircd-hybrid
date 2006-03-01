@@ -97,7 +97,7 @@ EXTERN dlink_list global_channel_list;
 
 EXTERN void init_channels(void);
 
-EXTERN int check_channel_name(const char *);
+EXTERN int check_channel_name(const char *, int);
 EXTERN int can_send(struct Channel *, struct Client *, struct Membership *);
 EXTERN int is_banned(const struct Channel *, const struct Client *);
 EXTERN int can_join(struct Client *, struct Channel *, const char *);
@@ -121,7 +121,7 @@ EXTERN void set_channel_topic(struct Channel *, const char *, const char *, time
 
 EXTERN const char *get_member_status(const struct Membership *, int);
 
-EXTERN struct Channel *get_or_create_channel(struct Client *, const char *, int *);
+EXTERN struct Channel *make_channel(const char *);
 EXTERN struct Membership *find_channel_link(struct Client *, struct Channel *);
 
 /* channel visible */
