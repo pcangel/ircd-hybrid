@@ -93,7 +93,7 @@ static void operspy_whois(struct Client *, int, char *[]);
 
 struct Message operspy_msgtab = {
   "OPERSPY", 0, 0, 3, 4, MFLG_SLOW, 0,
-  {m_ignore, m_not_oper, ms_operspy, ms_operspy, mo_operspy, m_ignore}
+  { m_ignore, m_not_oper, ms_operspy, ms_operspy, mo_operspy, m_ignore }
 };
 
 static const struct operspy_s {
@@ -230,11 +230,6 @@ operspy_mode(struct Client *client_p, int parc, char *parv[])
 
   if ((chptr_mode = hash_find_channel(parv[2])) == NULL)
   {
-    /*
-     * according to m_mode.c, the channel *could* exist on the uplink still,
-     * but I don't see how.  Even if it does, we won't be able to spy without
-     * info.
-     */ 
     sendto_one(client_p, form_str(ERR_NOSUCHCHANNEL),
                me.name, client_p->name, parv[2]);
     return;
@@ -254,10 +249,10 @@ operspy_mode(struct Client *client_p, int parc, char *parv[])
   channel_modes(chptr_mode, client_p, modebuf, parabuf);
   client_p->status = c_status;
 
-  sendto_one(client_p, form_str(RPL_CHANNELMODEIS),
-             me.name, client_p->name, parv[2], modebuf, parabuf);
-  sendto_one(client_p, form_str(RPL_CREATIONTIME),
-             me.name, client_p->name, parv[2], chptr_mode->channelts);
+  sendto_one(client_p, form_str(RPL_CHANNELMODEIS), me.name,
+             client_p->name, parv[2], modebuf, parabuf);
+  sendto_one(client_p, form_str(RPL_CREATIONTIME), me.name,
+             client_p->name, parv[2], chptr_mode->channelts);
 }
 
 static void
@@ -277,15 +272,20 @@ operspy_names(struct Client *client_p, int parc, char *parv[])
   operspy_log(client_p, "NAMES", parv[2]);
 #endif
 
-  /* the way to go with this, rather than temporarily setting -sp,
+  /*
+   * the way to go with this, rather than temporarily setting -sp,
    * is to temporarily add our client to the member list.  then
    * we can also list +i users.  an unfortunate side-effect of this
    * is that your nickname shows up in the list.  for now, there is
    * no easy way around it.
-   */ 
-  add_user_to_channel(chptr_names, client_p, CHFL_CHANOP, NO);
-  channel_member_names(client_p, chptr_names, 1);
-  remove_user_from_channel(find_channel_link(client_p, chptr_names));
+   */
+  if (IsMember(client_p, chptr))
+    channel_member_names(client_p, chptr_names, 1);
+  else {
+    add_user_to_channel(chptr_names, client_p, CHFL_CHANOP, NO);
+    channel_member_names(client_p, chptr_names, 1);
+    remove_user_from_channel(find_channel_link(client_p, chptr_names));
+  }
 }
 
 static void
@@ -399,7 +399,7 @@ operspy_who(struct Client *client_p, int parc, char *parv[])
 #endif
 
   /* /who 0 */
-  if ((*(mask + 1) == '\0') && (*mask == '0'))
+  if (!irccmp(mask, "0"))
     who_global(client_p, NULL, server_oper);
   else
     who_global(client_p, mask, server_oper);
