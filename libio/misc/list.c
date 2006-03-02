@@ -24,7 +24,7 @@
 
 #include "stdinc.h"
 
-static BlockHeap *dnode_heap;
+static BlockHeap *dnode_heap = NULL;
 
 /* init_dlink_nodes()
  *
@@ -47,9 +47,7 @@ init_dlink_nodes(void)
 dlink_node *
 make_dlink_node(void)
 {
-  dlink_node *lp = BlockHeapAlloc(dnode_heap);
-
-  return(lp);
+  return BlockHeapAlloc(dnode_heap);
 }
 
 /* free_dlink_node()
@@ -83,7 +81,7 @@ dlinkAdd(void *data, dlink_node *m, dlink_list *list)
     list->tail = m;
 
   list->head = m;
-  list->length++;
+  ++list->length;
 }
 
 void
@@ -99,7 +97,7 @@ dlinkAddBefore(dlink_node *b, void *data, dlink_node *m, dlink_list *list)
     m->prev = b->prev;
     b->prev = m; 
     m->next = b;
-    list->length++;
+    ++list->length;
   }
 }
 
@@ -116,7 +114,7 @@ dlinkAddTail(void *data, dlink_node *m, dlink_list *list)
     list->head = m;
  
   list->tail = m;
-  list->length++;
+  ++list->length;
 }
 
 /* Execution profiles show that this function is called the most
@@ -143,7 +141,8 @@ dlinkDelete(dlink_node *m, dlink_list *list)
 
   /* Set this to NULL does matter */
   m->next = m->prev = NULL;
-  list->length--;
+  assert(list->length > 0);
+  --list->length;
 }
 
 /*
@@ -159,10 +158,8 @@ dlinkFind(dlink_list *list, void *data)
   dlink_node *ptr;
 
   DLINK_FOREACH(ptr, list->head)
-  {
     if (ptr->data == data)
       return ptr;
-  }
 
   return NULL;
 }
@@ -203,30 +200,13 @@ dlinkMoveList(dlink_list *from, dlink_list *to)
 dlink_node *
 dlinkFindDelete(dlink_list *list, void *data)
 {
-  dlink_node *m;
+  dlink_node *m = NULL;
 
   DLINK_FOREACH(m, list->head)
   {
     if (m->data == data)
     {
-      if (m->next)
-        m->next->prev = m->prev;
-      else
-      {
-        assert(list->tail == m);
-        list->tail = m->prev;
-      }
-      if (m->prev)
-        m->prev->next = m->next;
-      else
-      {
-        assert(list->head == m);
-        list->head = m->next;
-      }
-      /* Set this to NULL does matter */
-      m->next = m->prev = NULL;
-      list->length--;
-
+      dlinkDelete(m, list);
       return m;
     }
   }

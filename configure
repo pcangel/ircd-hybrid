@@ -854,7 +854,6 @@ Optional Features:
   --enable-rtsigio        Enable SIGIO with RT Signals (Linux only)
   --enable-epoll          Enable Linux epoll support.
   --enable-clobber        Don't preserve old binaries on make install
-  --enable-assert         Enable assert().
   --enable-profile        Enable profiling
   --enable-efence         Enable ElectricFence (memory debugger).
   --disable-block-alloc   Disable the block allocator (Only useful with
@@ -2329,7 +2328,7 @@ case `$CC -V 2>&1` in
 *Sun*WorkShop* | *Forte*Developer* | *Sun*C*)
 	echo "$as_me:$LINENO: result: Sun Workshop/Forte" >&5
 echo "${ECHO_T}Sun Workshop/Forte" >&6
-	IRC_CFLAGS="-xO3 -xdepend -xinline=dlinkAdd,dlinkAddBefore,dlinkAddTail,dlinkDelete,dlink_list_length,dlink_node,dlinkMoveList,_MyMalloc,_MyRealloc,_MyFree,_DupString"
+	IRC_CFLAGS="-xO3 -xdepend -xinline=_MyMalloc,_MyRealloc,_MyFree,_DupString"
 	SunWorkShop=yes
 	SGS=yes
 ;;
@@ -9364,21 +9363,7 @@ if test "$clobber" = yes; then
 
 fi
 
-# Check whether --enable-assert or --disable-assert was given.
-if test "${enable_assert+set}" = set; then
-  enableval="$enable_assert"
-  assert=$enableval
-else
-  assert=no
-fi;
 
-if test "$assert" = no; then
-
-cat >>confdefs.h <<\_ACEOF
-#define NDEBUG 1
-_ACEOF
-
-fi
 
 echo "$as_me:$LINENO: checking if you want to do a profile build" >&5
 echo $ECHO_N "checking if you want to do a profile build... $ECHO_C" >&6

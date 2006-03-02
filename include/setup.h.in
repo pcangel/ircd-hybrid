@@ -186,9 +186,6 @@
 /* Log facility to use for syslog() */
 #undef LOG_FACILITY
 
-/* Define this to disable debugging support. */
-#undef NDEBUG
-
 /* Nickname length */
 #undef NICKLEN
 

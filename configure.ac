@@ -57,7 +57,7 @@ AC_MSG_CHECKING([$CC -V for Sun Workshop, Forte, HPUX or Tru64 cc])
 case `$CC -V 2>&1` in
 *Sun*WorkShop* | *Forte*Developer* | *Sun*C*)
 	AC_MSG_RESULT(Sun Workshop/Forte)
-	IRC_CFLAGS="-xO3 -xdepend -xinline=dlinkAdd,dlinkAddBefore,dlinkAddTail,dlinkDelete,dlink_list_length,dlink_node,dlinkMoveList,_MyMalloc,_MyRealloc,_MyFree,_DupString"
+	IRC_CFLAGS="-xO3 -xdepend -xinline=_MyMalloc,_MyRealloc,_MyFree,_DupString"
 	SunWorkShop=yes
 	SGS=yes
 ;;
@@ -713,13 +713,14 @@ if test "$clobber" = yes; then
 	AC_SUBST(CLOBBER, yes)
 fi
 
-AC_ARG_ENABLE(assert,
-AC_HELP_STRING([--enable-assert],[Enable assert().]),
-[assert=$enableval], [assert=no])
+dnl enabled for testing and beta releases
+dnl AC_ARG_ENABLE(assert,
+dnl AC_HELP_STRING([--enable-assert],[Enable assert().]),
+dnl [assert=$enableval], [assert=no])
 
-if test "$assert" = no; then
-	AC_DEFINE(NDEBUG, 1, [Define this to disable debugging support.])
-fi
+dnl if test "$assert" = no; then
+dnl	AC_DEFINE(NDEBUG, 1, [Define this to disable debugging support.])
+dnl fi
 
 AC_MSG_CHECKING(if you want to do a profile build)
 AC_ARG_ENABLE(profile,
