@@ -605,7 +605,7 @@ main(int argc, char *argv[])
   init_channels();
   init_channel_modes();
   initialize_server_capabs();   /* Set up default_server_capabs */
-ilog(L_NOTICE, "%s %s", IRCD_PREFIX, AUTOMODPATH);
+
   read_conf_files(1);   /* cold start init conf files */
   check_class();
   init_watch();

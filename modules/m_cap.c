@@ -36,7 +36,6 @@
 #include "s_conf.h"
 #include "s_stats.h"
 #include "s_user.h"
-#include "whowas.h"
 #include "s_serv.h"
 #include "send.h"
 #include "channel.h"
@@ -102,7 +101,8 @@ capab_search(const char *key, const struct capabilities *cap)
     else    /* OK, let's move on... */
       rb++;
 
-  /* If the character they differ on happens to be a space, and it happens
+  /*
+   * If the character they differ on happens to be a space, and it happens
    * to be the same length as the capability name, then we've found a
    * match; otherwise, return the difference of the two.
    */
@@ -118,9 +118,12 @@ find_cap(const char **caplist_p, int *neg_p)
 
   *neg_p = 0;    /* clear negative flag... */
 
-  if (!inited++)
+  if (!inited)
+  {
     /* First, let's sort the array... */
     qsort(capab_list, CAPAB_LIST_LEN, sizeof(struct capabilities), (bqcmp)capab_sort);
+    inited = 1;
+  }
 
   /* Next, find first non-whitespace character... */
   while (*caplist && IsSpace(*caplist))
@@ -157,10 +160,10 @@ find_cap(const char **caplist_p, int *neg_p)
 /** Send a CAP \a subcmd list of capability changes to \a sptr.
  * If more than one line is necessary, each line before the last has
  * an added "*" parameter before that line's capability list.
- * @param[in] sptr Client receiving capability list.
- * @param[in] set Capabilities to show as set (with ack and sticky modifiers).
- * @param[in] rem Capabalities to show as removed (with no other modifier).
- * @param[in] subcmd Name of capability subcommand.
+ * \param sptr   Client receiving capability list.
+ * \param set    Capabilities to show as set (with ack and sticky modifiers).
+ * \param rem    Capabalities to show as removed (with no other modifier).
+ * \param subcmd Name of capability subcommand.
  */
 static int
 send_caplist(struct Client *sptr, unsigned int set,
@@ -171,7 +174,7 @@ send_caplist(struct Client *sptr, unsigned int set,
   int i, loc, len, flags, pfx_len, clen;
 
   /* set up the buffer for the final LS message... */
-  clen = snprintf(cmdbuf, sizeof(capbuf), ":%s CAP %s %s ", me.name,
+  clen = snprintf(cmdbuf, sizeof(cmdbuf), ":%s CAP %s %s ", me.name,
                   sptr->name[0] ? sptr->name : "*", subcmd);
 
   for (i = 0, loc = 0; i < CAPAB_LIST_LEN; ++i)
@@ -227,7 +230,8 @@ send_caplist(struct Client *sptr, unsigned int set,
 static int
 cap_ls(struct Client *sptr, const char *caplist)
 {
-  if (IsUnknown(sptr)) /* registration hasn't completed; suspend it... */
+  if (IsUnknown(sptr))
+    /* registration hasn't completed; suspend it... */
     sptr->localClient->registration |= REG_NEED_CAP;
 
   return send_caplist(sptr, 0, 0, "LS"); /* send list of capabilities */
@@ -246,10 +250,13 @@ cap_req(struct Client *sptr, const char *caplist)
   if (IsUnknown(sptr)) /* registration hasn't completed; suspend it... */
     sptr->localClient->registration |= REG_NEED_CAP;
 
-  while (cl) { /* walk through the capabilities list... */
+  while (cl)
+  {
+    /* walk through the capabilities list... */
     if (!(cap = find_cap(&cl, &neg)) /* look up capability... */
-	|| (!neg && (cap->flags & CAPFL_PROHIBIT)) /* is it prohibited? */
-        || (neg && (cap->flags & CAPFL_STICKY))) { /* is it sticky? */
+	|| (!neg && (cap->flags & CAPFL_PROHIBIT))    /* is it prohibited? */
+        || (neg && (cap->flags & CAPFL_STICKY)))    /* is it sticky? */
+    {
       sendto_one(sptr, ":%s CAP %s NAK :%s", me.name,
                  sptr->name[0] ? sptr->name : "*", caplist);
       return 0; /* can't complete requested op... */
