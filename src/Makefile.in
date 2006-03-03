@@ -128,7 +128,7 @@ install: install-mkdirs build
 	@${MV} Makefile.depend Makefile
 
 clean:
-	${RM} -f *.o *.exe *~ *core ircd
+	${RM} -f *.o conf/*.o *.exe *~ *core ircd
 
 distclean: clean
 	${RM} -f Makefile .depend

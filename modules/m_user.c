@@ -85,7 +85,7 @@ mr_user(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  source_p->flags |= FLAGS_GOTUSER;
+  source_p->localClient->registration &= ~REG_NEED_USER;
 
   /*
    * don't take the clients word for it, ever
@@ -103,9 +103,7 @@ mr_user(struct Client *client_p, struct Client *source_p,
     strlcpy(source_p->username, parv[1], sizeof(source_p->username));
   }
 
-  if (source_p->name[0] != '\0')
-  {
+  if (!source_p->localClient->registration)
     /* NICK already received, now I have USER... */
     register_local_user(source_p, parv[1]);
-  }
 }

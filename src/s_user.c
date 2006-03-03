@@ -278,11 +278,11 @@ register_local_user(struct Client *source_p, const char *username)
   assert(source_p != NULL);
   assert(MyConnect(source_p));
   assert(source_p->username != username);
+  assert(!source_p->localClient->registration);
 
   if (ConfigFileEntry.ping_cookie)
   {
-    if (!IsPingSent(source_p) &&
-       source_p->localClient->random_ping == 0)
+    if (!IsPingSent(source_p) && !source_p->localClient->random_ping)
     {
       source_p->localClient->random_ping = (unsigned long)rand();
       sendto_one(source_p, "PING :%lu",

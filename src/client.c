@@ -113,6 +113,7 @@ make_client(struct Client *from)
     client_p->since = client_p->lasttime = client_p->firsttime = CurrentTime;
 
     client_p->localClient = BlockHeapAlloc(lclient_heap);
+    client_p->localClient->registration = REG_INIT;
     /* as good a place as any... */
     dlinkAdd(client_p, &client_p->localClient->lclient_node, &unknown_list);
   }
@@ -1409,6 +1410,7 @@ set_initial_nick(struct Client *source_p, const char *nick)
 
   /* This had to be copied here to avoid problems.. */
   source_p->tsinfo = CurrentTime;
+  source_p->localClient->registration &= ~REG_NEED_NICK;
 
   if (source_p->name[0])
     hash_del_client(source_p);
@@ -1419,7 +1421,7 @@ set_initial_nick(struct Client *source_p, const char *nick)
   /* fd_desc is long enough */
   fd_note(&source_p->localClient->fd, "Nick: %s", nick);
 
-  if (source_p->flags & FLAGS_GOTUSER)
+  if (!source_p->localClient->registration)
   {
     strlcpy(buf, source_p->username, sizeof(buf));
 
