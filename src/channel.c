@@ -173,13 +173,13 @@ send_members(struct Client *client_p, struct Channel *chptr,
       ID(ms->client_p) : ms->client_p->name) + 1;  /* nick + space */
 
     if (ms->flags & CHFL_CHANOP)
-      tlen++;
+      ++tlen;
 #ifdef HALFOPS
     else if (ms->flags & CHFL_HALFOP)
-      tlen++;
+      ++tlen;
 #endif
     if (ms->flags & CHFL_VOICE)
-      tlen++;
+      ++tlen;
 
     /* space will be converted into CR, but we also need space for LF..
      * That's why we use '- 1' here
@@ -229,7 +229,7 @@ send_mode_list(struct Client *client_p, struct Channel *chptr,
   int tlen, mlen, cur_len, count = 0;
   char *mp = NULL, *pp = pbuf;
 
-  if (top == NULL || top->length == 0)
+  if (top->length == 0)
     return;
 
   if (ts5)
@@ -459,8 +459,21 @@ channel_member_names(struct Client *source_p, struct Channel *chptr,
 
       tlen = strlen(target_p->name) + 1;  /* nick + space */
 
-      if (ms->flags & (CHFL_CHANOP | CHFL_HALFOP | CHFL_VOICE))
-        ++tlen;
+      if (!multi_prefix)
+      {
+        if (ms->flags & (CHFL_CHANOP | CHFL_HALFOP | CHFL_VOICE))
+          ++tlen;
+      }
+      else
+      {
+        if (ms->flags & CHFL_CHANOP)
+          ++tlen;
+        if (ms->flags & CHFL_HALFOP)
+          ++tlen;
+        if (ms->flags & CHFL_VOICE)
+          ++tlen;
+      }
+
       if (t + tlen - lbuf > IRCD_BUFSIZE)
       {
         *(t - 1) = '\0';
