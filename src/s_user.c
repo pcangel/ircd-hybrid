@@ -508,8 +508,6 @@ register_remote_user(struct Client *client_p, struct Client *source_p,
                          server, source_p->name, source_p->username,
                          source_p->host, source_p->from->name);
     kill_client(client_p, source_p, "%s (Server doesn't exist)", me.name);
-
-    /* XXX */
     SetKilled(source_p);
     exit_client(source_p, &me, "Ghosted Client");
     return;

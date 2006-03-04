@@ -47,27 +47,21 @@ add_history(struct Client *client_p, int online)
   if (++whowas_next == NICKNAMEHISTORYLENGTH)
     whowas_next = 0;
 
-  assert(client_p != NULL);
-
-  /* XXX when is this possible? Looks like it could happen
-   * (with a half registered client.)
-   * and what is the correct action here? - Dianora
-   */
-  if (client_p->servptr == NULL)
-    return;
+  assert(client_p && client_p->servptr);
 
   if (who->hashv != -1)
   {
-   if (who->online)
+    if (who->online)
       dlinkDelete(&who->cnode, &who->online->whowas);
 
     dlinkDelete(&who->tnode, &WHOWASHASH[who->hashv]);
   }
 
-  who->hashv  = strhash(client_p->name);
+  who->hashv = strhash(client_p->name);
   who->logoff = CurrentTime;
 
-  /* NOTE: strcpy ok here, the sizes in the client struct MUST
+  /*
+   * NOTE: strcpy ok here, the sizes in the client struct MUST
    * match the sizes in the whowas struct
    */
   strlcpy(who->name, client_p->name, sizeof(who->name));
@@ -108,7 +102,8 @@ get_history(const char *nick, time_t timelimit)
 
   timelimit = CurrentTime - timelimit;
 
-  DLINK_FOREACH(ptr, WHOWASHASH[strhash(nick)].head) {
+  DLINK_FOREACH(ptr, WHOWASHASH[strhash(nick)].head)
+  {
     struct Whowas *temp = ptr->data;
 
     if (irccmp(nick, temp->name))
