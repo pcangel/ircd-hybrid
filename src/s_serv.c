@@ -704,10 +704,6 @@ check_server(const char *name, struct Client *client_p, int cryptlink)
     ClearCap(client_p, CAP_TBURST);
   }
 
-  /* Don't unset CAP_HUB here even if the server isn't a hub,
-   * it only indicates if the server thinks its lazylinks are
-   * leafs or not.. if you unset it, bad things will happen
-   */
   if (aconf != NULL)
   {
     struct sockaddr_in *v4;
@@ -777,7 +773,7 @@ delete_capability(const char *capab_name)
 
     if (cap->cap != 0)
     {
-      if (irccmp(cap->name, capab_name) == 0)
+      if (!irccmp(cap->name, capab_name))
       {
 	default_server_capabs &= ~(cap->cap);
 	dlinkDelete(ptr, &cap_list);
@@ -788,7 +784,7 @@ delete_capability(const char *capab_name)
     }
   }
 
-  return(0);
+  return 0;
 }
 
 /*
@@ -810,11 +806,12 @@ find_capability(const char *capab)
 
     if (cap->cap != 0)
     {
-      if (irccmp(cap->name, capab) == 0)
-	return(cap->cap);
+      if (!irccmp(cap->name, capab))
+	return cap->cap;
     }
   }
-  return(0);
+
+  return 0;
 }
 
 /* send_capabilities()

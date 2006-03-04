@@ -530,7 +530,7 @@ sendto_channel_butone(struct Client *one, struct Client *from,
  * 
  * inputs       - pointer to client to NOT send to
  *              - pointer to source client required by LL (if any)
- *              - pointer to channel required by LL (if any)
+ *              - pointer to channel
  *              - caps or'd together which must ALL be present
  *              - caps or'd together which must ALL NOT be present
  *              - printf style format string
@@ -539,17 +539,9 @@ sendto_channel_butone(struct Client *one, struct Client *from,
  * side effects - Send a message to all connected servers, except the
  *                client 'one' (if non-NULL), as long as the servers
  *                support ALL capabs in 'caps', and NO capabs in 'nocaps'.
- *                If the server is a lazylink client, then it must know
- *                about source_p if non-NULL (unless LL_ICLIENT is specified,
- *                when source_p will be introduced where required) and
- *                chptr if non-NULL (unless LL_ICHANNEL is specified, when
- *                chptr will be introduced where required).
- *                Note: nothing will be introduced to a LazyLeaf unless
- *                the message is actually sent.
  *            
  * This function was written in an attempt to merge together the other
- * billion sendto_*serv*() functions, which sprung up with capabs,
- * lazylinks, uids, etc.
+ * billion sendto_*serv*() functions, which sprung up with capabs, uids, etc.
  * -davidt
  */
 void 
@@ -1132,8 +1124,7 @@ kill_client(struct Client *client_p, struct Client *diedie,
  * output	- NONE
  * side effects	- Send a KILL for the given client
  *		  message to all connected servers
- *                except the client 'one'. Also deal with
- *		  client being unknown to leaf, as in lazylink...
+ *                except the client 'one'.
  */
 void
 kill_client_ll_serv_butone(struct Client *one, struct Client *source_p,

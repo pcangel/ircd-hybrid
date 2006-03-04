@@ -1481,13 +1481,7 @@ change_local_nick(struct Client *client_p, struct Client *source_p, const char *
                                  source_p->host, nick);
 
     add_history(source_p, 1);
-	  
-	 /* Only hubs care about lazy link nicks not being sent on yet
-	   * lazylink leafs/leafs always send their nicks up to hub,
-	   * hence must always propagate nick changes.
-	   * hubs might not propagate a nick change, if the leaf
-	   * does not know about that client yet.
-	   */
+
     sendto_server(client_p, source_p, NULL, CAP_TS6, NOCAPS,
                   ":%s NICK %s :%lu",
                   ID(source_p), nick, (unsigned long)source_p->tsinfo);
@@ -1507,6 +1501,7 @@ change_local_nick(struct Client *client_p, struct Client *source_p, const char *
   assert(source_p->name[0]);
 
   hash_del_client(source_p);
+
   if (!samenick)
     hash_check_watch(source_p, RPL_LOGOFF);
   strcpy(source_p->name, nick);
