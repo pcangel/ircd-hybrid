@@ -27,7 +27,6 @@
 #include "client.h"
 #include "s_serv.h"
 #include "resv.h"
-#include "s_stats.h"
 #include "channel.h"
 #include "parse_aline.h"
 #include "common.h"

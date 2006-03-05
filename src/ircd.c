@@ -45,7 +45,6 @@
 #include "s_conf.h"
 #include "parse_aline.h"
 #include "s_serv.h"
-#include "s_stats.h"
 #include "send.h"
 #include "whowas.h"
 #include "conf/modules.h"
@@ -60,7 +59,7 @@
 
 /* /quote set variables */
 struct SetOptions GlobalSetOptions;
-
+struct ServerStatistics ServerStats;
 /* configuration set from ircd.conf */
 struct config_file_entry ConfigFileEntry; 
 /* server info set from ircd.conf */
@@ -131,7 +130,7 @@ get_vm_top(void)
    */
 
   void *vptr = sbrk(0);
-  return((unsigned long)vptr);
+  return (unsigned long)vptr;
 }
 
 /*
@@ -514,8 +513,8 @@ changing_fdlimit(va_list args)
 EXTERN int
 main(int argc, char *argv[])
 {
-  /* Check to see if the user is running
-   * us as root, which is a nono
+  /*
+   * Check to see if the user is running us as root, which is a nono
    */
 #ifndef _WIN32
   if (geteuid() == 0)
@@ -532,6 +531,7 @@ main(int argc, char *argv[])
 #endif
 
   memset(&ServerInfo, 0, sizeof(ServerInfo));
+  memset(&ServerStats, 0, sizeof(ServerStats));
 
   ConfigFileEntry.dpath      = DPATH;
   ConfigFileEntry.configfile = CPATH;  /* Server configuration file */
@@ -582,6 +582,7 @@ main(int argc, char *argv[])
   /* make_dlink_node() cannot be called until after libio_init() */
   memset(&me, 0, sizeof(me));
   memset(&meLocalUser, 0, sizeof(meLocalUser));
+
   me.localClient = &meLocalUser;
   me.from = me.servptr = &me;
   me.lasttime = me.since = me.firsttime = CurrentTime;
@@ -600,7 +601,6 @@ main(int argc, char *argv[])
   init_client();
   init_class();
   init_whowas();
-  init_stats();
   init_auth();          /* Initialise the auth code */
   init_channels();
   init_channel_modes();
@@ -612,7 +612,7 @@ main(int argc, char *argv[])
 
   if (ServerInfo.name == NULL)
   {
-    ilog(L_CRIT, "No server name specified in serverinfo block.");
+    ilog(L_CRIT, "ERROR: No server name specified in serverinfo block.");
     exit(EXIT_FAILURE);
   }
 

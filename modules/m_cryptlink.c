@@ -44,7 +44,6 @@
 #include "hash.h"        /* add_to_client_hash_table */
 #include "s_conf.h"      /* struct AccessItem */
 #include "s_serv.h"      /* server_estab, check_server, my_name_for_link */
-#include "s_stats.h"     /* ServerStats */
 #include "motd.h"
 
 static char *parse_cryptserv_args(struct Client *client_p,

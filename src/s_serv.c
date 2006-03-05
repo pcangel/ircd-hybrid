@@ -38,7 +38,6 @@
 #include "packet.h"
 #include "s_conf.h"
 #include "s_serv.h"
-#include "s_stats.h"
 #include "s_user.h"
 #include "send.h"
 #include "channel.h" /* chcap_usage_counts stuff...*/
@@ -1030,7 +1029,7 @@ server_estab(struct Client *client_p)
   {
     if (client_p != serv_list.head->data || serv_list.head->next)
     {
-      ServerStats->is_ref++;
+      ++ServerStats.is_ref;
       sendto_one(client_p, "ERROR :I'm a leaf not a hub");
       exit_client(client_p, &me, "I'm a leaf");
       return;

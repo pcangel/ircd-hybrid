@@ -29,7 +29,6 @@
 #include "ircd_defs.h"
 #include "numeric.h"
 #include "s_conf.h"
-#include "s_stats.h"
 #include "send.h"
 #ifdef HAVE_LIBCRYPTO
 #include <openssl/bio.h>
@@ -384,8 +383,6 @@ accept_connection(fde_t *pfd, void *data)
   memset(&addr, 0, sizeof(addr));
 
   assert(listener != NULL);
-  if (listener == NULL)
-    return;
 
   /* There may be many reasons for error return, but
    * in otherwise correctly working environment the
@@ -406,7 +403,7 @@ accept_connection(fde_t *pfd, void *data)
      */
     if (number_fd > hard_fdlimit - 10)
     {
-      ++ServerStats->is_ref;
+      ++ServerStats.is_ref;
       /*
        * slow down the whining to opers bit
        */
@@ -431,7 +428,7 @@ accept_connection(fde_t *pfd, void *data)
      * from this IP... */
     if ((pe = conf_connect_allowed(&addr, sai.ss.ss_family)) != 0)
     {
-      ServerStats->is_ref++;
+      ++ServerStats.is_ref;
       if (!(listener->flags & LISTENER_SSL))
         switch (pe)
         {
@@ -451,7 +448,7 @@ accept_connection(fde_t *pfd, void *data)
       continue;    /* drop the one and keep on clearing the queue */
     }
 
-    ServerStats->is_ac++;
+    ++ServerStats.is_ac;
     add_connection(listener, fd);
   }
 
@@ -520,7 +517,7 @@ add_connection(struct Listener* listener, int fd)
 #endif
     report_error(L_ALL, "Failed in adding new connection %s :%s",
             get_listener_name(listener), errno);
-    ServerStats->is_ref++;
+    ++ServerStats.is_ref;
 #ifdef _WIN32
     closesocket(fd);
 #else

@@ -41,7 +41,6 @@
 #include "hostmask.h"
 #include "listener.h"
 #include "userhost.h"
-#include "s_stats.h"
 #include "watch.h"
 
 dlink_list listing_client_list = { NULL, NULL, 0 };
@@ -1085,10 +1084,10 @@ close_connection(struct Client *client_p)
 
   if (IsServer(client_p))
   {
-    ServerStats->is_sv++;
-    ServerStats->is_sbs += client_p->localClient->send.bytes;
-    ServerStats->is_sbr += client_p->localClient->recv.bytes;
-    ServerStats->is_sti += CurrentTime - client_p->firsttime;
+    ++ServerStats.is_sv;
+    ServerStats.is_sbs += client_p->localClient->send.bytes;
+    ServerStats.is_sbr += client_p->localClient->recv.bytes;
+    ServerStats.is_sti += CurrentTime - client_p->firsttime;
 
     /* XXX Does this even make any sense at all anymore?
      * scheduling a 'quick' reconnect could cause a pile of
@@ -1117,13 +1116,13 @@ close_connection(struct Client *client_p)
   }
   else if (IsClient(client_p))
   {
-    ServerStats->is_cl++;
-    ServerStats->is_cbs += client_p->localClient->send.bytes;
-    ServerStats->is_cbr += client_p->localClient->recv.bytes;
-    ServerStats->is_cti += CurrentTime - client_p->firsttime;
+    ++ServerStats.is_cl;
+    ServerStats.is_cbs += client_p->localClient->send.bytes;
+    ServerStats.is_cbr += client_p->localClient->recv.bytes;
+    ServerStats.is_cti += CurrentTime - client_p->firsttime;
   }
   else
-    ServerStats->is_ni++;
+    ++ServerStats.is_ni;
 
   if (!IsDead(client_p))
   {
