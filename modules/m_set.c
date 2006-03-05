@@ -43,7 +43,7 @@ static void mo_set(struct Client *, struct Client *, int, char *[]);
 
 struct Message set_msgtab = {
   "SET", 0, 0, 0, 0, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, m_error, m_ignore, mo_set, m_ignore }
+  { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_set, m_ignore }
 };
 
 INIT_MODULE(m_set, "$Revision$")
@@ -128,14 +128,12 @@ list_quote_commands(struct Client *source_p)
 {
   int i;
   int j = 0;
-  const char *names[4];
+  const char *names[4] = { "", "", "", "" };
 
   sendto_one(source_p, ":%s NOTICE %s :Available QUOTE SET commands:",
              me.name, source_p->name);
 
-  names[0] = names[1] = names[2] = names[3] = "";
-
-  for (i = 0; set_cmd_table[i].handler; i++)
+  for (i = 0; set_cmd_table[i].handler; ++i)
   {
     names[j++] = set_cmd_table[i].name;
 
@@ -148,8 +146,8 @@ list_quote_commands(struct Client *source_p)
       j = 0;
       names[0] = names[1] = names[2] = names[3] = "";
     }
-
   }
+
   if (j)
     sendto_one(source_p, ":%s NOTICE %s :%s %s %s %s",
                me.name, source_p->name,

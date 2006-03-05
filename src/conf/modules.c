@@ -34,6 +34,7 @@ dlink_list loaded_modules = {NULL, NULL, 0};
 const char *core_modules[] =
 {
   "m_die",
+  "m_error",
   "m_join",
   "m_kick",
   "m_kill",

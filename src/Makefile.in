@@ -66,7 +66,6 @@ SRCS = \
  ircd_signal.c \
  lex.yy.c \
  listener.c \
- m_error.c \
  metadata.c \
  motd.c \
  numeric.c \

@@ -53,7 +53,7 @@ struct Message server_msgtab = {
 
 struct Message sid_msgtab = {
   "SID", 0, 0, 5, 0, MFLG_SLOW, 0,
-  { m_error, m_ignore, ms_sid, m_ignore, m_ignore, m_ignore }
+  { m_ignore, m_ignore, ms_sid, m_ignore, m_ignore, m_ignore }
 };
 
 INIT_MODULE(m_server, "$Revision$")

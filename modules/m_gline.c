@@ -62,10 +62,10 @@ static void add_new_majority_gline(const struct Client *,
 
 static void do_sgline(struct Client *, struct Client *, int, char **, int);
 
-static void me_gline(struct Client *, struct Client *, int, char **);
-static void ms_gline(struct Client *, struct Client *, int, char **);
-static void mo_gline(struct Client *, struct Client *, int, char **);
-static void mo_ungline(struct Client *, struct Client *, int, char **);
+static void me_gline(struct Client *, struct Client *, int, char *[]);
+static void ms_gline(struct Client *, struct Client *, int, char *[]);
+static void mo_gline(struct Client *, struct Client *, int, char *[]);
+static void mo_ungline(struct Client *, struct Client *, int, char *[]);
 
 /*
  * gline enforces 3 parameters to force operator to give a reason
@@ -79,9 +79,9 @@ struct Message gline_msgtab = {
 
 struct Message ungline_msgtab = {
   "UNGLINE", 0, 0, 2, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_not_oper, m_error, m_ignore, mo_ungline, m_ignore}
+  {m_unregistered, m_not_oper, m_ignore, m_ignore, mo_ungline, m_ignore}
 };
-		
+
 INIT_MODULE(m_gline, "$Revision$")
 {
   mod_add_cmd(&gline_msgtab);
@@ -117,9 +117,9 @@ mo_gline(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
   char *user = NULL;
-  char *host = NULL;	     /* user and host of GLINE "victim" */
+  char *host = NULL;         /* user and host of GLINE "victim" */
   char *reason = NULL;       /* reason for "victims" demise     */
-  char *p;
+  char *p = NULL;
 
   if (!ConfigFileEntry.glines)
   {
@@ -136,7 +136,7 @@ mo_gline(struct Client *client_p, struct Client *source_p,
   }
 
   if (parse_aline("GLINE", source_p, parc, parv,
-		  AWILD, &user, &host, NULL, NULL, &reason) < 0)
+                  AWILD, &user, &host, NULL, NULL, &reason) < 0)
     return;
 
   if ((p = strchr(host, '/')) != NULL)
@@ -163,7 +163,8 @@ mo_gline(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  /* call these two functions first so the 'requesting' notice always comes
+  /*
+   * call these two functions first so the 'requesting' notice always comes
    * before the 'has triggered' notice.  -bill
    */
   sendto_realops_flags(UMODE_ALL, L_ALL,
@@ -181,24 +182,24 @@ mo_gline(struct Client *client_p, struct Client *source_p,
   
   /* 4 param version for hyb-7 servers */
   sendto_server(NULL, source_p, NULL, CAP_GLN|CAP_TS6, NOCAPS,
-		":%s GLINE %s %s :%s",
-		ID(source_p), user, host, reason);
+                ":%s GLINE %s %s :%s",
+                ID(source_p), user, host, reason);
   sendto_server(NULL, source_p, NULL, CAP_GLN, CAP_TS6,
-		":%s GLINE %s %s :%s",
-		source_p->name, user, host, reason);
+                ":%s GLINE %s %s :%s",
+                source_p->name, user, host, reason);
 
   /* 8 param for hyb-6 */
   sendto_server(NULL, NULL, NULL, CAP_TS6, CAP_GLN,
-		":%s GLINE %s %s %s %s %s %s :%s",
-		ID(&me),
+                ":%s GLINE %s %s %s %s %s %s :%s",
+                ID(&me),
                 ID(source_p), source_p->username,
-		source_p->host, source_p->servptr->name, user, host,
-		reason);
+                source_p->host, source_p->servptr->name, user, host,
+                reason);
   sendto_server(NULL, NULL, NULL, NOCAPS, CAP_GLN|CAP_TS6,
-		":%s GLINE %s %s %s %s %s %s :%s",
-		me.name, source_p->name, source_p->username,
-		source_p->host, source_p->servptr->name, user, host,
-		reason);
+                ":%s GLINE %s %s %s %s %s %s :%s",
+                me.name, source_p->name, source_p->username,
+                source_p->host, source_p->servptr->name, user, host,
+                reason);
 }
 
 /* ms_gline()
@@ -329,6 +330,7 @@ do_sgline(struct Client *client_p, struct Client *source_p,
       ilog(L_TRACE, "Rejected G-Line %s requested on [%s@%s] [%s]",
            get_oper_name(source_p), user, host, reason);
     }
+
     return;
   }
 
@@ -423,7 +425,7 @@ set_local_gline(const struct Client *source_p, const char *user,
   ilog(L_TRACE, "%s added G-Line for [%s@%s] [%s]",
        get_oper_name(source_p), aconf->user, aconf->host, aconf->reason);
   log_oper_action(LOG_GLINE_TYPE, source_p, "[%s@%s] [%s]\n",
-		  aconf->user, aconf->host, aconf->reason);
+                  aconf->user, aconf->host, aconf->reason);
   /* Now, activate gline against current online clients */
   rehashed_klines = 1;
 }
@@ -583,11 +585,11 @@ remove_gline_match(const char *user, const char *host)
     {
       dlinkDelete(ptr, &temporary_glines);
       delete_one_address_conf(aconf->host, aconf);
-      return(1);
+      return 1;
     }
   }
 
-  return(0);
+  return 0;
 }
 
 /*

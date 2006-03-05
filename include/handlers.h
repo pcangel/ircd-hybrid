@@ -86,10 +86,7 @@
 
 struct Client;
 
-void ms_error(struct Client *, struct Client *, int, char *[]);
-
 /* generic handlers */
-EXTERN void m_error(struct Client *, struct Client *,int, char *[]);
 EXTERN void m_ignore(struct Client *, struct Client *, int, char *[]);
 EXTERN void m_not_oper(struct Client *, struct Client *, int, char *[]);
 EXTERN void m_registered(struct Client *, struct Client *, int, char *[]);

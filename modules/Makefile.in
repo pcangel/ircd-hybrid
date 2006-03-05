@@ -31,6 +31,7 @@ CPPFLAGS	= ${INCLUDES} @CPPFLAGS@
 
 CORE_SRCS = \
   core/m_die.c \
+  core/m_error.c \
   core/m_join.c \
   core/m_kick.c \
   core/m_kill.c \
