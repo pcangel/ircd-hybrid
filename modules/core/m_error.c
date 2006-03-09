@@ -36,6 +36,16 @@ struct Message error_msgtab = {
   { m_error, m_ignore, m_error, m_ignore, m_ignore, m_ignore }
 };
 
+INIT_MODULE(m_error, "$Revision: 470 $")
+{
+  mod_add_cmd(&error_msgtab);
+}
+
+CLEANUP_MODULE
+{
+  mod_del_cmd(&error_msgtab);
+}
+
 /*
  * Note: At least at protocol level ERROR has only one parameter,
  * although this is called internally from other functions
@@ -50,8 +60,7 @@ m_error(struct Client *client_p, struct Client *source_p,
 {
   const char *para = (parc > 1 && *parv[1] != '\0') ? parv[1] : "<>";
 
-  ilog(L_ERROR, "Received ERROR message from %s: %s",
-       source_p->name, para);
+  ilog(L_ERROR, "Received ERROR message from %s: %s", source_p->name, para);
 
   if (client_p == source_p)
   {
@@ -68,6 +77,9 @@ m_error(struct Client *client_p, struct Client *source_p,
                          source_p->name, get_client_name(client_p, HIDE_IP), para);
   }
 
+  /*
+   * TBD: not sure if this complies with the rfc
+   */
   if (MyClient(source_p))
     exit_client(source_p, source_p, "ERROR");
 }
