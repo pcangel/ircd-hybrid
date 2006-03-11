@@ -244,9 +244,9 @@ ms_server(struct Client *client_p, struct Client *source_p,
   if (!IsServer(source_p))
     return;
 
-  if (parc < 4)
+  if (*parv[3] == '\0')
   {
-    sendto_one(client_p, "ERROR :No servername");
+    sendto_one(client_p, "ERROR :No server info specified for %s", parv[1]);
     return;
   }
 
@@ -299,27 +299,7 @@ ms_server(struct Client *client_p, struct Client *source_p,
     if (target_p != client_p)
       exit_client(target_p, &me, "Overridden");
 
-  /* User nicks never have '.' in them and server names
-   * must always have '.' in them.
-   */
-  if (strchr(name, '.') == NULL)
-  {
-    /* Server trying to use the same name as a person. Would
-     * cause a fair bit of confusion. Enough to make it hellish
-     * for a while and servers to send stuff to the wrong place.
-     */
-    sendto_one(client_p,"ERROR :Nickname %s already exists!", name);
-    sendto_realops_flags(UMODE_ALL, L_ADMIN,
-			   "Link %s cancelled: Server/nick collision on %s",
-		/* inpath */ get_client_name(client_p, HIDE_IP), name);
-    sendto_realops_flags(UMODE_ALL, L_OPER,
-          "Link %s cancelled: Server/nick collision on %s",
-	  get_client_name(client_p, MASK_IP), name);
-    exit_client(client_p, client_p, "Nick as Server");
-    return;
-  }
-
-  if (strlen(name) > HOSTLEN)
+  if (strlen(name) > HOSTLEN || strchr(name, '.') == NULL)
   {
     sendto_realops_flags(UMODE_ALL, L_ADMIN,
                          "Link %s introduced server with invalid servername %s",
@@ -328,17 +308,6 @@ ms_server(struct Client *client_p, struct Client *source_p,
                          "Link %s introduced server with invalid servername %s",
                          client_p->name, name);
     exit_client(client_p, &me, "Invalid servername introduced.");
-    return;
-  }
-
-  /* Server is informing about a new server behind
-   * this link. Create REMOTE server structure,
-   * add it to list and propagate word to my other
-   * server links...
-   */
-  if (parc == 1 || info[0] == '\0')
-  {
-    sendto_one(client_p, "ERROR :No server info specified for %s", name);
     return;
   }
 
@@ -428,48 +397,26 @@ ms_server(struct Client *client_p, struct Client *source_p,
 
   target_p = make_client(client_p);
   make_server(target_p);
+
   target_p->hopcount = hop;
+  target_p->servptr = source_p;
 
   strlcpy(target_p->name, name, sizeof(target_p->name));
 
   set_server_gecos(target_p, info);
 
-  target_p->servptr = source_p;
-
   SetServer(target_p);
 
-  if ((target_p->node.prev != NULL) || (target_p->node.next != NULL))
-  {
-    sendto_realops_flags(UMODE_ALL, L_OPER,
-			 "already linked %s at %s:%d", target_p->name,
-			 __FILE__, __LINE__);
-    ilog(L_ERROR, "already linked client %s at %s:%d", target_p->name,
-	 __FILE__, __LINE__);
-    assert(0==1);
-  }
-  else
-  {
-    dlinkAdd(target_p, &target_p->node, &global_client_list);
-    dlinkAdd(target_p, make_dlink_node(), &global_serv_list);
-  }
+  dlinkAdd(target_p, &target_p->node, &global_client_list);
+  dlinkAdd(target_p, make_dlink_node(), &global_serv_list);
+  dlinkAdd(target_p, &target_p->lnode, &target_p->servptr->serv->servers);
 
   hash_add_client(target_p);
-  /* XXX test that target_p->lnode.prev and .next are NULL as well? */
-  if ((target_p->lnode.prev != NULL) || (target_p->lnode.next != NULL))
-  {
-    sendto_realops_flags(UMODE_ALL, L_OPER,
-			 "already lnode linked %s at %s:%d", target_p->name,
-			 __FILE__, __LINE__);
-    ilog(L_ERROR, "already lnode linked %s at %s:%d", target_p->name,
-	 __FILE__, __LINE__);
-    assert(0==2);
-  }
-  else
-    dlinkAdd(target_p, &target_p->lnode, &target_p->servptr->serv->servers);
 
-  client_p->serv->dep_servers++;
+  ++client_p->serv->dep_servers;
 
-  /* Old sendto_serv_but_one() call removed because we now
+  /*
+   * Old sendto_serv_but_one() call removed because we now
    * need to send different names to different servers
    * (domain name matching)
    */
