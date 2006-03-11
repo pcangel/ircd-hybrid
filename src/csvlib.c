@@ -517,8 +517,15 @@ getfield(char *newline)
 
   field = line;
 
-  while (*field != '"')	/* skip everything that's not a starting quote */
+  /* skip everything that's not a starting quote */
+  for(;;)
+  {
+    if (*field == '\0')
+      return(NULL);
+    else if (*field == '"')
+      break;
     ++field;
+  }
 
   /* skip over the beginning " */
   end = ++field;
