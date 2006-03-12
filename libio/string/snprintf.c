@@ -324,6 +324,7 @@ static void dopr (char *buffer, size_t maxlen, const char *format, va_list args)
 	fmtstr (buffer, &currlen, maxlen, strvalue, flags, min, max);
 	break;
       case 'p':
+    flags |= DP_F_UNSIGNED;
 	strvalue = va_arg (args, void *);
 	fmtint (buffer, &currlen, maxlen, (long) strvalue, 16, min, max, flags);
 	break;
