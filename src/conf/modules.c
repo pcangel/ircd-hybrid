@@ -122,7 +122,7 @@ init_module(struct Module *mod, const char *fullname)
       fullname, mod->address);
   else
     snprintf(message, sizeof(message), "Loaded %s module %s",
-      fullname, mod->handle ? "shared" : "built-in");
+      mod->handle ? "shared" : "built-in", fullname);
 
   ilog(L_NOTICE, "%s", message);
   sendto_realops_flags(UMODE_ALL, L_ALL, "%s", message);
