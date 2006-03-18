@@ -543,13 +543,7 @@ ban_them(struct Client *client_p, struct ConfItem *conf)
 static void
 update_client_exit_stats(struct Client *client_p)
 {
-  if (IsServer(client_p))
-  {
-    sendto_realops_flags(UMODE_EXTERNAL, L_ALL, 
-			 "Server %s split from %s",
-			 client_p->name, client_p->servptr->name);
-  }
-  else if (IsClient(client_p))
+  if (IsClient(client_p))
   {
     --Count.total;
     if (IsOper(client_p))
@@ -557,6 +551,10 @@ update_client_exit_stats(struct Client *client_p)
     if (IsInvisible(client_p))
       --Count.invisi;
   }
+  else if (IsServer(client_p))
+    sendto_realops_flags(UMODE_EXTERNAL, L_ALL,
+                         "Server %s split from %s",
+                         client_p->name, client_p->servptr->name);
 
   if (splitchecking && !splitmode)
     check_splitmode(NULL);
@@ -718,22 +716,9 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
 {
   dlink_node *lp = NULL, *next_lp = NULL;
 
-  assert(!IsMe(source_p));
+  assert(!IsMe(source_p) && (source_p != &me));
 
-  if (IsServer(source_p))
-  {
-    dlinkDelete(&source_p->lnode, &source_p->servptr->serv->servers);
-
-    if ((lp = dlinkFindDelete(&global_serv_list, source_p)) != NULL)
-      free_dlink_node(lp);
-
-    if (!MyConnect(source_p))
-    {
-      source_p->from->serv->dep_servers--;
-      assert(source_p->from->serv->dep_servers > 0);
-    }
-  }
-  else if (IsClient(source_p))
+  if (IsClient(source_p))
   {
     if (source_p->servptr->serv != NULL)
       dlinkDelete(&source_p->lnode, &source_p->servptr->serv->users);
@@ -770,6 +755,19 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
     {
       source_p->from->serv->dep_users--;
       assert(source_p->from->serv->dep_users >= 0);
+    }
+  }
+  else if (IsServer(source_p))
+  {
+    dlinkDelete(&source_p->lnode, &source_p->servptr->serv->servers);
+
+    if ((lp = dlinkFindDelete(&global_serv_list, source_p)) != NULL)
+      free_dlink_node(lp);
+
+    if (!MyConnect(source_p))
+    {
+      source_p->from->serv->dep_servers--;
+      assert(source_p->from->serv->dep_servers > 0);
     }
   }
 
@@ -1019,7 +1017,14 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
     close_connection(source_p);
   }
 
-  if (IsServer(source_p))
+  if (IsClient(source_p) && !IsKilled(source_p))
+  {
+    sendto_server(from->from, source_p, NULL, CAP_TS6, NOCAPS,
+                  ":%s QUIT :%s", ID(source_p), comment);
+    sendto_server(from->from, source_p, NULL, NOCAPS, CAP_TS6,
+                  ":%s QUIT :%s", source_p->name, comment);
+  }
+  else if (IsServer(source_p))
   {
     char splitstr[HOSTLEN + HOSTLEN + 2];
 
@@ -1051,13 +1056,6 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
            source_p->localClient->recv.bytes >> 10);
     }
   }
-  else if (IsClient(source_p) && !IsKilled(source_p))
-  {
-    sendto_server(from->from, source_p, NULL, CAP_TS6, NOCAPS,
-                  ":%s QUIT :%s", ID(source_p), comment);
-    sendto_server(from->from, source_p, NULL, NOCAPS, CAP_TS6,
-                  ":%s QUIT :%s", source_p->name, comment);
-  }
 
   /* The client *better* be off all of the lists */
   assert(dlinkFind(&unknown_list, source_p) == NULL);
@@ -1082,7 +1080,14 @@ close_connection(struct Client *client_p)
 
   assert(NULL != client_p);
 
-  if (IsServer(client_p))
+  if (IsClient(client_p))
+  {
+    ++ServerStats.is_cl;
+    ServerStats.is_cbs += client_p->localClient->send.bytes;
+    ServerStats.is_cbr += client_p->localClient->recv.bytes;
+    ServerStats.is_cti += CurrentTime - client_p->firsttime;
+  }
+  else if (IsServer(client_p))
   {
     ++ServerStats.is_sv;
     ServerStats.is_sbs += client_p->localClient->send.bytes;
@@ -1113,13 +1118,6 @@ close_connection(struct Client *client_p)
       aconf->hold += (aconf->hold - client_p->since > HANGONGOODLINK) ?
         HANGONRETRYDELAY : ConFreq(aclass);
     }
-  }
-  else if (IsClient(client_p))
-  {
-    ++ServerStats.is_cl;
-    ServerStats.is_cbs += client_p->localClient->send.bytes;
-    ServerStats.is_cbr += client_p->localClient->recv.bytes;
-    ServerStats.is_cti += CurrentTime - client_p->firsttime;
   }
   else
     ++ServerStats.is_ni;
