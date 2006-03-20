@@ -67,7 +67,6 @@ mo_jupe(struct Client *client_p, struct Client *source_p,
 {
   struct Client *target_p = NULL;
   struct Client *ajupe = NULL;
-  dlink_node *m = NULL;
   char reason[REALLEN + 1];
 
   if (!IsAdmin(source_p))
@@ -134,8 +133,7 @@ mo_jupe(struct Client *client_p, struct Client *source_p,
   ajupe = make_client(NULL);
 
   /* make_client() adds client to unknown_list */
-  if ((m = dlinkFindDelete(&unknown_list, ajupe)) != NULL)
-    free_dlink_node(m);
+  dlinkDelete(&ajupe->localClient->lclient_node, &unknown_list)
 
   make_server(ajupe);
 
@@ -143,21 +141,17 @@ mo_jupe(struct Client *client_p, struct Client *source_p,
   ircsprintf(reason, "JUPED: %s", parv[2]);
   strlcpy(ajupe->info, reason, sizeof(ajupe->info));
 
-  ajupe->servptr  = &me;
+  ajupe->servptr = &me;
   ajupe->hopcount = 1;
 
   SetServer(ajupe);
   SetDead(ajupe);
 
-  Count.myserver++;
+  ++Count.myserver;
 
   hash_add_client(ajupe);
+
   dlinkAdd(ajupe, &ajupe->lnode, &ajupe->servptr->serv->servers);
   dlinkAdd(ajupe, make_dlink_node(), &global_serv_list);
-
-  /*
-   * TBR: Is this really necessary? 
-   * for now, 'cause of the way squit works
-   */
   dlinkAdd(ajupe, &ajupe->node, &global_client_list);
 }
