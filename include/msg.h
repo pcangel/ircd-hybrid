@@ -67,7 +67,4 @@ struct Message
 #define   MFLG_UNREG            0x002   /* Command available to unregistered
                                          * clients.                          
 					 */
- 
-#define MAXPARA    15
-
 #endif /* INCLUDED_msg_h */

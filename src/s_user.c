@@ -1432,7 +1432,7 @@ rebuild_isupport_message_line(void)
     len++;
     *p = '\0';
 
-    if (++tokens == (MAXPARA-2) || len >= (sizeof(isupportbuffer)-reserve))
+    if (++tokens == (IRCD_MAXPARA-2) || len >= (sizeof(isupportbuffer)-reserve))
     { /* arbritrary for now */
       if (*--p == ' ')
         *p = '\0';

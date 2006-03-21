@@ -84,7 +84,7 @@ static void send_mode_changes(struct Client *, struct Client *,
 #define NCHCAPS         (sizeof(channel_capabs)/sizeof(int))
 #define NCHCAP_COMBOS   (1 << NCHCAPS)
 
-static char nuh_mask[MAXPARA][IRCD_BUFSIZE];
+static char nuh_mask[IRCD_MAXPARA][IRCD_BUFSIZE];
 /* some buffers for rebuilding channel/nick lists with ,'s */
 static char modebuf[IRCD_BUFSIZE];
 static char parabuf[MODEBUFLEN];

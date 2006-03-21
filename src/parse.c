@@ -52,7 +52,7 @@
  * 't' points -> [MessageTree *] 'r' -> [MessageTree *] -> 'i'
  *   -> [MessageTree *] -> [MessageTree *] -> 'e' and matches
  *
- *				 'i' -> [MessageTree *] -> 'e' and matches
+ *                               'i' -> [MessageTree *] -> 'e' and matches
  *
  * BUGS (Limitations!)
  * 
@@ -70,7 +70,7 @@
  * Diane Bruce (Dianora), June 6 2003
  */
 
-#define MAXPTRLEN	32
+#define MAXPTRLEN    32
                                 /* Must be a power of 2, and
 				 * larger than 26 [a-z]|[A-Z]
 				 * its used to allocate the set
@@ -90,8 +90,8 @@
 struct MessageTree
 {
   int links; /* Count of all pointers (including msg) at this node 
-	      * used as reference count for deletion of _this_ node.
-	      */
+              * used as reference count for deletion of _this_ node.
+              */
   struct Message *msg;
   struct MessageTree *pointers[MAXPTRLEN];
 };
@@ -102,7 +102,7 @@ static struct MessageTree msg_tree;
  * NOTE: parse() should not be called recursively by other functions!
  */
 static char *sender;
-static char *para[MAXPARA + 1];
+static char *para[IRCD_MAXPARA + 1];
 static char buffer[1024];
 
 static int cancel_clients(struct Client *, struct Client *, char *);
@@ -115,7 +115,7 @@ static void del_msg_element(struct MessageTree *mtree_p, const char *cmd);
 
 /* turn a string into a parc/parv pair */
 static inline int
-string_to_array(char *string, char *parv[MAXPARA])
+string_to_array(char *string, char *parv[])
 {
   char *p;
   char *buf = string;
@@ -157,7 +157,7 @@ string_to_array(char *string, char *parv[MAXPARA])
 
     if (*buf == '\0')
       return(x);
-  } while (x < MAXPARA - 1);
+  } while (x < IRCD_MAXPARA - 1);
 
   if (*p == ':')
     p++;
@@ -221,18 +221,19 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
       {
         from = find_server(sender);
 
-	if (from == NULL && IsCapable(client_p, CAP_TS6) &&
-	  client_p->name[0] == '*' && IsDigit(*sender) && strlen(sender) == 3)
-	{
+        if (from == NULL && IsCapable(client_p, CAP_TS6) &&
+            client_p->name[0] == '*' && IsDigit(*sender) && strlen(sender) == 3)
+        {
           /* Dirty hack to allow messages from masked SIDs (i.e. the ones
            * hidden by fakename="..."). It shouldn't break anything, since
            * unknown SIDs don't happen during normal ircd work --adx
            */
-	  from = client_p;
-	}
+          from = client_p;
+        }
       }
       
-      /* Hmm! If the client corresponding to the
+      /*
+       * Hmm! If the client corresponding to the
        * prefix is not found--what is the correct
        * action??? Now, I will ignore the message
        * (old IRC just let it through as if the
@@ -278,7 +279,7 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
   {
     mptr = NULL;
     numeric = ch;
-    paramcount = MAXPARA;
+    paramcount = IRCD_MAXPARA;
     ++ServerStats.is_num;
     s = ch + 3;  /* I know this is ' ' from above if            */
     *s++ = '\0'; /* blow away the ' ', and point s to next part */
@@ -348,7 +349,7 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
  */
 static void
 handle_command(struct Message *mptr, struct Client *client_p,
-               struct Client *from, unsigned int i, char *hpara[MAXPARA])
+               struct Client *from, unsigned int i, char *hpara[])
 {
   MessageHandler handler = 0;
 
@@ -437,7 +438,7 @@ add_msg_element(struct MessageTree *mtree_p,
   if (*cmd == '\0')
   {
     mtree_p->msg = msg_p;
-    mtree_p->links++;		/* Have msg pointer, so up ref count */
+    mtree_p->links++;    /* Have msg pointer, so up ref count */
   }
   else
   {
@@ -452,8 +453,9 @@ add_msg_element(struct MessageTree *mtree_p,
       ntree_p = (struct MessageTree *)MyMalloc(sizeof(struct MessageTree));
       mtree_p->pointers[*cmd & (MAXPTRLEN-1)] = ntree_p;
 
-      mtree_p->links++;		/* Have new pointer, so up ref count */
+      mtree_p->links++;    /* Have new pointer, so up ref count */
     }
+
     add_msg_element(ntree_p, msg_p, cmd+1);
   }
 }
@@ -486,11 +488,11 @@ del_msg_element(struct MessageTree *mtree_p, const char *cmd)
 {
   struct MessageTree *ntree_p;
 
-  /* In case this is called for a nonexistent command
+  /*
+   * In case this is called for a nonexistent command
    * check that there is a msg pointer here, else links-- goes -ve
    * -db
    */
-
   if ((*cmd == '\0') && (mtree_p->msg != NULL))
   {
     mtree_p->msg = NULL;
@@ -501,11 +503,12 @@ del_msg_element(struct MessageTree *mtree_p, const char *cmd)
     if ((ntree_p = mtree_p->pointers[*cmd & (MAXPTRLEN-1)]) != NULL)
     {
       del_msg_element(ntree_p, cmd+1);
+
       if (ntree_p->links == 0)
       {
-	mtree_p->pointers[*cmd & (MAXPTRLEN-1)] = NULL;
-	mtree_p->links--;
-	MyFree(ntree_p);
+        mtree_p->pointers[*cmd & (MAXPTRLEN-1)] = NULL;
+        mtree_p->links--;
+        MyFree(ntree_p);
       }
     }
   }
@@ -800,10 +803,10 @@ do_numeric(char numeric[], struct Client *client_p, struct Client *source_p,
        */
       num = atoi(numeric);
 
-      if ((num != ERR_NOSUCHNICK))
+      if (num != ERR_NOSUCHNICK)
         sendto_realops_flags(UMODE_ALL, L_ADMIN,
-			     "*** %s(via %s) sent a %s numeric to me: %s",
-			     source_p->name, client_p->name, numeric, buffer);
+                             "*** %s(via %s) sent a %s numeric to me: %s",
+                             source_p->name, client_p->name, numeric, buffer);
       return;
     }
     else if (target_p->from == client_p) 
@@ -830,9 +833,9 @@ do_numeric(char numeric[], struct Client *client_p, struct Client *source_p,
   }
   else if ((chptr = hash_find_channel(parv[1])) != NULL)
     sendto_channel_local(ALL_MEMBERS, NO, chptr,
-			 ":%s %s %s %s",
-			 source_p->name,
-			 numeric, chptr->chname, buffer);
+                         ":%s %s %s %s",
+                         source_p->name,
+                         numeric, chptr->chname, buffer);
 }
 
 /* m_not_oper()
