@@ -26,6 +26,8 @@
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
+#include "parse.h"
+#include "conf/modules.h"
 #include "send.h"
 #include "msg.h"
 
