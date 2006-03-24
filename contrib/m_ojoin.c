@@ -69,7 +69,6 @@ mo_ojoin(struct Client *client_p, struct Client *source_p,
   unsigned int flags = 0;
   dlink_node *ptr;
 
-  /* admins only */
   if (!IsAdmin(source_p))
   {
     sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
@@ -117,15 +116,11 @@ mo_ojoin(struct Client *client_p, struct Client *source_p,
 
     /* Error checking here */
     if ((chptr = hash_find_channel(name)) == NULL)
-    {
       sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL),
                  me.name, source_p->name, name);
-    }
     else if (IsMember(source_p, chptr))
-    {
       sendto_one(source_p, ":%s NOTICE %s :Please part %s before using OJOIN",
-                 me.name, source_p->name, name);
-    }
+                 me.name, source_p->name, chptr->chname);
     else
     {
       add_user_to_channel(chptr, source_p, flags, NO);
@@ -135,8 +130,6 @@ mo_ojoin(struct Client *client_p, struct Client *source_p,
         DLINK_FOREACH(ptr, serv_list.head)
         {
           struct Client *serv_p = ptr->data;
-          if (IsDead(serv_p))
-            continue;
 
           sendto_one(serv_p, ":%s SJOIN %lu %s + :%s%s", ID_or_name(&me, serv_p),
                      (unsigned long)chptr->channelts, chptr->chname,
@@ -147,8 +140,7 @@ mo_ojoin(struct Client *client_p, struct Client *source_p,
 
       sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s!%s@%s JOIN %s",
                            source_p->name, source_p->username,
-                           source_p->host,
-                           chptr->chname);
+                           source_p->host, chptr->chname);
 
       if (modeletter != '\0')
         sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s MODE %s +%c %s",
