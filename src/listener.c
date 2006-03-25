@@ -39,7 +39,7 @@ static PF accept_connection;
 
 static dlink_list ListenerPollList = { NULL, NULL, 0 };
 static void close_listener(struct Listener *);
-static void add_connection(struct Listener *, int);
+static void add_connection(struct Listener *, struct irc_ssaddr *, int);
 
 static struct Listener *
 make_listener(int port, struct irc_ssaddr *addr)
@@ -356,8 +356,7 @@ close_listener(struct Listener *listener)
 void 
 close_listeners(void)
 {
-  dlink_node *ptr;
-  dlink_node *next_ptr;
+  dlink_node *ptr = NULL, *next_ptr = NULL;
 
   /* close all 'extra' listening ports we have */
   DLINK_FOREACH_SAFE(ptr, next_ptr, ListenerPollList.head)
@@ -423,6 +422,7 @@ accept_connection(fde_t *pfd, void *data)
     if ((pe = conf_connect_allowed(&addr)))
     {
       ++ServerStats.is_ref;
+
       if (!(listener->flags & LISTENER_SSL))
         switch (pe)
         {
@@ -443,12 +443,12 @@ accept_connection(fde_t *pfd, void *data)
     }
 
     ++ServerStats.is_ac;
-    add_connection(listener, fd);
+    add_connection(listener, &addr, fd);
   }
 
   /* Re-register a new IO request for the next accept .. */
   comm_setselect(&listener->fd, COMM_SELECT_READ, accept_connection,
-                 listener, 0);
+                  listener, 0);
 }
 
 #ifdef HAVE_LIBCRYPTO
@@ -491,58 +491,29 @@ ssl_handshake(int fd, struct Client *client_p)
  * any client list yet.
  */
 static void
-add_connection(struct Listener* listener, int fd)
+add_connection(struct Listener *listener, struct irc_ssaddr *irn, int fd)
 {
-  struct Client *new_client;
-  socklen_t len = sizeof(struct irc_ssaddr);
-  struct irc_ssaddr irn;
-  assert(NULL != listener);
+  struct Client *new_client = make_client(NULL);
 
-  /*
-   * get the client socket name from the socket
-   * the client has already been checked out in accept_connection
-   */
+  assert(listener);
+  assert(irn && fd >= 0);
 
-  memset(&irn, 0, sizeof(irn));
-  if (getpeername(fd, (struct sockaddr *)&irn, (socklen_t *)&len))
-  {
-#ifdef _WIN32
-    errno = WSAGetLastError();
-#endif
-    report_error(L_ALL, "Failed in adding new connection %s :%s",
-            get_listener_name(listener), errno);
-    ++ServerStats.is_ref;
-#ifdef _WIN32
-    closesocket(fd);
-#else
-    close(fd);
-#endif
-    return;
-  }
-
-#ifdef IPV6
-  remove_ipv6_mapping(&irn);
-#else
-  irn.ss_len = len;
-#endif
-  new_client = make_client(NULL);
   fd_open(&new_client->localClient->fd, fd, 1,
           (listener->flags & LISTENER_SSL) ?
           "Incoming SSL connection" : "Incoming connection");
-  memset(&new_client->localClient->ip, 0, sizeof(struct irc_ssaddr));
 
   /*
    * copy address to 'sockhost' as a string, copy it to host too
    * so we have something valid to put into error messages...
    */
-  memcpy(&new_client->localClient->ip, &irn, sizeof(struct irc_ssaddr));
+  memcpy(&new_client->localClient->ip, irn, sizeof(struct irc_ssaddr));
 
-  irc_getnameinfo((struct sockaddr*)&new_client->localClient->ip,
+  irc_getnameinfo((struct sockaddr *)&new_client->localClient->ip,
         new_client->localClient->ip.ss_len,  new_client->sockhost,
-        HOSTIPLEN, NULL, 0, NI_NUMERICHOST);
+        sizeof(new_client->sockhost), NULL, 0, NI_NUMERICHOST);
+
   new_client->localClient->aftype = new_client->localClient->ip.ss.ss_family;
 
-  *new_client->host = '\0';
 #ifdef IPV6
   if (*new_client->sockhost == ':')
     strlcat(new_client->host, "0", HOSTLEN+1);
@@ -556,14 +527,12 @@ add_connection(struct Listener* listener, int fd)
 #endif
     strlcat(new_client->host, new_client->sockhost,HOSTLEN+1);
 
+  new_client->connect_id = ++connect_id;
   new_client->localClient->listener = listener;
   ++listener->ref_count;
 
-  connect_id++;
-  new_client->connect_id = connect_id;
-
 #ifdef HAVE_LIBCRYPTO
-  if ((listener->flags & LISTENER_SSL))
+  if (listener->flags & LISTENER_SSL)
   {
     if ((new_client->localClient->fd.ssl = SSL_new(ServerInfo.ctx)) == NULL)
     {
