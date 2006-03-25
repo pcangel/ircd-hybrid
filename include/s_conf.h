@@ -519,7 +519,7 @@ EXTERN int attach_server_conf(struct Client *, struct ConfItem *);
 EXTERN int attach_leaf_hub(struct Client *, struct ConfItem *);
 EXTERN int detach_confs(struct Client *);
 
-EXTERN int conf_connect_allowed(struct irc_ssaddr *, int);
+EXTERN int conf_connect_allowed(const struct irc_ssaddr *);
 EXTERN char *oper_privs_as_string(const unsigned int);
 EXTERN void split_nuh(struct split_nuh_item *);
 EXTERN struct ConfItem *find_matching_name_conf(ConfType, const char *,

@@ -65,7 +65,7 @@ extern char linebuf[];
 extern char conffilebuf[IRCD_BUFSIZE];
 extern char yytext[];
 extern int yyparse(); /* defined in y.tab.c */
-int ypass  = 1; /* used by yyparse()      */
+int ypass = 1; /* used by yyparse()      */
 
 /* internally defined functions */
 static void lookup_confhost(struct ConfItem *);
@@ -74,11 +74,11 @@ static void validate_conf(void);
 static void read_conf(FBFILE *);
 static void clear_out_old_conf(void);
 static void garbage_collect_ip_entries(void);
-static int hash_ip(struct irc_ssaddr *);
+static int hash_ip(const struct irc_ssaddr *);
 static int verify_access(struct Client *, const char *, struct AccessItem **);
-static struct ip_entry *find_or_add_ip(struct irc_ssaddr *);
+static struct ip_entry *find_or_add_ip(const struct irc_ssaddr *);
 static void parse_conf_file(int, int);
-static int check_class_limits(struct Client *, int ,struct ClassItem *);
+static int check_class_limits(struct Client *, int, struct ClassItem *);
 static void free_aconf_items(struct ConfItem *, dlink_list *);
 static void free_match_items(struct ConfItem *, dlink_list *);
 static void delete_link(struct ConfItem *, dlink_list *);
@@ -937,13 +937,13 @@ init_ip_hash_table(void)
  * count set to 0.
  */
 static struct ip_entry *
-find_or_add_ip(struct irc_ssaddr *ip_in)
+find_or_add_ip(const struct irc_ssaddr *ip_in)
 {
-  struct ip_entry *ptr, *newptr;
+  struct ip_entry *ptr = NULL;
   int hash_index = hash_ip(ip_in), res;
-  struct sockaddr_in *v4 = (struct sockaddr_in *)ip_in, *ptr_v4;
+  const struct sockaddr_in *v4 = (const struct sockaddr_in *)ip_in, *ptr_v4;
 #ifdef IPV6
-  struct sockaddr_in6 *v6 = (struct sockaddr_in6 *)ip_in, *ptr_v6;
+  const struct sockaddr_in6 *v6 = (const struct sockaddr_in6 *)ip_in, *ptr_v6;
 #endif
 
   for (ptr = ip_hash_table[hash_index]; ptr; ptr = ptr->next)
@@ -962,6 +962,7 @@ find_or_add_ip(struct irc_ssaddr *ip_in)
       ptr_v4 = (struct sockaddr_in *)&ptr->ip;
       res = memcmp(&v4->sin_addr, &ptr_v4->sin_addr, sizeof(struct in_addr));
     }
+
     if (res == 0)
     {
       /* Found entry already in hash, return it. */
@@ -972,14 +973,14 @@ find_or_add_ip(struct irc_ssaddr *ip_in)
   if (ip_entries_count >= 2 * hard_fdlimit)
     garbage_collect_ip_entries();
 
-  newptr = BlockHeapAlloc(ip_entry_heap);
-  ip_entries_count++;
-  memcpy(&newptr->ip, ip_in, sizeof(struct irc_ssaddr));
+  ptr = BlockHeapAlloc(ip_entry_heap);
+  ++ip_entries_count;
+  memcpy(&ptr->ip, ip_in, sizeof(struct irc_ssaddr));
 
-  newptr->next = ip_hash_table[hash_index];
-  ip_hash_table[hash_index] = newptr;
+  ptr->next = ip_hash_table[hash_index];
+  ip_hash_table[hash_index] = ptr;
 
-  return newptr;
+  return ptr;
 }
 
 /* remove_one_ip()
@@ -1045,11 +1046,11 @@ remove_one_ip(struct irc_ssaddr *ip_in)
  * side effects - hopefully, none
  */
 static int
-hash_ip(struct irc_ssaddr *addr)
+hash_ip(const struct irc_ssaddr *addr)
 {
   if (addr->ss.ss_family == AF_INET)
   {
-    struct sockaddr_in *v4 = (struct sockaddr_in *)addr;
+    const struct sockaddr_in *v4 = (const struct sockaddr_in *)addr;
     int hash;
     u_int32_t ip;
 
@@ -1061,8 +1062,8 @@ hash_ip(struct irc_ssaddr *addr)
   else
   {
     int hash;
-    struct sockaddr_in6 *v6 = (struct sockaddr_in6 *)addr;
-    u_int32_t *ip = (u_int32_t *)&v6->sin6_addr.s6_addr;
+    const struct sockaddr_in6 *v6 = (const struct sockaddr_in6 *)addr;
+    const u_int32_t *ip = (const u_int32_t *)&v6->sin6_addr.s6_addr;
 
     hash  = ip[0] ^ ip[3];
     hash ^= hash >> 16;  
@@ -1771,10 +1772,10 @@ lookup_confhost(struct ConfItem *conf)
  * side effects	- none
  */
 int
-conf_connect_allowed(struct irc_ssaddr *addr, int aftype)
+conf_connect_allowed(const struct irc_ssaddr *addr)
 {
   struct ip_entry *ip_found = NULL;
-  struct AccessItem *aconf = find_dline_conf(addr, aftype);
+  struct AccessItem *aconf = find_dline_conf(addr, addr->ss.ss_family);
 
   /* DLINE exempt also gets you out of static limits/pacing... */
   if (aconf && (aconf->status & CONF_EXEMPTDLINE))

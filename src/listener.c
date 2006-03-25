@@ -47,7 +47,8 @@ make_listener(int port, struct irc_ssaddr *addr)
   struct Listener *listener = MyMalloc(sizeof(struct Listener));
   assert(listener != 0);
 
-  listener->name = me.name;
+  listener->name = me.name; /* XXX - me.name can be uninitialized if a
+                             * listener{} block comes before serverinfo{} */
   listener->port = port;
   memcpy(&listener->addr, addr, sizeof(struct irc_ssaddr));
 
@@ -77,12 +78,9 @@ get_listener_name(const struct Listener *listener)
 
   assert(listener != NULL);
 
-  if (listener == NULL)
-    return(NULL);
-
-  ircsprintf(buf, "%s[%s/%u]",
-             me.name, listener->name, listener->port);
-  return(buf);
+  ircsprintf(buf, "%s[%s/%u]", me.name, listener->name,
+             listener->port);
+  return buf;
 }
 
 /* show_ports()
@@ -153,8 +151,8 @@ inetport(struct Listener *listener)
   memset(&lsin, 0, sizeof(lsin));
   memcpy(&lsin, &listener->addr, sizeof(struct irc_ssaddr));
   
-  irc_getnameinfo((struct sockaddr*)&lsin, lsin.ss_len, listener->vhost, 
-        HOSTLEN, NULL, 0, NI_NUMERICHOST);
+  irc_getnameinfo((struct sockaddr *)&lsin, lsin.ss_len, listener->vhost, 
+                  HOSTLEN, NULL, 0, NI_NUMERICHOST);
   listener->name = listener->vhost;
 
   /*
@@ -197,7 +195,7 @@ inetport(struct Listener *listener)
     report_error(L_ALL, "listen failed for %s:%s",
                  get_listener_name(listener), errno);
     fd_close(&listener->fd);
-    return(0);
+    return 0;
   }
 
   /* Listen completion events are READ events .. */
@@ -373,13 +371,11 @@ static void
 accept_connection(fde_t *pfd, void *data)
 {
   static time_t last_oper_notice = 0;
-  struct irc_ssaddr sai;
   struct irc_ssaddr addr;
   int fd;
   int pe;
   struct Listener *listener = data;
 
-  memset(&sai, 0, sizeof(sai));
   memset(&addr, 0, sizeof(addr));
 
   assert(listener != NULL);
@@ -394,10 +390,8 @@ accept_connection(fde_t *pfd, void *data)
    * point, just assume that connections cannot
    * be accepted until some old is closed first.
    */
-  while ((fd = comm_accept(pfd, &sai)) != -1)
+  while ((fd = comm_accept(pfd, &addr)) != -1)
   {
-    memcpy(&addr, &sai, sizeof(struct irc_ssaddr));
-
     /*
      * check for connection limit
      */
@@ -426,7 +420,7 @@ accept_connection(fde_t *pfd, void *data)
 
     /* Do an initial check we aren't connecting too fast or with too many
      * from this IP... */
-    if ((pe = conf_connect_allowed(&addr, sai.ss.ss_family)) != 0)
+    if ((pe = conf_connect_allowed(&addr)))
     {
       ++ServerStats.is_ref;
       if (!(listener->flags & LISTENER_SSL))

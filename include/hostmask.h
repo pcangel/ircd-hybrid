@@ -44,8 +44,8 @@ struct HostMaskEntry
 void clear_out_address_conf(void);
 void init_host_hash(void);
 
-EXTERN int match_ipv6(struct irc_ssaddr *, struct irc_ssaddr *, int);
-EXTERN int match_ipv4(struct irc_ssaddr *, struct irc_ssaddr *, int);
+EXTERN int match_ipv6(const struct irc_ssaddr *, const struct irc_ssaddr *, int);
+EXTERN int match_ipv4(const struct irc_ssaddr *, const struct irc_ssaddr *, int);
 EXTERN void mask_addr(struct irc_ssaddr *, int);
 EXTERN int parse_netmask(const char *, struct irc_ssaddr *, int *);
 
@@ -61,8 +61,8 @@ EXTERN struct AccessItem *find_kline_conf(const char *, const char *,
                                           struct irc_ssaddr *, int);
 EXTERN struct AccessItem *find_gline_conf(const char *, const char *,
                                           struct irc_ssaddr *, int);
-EXTERN struct AccessItem *find_dline_conf(struct irc_ssaddr *, int);
-EXTERN struct AccessItem *find_conf_by_address(const char *, struct irc_ssaddr *,
+EXTERN struct AccessItem *find_dline_conf(const struct irc_ssaddr *, int);
+EXTERN struct AccessItem *find_conf_by_address(const char *, const struct irc_ssaddr *,
                                                int, int, const char *, const char *);
 
 /* Hashtable stuff... */

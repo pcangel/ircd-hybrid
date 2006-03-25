@@ -31,10 +31,10 @@
 
 #ifdef IPV6
 static int try_parse_v6_netmask(const char *, struct irc_ssaddr *, int *);
-static unsigned long hash_ipv6(struct irc_ssaddr *, int);
+static unsigned long hash_ipv6(const struct irc_ssaddr *, int);
 #endif
 static int try_parse_v4_netmask(const char *, struct irc_ssaddr *, int *);
-static unsigned long hash_ipv4(struct irc_ssaddr *, int);
+static unsigned long hash_ipv4(const struct irc_ssaddr *, int);
 
 #define DigitParse(ch) do { \
                        if (ch >= '0' && ch <= '9') \
@@ -253,11 +253,11 @@ parse_netmask(const char *text, struct irc_ssaddr *addr, int *b)
  */
 #ifdef IPV6
 int
-match_ipv6(struct irc_ssaddr *addr, struct irc_ssaddr *mask, int bits)
+match_ipv6(const struct irc_ssaddr *addr, const struct irc_ssaddr *mask, int bits)
 {
   int i, m, n = bits / 8;
-  struct sockaddr_in6 *v6 = (struct sockaddr_in6*)addr;
-  struct sockaddr_in6 *v6mask = (struct sockaddr_in6*)mask;
+  const struct sockaddr_in6 *v6 = (const struct sockaddr_in6 *)addr;
+  const struct sockaddr_in6 *v6mask = (const struct sockaddr_in6 *)mask;
 
   for (i = 0; i < n; i++)
     if (v6->sin6_addr.s6_addr[i] != v6mask->sin6_addr.s6_addr[i])
@@ -270,19 +270,22 @@ match_ipv6(struct irc_ssaddr *addr, struct irc_ssaddr *mask, int bits)
   return 0;
 }
 #endif
+
 /* int match_ipv4(struct irc_ssaddr *, struct irc_ssaddr *, int)
  * Input: An IP address, an IP mask, the number of bits in the mask.
  * Output: if match, -1 else 0
  * Side Effects: None
  */
 int
-match_ipv4(struct irc_ssaddr *addr, struct irc_ssaddr *mask, int bits)
+match_ipv4(const struct irc_ssaddr *addr, const struct irc_ssaddr *mask, int bits)
 {
-  struct sockaddr_in *v4 = (struct sockaddr_in*) addr;
-  struct sockaddr_in *v4mask = (struct sockaddr_in*) mask;
+  const struct sockaddr_in *v4 = (const struct sockaddr_in *)addr;
+  const struct sockaddr_in *v4mask = (const struct sockaddr_in *)mask;
+
   if ((ntohl(v4->sin_addr.s_addr) & ~((1 << (32 - bits)) - 1)) !=
       ntohl(v4mask->sin_addr.s_addr))
     return 0;
+
   return -1;
 }
 
@@ -343,16 +346,17 @@ init_host_hash(void)
  * Side effects: None
  */
 static unsigned long
-hash_ipv4(struct irc_ssaddr *addr, int bits)
+hash_ipv4(const struct irc_ssaddr *addr, int bits)
 {
   if (bits != 0)
   {
-    struct sockaddr_in *v4 = (struct sockaddr_in *)addr;
+    const struct sockaddr_in *v4 = (const struct sockaddr_in *)addr;
     unsigned long av = ntohl(v4->sin_addr.s_addr) & ~((1 << (32 - bits)) - 1);
-    return((av ^ (av >> 12) ^ (av >> 24)) & (ATABLE_SIZE - 1));
+
+    return (av ^ (av >> 12) ^ (av >> 24)) & (ATABLE_SIZE - 1);
   }
 
-  return(0);
+  return 0;
 }
 
 /* unsigned long hash_ipv6(struct irc_ssaddr*)
@@ -362,12 +366,12 @@ hash_ipv4(struct irc_ssaddr *addr, int bits)
  */
 #ifdef IPV6
 static unsigned long
-hash_ipv6(struct irc_ssaddr *addr, int bits)
+hash_ipv6(const struct irc_ssaddr *addr, int bits)
 {
   unsigned long v = 0, n;
-  struct sockaddr_in6 *v6 = (struct sockaddr_in6*) addr;
+  const struct sockaddr_in6 *v6 = (const struct sockaddr_in6 *)addr;
   
-  for (n = 0; n < 16; n++)
+  for (n = 0; n < 16; ++n)
   {
     if (bits >= 8)
     {
@@ -382,6 +386,7 @@ hash_ipv6(struct irc_ssaddr *addr, int bits)
     else
       return v & (ATABLE_SIZE - 1);
   }
+
   return v & (ATABLE_SIZE - 1);
 }
 #endif
@@ -397,11 +402,10 @@ hash_text(const char *start)
   const char *p = start;
   unsigned long h = 0;
 
-  while (*p)
-  {
-    h = (h << 4) - (h + (unsigned char)ToLower(*p++));
-  }
-  return (h & (ATABLE_SIZE - 1));
+  for (; *p; ++p)
+    h = (h << 4) - (h + ToLower(*p));
+
+  return h & (ATABLE_SIZE - 1);
 }
 
 /* unsigned long get_hash_mask(const char *)
@@ -434,7 +438,7 @@ get_mask_hash(const char *text)
  * should always be true (i.e. aconf->flags & CONF_FLAGS_NEED_PASSWORD == 0)
  */
 struct AccessItem *
-find_conf_by_address(const char *name, struct irc_ssaddr *addr, int type,
+find_conf_by_address(const char *name, const struct irc_ssaddr *addr, int type,
                      int fam, const char *username, const char *password)
 {
   unsigned long hprecv = 0;
@@ -612,7 +616,7 @@ find_kline_conf(const char *host, const char *user,
  * Side effects: None.
  */
 struct AccessItem *
-find_dline_conf(struct irc_ssaddr *addr, int aftype)
+find_dline_conf(const struct irc_ssaddr *addr, int aftype)
 {
   struct AccessItem *eline;
 
