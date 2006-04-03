@@ -352,7 +352,7 @@ send_usage(struct Client *source_p)
 static void
 count_memory(struct Client *source_p)
 {
-  BlockHeap *bh;
+  const BlockHeap *bh = NULL;
   const dlink_node *gptr = NULL;
   const dlink_node *dlink = NULL;
 
@@ -582,7 +582,7 @@ count_memory(struct Client *source_p)
              me.name, RPL_STATSDEBUG, source_p->name, remote_client_count,
              remote_client_memory_used);
 
-  for (bh = heap_list; bh != NULL; bh = bh->next)
+  for (bh = block_heap_get_heap_list(); bh != NULL; bh = bh->next)
     sendto_one(source_p,
                ":%s %d %s z :%s mempool: used %u/%u free %u/%u (size %u/%u)",
                me.name, RPL_STATSDEBUG, source_p->name, bh->name,

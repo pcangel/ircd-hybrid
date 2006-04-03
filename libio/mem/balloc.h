@@ -78,6 +78,7 @@ LIBIO_EXTERN size_t block_heap_get_size_mem(const BlockHeap *);
 LIBIO_EXTERN unsigned int block_heap_get_used_elm(const BlockHeap *);
 LIBIO_EXTERN unsigned int block_heap_get_free_elm(const BlockHeap *);
 LIBIO_EXTERN unsigned int block_heap_get_size_elm(const BlockHeap *);
+LIBIO_EXTERN const BlockHeap *block_heap_get_heap_list(void);
 
 #else /* NOBALLOC */
 
@@ -89,4 +90,3 @@ typedef struct BlockHeap BlockHeap;
 
 #endif /* NOBALLOC */
 
-LIBIO_EXTERN BlockHeap *heap_list;

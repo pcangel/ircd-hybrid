@@ -62,7 +62,7 @@
 #endif /* MAP_ANONYMOUS */
 #endif
 
-BlockHeap *heap_list = NULL;
+static BlockHeap *heap_list = NULL;
 
 static int BlockHeapGarbageCollect(BlockHeap *);
 static void heap_garbage_collection(void *);
@@ -416,6 +416,12 @@ BlockHeapDestroy(BlockHeap *bh)
 
   free(bh);
   return 0;
+}
+
+const BlockHeap *
+block_heap_get_heap_list(void)
+{
+  return heap_list;
 }
 
 /*! \brief Returns the number of bytes being used
