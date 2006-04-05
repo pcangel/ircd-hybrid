@@ -62,7 +62,7 @@
 #endif /* MAP_ANONYMOUS */
 #endif
 
-static BlockHeap *heap_list = NULL;
+static dlink_list heap_list = { NULL, NULL, 0 };
 
 static int BlockHeapGarbageCollect(BlockHeap *);
 static void heap_garbage_collection(void *);
@@ -131,10 +131,10 @@ get_block(size_t size)
 static void
 heap_garbage_collection(void *arg)
 {
-  BlockHeap *bh;
+  dlink_node *ptr = NULL;
 
-  for (bh = heap_list; bh != NULL; bh = bh->next)
-    BlockHeapGarbageCollect(bh);
+  DLINK_FOREACH(ptr, heap_list.head)
+    BlockHeapGarbageCollect(ptr->data);
 }
 
 /*! \brief Allocates a new block for addition to a blockheap
@@ -230,10 +230,7 @@ BlockHeapCreate(const char *const name, size_t elemsize, int elemsperblock)
      outofmemory();    /* die.. out of memory */
   }
 
-  assert(bh);
-
-  bh->next = heap_list;
-  heap_list = bh;
+  dlinkAdd(bh, &bh->node, &heap_list);
 
   return bh;
 }
@@ -274,7 +271,6 @@ BlockHeapAlloc(BlockHeap *bh)
       new_node = walker->free_list.head;
 
       dlinkDelete(new_node, &walker->free_list);
-      dlinkAdd(new_node->data, new_node, &walker->used_list);
       assert(new_node->data != NULL);
 
       memset(new_node->data, 0, bh->elemSize);
@@ -307,17 +303,12 @@ BlockHeapFree(BlockHeap *bh, void *ptr)
   if (memblock->block == NULL)
     outofmemory();
 
-  /* Is this block really on the used list? */
-  assert(dlinkFind(&memblock->block->used_list, ptr) != NULL); 
-
   block = memblock->block;
-  ++bh->freeElems;
   ++block->freeElems;
+  ++bh->freeElems;
 #ifndef NDEBUG
   mem_frob(ptr, bh->elemSize);
 #endif
-
-  dlinkDelete(&memblock->self, &block->used_list);
   dlinkAdd(ptr, &memblock->self, &block->free_list);
   return 0;
 }
@@ -336,8 +327,7 @@ BlockHeapGarbageCollect(BlockHeap *bh)
 {
   Block *walker = NULL, *last = NULL;
 
-  if (bh == NULL)
-    return 1;
+  assert(bh);
 
   if (bh->freeElems < bh->elemsPerBlock || bh->blocksAllocated == 1)
   {
@@ -392,8 +382,7 @@ BlockHeapDestroy(BlockHeap *bh)
 {
   Block *walker = NULL, *next = NULL;
 
-  if (bh == NULL)
-    return 1;
+  assert(bh);
 
   for (walker = bh->base; walker != NULL; walker = next)
   {
@@ -404,24 +393,16 @@ BlockHeapDestroy(BlockHeap *bh)
       free(walker);
   }
 
-  if (heap_list == bh)
-    heap_list = bh->next;
-  else {
-    BlockHeap *prev;
-
-    for (prev = heap_list; prev->next != bh; prev = prev->next)
-      /* nothing */ ;
-    prev->next = bh->next;
-  }
-
+  dlinkDelete(&bh->node, &heap_list);
   free(bh);
+
   return 0;
 }
 
-const BlockHeap *
+const dlink_list *
 block_heap_get_heap_list(void)
 {
-  return heap_list;
+  return &heap_list;
 }
 
 /*! \brief Returns the number of bytes being used

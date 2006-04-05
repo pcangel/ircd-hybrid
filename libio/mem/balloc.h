@@ -36,7 +36,6 @@ struct Block {
   struct Block*	next;		/*!< Next in our chain of blocks */
   void*		elems;		/*!< Points to allocated memory */
   dlink_list	free_list;	/*!< Chain of free memory blocks */
-  dlink_list	used_list;	/*!< Chain of used memory blocks */
 };
 
 typedef struct Block Block;
@@ -57,7 +56,7 @@ struct BlockHeap {
    int     freeElems;           /*!< Number of free elements */
    Block*  base;                /*!< Pointer to first block */
    const char *name;		/*!< Name of the heap */
-   struct BlockHeap *next;      /*!< Pointer to next heap */
+   dlink_node node;
 };
 
 typedef struct BlockHeap BlockHeap;
@@ -78,7 +77,7 @@ LIBIO_EXTERN size_t block_heap_get_size_mem(const BlockHeap *);
 LIBIO_EXTERN unsigned int block_heap_get_used_elm(const BlockHeap *);
 LIBIO_EXTERN unsigned int block_heap_get_free_elm(const BlockHeap *);
 LIBIO_EXTERN unsigned int block_heap_get_size_elm(const BlockHeap *);
-LIBIO_EXTERN const BlockHeap *block_heap_get_heap_list(void);
+LIBIO_EXTERN const dlink_list *block_heap_get_heap_list(void);
 
 #else /* NOBALLOC */
 
