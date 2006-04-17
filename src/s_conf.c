@@ -653,10 +653,9 @@ report_confitem_types(struct Client *source_p, ConfType type, int temp)
  * inputs       - pointer to client
  * output       - 0 = Success
  *                NOT_AUTHORIZED    (-1) = Access denied (no I line match)
- *                IRCD_SOCKET_ERROR (-2) = Bad socket.
- *                I_LINE_FULL       (-3) = I-line is full
- *                TOO_MANY          (-4) = Too many connections from hostname
- *                BANNED_CLIENT     (-5) = K-lined
+ *                I_LINE_FULL       (-2) = I-line is full
+ *                TOO_MANY          (-3) = Too many connections from hostname
+ *                BANNED_CLIENT     (-4) = K-lined
  * side effects - Ordinary client access check.
  *                Look for conf lines which have the same
  *                status as the flags passed.
@@ -675,10 +674,6 @@ check_client(va_list args)
 
   switch (i)
   {
-    case IRCD_SOCKET_ERROR:
-      exit_client(source_p, &me, "Socket Error");
-      break;
-
     case TOO_MANY:
       sendto_realops_flags(UMODE_FULL, L_ALL,
                            "Too many on IP for %s (%s).",
@@ -699,7 +694,7 @@ check_client(va_list args)
 	   get_client_name(source_p, SHOW_IP));
        ++ServerStats.is_ref;
       exit_client(source_p, &me, 
-		"No more connections allowed in your connection class");
+                  "No more connections allowed in your connection class");
       break;
 
     case NOT_AUTHORIZED:
@@ -754,12 +749,11 @@ check_client(va_list args)
      ++ServerStats.is_ref;
      break;
 
-   case 0:
    default:
      break;
   }
 
-  return (i < 0 ? NULL : source_p);
+  return i < 0 ? NULL : source_p;
 }
 
 /* verify_access()
