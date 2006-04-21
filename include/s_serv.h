@@ -244,7 +244,7 @@ EXTERN int find_capability(const char *);
 EXTERN void send_capabilities(struct Client *, struct AccessItem *, int, int);
 EXTERN void write_links_file(void *);
 EXTERN void server_estab(struct Client *);
-EXTERN const char *show_capabilities(struct Client *);
+EXTERN const char *show_capabilities(const struct Client *);
 EXTERN void try_connections(void *);
 EXTERN void collect_zipstats(void *);
 EXTERN void burst_channel(struct Client *, struct Channel *);

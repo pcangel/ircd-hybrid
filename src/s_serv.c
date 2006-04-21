@@ -933,7 +933,7 @@ sendnick_TS(struct Client *client_p, struct Client *target_p)
  * side effects - build up string representing capabilities of server listed
  */
 const char *
-show_capabilities(struct Client *target_p)
+show_capabilities(const struct Client *target_p)
 {
   static char msgbuf[IRCD_BUFSIZE];
   char *t = msgbuf;

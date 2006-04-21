@@ -641,13 +641,13 @@ find_chasing(struct Client *client_p, struct Client *source_p, const char *user,
  *        to modify what it points!!!
  */
 const char *
-get_client_name(struct Client *client, int showip)
+get_client_name(const struct Client *client, int showip)
 {
   static char nbuf[HOSTLEN * 2 + USERLEN + 5];
 
   assert(client != NULL);
 
-  if (irccmp(client->name, client->host) == 0)
+  if (!irccmp(client->name, client->host))
     return client->name;
 
   if (ConfigServerHide.hide_server_ips)

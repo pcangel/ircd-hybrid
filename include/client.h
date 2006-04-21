@@ -560,7 +560,7 @@ EXTERN void report_error(int, const char *, const char *, int);
 EXTERN struct Client *make_client(struct Client *);
 EXTERN struct Client *find_chasing(struct Client *, struct Client *, const char *, int *);
 EXTERN struct Client *find_person(const struct Client *const, const char *);
-EXTERN const char *get_client_name(struct Client *, int);
+EXTERN const char *get_client_name(const struct Client *, int);
 EXTERN void log_user_exit(struct Client *);
 EXTERN void log_oper_action(int type, const struct Client *, const char *, ...);
 
