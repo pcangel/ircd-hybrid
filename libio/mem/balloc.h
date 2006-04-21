@@ -25,6 +25,8 @@
  * \todo Get rid of all typedefs in this file
  */
 
+#ifndef INCLUDED_balloc.h
+#define INCLUDED_balloc.h
 #ifndef NOBALLOC
 
 /*! \brief Block contains status information for
@@ -88,4 +90,4 @@ typedef struct BlockHeap BlockHeap;
 #define BlockHeapFree(x,y) MyFree(y)
 
 #endif /* NOBALLOC */
-
+#endif

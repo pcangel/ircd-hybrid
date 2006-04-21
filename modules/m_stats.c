@@ -586,7 +586,7 @@ count_memory(struct Client *source_p)
 
   DLINK_FOREACH(gptr, bh_list->head)
   {
-    const struct BlockHeap = ptr->data;
+    const struct BlockHeap *bh = gptr->data;
     sendto_one(source_p,
                ":%s %d %s z :%s mempool: used %u/%u free %u/%u (size %u/%u)",
                me.name, RPL_STATSDEBUG, source_p->name, bh->name,
