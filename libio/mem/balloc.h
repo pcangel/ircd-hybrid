@@ -25,8 +25,8 @@
  * \todo Get rid of all typedefs in this file
  */
 
-#ifndef INCLUDED_balloc.h
-#define INCLUDED_balloc.h
+#ifndef INCLUDED_balloc_h
+#define INCLUDED_balloc_h
 #ifndef NOBALLOC
 
 /*! \brief Block contains status information for
