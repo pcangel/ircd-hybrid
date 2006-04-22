@@ -47,7 +47,7 @@ SSL_SRCS = rsa.c
 
 SRCS = \
  conf/admin.c \
- conf/channel.c \
+ conf/conf_channel.c \
  conf/conf.c \
  conf/general.c \
  conf/logging.c \
