@@ -41,9 +41,7 @@
 #include "conf/modules.h"
 
 #define GLINE_NOT_PLACED     0
-#ifdef GLINE_VOTING
 #define GLINE_ALREADY_VOTED -1
-#endif /* GLINE_VOTING */
 #define GLINE_PLACED         1
 
 EXTERN dlink_list gdeny_items; /* XXX */
@@ -174,8 +172,6 @@ mo_gline(struct Client *client_p, struct Client *source_p,
   ilog(L_TRACE, "#gline for %s@%s [%s] requested by %s!%s@%s",
        user, host, reason, source_p->name, source_p->username,
        source_p->host);
-
-  set_local_gline(source_p, user, host, reason);
 #else
   set_local_gline(source_p, user, host, reason);
 #endif /* GLINE_VOTING */
@@ -342,6 +338,7 @@ do_sgline(struct Client *client_p, struct Client *source_p,
     if (IsClient(source_p))
     {
       const char *p = NULL;
+
       if ((p = strchr(host, '/')))
       {
         int bitlen = strtol(++p, NULL, 10);
@@ -360,27 +357,23 @@ do_sgline(struct Client *client_p, struct Client *source_p,
     }
 
 #ifdef GLINE_VOTING
+    /* If at least 3 opers agree this user should be G lined then do it */
+    if (check_majority_gline(source_p, user, host, reason) ==
+        GLINE_ALREADY_VOTED)
+    {
+      sendto_realops_flags(UMODE_ALL, L_ALL, "oper or server has already voted");
+      return;
+    }
+
     sendto_realops_flags(UMODE_ALL, L_ALL,
                          "%s requesting G-Line for [%s@%s] [%s]",
                          get_oper_name(source_p),
                          user, host, reason);
-
-     /* If at least 3 opers agree this user should be G lined then do it */
-     if (check_majority_gline(source_p, user, host, reason) ==
-         GLINE_ALREADY_VOTED)
-     {
-       sendto_realops_flags(UMODE_ALL, L_ALL, "oper or server has already voted");
-       return;
-     }
-
-     ilog(L_TRACE, "#gline for %s@%s [%s] requested by %s",
-          user, host, reason, get_oper_name(source_p));
-
-     set_local_gline(source_p, user, host, reason);
+    ilog(L_TRACE, "#gline for %s@%s [%s] requested by %s",
+         user, host, reason, get_oper_name(source_p));
 #else 
-     set_local_gline(source_p, user, host, reason);
+    set_local_gline(source_p, user, host, reason);
 #endif /* GLINE_VOTING */
-     
   }
 }
 
