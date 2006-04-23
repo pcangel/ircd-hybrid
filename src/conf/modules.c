@@ -83,7 +83,7 @@ struct Module *
 find_module(const char *filename, int exact)
 {
   dlink_node *ptr;
-  char *name = basename(name), *p;
+  char *name = basename(filename), *p;
   int cnt = ((p = strchr(name, '.')) != NULL ? p - name : strlen(name));
 
   DLINK_FOREACH(ptr, loaded_modules.head)
