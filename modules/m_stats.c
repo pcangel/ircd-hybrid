@@ -881,7 +881,7 @@ stats_auth(struct Client *source_p)
 static void
 stats_tklines(struct Client *source_p)
 {
-  struct ConfItem *conf;
+  struct ConfItem *conf = NULL;
   /* Oper only, if unopered, return ERR_NOPRIVILEGES */
   if ((ConfigFileEntry.stats_k_oper_only == 2) && !IsOper(source_p))
     sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
@@ -1187,7 +1187,8 @@ stats_ziplinks(struct Client *source_p)
 
     if (IsCapable(target_p, CAP_ZIP))
     {
-      /* we use memcpy(3) and a local copy of the structure to
+      /*
+       * we use memcpy(3) and a local copy of the structure to
        * work around a register use bug on GCC on the SPARC.
        * -jmallett, 04/27/2002
        */
@@ -1198,8 +1199,8 @@ stats_ziplinks(struct Client *source_p)
                  "compression (%lu bytes data/%lu bytes wire)] recv[%.2f%% "
                  "compression (%lu bytes data/%lu bytes wire)]",
                  from, RPL_STATSDEBUG, to, target_p->name,
-		 zipstats.out_ratio, zipstats.out, zipstats.out_wire,
-		 zipstats.in_ratio,  zipstats.in,  zipstats.in_wire);
+                 zipstats.out_ratio, zipstats.out, zipstats.out_wire,
+                 zipstats.in_ratio,  zipstats.in,  zipstats.in_wire);
       ++sent_data;
     }
   }
@@ -1224,7 +1225,7 @@ stats_servlinks(struct Client *source_p)
 
   DLINK_FOREACH(ptr, serv_list.head)
   {
-    struct Client *target_p = ptr->data;
+    const struct Client *target_p = ptr->data;
 
     sendB += target_p->localClient->send.bytes;
     recvB += target_p->localClient->recv.bytes;
@@ -1246,29 +1247,29 @@ stats_servlinks(struct Client *source_p)
   sendB >>= 10;
   recvB >>= 10;
 
+  uptime = (CurrentTime - me.since);
+
   sendto_one(source_p, ":%s %d %s ? :%u total server(s)",
              from, RPL_STATSDEBUG, to, dlink_list_length(&serv_list));
   sendto_one(source_p, ":%s %d %s ? :Sent total : %7.2f %s",
              from, RPL_STATSDEBUG, to,
-	     _GMKv((signed)sendB), _GMKs((signed)sendB));
+             _GMKv(sendB), _GMKs(sendB));
   sendto_one(source_p, ":%s %d %s ? :Recv total : %7.2f %s",
              from, RPL_STATSDEBUG, to,
-	     _GMKv((signed)recvB), _GMKs((signed)recvB));
-
-  uptime = (CurrentTime - me.since);
+             _GMKv(recvB), _GMKs(recvB));
 
   sendto_one(source_p, ":%s %d %s ? :Server send: %7.2f %s (%4.1f K/s)",
              from, RPL_STATSDEBUG, to,
-	     _GMKv((signed)(me.localClient->send.bytes>>10)),
-             _GMKs((signed)(me.localClient->send.bytes>>10)),
-	     (float)((float)(((signed)me.localClient->send.bytes) >> 10) /
-	     (float)uptime));
+             _GMKv((me.localClient->send.bytes>>10)),
+             _GMKs((me.localClient->send.bytes>>10)),
+             (float)((float)(me.localClient->send.bytes >> 10) /
+             (float)uptime));
   sendto_one(source_p, ":%s %d %s ? :Server recv: %7.2f %s (%4.1f K/s)",
              from, RPL_STATSDEBUG, to,
-	     _GMKv((signed)(me.localClient->recv.bytes>>10)),
-	     _GMKs((signed)(me.localClient->recv.bytes>>10)),
-	     (float)((float)(((signed)me.localClient->recv.bytes) >> 10) /
-	     (float)uptime));
+             _GMKv((me.localClient->recv.bytes>>10)),
+             _GMKs((me.localClient->recv.bytes>>10)),
+             (float)((float)(me.localClient->recv.bytes >> 10) /
+             (float)uptime));
 }
 
 static void
@@ -1462,7 +1463,7 @@ stats_L_list(struct Client *source_p, char *name, int doall, int wilds,
 static char *
 parse_stats_args(int parc, char *parv[], int *doall, int *wilds)
 {
-  char *name;
+  char *name = NULL;
 
   if (parc > 2)
   {
