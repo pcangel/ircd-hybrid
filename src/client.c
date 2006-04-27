@@ -741,6 +741,8 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
     assert(source_p->whowas.head == NULL);
     assert(source_p->whowas.tail == NULL);
 
+    hash_check_watch(source_p, RPL_LOGOFF);
+
     /* Do local vs. remote processing here */
     if (MyConnect(source_p))
     {
@@ -776,8 +778,6 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
     hash_del_id(source_p);
   if (source_p->name[0])
     hash_del_client(source_p);
-
-  hash_check_watch(source_p, RPL_LOGOFF);
 
   if (IsUserHostIp(source_p))
     delete_user_host(source_p->username, source_p->host, !MyConnect(source_p));
@@ -923,11 +923,12 @@ remove_dependents(struct Client *source_p, struct Client *from,
 void
 exit_client(struct Client *source_p, struct Client *from, const char *comment)
 {
-  dlink_node *m;
+  dlink_node *m = NULL;
 
   if (MyConnect(source_p))
   {
-    /* DO NOT REMOVE. exit_client can be called twice after a failed
+    /*
+     * DO NOT REMOVE. exit_client can be called twice after a failed
      * read/write.
      */
     if (IsClosing(source_p))
