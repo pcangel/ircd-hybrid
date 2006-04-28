@@ -101,14 +101,8 @@ iosend_default(va_list args)
 static void
 send_message(struct Client *to, char *buf, int len)
 {
-#ifdef INVARIANTS
-  if (IsMe(to))
-  {
-    sendto_realops_flags(UMODE_ALL, L_ALL,
-                         "Trying to send message to myself!");
-    return;
-  }
-#endif
+  assert(!IsMe(to));
+  assert(&me != to);
 
   if (dbuf_length(&to->localClient->buf_sendq) + len > get_sendq(to))
   {
@@ -120,6 +114,7 @@ send_message(struct Client *to, char *buf, int len)
                            get_sendq(to));
     if (IsClient(to))
       SetSendQExceeded(to);
+
     dead_link_on_write(to, 0);
     return;
   }
@@ -127,9 +122,9 @@ send_message(struct Client *to, char *buf, int len)
   execute_callback(iosend_cb, to, len, buf);
 
   /*
-   ** Update statistics. The following is slightly incorrect
-   ** because it counts messages even if queued, but bytes
-   ** only really sent. Queued bytes get updated in SendQueued.
+   * Update statistics. The following is slightly incorrect
+   * because it counts messages even if queued, but bytes
+   * only really sent. Queued bytes get updated in SendQueued.
    */
   ++to->localClient->send.messages;
   ++me.localClient->send.messages;

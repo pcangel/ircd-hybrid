@@ -820,7 +820,6 @@ if test "$efnet" = yes; then
 	EXAMPLE_CONF=example.efnet.conf
     NICKLEN=9
 else
-	AC_DEFINE(INVARIANTS, 1, [Miscellaneous sanity checks for the ircd. Makes it slightly slower])
 	EXAMPLE_CONF=example.conf
 fi
 

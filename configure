@@ -9641,11 +9641,6 @@ _ACEOF
 	EXAMPLE_CONF=example.efnet.conf
     NICKLEN=9
 else
-
-cat >>confdefs.h <<\_ACEOF
-#define INVARIANTS 1
-_ACEOF
-
 	EXAMPLE_CONF=example.conf
 fi
 

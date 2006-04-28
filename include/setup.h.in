@@ -171,9 +171,6 @@
 /* Length of hostname. Updated to comply with RFC1123 */
 #undef HOSTLEN
 
-/* Miscellaneous sanity checks for the ircd. Makes it slightly slower */
-#undef INVARIANTS
-
 /* Define if IPv6 support is present and available. */
 #undef IPV6
 
