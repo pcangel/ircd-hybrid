@@ -399,9 +399,10 @@ register_local_user(struct Client *source_p, const char *username)
   if (check_xline(source_p) || check_regexp_xline(source_p))
     return;
 
-  if (source_p->id[0] == '\0' && me.id[0])
+  if (me.id[0] != '\0')
   {
-    char *id = (char *) execute_callback(uid_get_cb, source_p);
+    const char *id = execute_callback(uid_get_cb, source_p);
+
     while (hash_find_id(id) != NULL)
       id = uid_get(NULL);
 
@@ -1239,12 +1240,12 @@ init_uid(void)
     if (new_uid[i] == '\0') 
       new_uid[i] = 'A';
 
-  /* XXX if IRC_MAXUID != 6, this will have to be rewritten */
+  /* NOTE: if IRC_MAXUID != 6, this will have to be rewritten */
   /* Yes nenolod, I have known it was off by one ever since I wrote it
    * But *JUST* for you, though, it really doesn't look as *pretty*
    * -Dianora
    */
-  memcpy(new_uid+IRC_MAXSID, "AAAAA@", IRC_MAXUID);
+  memcpy(new_uid + IRC_MAXSID, "AAAAA@", IRC_MAXUID);
 }
 
 /*
@@ -1257,8 +1258,8 @@ init_uid(void)
 void *
 uid_get(va_list args)
 {
-  add_one_to_uid(TOTALSIDUID-1);    /* index from 0 */
-  return ((void *) new_uid);
+  add_one_to_uid(TOTALSIDUID - 1);    /* index from 0 */
+  return new_uid;
 }
 
 /*
@@ -1285,7 +1286,7 @@ add_one_to_uid(int i)
   }
   else
   {
-    /* XXX if IRC_MAXUID != 6, this will have to be rewritten */
+    /* NOTE: if IRC_MAXUID != 6, this will have to be rewritten */
     if (new_uid[i] == 'Z')
       memcpy(new_uid+IRC_MAXSID, "AAAAAA", IRC_MAXUID);
     else
@@ -1338,6 +1339,7 @@ add_isupport(const char *name, const char *options, int n)
   DLINK_FOREACH(ptr, support_list.head)
   {
     support = ptr->data;
+
     if (irccmp(support->name, name) == 0)
     {
       MyFree(support->name);
