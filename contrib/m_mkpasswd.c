@@ -19,15 +19,14 @@
 #include "modules.h"
 
 static void m_mkpasswd(struct Client *, struct Client *, int, char *[]);
-static void mo_mkpasswd(struct Client *, struct Client *, int, char *[]);
-static char *des(void);
-static char *md5(void);
+static const char *m_mkpasswd_des(void);
+static const char *m_mkpasswd_md5(void);
 
 static const char saltChars[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./";
 
 struct Message mkpasswd_msgtab = {
   "MKPASSWD", 0, 0, 1, 2, MFLG_SLOW, 0,
-  { m_unregistered, m_mkpasswd, m_ignore, m_ignore, mo_mkpasswd, m_ignore }
+  { m_unregistered, m_mkpasswd, m_ignore, m_ignore, m_mkpasswd, m_ignore }
 };
 
 INIT_MODULE(m_mkpasswd, "$Revision$")
@@ -53,59 +52,33 @@ m_mkpasswd(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+  if (!IsOper(source_p))
   {
-    sendto_one(source_p, form_str(RPL_LOAD2HI),
-               me.name, source_p->name);
-    return;
-  }
+    if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+    {
+      sendto_one(source_p, form_str(RPL_LOAD2HI),
+                 me.name, source_p->name);
+      return;
+    }
 
-  last_used = CurrentTime;
-
-  if (parv[2] == NULL || !irccmp(parv[2], "DES"))
-    sendto_one(source_p, ":%s NOTICE %s :DES Encryption for [%s]: %s",
-               me.name, source_p->name, parv[1], crypt(parv[1],
-               des()));
-  else if (!irccmp(parv[2], "MD5"))
-    sendto_one(source_p, ":%s NOTICE %s :MD5 Encryption for [%s]: %s",
-               me.name, source_p->name, parv[1], crypt(parv[1],
-               md5()));
-  else
-    sendto_one(source_p, ":%s NOTICE %s :Syntax: MKPASSWD pass [DES|MD5]",
-               me.name, source_p->name);
-}
-
-/*
-** mo_mkpasswd
-**      parv[0] = sender prefix
-**      parv[1] = parameter
-*/
-static void
-mo_mkpasswd(struct Client *client_p, struct Client *source_p,
-            int parc, char *parv[])
-{
-  if (EmptyString(parv[1]))
-  {
-    sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
-               me.name, source_p->name, "MKPASSWD");
-    return;
+    last_used = CurrentTime;
   }
 
   if (parv[2] == NULL || !irccmp(parv[2], "DES"))
     sendto_one(source_p, ":%s NOTICE %s :DES Encryption for [%s]: %s",
                me.name, source_p->name, parv[1], crypt(parv[1],
-               des()));
+               m_mkpasswd_des()));
   else if (!irccmp(parv[2], "MD5"))
     sendto_one(source_p, ":%s NOTICE %s :MD5 Encryption for [%s]: %s",
                me.name, source_p->name, parv[1], crypt(parv[1],
-               md5()));
+               m_mkpasswd_md5()));
   else
     sendto_one(source_p, ":%s NOTICE %s :Syntax: MKPASSWD pass [DES|MD5]",
                me.name, source_p->name);
 }
 
-static char *
-des(void)
+static const char *
+m_mkpasswd_des(void)
 {
   static char salt[3];
 
@@ -116,8 +89,8 @@ des(void)
   return salt;
 }
 
-static char *
-md5(void)
+static const char *
+m_mkpasswd_md5(void)
 {
   static char salt[13];
   int i;
@@ -126,7 +99,7 @@ md5(void)
   salt[1] = '1';
   salt[2] = '$';
 
-  for (i = 3; i < 11; i++)
+  for (i = 3; i < 11; ++i)
     salt[i] = saltChars[rand() % 64];
 
   salt[11] = '$';
