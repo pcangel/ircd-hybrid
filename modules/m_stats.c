@@ -640,7 +640,7 @@ stats_deny(struct Client *source_p)
 
         sendto_one(source_p, form_str(RPL_STATSDLINE),
                    from, to, 'D', aconf->host, aconf->reason,
-		   aconf->oper_reason);
+                   aconf->oper_reason);
       }
     }
   }
@@ -676,7 +676,7 @@ stats_tdeny(struct Client *source_p)
 
         sendto_one(source_p, form_str(RPL_STATSDLINE),
                    from, to, 'd', aconf->host, aconf->reason,
-		   aconf->oper_reason);
+                   aconf->oper_reason);
       }
     }
   }
@@ -708,7 +708,7 @@ stats_exempt(struct Client *source_p)
 
         sendto_one(source_p, form_str(RPL_STATSDLINE),
                    from, to, 'e', aconf->host, 
-		   aconf->reason, aconf->oper_reason);
+                   aconf->reason, aconf->oper_reason);
       }
     }
   }
@@ -724,10 +724,8 @@ static void
 stats_pending_glines(struct Client *source_p)
 {
 #ifdef GLINE_VOTING
-  dlink_node *pending_node;
-  struct gline_pending *glp_ptr;
+  dlink_node *pending_node = NULL;
   char timebuffer[MAX_DATE_STRING];
-  struct tm *tmptr;
 
   if (!ConfigFileEntry.glines)
   {
@@ -742,27 +740,29 @@ stats_pending_glines(struct Client *source_p)
 
   DLINK_FOREACH(pending_node, pending_glines.head)
   {
-    glp_ptr = pending_node->data;
-    tmptr   = localtime(&glp_ptr->time_request1);
-    strftime(timebuffer, MAX_DATE_STRING, "%Y/%m/%d %H:%M:%S", tmptr);
+    struct gline_pending *glp_ptr = pending_node->data;
+    struct tm *tmptr = localtime(&glp_ptr->request1.time_request);
+
+    strftime(timebuffer, sizeof(timebuffer), "%Y/%m/%d %H:%M:%S", tmptr);
 
     sendto_one(source_p,
-               ":%s NOTICE %s :1) %s!%s@%s on %s requested gline at %s for %s@%s [%s]",
-               from, to, glp_ptr->oper_nick1,
-               glp_ptr->oper_user1, glp_ptr->oper_host1,
-               glp_ptr->oper_server1, timebuffer,
-               glp_ptr->user, glp_ptr->host, glp_ptr->reason1);
+       ":%s NOTICE %s :1) %s!%s@%s on %s requested gline at %s for %s@%s [%s]",
+               from, to, glp_ptr->request1.nick,
+               glp_ptr->request1.user, glp_ptr->request1.host,
+               glp_ptr->request1.server, timebuffer,
+               glp_ptr->user, glp_ptr->host, glp_ptr->request1.reason);
 
-    if (glp_ptr->oper_nick2[0] != '\0')
+    if (glp_ptr->request2.nick[0] != '\0')
     {
-      tmptr = localtime(&glp_ptr->time_request2);
-      strftime(timebuffer, MAX_DATE_STRING, "%Y/%m/%d %H:%M:%S", tmptr);
+      tmptr = localtime(&glp_ptr->request2.time_request);
+      strftime(timebuffer, sizeof(timebuffer), "%Y/%m/%d %H:%M:%S", tmptr);
+
       sendto_one(source_p,
-      ":%s NOTICE %s :2) %s!%s@%s on %s requested gline at %s for %s@%s [%s]",
-                 from, to, glp_ptr->oper_nick2,
-                 glp_ptr->oper_user2, glp_ptr->oper_host2,
-                 glp_ptr->oper_server2, timebuffer,
-                 glp_ptr->user, glp_ptr->host, glp_ptr->reason2);
+       ":%s NOTICE %s :2) %s!%s@%s on %s requested gline at %s for %s@%s [%s]",
+                 from, to, glp_ptr->request2.nick,
+                 glp_ptr->request2.user, glp_ptr->request2.host,
+                 glp_ptr->request2.server, timebuffer,
+                 glp_ptr->user, glp_ptr->host, glp_ptr->request2.reason);
     }
   }
 

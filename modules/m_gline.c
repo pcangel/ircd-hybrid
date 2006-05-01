@@ -445,18 +445,21 @@ add_new_majority_gline(const struct Client *source_p,
 {
   struct gline_pending *pending = MyMalloc(sizeof(struct gline_pending));
 
-  strlcpy(pending->oper_nick1, source_p->name, sizeof(pending->oper_nick1));
-  strlcpy(pending->oper_user1, source_p->username, sizeof(pending->oper_user1));
-  strlcpy(pending->oper_host1, source_p->host, sizeof(pending->oper_host1));
-
-  strlcpy(pending->oper_server1, source_p->servptr->name, sizeof(pending->oper_server1));
+  strlcpy(pending->request1.nick, source_p->name,
+          sizeof(pending->request1.nick));
+  strlcpy(pending->request1.user, source_p->username,
+          sizeof(pending->request1.user));
+  strlcpy(pending->request1.host, source_p->host,
+          sizeof(pending->request1.host));
+  strlcpy(pending->request1.server, source_p->servptr->name,
+          sizeof(pending->request1.server));
 
   strlcpy(pending->user, user, sizeof(pending->user));
   strlcpy(pending->host, host, sizeof(pending->host));
-  strlcpy(pending->reason1, reason, sizeof(pending->reason1));
+  strlcpy(pending->request1.reason, reason, sizeof(pending->request1.reason));
 
   pending->last_gline_time = CurrentTime;
-  pending->time_request1   = CurrentTime;
+  pending->request1.time_request = CurrentTime;
 
   dlinkAdd(pending, &pending->node, &pending_glines);
 }
@@ -480,74 +483,61 @@ static int
 check_majority_gline(const struct Client *source_p,
                      const char *user, const char *host, const char *reason)
 {
-  dlink_node *pending_node;
-  struct gline_pending *gline_pending_ptr;
+  dlink_node *pending_node = NULL;
 
   /* if its already glined, why bother? :) -- fl_ */
   if (find_is_glined(host, user))
-    return(GLINE_NOT_PLACED);
-
-  /* special case condition where there are no pending glines */
-  if (dlink_list_length(&pending_glines) == 0) /* first gline request placed */
-  {
-    add_new_majority_gline(source_p, user, host, reason);
-    return(GLINE_NOT_PLACED);
-  }
+    return GLINE_NOT_PLACED; /* XXX */
 
   DLINK_FOREACH(pending_node, pending_glines.head)
   {
-    gline_pending_ptr = pending_node->data;
+    struct gline_pending *pending = pending_node->data;
 
-    if ((irccmp(gline_pending_ptr->user, user) == 0) &&
-	(irccmp(gline_pending_ptr->host, host) == 0))
+    if (!irccmp(pending->user, user) &&
+        !irccmp(pending->host, host))
     {
-      if (((irccmp(gline_pending_ptr->oper_user1, source_p->username) == 0) ||
-           (irccmp(gline_pending_ptr->oper_host1, source_p->host) == 0)) ||
-          (irccmp(gline_pending_ptr->oper_server1, source_p->servptr->name) == 0))
+      if (!irccmp(pending->request1.user, source_p->username) ||
+          !irccmp(pending->request1.host, source_p->host) ||
+          !irccmp(pending->request1.server, source_p->servptr->name))
+        return GLINE_ALREADY_VOTED;
+
+      if (pending->request2.user[0] != '\0')
       {
-	return(GLINE_ALREADY_VOTED);
+        /* if two other opers on two different servers have voted yes */
+        if (!irccmp(pending->request2.user, source_p->username) ||
+            !irccmp(pending->request2.host, source_p->host) ||
+            !irccmp(pending->request2.server, source_p->servptr->name))
+          return GLINE_ALREADY_VOTED;
+
+        /* trigger the gline using the original reason --fl */
+        set_local_gline(source_p, user, host, pending->request1.reason);
+        cleanup_glines(NULL);
+        return GLINE_PLACED;
       }
 
-      if (gline_pending_ptr->oper_user2[0] != '\0')
-      {
-	/* if two other opers on two different servers have voted yes */
+      strlcpy(pending->request2.nick, source_p->name,
+              sizeof(pending->request2.nick));
+      strlcpy(pending->request2.user, source_p->username,
+              sizeof(pending->request2.user));
+      strlcpy(pending->request2.host, source_p->host,
+              sizeof(pending->request2.host));
+      strlcpy(pending->request2.reason, reason,
+              sizeof(pending->request2.reason));
+      strlcpy(pending->request2.server, source_p->servptr->name,
+              sizeof(pending->request2.server));
+      pending->last_gline_time = CurrentTime;
+      pending->request2.time_request = CurrentTime;
 
-	if(((irccmp(gline_pending_ptr->oper_user2, source_p->username)==0) ||
-	    (irccmp(gline_pending_ptr->oper_host2, source_p->host)==0)) ||
-	   (irccmp(gline_pending_ptr->oper_server2, source_p->servptr->name)==0))
-	{
-	  return(GLINE_ALREADY_VOTED);
-	}
-
-	/* trigger the gline using the original reason --fl */
-	set_local_gline(source_p, user, host, gline_pending_ptr->reason1);
-	cleanup_glines(NULL);
-	return(GLINE_PLACED);
-      }
-      else
-      {
-	strlcpy(gline_pending_ptr->oper_nick2, source_p->name,
-	        sizeof(gline_pending_ptr->oper_nick2));
-	strlcpy(gline_pending_ptr->oper_user2, source_p->username,
-	        sizeof(gline_pending_ptr->oper_user2));
-	strlcpy(gline_pending_ptr->oper_host2, source_p->host,
-	        sizeof(gline_pending_ptr->oper_host2));
-        strlcpy(gline_pending_ptr->reason2, reason,
-                sizeof(gline_pending_ptr->reason2));
-        strlcpy(gline_pending_ptr->oper_server2, source_p->servptr->name,
-                sizeof(gline_pending_ptr->oper_server2));
-	gline_pending_ptr->last_gline_time = CurrentTime;
-	gline_pending_ptr->time_request2 = CurrentTime;
-	return(GLINE_NOT_PLACED);
-      }
+      return GLINE_NOT_PLACED;
     }
   }
 
-  /* Didn't find this user@host gline in pending gline list
+  /*
+   * Didn't find this user@host gline in pending gline list
    * so add it.
    */
   add_new_majority_gline(source_p, user, host, reason);
-  return(GLINE_NOT_PLACED);
+  return GLINE_NOT_PLACED;
 }
 #endif /* GLINE_VOTING */
 
@@ -597,7 +587,7 @@ static void
 mo_ungline(struct Client *client_p, struct Client *source_p,
            int parc, char *parv[])
 {
-  char *user, *host;
+  char *user = NULL, *host = NULL;
 
   if (!ConfigFileEntry.glines)
   {
@@ -614,7 +604,7 @@ mo_ungline(struct Client *client_p, struct Client *source_p,
   }
 
   if (parse_aline("UNGLINE", source_p, parc, parv,
-		  0, &user, &host, NULL, NULL, NULL) < 0)
+                  0, &user, &host, NULL, NULL, NULL) < 0)
     return;
 
   if (remove_gline_match(user, host))
