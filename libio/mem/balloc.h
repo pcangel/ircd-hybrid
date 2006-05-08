@@ -43,7 +43,7 @@ struct Block {
 typedef struct Block Block;
 
 struct MemBlock {
-  dlink_node self;		/*!< Node for linking into free_list or used_list */
+  dlink_node self;		/*!< Node for linking into free_list */
   Block *block;			/*!< Which block we belong to */
 };
 typedef struct MemBlock MemBlock;
