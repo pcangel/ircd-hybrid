@@ -170,13 +170,13 @@ send_caplist(struct Client *sptr, unsigned int set,
 {
   char capbuf[IRCD_BUFSIZE] = "", pfx[16];
   char cmdbuf[IRCD_BUFSIZE] = "";
-  int i, loc, len, flags, pfx_len, clen;
+  unsigned int i = 0, loc = 0, len, flags, pfx_len, clen;
 
   /* set up the buffer for the final LS message... */
   clen = snprintf(cmdbuf, sizeof(cmdbuf), ":%s CAP %s %s ", me.name,
                   sptr->name[0] ? sptr->name : "*", subcmd);
 
-  for (i = 0, loc = 0; i < CAPAB_LIST_LEN; ++i)
+  for (; i < CAPAB_LIST_LEN; ++i)
   {
     flags = capab_list[i].flags;
 
