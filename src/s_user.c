@@ -54,7 +54,6 @@ static char umode_buffer[IRCD_BUFSIZE];
 static void user_welcome(struct Client *);
 static void report_and_set_user_flags(struct Client *, const struct AccessItem *);
 static int check_xline(struct Client *);
-static int check_regexp_xline(struct Client *);
 static void introduce_client(struct Client *, struct Client *);
 
 /* Used for building up the isupport string,
@@ -383,7 +382,7 @@ register_local_user(struct Client *source_p, const char *username)
   }
 
   /* valid user name check */
-  if (valid_username(source_p->username) == 0)
+  if (!valid_username(source_p->username))
   {
     char tmpstr2[IRCD_BUFSIZE];
 
@@ -395,8 +394,7 @@ register_local_user(struct Client *source_p, const char *username)
     return;
   }
 
-  /* end of valid user name check */
-  if (check_xline(source_p) || check_regexp_xline(source_p))
+  if (check_xline(source_p))
     return;
 
   if (me.id[0] != '\0')
@@ -412,7 +410,7 @@ register_local_user(struct Client *source_p, const char *username)
 
   irc_getnameinfo((struct sockaddr *)&source_p->localClient->ip,
                   source_p->localClient->ip.ss_len, ipaddr,
-                  HOSTIPLEN, NULL, 0, NI_NUMERICHOST);
+                  sizeof(ipaddr), NULL, 0, NI_NUMERICHOST);
 
   sendto_realops_flags(UMODE_CCONN, L_ALL,
                        "Client connecting: %s (%s@%s) [%s] {%s} [%s]",
@@ -608,13 +606,9 @@ valid_hostname(const char *hostname)
   if ('.' == *p || ':' == *p)
     return 0;
 
-  while (*p)
-  {
+  for (; *p != '\0'; ++p)
     if (!IsHostChar(*p))
       return 0;
-    p++;
-  }
-
   return 1;
 }
 
@@ -1088,50 +1082,11 @@ user_welcome(struct Client *source_p)
 static int
 check_xline(struct Client *source_p)
 {
-  struct ConfItem *conf;
-  struct MatchItem *xconf;
-  const char *reason;
-
-  if ((conf = find_matching_name_conf(XLINE_TYPE, source_p->info,
-                                      NULL, NULL, 0)) != NULL)
-  {
-    xconf = &conf->conf.MatchItem;
-    xconf->count++;
-
-    if (xconf->reason != NULL)
-      reason = xconf->reason;
-    else
-      reason = "No Reason";
-
-    sendto_realops_flags(UMODE_REJ, L_ALL,
-                         "X-line Rejecting [%s] [%s], user %s [%s]",
-                         source_p->info, reason,
-                         get_client_name(source_p, HIDE_IP),
-                         source_p->sockhost);
-
-    ++ServerStats.is_ref;      
-    if (REJECT_HOLD_TIME > 0)
-    {
-      sendto_one(source_p, ":%s NOTICE %s :Bad user info",
-                 me.name, source_p->name);
-      source_p->localClient->reject_delay = CurrentTime + REJECT_HOLD_TIME;
-      SetCaptured(source_p);
-    }
-    else
-      exit_client(source_p, &me, "Bad user info");
-    return 1;
-  }
-
-  return 0;
-}
-
-static int
-check_regexp_xline(struct Client *source_p)
-{
   struct ConfItem *conf = NULL;
   const char *reason = NULL;
 
-  if ((conf = find_matching_name_conf(RXLINE_TYPE, source_p->info, NULL, NULL, 0)))
+  if ((conf = find_matching_name_conf(XLINE_TYPE, source_p->info, NULL, NULL, 0)) ||
+      (conf = find_matching_name_conf(RXLINE_TYPE, source_p->info, NULL, NULL, 0)))
   {
     struct MatchItem *reg = &conf->conf.MatchItem;
 
@@ -1143,13 +1098,21 @@ check_regexp_xline(struct Client *source_p)
       reason = "No Reason";
 
     sendto_realops_flags(UMODE_REJ, L_ALL,
-                         "X-line (REGEX) Rejecting [%s] [%s], user %s [%s]",
+                         "X-line Rejecting [%s] [%s], user %s [%s]",
                          source_p->info, reason,
                          get_client_name(source_p, HIDE_IP),
                          source_p->sockhost);
 
     ++ServerStats.is_ref;
-    exit_client(source_p, &me, "Bad user info");
+    if (REJECT_HOLD_TIME > 0)
+    {
+      sendto_one(source_p, ":%s NOTICE %s :Bad user info",
+                 me.name, source_p->name);
+      source_p->localClient->reject_delay = CurrentTime + REJECT_HOLD_TIME;
+      SetCaptured(source_p);
+    }
+    else
+      exit_client(source_p, &me, "Bad user info");
     return 1;
   }
 
