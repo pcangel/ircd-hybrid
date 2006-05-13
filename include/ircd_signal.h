@@ -37,6 +37,6 @@
 #define SIG_REMOTD  3
 #endif
 
-void setup_signals(void);
+extern void setup_signals(void);
 
 #endif /* INCLUDED_ircd_signal_h */

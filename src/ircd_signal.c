@@ -26,7 +26,7 @@
 #include "common.h"
 #include "ircd_signal.h"
 #include "ircd.h"         /* dorehash */
-#include "restart.h"      /* server_reboot */
+#include "restart.h"      /* server_die */
 
 /*
  * signal_handler - general handler for ircd signals
@@ -38,8 +38,10 @@ signal_handler(int sig)
   {
     case SIG_DIE:
       server_die("received signal SIGTERM", NO);
+      break;
     case SIG_RESTART:
       server_die("received signal SIGINT", !server_state.foreground);
+      break;
     case SIG_REHASH:
       dorehash = 1;
       break;
@@ -77,20 +79,26 @@ setup_signals(void)
 
   act.sa_flags = 0;
   act.sa_handler = SIG_IGN;
+
   sigemptyset(&act.sa_mask);
+
   sigaddset(&act.sa_mask, SIGPIPE);
+  sigaction(SIGPIPE, &act, 0);
+
   sigaddset(&act.sa_mask, SIGALRM);
 #ifdef SIGTRAP
   sigaddset(&act.sa_mask, SIGTRAP);
+  sigaction(SIGTRAP, &act, 0);
 #endif
 
 #ifdef SIGWINCH
   sigaddset(&act.sa_mask, SIGWINCH);
   sigaction(SIGWINCH, &act, 0);
 #endif
-  sigaction(SIGPIPE, &act, 0);
-#ifdef SIGTRAP
-  sigaction(SIGTRAP, &act, 0);
+
+#ifdef SIGXFSZ
+  sigaddset(&act.sa_mask, SIGXFSZ);
+  sigaction(SIGXFSZ, &act, 0);
 #endif
 
   act.sa_handler = signal_handler;
