@@ -86,6 +86,8 @@ setup_signals(void)
   sigaction(SIGPIPE, &act, 0);
 
   sigaddset(&act.sa_mask, SIGALRM);
+  sigaction(SIGALRM, &act, 0);
+
 #ifdef SIGTRAP
   sigaddset(&act.sa_mask, SIGTRAP);
   sigaction(SIGTRAP, &act, 0);
@@ -103,6 +105,7 @@ setup_signals(void)
 
   act.sa_handler = signal_handler;
   sigemptyset(&act.sa_mask);
+
   sigaddset(&act.sa_mask, SIG_REHASH);
   sigaction(SIG_REHASH, &act, 0);
 
