@@ -24,8 +24,6 @@
 
 #include "stdinc.h"
 #include "handlers.h"
-#include "s_gline.h"
-#include "channel.h"
 #include "client.h"
 #include "common.h"
 #include "ircd.h"
@@ -46,7 +44,9 @@
 
 EXTERN dlink_list gdeny_items; /* XXX */
 
+
 /* internal functions */
+static void expire_pending_glines(void *);
 static void set_local_gline(const struct Client *,
                             const char *, const char *, const char *);
 
@@ -72,12 +72,12 @@ static void mo_ungline(struct Client *, struct Client *, int, char *[]);
  */
 struct Message gline_msgtab = {
   "GLINE", 0, 0, 3, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_not_oper, ms_gline, me_gline, mo_gline, m_ignore}
+  { m_unregistered, m_not_oper, ms_gline, me_gline, mo_gline, m_ignore }
 };
 
 struct Message ungline_msgtab = {
   "UNGLINE", 0, 0, 2, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_not_oper, m_ignore, m_ignore, mo_ungline, m_ignore}
+  { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_ungline, m_ignore }
 };
 
 INIT_MODULE(m_gline, "$Revision$")
@@ -85,6 +85,9 @@ INIT_MODULE(m_gline, "$Revision$")
   mod_add_cmd(&gline_msgtab);
   mod_add_cmd(&ungline_msgtab);
   add_capability("GLN", CAP_GLN, 1);
+
+  expire_pending_glines(NULL);
+  eventAddIsh("cleanup_glines", cleanup_glines, NULL, CLEANUP_GLINES_TIME);
 }
 
 CLEANUP_MODULE
@@ -92,6 +95,63 @@ CLEANUP_MODULE
   delete_capability("GLN");
   mod_del_cmd(&ungline_msgtab);
   mod_del_cmd(&gline_msgtab);
+
+  expire_pending_glines(NULL);
+  eventDelete(cleanup_glines);
+}
+
+static struct AccessItem *
+find_is_glined(const char *host, const char *user)
+{
+  struct irc_ssaddr iphost, *piphost;
+  int t;
+
+  if ((t = parse_netmask(host, &iphost, &t)) != HM_HOST)
+  {
+#ifdef IPV6
+    if (t == HM_IPV6)
+      t = AF_INET6;
+    else
+#endif
+      t = AF_INET;
+    piphost = &iphost;
+  }
+  else
+  {
+    t = 0;
+    piphost = NULL;
+  }
+
+  return find_conf_by_address(host, piphost, CONF_GLINE, t, user, NULL);
+}
+
+/* expire_pending_glines()
+ *
+ * inputs       - NONE
+ * output       - NONE
+ * side effects -
+ *
+ * Go through the pending gline list, expire any that haven't had
+ * enough "votes" in the time period allowed
+ */
+static void
+expire_pending_glines(void *unused)
+{
+  dlink_node *ptr;
+  dlink_node *next_ptr;
+  struct gline_pending *glp_ptr;
+
+  DLINK_FOREACH_SAFE(ptr, next_ptr, pending_glines.head)
+  {
+    glp_ptr = ptr->data;
+
+    if (((glp_ptr->last_gline_time + GLINE_PENDING_EXPIRE) <= CurrentTime) ||
+        find_is_glined(glp_ptr->host, glp_ptr->user))
+    {
+      dlinkDelete(&glp_ptr->node, &pending_glines);
+      MyFree(glp_ptr);
+    }
+  }
 }
 
 /*! \brief GLINE command handler (called for operators only)

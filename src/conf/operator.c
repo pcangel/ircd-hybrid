@@ -28,18 +28,13 @@
 #include "s_serv.h"
 #include "resv.h"
 #include "channel.h"
-#include "parse_aline.h"
 #include "common.h"
 #include "hash.h"
 #include "ircd.h"
-#include "listener.h"
 #include "hostmask.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_gline.h"
-#include "userhost.h"
 #include "s_user.h"
-#include "channel_mode.h"
 #include "conf/conf.h"
 
 

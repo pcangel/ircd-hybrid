@@ -23,7 +23,6 @@
  */
 
 #include "stdinc.h"
-#include "channel.h"
 #include "client.h"
 #include "common.h"
 #include "ircd.h"
@@ -36,7 +35,6 @@
 #include "handlers.h"
 #include "s_serv.h"
 #include "msg.h"
-#include "s_gline.h"
 #include "parse.h"
 #include "conf/modules.h"
 

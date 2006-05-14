@@ -32,7 +32,6 @@
 #include "common.h"
 #include "hash.h"
 #include "ircd_signal.h"
-#include "s_gline.h"
 #include "motd.h"
 #include "ircd_handler.h"
 #include "msg.h"         /* msgtab */
@@ -657,7 +656,6 @@ main(int argc, char *argv[])
 
   ilog(L_NOTICE, "Server Ready");
 
-  eventAddIsh("cleanup_glines", cleanup_glines, NULL, CLEANUP_GLINES_TIME);
   eventAddIsh("cleanup_tklines", cleanup_tklines, NULL, CLEANUP_TKLINES_TIME);
 
   /* We want try_connections to be called as soon as possible now! -- adrian */

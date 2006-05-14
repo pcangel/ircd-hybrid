@@ -61,6 +61,33 @@ struct split_nuh_item
   size_t hostsize;
 };
 
+struct gline_pending
+{
+  dlink_node node;
+
+  struct {
+    char nick[NICKLEN + 1];
+    char user[USERLEN + 1];
+    char host[HOSTLEN + 1];
+    char server[HOSTLEN + 1];
+    char reason[REASONLEN + 1];
+    time_t time_request;
+  } request1, request2;
+
+  time_t last_gline_time;    /* for expiring entry */
+  char user[USERLEN * 2 + 2];
+  char host[HOSTLEN * 2 + 2];
+};
+
+/*
+ * how long a pending G line can be around
+ * 10 minutes should be plenty
+ */
+#define GLINE_PENDING_EXPIRE 600
+#define CLEANUP_GLINES_TIME  300
+
+EXTERN dlink_list pending_glines;
+
 #define ConFreq(x)	((x)->con_freq)
 #define PingFreq(x)	((x)->ping_freq)
 #define PingWarning(x)  ((x)->ping_warning)

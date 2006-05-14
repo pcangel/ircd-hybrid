@@ -28,7 +28,6 @@
 #include "common.h"
 #include "hash.h"
 #include "ircd.h"
-#include "s_gline.h"
 #include "numeric.h"
 #include "packet.h"
 #include "s_auth.h"

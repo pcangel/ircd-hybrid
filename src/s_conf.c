@@ -38,7 +38,6 @@
 #include "conf/modules.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_gline.h"
 #include "userhost.h"
 #include "s_user.h"
 #include "channel_mode.h"
@@ -59,6 +58,7 @@ dlink_list rkconf_items  = { NULL, NULL, 0 };
 dlink_list nresv_items   = { NULL, NULL, 0 };
 dlink_list class_items   = { NULL, NULL, 0 };
 dlink_list gdeny_items   = { NULL, NULL, 0 };
+dlink_list pending_glines = { NULL, NULL, 0 };
 
 extern unsigned int lineno;
 extern char linebuf[];

@@ -38,7 +38,6 @@
 #include "conf/modules.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_gline.h"
 #include "userhost.h"
 #include "s_user.h"
 
