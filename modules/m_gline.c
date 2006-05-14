@@ -42,6 +42,13 @@
 #define GLINE_ALREADY_VOTED -1
 #define GLINE_PLACED         1
 
+/*
+ * how long a pending G line can be around
+ * 10 minutes should be plenty
+ */
+#define GLINE_PENDING_EXPIRE 600
+#define CLEANUP_GLINES_TIME  300
+
 EXTERN dlink_list gdeny_items; /* XXX */
 
 

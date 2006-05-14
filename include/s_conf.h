@@ -79,13 +79,6 @@ struct gline_pending
   char host[HOSTLEN * 2 + 2];
 };
 
-/*
- * how long a pending G line can be around
- * 10 minutes should be plenty
- */
-#define GLINE_PENDING_EXPIRE 600
-#define CLEANUP_GLINES_TIME  300
-
 EXTERN dlink_list pending_glines;
 
 #define ConFreq(x)	((x)->con_freq)
