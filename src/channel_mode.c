@@ -877,8 +877,7 @@ chm_op(struct Client *client_p, struct Client *source_p,
 
   if ((targ_p = find_chasing(source_p, opnick, NULL)) == NULL)
     return;
-  if (!IsClient(targ_p))
-    return;
+  assert(IsClient(targ_p));
 
   if ((member = find_channel_link(targ_p, chptr)) == NULL)
   {
@@ -980,8 +979,7 @@ chm_hop(struct Client *client_p, struct Client *source_p,
 
   if ((targ_p = find_chasing(source_p, opnick, NULL)) == NULL)
     return;
-  if (!IsClient(targ_p))
-    return;
+  assert(IsClient(targ_p));
 
   if ((member = find_channel_link(targ_p, chptr)) == NULL)
   {
@@ -1056,8 +1054,7 @@ chm_voice(struct Client *client_p, struct Client *source_p,
 
   if ((targ_p = find_chasing(source_p, opnick, NULL)) == NULL)
     return;
-  if (!IsClient(targ_p))
-    return;
+  assert(IsClient(targ_p));
 
   if ((member = find_channel_link(targ_p, chptr)) == NULL)
   {
