@@ -101,18 +101,18 @@ m_motd(struct Client *client_p, struct Client *source_p,
   if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
   {
     /* safe enough to give this on a local connect only */
-    sendto_one(source_p, form_str(RPL_LOAD2HI), me.name, source_p->name);
+    sendto_one(source_p, form_str(RPL_LOAD2HI),
+               me.name, source_p->name);
     return;
   }
-  else
-    last_used = CurrentTime;
+
+  last_used = CurrentTime;
 
   /* This is safe enough to use during non hidden server mode */
   if (!ConfigFileEntry.disable_remote && !ConfigServerHide.hide_servers)
-  {
-    if (hunt_server(client_p, source_p, ":%s MOTD :%s", 1,parc,parv)!=HUNTED_ISME)
+    if (hunt_server(source_p, ":%s MOTD :%s",
+                    1, parc, parv) != HUNTED_ISME)
       return;
-  }
 
   execute_callback(motd_cb, source_p, parc, parv);
 }
@@ -129,7 +129,8 @@ mo_motd(struct Client *client_p, struct Client *source_p,
   if (!IsClient(source_p))
     return;
 
-  if (hunt_server(client_p, source_p, ":%s MOTD :%s",1,parc,parv)!=HUNTED_ISME)
+  if (hunt_server(source_p, ":%s MOTD :%s",
+                  1, parc, parv) != HUNTED_ISME)
     return;
 
   execute_callback(motd_cb, source_p, parc, parv);

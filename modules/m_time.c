@@ -63,18 +63,17 @@ m_time(struct Client *client_p, struct Client *source_p,
        int parc, char *parv[])
 {
   /* this is not rate limited, so end the grace period */
-  if(MyClient(source_p) && !IsFloodDone(source_p))
+  if (MyClient(source_p) && !IsFloodDone(source_p))
     flood_endgrace(source_p);
 
   /* This is safe enough to use during non hidden server mode */
-  if(!ConfigFileEntry.disable_remote)
-    {
-      if (hunt_server(client_p,source_p,":%s TIME :%s",1,parc,parv) != HUNTED_ISME)
-        return;
-    }
+  if (!ConfigFileEntry.disable_remote)
+    if (hunt_server(source_p, ":%s TIME :%s",
+                    1, parc, parv) != HUNTED_ISME)
+      return;
 
   sendto_one(source_p, form_str(RPL_TIME), me.name,
-             parv[0], me.name, date(0));
+             source_p->name, me.name, date(0));
 }
 
 /*
@@ -86,7 +85,10 @@ static void
 mo_time(struct Client *client_p, struct Client *source_p,
 	int parc, char *parv[])
 {
-  if (hunt_server(client_p,source_p,":%s TIME :%s",1,parc,parv) == HUNTED_ISME)
-    sendto_one(source_p, form_str(RPL_TIME), me.name,
-               parv[0], me.name, date(0));
+  if (hunt_server(source_p, ":%s TIME :%s",
+                  1, parc, parv) != HUNTED_ISME)
+    return;
+
+  sendto_one(source_p, form_str(RPL_TIME), me.name,
+             source_p->name, me.name, date(0));
 }

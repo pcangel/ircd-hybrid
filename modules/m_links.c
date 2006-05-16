@@ -152,8 +152,8 @@ m_links(struct Client *client_p, struct Client *source_p,
                me.name, source_p->name);
     return;
   }
-  else
-    last_used = CurrentTime;
+
+  last_used = CurrentTime;
 
   if (!ConfigServerHide.flatten_links)
   {
@@ -170,11 +170,9 @@ mo_links(struct Client *client_p, struct Client *source_p,
 {
   if (parc > 2) 
     if (!ConfigFileEntry.disable_remote || IsOper(source_p))
-    {
-        if (hunt_server(client_p, source_p, ":%s LINKS %s :%s", 1, parc, parv)
-            != HUNTED_ISME)
+      if (hunt_server(source_p, ":%s LINKS %s :%s",
+                      1, parc, parv) != HUNTED_ISME)
         return;
-    }
 
   execute_callback(links_cb, source_p, parc, parv);
 }
@@ -192,8 +190,8 @@ static void
 ms_links(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
-  if (hunt_server(client_p, source_p, ":%s LINKS %s :%s", 1, parc, parv)
-      != HUNTED_ISME)
+  if (hunt_server(source_p, ":%s LINKS %s :%s",
+                  1, parc, parv) != HUNTED_ISME)
     return;
 
   if (IsClient(source_p))

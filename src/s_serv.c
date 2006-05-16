@@ -358,13 +358,13 @@ write_links_file(void* notused)
  *      returns: (see #defines)
  */
 int
-hunt_server(struct Client *client_p, struct Client *source_p, const char *command,
+hunt_server(struct Client *source_p, const char *command,
             int server, int parc, char *parv[])
 {
   struct Client *target_p = NULL;
   struct Client *target_tmp = NULL;
-  dlink_node *ptr;
-  int wilds;
+  dlink_node *ptr = NULL;
+  int wilds = 0;
 
   /* Assume it's me, if no server
    */
@@ -372,16 +372,17 @@ hunt_server(struct Client *client_p, struct Client *source_p, const char *comman
       match(me.name, parv[server]) ||
       match(parv[server], me.name) ||
       !strcmp(parv[server], me.id))
-    return(HUNTED_ISME);
+    return HUNTED_ISME;
 
-  /* These are to pickup matches that would cause the following
+  /*
+   * These are to pickup matches that would cause the following
    * message to go in the wrong direction while doing quick fast
    * non-matching lookups.
    */
   if (MyClient(source_p))
     target_p = find_client(parv[server]);
   else
-    target_p = find_person(client_p, parv[server]);
+    target_p = find_person(source_p->from, parv[server]);
 
   if (target_p)
     if (target_p->from == source_p->from && !MyConnect(target_p))
@@ -405,7 +406,7 @@ hunt_server(struct Client *client_p, struct Client *source_p, const char *comman
       {
         sendto_one(source_p, form_str(ERR_NOSUCHSERVER),
                    me.name, parv[0], parv[server]);
-        return(HUNTED_NOSUCH);
+        return HUNTED_NOSUCH;
       }
     }
     else
@@ -420,7 +421,7 @@ hunt_server(struct Client *client_p, struct Client *source_p, const char *comman
             continue;
           target_p = ptr->data;
 
-          if (IsRegistered(target_p) && (target_p != client_p))
+          if (IsRegistered(target_p) && (target_p != source_p->from))
             break;
         }
       }
@@ -429,7 +430,7 @@ hunt_server(struct Client *client_p, struct Client *source_p, const char *comman
 
   if (target_p != NULL)
   {
-    if(!IsRegistered(target_p))
+    if (!IsRegistered(target_p))
     {
       sendto_one(source_p, form_str(ERR_NOSUCHSERVER),
                  me.name, parv[0], parv[server]);
@@ -451,12 +452,12 @@ hunt_server(struct Client *client_p, struct Client *source_p, const char *comman
     sendto_one(target_p, command, parv[0],
                parv[1], parv[2], parv[3], parv[4],
                parv[5], parv[6], parv[7], parv[8]);
-    return(HUNTED_PASS);
+    return HUNTED_PASS;
   } 
 
   sendto_one(source_p, form_str(ERR_NOSUCHSERVER),
              me.name, parv[0], parv[server]);
-  return(HUNTED_NOSUCH);
+  return HUNTED_NOSUCH;
 }
 
 /* try_connections()

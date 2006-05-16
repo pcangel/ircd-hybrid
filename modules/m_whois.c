@@ -109,7 +109,7 @@ m_whois(struct Client *client_p, struct Client *source_p,
     if (ConfigFileEntry.disable_remote)
       parv[1] = parv[2];
 
-    if (hunt_server(client_p, source_p, ":%s WHOIS %s :%s", 1,
+    if (hunt_server(source_p, ":%s WHOIS %s :%s", 1,
                     parc, parv) != HUNTED_ISME)
       return;
 
@@ -144,7 +144,7 @@ mo_whois(struct Client *client_p, struct Client *source_p,
 
   if (parc > 2 && !EmptyString(parv[2]))
   {
-    if (hunt_server(client_p, source_p, ":%s WHOIS %s :%s", 1,
+    if (hunt_server(source_p, ":%s WHOIS %s :%s", 1,
                     parc, parv) != HUNTED_ISME)
       return;
 

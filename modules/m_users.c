@@ -65,14 +65,15 @@ m_users(struct Client *client_p, struct Client *source_p,
 
   if (last_used + ConfigFileEntry.pace_wait_simple > CurrentTime)
   {
-    sendto_one(source_p, form_str(RPL_LOAD2HI), me.name, source_p->name);
+    sendto_one(source_p, form_str(RPL_LOAD2HI),
+               me.name, source_p->name);
     return;
   }
 
   last_used = CurrentTime;
 
   if (!ConfigFileEntry.disable_remote)
-    if (hunt_server(client_p, source_p, ":%s USERS :%s", 1,
+    if (hunt_server(source_p, ":%s USERS :%s", 1,
                     parc, parv) != HUNTED_ISME)
       return;
 
@@ -95,7 +96,7 @@ static void
 mo_users(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
-  if (hunt_server(client_p, source_p, ":%s USERS :%s", 1,
+  if (hunt_server(source_p, ":%s USERS :%s", 1,
                   parc, parv) != HUNTED_ISME)
     return;
 

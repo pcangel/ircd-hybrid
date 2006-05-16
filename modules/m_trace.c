@@ -97,7 +97,7 @@ mo_trace(struct Client *client_p, struct Client *source_p,
   const char *from, *to;
 
   if (parc > 2)
-    if (hunt_server(client_p, source_p, ":%s TRACE %s :%s", 2, parc, parv))
+    if (hunt_server(source_p, ":%s TRACE %s :%s", 2, parc, parv))
       return;
 
   if (parc > 1)
@@ -116,7 +116,7 @@ mo_trace(struct Client *client_p, struct Client *source_p,
     to = source_p->name;
   }
 
-  switch (hunt_server(client_p, source_p, ":%s TRACE :%s", 1, parc, parv))
+  switch (hunt_server(source_p, ":%s TRACE :%s", 1, parc, parv))
   {
     case HUNTED_PASS: /* note: gets here only if parv[1] exists */
     {
@@ -300,7 +300,7 @@ static void
 ms_trace(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
-  if (hunt_server(client_p, source_p, ":%s TRACE %s :%s", 2, parc, parv))
+  if (hunt_server(source_p, ":%s TRACE %s :%s", 2, parc, parv))
     return;
 
   if (IsOper(source_p))

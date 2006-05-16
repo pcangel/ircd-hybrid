@@ -119,7 +119,7 @@ whowas_do(struct Client *source_p, int parc, char *parv[])
   }
 
   if (parc > 3)
-    if (hunt_server(source_p->from, source_p, ":%s WHOWAS %s %s :%s", 3,
+    if (hunt_server(source_p, ":%s WHOWAS %s %s :%s", 3,
                     parc, parv) != HUNTED_ISME)
       return;
 

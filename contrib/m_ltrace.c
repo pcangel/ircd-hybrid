@@ -98,7 +98,7 @@ do_ltrace(va_list args)
   char *looking_for = parv[0];
   char *tname = parc > 1 ? parv[1] : me.name;
 
-  switch (hunt_server(source_p->from, source_p, ":%s LTRACE :%s", 1,parc,parv))
+  switch (hunt_server(source_p, ":%s LTRACE :%s", 1, parc, parv))
   {
     case HUNTED_PASS: /* note: gets here only if parv[1] exists */
     {
@@ -225,7 +225,7 @@ mo_ltrace(struct Client *client_p, struct Client *source_p,
   }
 
   if (parc > 2)
-    if (hunt_server(client_p, source_p, ":%s LTRACE %s :%s", 2, parc, parv))
+    if (hunt_server(source_p, ":%s LTRACE %s :%s", 2, parc, parv))
       return;
 
   execute_callback(ltrace_cb, source_p, parc, parv);

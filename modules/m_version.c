@@ -88,15 +88,13 @@ m_version(struct Client *client_p, struct Client *source_p,
                me.name, source_p->name);
     return;
   }
-  else
-    last_used = CurrentTime;
+
+  last_used = CurrentTime;
 
   if (!ConfigFileEntry.disable_remote)
-  {
-    if (hunt_server(client_p, source_p, ":%s VERSION :%s",
+    if (hunt_server(source_p, ":%s VERSION :%s",
                     1, parc, parv) != HUNTED_ISME)
       return;
-  }
 
   sendto_one(source_p, form_str(RPL_VERSION),
              me.name, source_p->name, ircd_version, serno,
@@ -114,7 +112,7 @@ mo_version(struct Client *client_p, struct Client *source_p,
            int parc, char *parv[])
 {
   
-  if (hunt_server(client_p, source_p, ":%s VERSION :%s", 
+  if (hunt_server(source_p, ":%s VERSION :%s", 
 		  1, parc, parv) != HUNTED_ISME)
     return;
 
@@ -133,16 +131,16 @@ static void
 ms_version(struct Client *client_p, struct Client *source_p,
            int parc, char *parv[])
 {
-  if (hunt_server(client_p, source_p, ":%s VERSION :%s", 
-                  1, parc, parv) == HUNTED_ISME)
-  {
-    sendto_one(source_p, form_str(RPL_VERSION),
-               ID_or_name(&me, client_p),
-               ID_or_name(source_p, client_p),
-               ircd_version, serno,
-               me.name, confopts(source_p), serveropts);
-    show_isupport(source_p);
-  }
+  if (hunt_server(source_p, ":%s VERSION :%s", 
+                  1, parc, parv) != HUNTED_ISME)
+    return;
+
+  sendto_one(source_p, form_str(RPL_VERSION),
+             ID_or_name(&me, client_p),
+             ID_or_name(source_p, client_p),
+             ircd_version, serno,
+             me.name, confopts(source_p), serveropts);
+  show_isupport(source_p);
 }
 
 /* confopts()

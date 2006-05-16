@@ -30,16 +30,15 @@
 #include "numeric.h"
 #include "handlers.h"
 #include "msg.h"
-#include "s_serv.h"     /* hunt_server */
 #include "parse.h"
 #include "conf/modules.h"
 #include "s_conf.h"
 
-static void m_omotd(struct Client*, struct Client*, int, char**);
+static void m_omotd(struct Client *, struct Client *, int, char *[]);
 
 struct Message omotd_msgtab = {
   "OMOTD", 0, 0, 0, 1, MFLG_SLOW, 0,
-  {m_unregistered, m_not_oper, m_ignore, m_ignore, m_omotd, m_ignore}
+  { m_unregistered, m_not_oper, m_ignore, m_ignore, m_omotd, m_ignore }
 };
 
 INIT_MODULE(m_omotd, "$Revision$")
@@ -58,7 +57,7 @@ CLEANUP_MODULE
  */
 static void
 m_omotd(struct Client *client_p, struct Client *source_p,
- int parc, char *parv[])
+        int parc, char *parv[])
 {
   send_message_file(source_p, &ConfigFileEntry.opermotd);
 }

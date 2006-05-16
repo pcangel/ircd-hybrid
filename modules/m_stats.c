@@ -221,7 +221,7 @@ m_stats(struct Client *client_p, struct Client *source_p,
 
   /* Is the stats meant for us? */
   if (!ConfigFileEntry.disable_remote)
-    if (hunt_server(client_p, source_p, ":%s STATS %s :%s", 2,
+    if (hunt_server(source_p, ":%s STATS %s :%s", 2,
                     parc, parv) != HUNTED_ISME)
       return;
 
@@ -265,7 +265,7 @@ mo_stats(struct Client *client_p, struct Client *source_p,
   if (!IsClient(source_p))
     return;
 
-  if (hunt_server(client_p, source_p, ":%s STATS %s :%s", 2,
+  if (hunt_server(source_p, ":%s STATS %s :%s", 2,
                   parc, parv) != HUNTED_ISME)
      return;
 

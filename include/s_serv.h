@@ -235,8 +235,7 @@ EXTERN struct EncCapability CipherTable[];
 
 EXTERN int bogus_host(const char *);
 EXTERN int check_server(const char *, struct Client *, int);
-EXTERN int hunt_server(struct Client *, struct Client *,
-                       const char *, int, int, char **);
+EXTERN int hunt_server(struct Client *, const char *, int, int, char *[]);
 EXTERN const char *my_name_for_link(struct AccessItem *);
 EXTERN void add_capability(const char *, int, int);
 EXTERN int delete_capability(const char *);

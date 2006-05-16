@@ -85,7 +85,7 @@ mo_connect(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if (hunt_server(client_p, source_p, ":%s CONNECT %s %s :%s", 3,
+  if (hunt_server(source_p, ":%s CONNECT %s %s :%s", 3,
                   parc, parv) != HUNTED_ISME)
     return;
 
@@ -201,7 +201,7 @@ ms_connect(struct Client *client_p, struct Client *source_p,
   struct AccessItem *aconf = NULL;
   struct Client *target_p = NULL;
 
-  if (hunt_server(client_p, source_p, ":%s CONNECT %s %s :%s", 3,
+  if (hunt_server(source_p, ":%s CONNECT %s %s :%s", 3,
                   parc, parv) != HUNTED_ISME)
     return;
 
