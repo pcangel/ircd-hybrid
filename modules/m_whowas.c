@@ -41,12 +41,11 @@
 
 
 static void m_whowas(struct Client *, struct Client *, int, char *[]);
-static void mo_whowas(struct Client *, struct Client *, int, char *[]);
-static void whowas_do(struct Client *, struct Client *, int, char *[]);
+static void whowas_do(struct Client *, int, char *[]);
 
 struct Message whowas_msgtab = {
   "WHOWAS", 0, 0, 0, 0, MFLG_SLOW, 0,
-  { m_unregistered, m_whowas, mo_whowas, m_ignore, mo_whowas, m_ignore }
+  { m_unregistered, m_whowas, m_whowas, m_ignore, m_whowas, m_ignore }
 };
 
 INIT_MODULE(m_whowas, "$Revision$")
@@ -59,58 +58,57 @@ CLEANUP_MODULE
   mod_del_cmd(&whowas_msgtab);
 }
 
-/*
-** m_whowas
-**      parv[0] = sender prefix
-**      parv[1] = nickname queried
-*/
+/*! \brief WHOWAS command handler (called for both local an remote clients)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = nick
+ *      - parv[2] = count (optional; limited to 20 for remote requests)
+ *      - parv[3] = name of target (optional; string can be a nick or server
+ *                  and can also include wildcards)
+ */
 static void
 m_whowas(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
   static time_t last_used = 0;
 
-  if (parc < 2 || *parv[1] == '\0')
+  if (EmptyString(parv[1]))
   {
     sendto_one(source_p, form_str(ERR_NONICKNAMEGIVEN),
                me.name, source_p->name);
     return;
   }
 
-  if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+  if (MyConnect(source_p) && !IsOper(source_p))
   {
-    sendto_one(source_p,form_str(RPL_LOAD2HI),
-               me.name, source_p->name);
-    return;
+    if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+    {
+      sendto_one(source_p,form_str(RPL_LOAD2HI),
+                 me.name, source_p->name);
+      return;
+    }
+
+    last_used = CurrentTime;
   }
 
-  last_used = CurrentTime;
-
-  whowas_do(client_p, source_p, parc, parv);
+  whowas_do(source_p, parc, parv);
 }
 
 static void
-mo_whowas(struct Client *client_p, struct Client *source_p,
-          int parc, char *parv[])
-{
-  if (parc < 2 || *parv[1] == '\0')
-  {
-    sendto_one(source_p, form_str(ERR_NONICKNAMEGIVEN),
-               me.name, source_p->name);
-    return;
-  }
-
-  whowas_do(client_p, source_p, parc, parv);
-}
-
-static void
-whowas_do(struct Client *client_p, struct Client *source_p,
-          int parc, char *parv[])
+whowas_do(struct Client *source_p, int parc, char *parv[])
 {
   const dlink_node *ptr = NULL;
+  const char *nick = NULL;
   int cur = 0;
   int max = -1;
-  char *p = NULL, *nick = NULL;
 
   if (parc > 2)
   {
@@ -121,17 +119,11 @@ whowas_do(struct Client *client_p, struct Client *source_p,
   }
 
   if (parc > 3)
-    if (hunt_server(client_p, source_p, ":%s WHOWAS %s %s :%s", 3,
+    if (hunt_server(source_p->from, source_p, ":%s WHOWAS %s %s :%s", 3,
                     parc, parv) != HUNTED_ISME)
       return;
 
   nick = parv[1];
-  while (*nick == ',')
-    nick++;
-  if ((p = strchr(nick,',')) != NULL)
-    *p = '\0';
-  if (*nick == '\0')
-    return;
 
   DLINK_FOREACH(ptr, WHOWASHASH[strhash(nick)].head)
   {
