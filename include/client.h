@@ -558,7 +558,7 @@ EXTERN void check_conf_klines(void);
 EXTERN void change_local_nick(struct Client *, struct Client *, const char *);
 EXTERN void report_error(int, const char *, const char *, int);
 EXTERN struct Client *make_client(struct Client *);
-EXTERN struct Client *find_chasing(struct Client *, struct Client *, const char *, int *);
+EXTERN struct Client *find_chasing(struct Client *, const char *, int *);
 EXTERN struct Client *find_person(const struct Client *const, const char *);
 EXTERN const char *get_client_name(const struct Client *, int);
 EXTERN void log_user_exit(struct Client *);

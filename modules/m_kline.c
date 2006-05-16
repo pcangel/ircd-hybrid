@@ -56,12 +56,12 @@ static int remove_tdline_match(const char *);
 
 struct Message kline_msgtab = {
   "KLINE", 0, 0, 2, 0, MFLG_SLOW, 0,
-   {m_unregistered, m_not_oper, ms_kline, me_kline, mo_kline, m_ignore}
+   { m_unregistered, m_not_oper, ms_kline, me_kline, mo_kline, m_ignore }
 };
 
 struct Message dline_msgtab = {
   "DLINE", 0, 0, 2, 0, MFLG_SLOW, 0,
-   {m_unregistered, m_not_oper, m_ignore, m_ignore, mo_dline, m_ignore}
+   { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_dline, m_ignore }
 };
 
 struct Message unkline_msgtab = {
@@ -123,7 +123,7 @@ static char buffer[IRCD_BUFSIZE];
  */
 static void
 mo_kline(struct Client *client_p, struct Client *source_p,
-	 int parc, char **parv)
+         int parc, char **parv)
 {
   char *reason = NULL;
   char *oper_reason;
@@ -172,7 +172,7 @@ mo_kline(struct Client *client_p, struct Client *source_p,
   }
   else
     cluster_a_line(source_p, "KLINE", CAP_KLN, SHARED_KLINE,
-		   "%d %s %s :%s", tkline_time, user, host, reason);
+                   "%d %s %s :%s", tkline_time, user, host, reason);
 
   if (already_placed_kline(source_p, user, host, YES))
     return;
@@ -296,7 +296,7 @@ me_kline(struct Client *client_p, struct Client *source_p,
  */
 static void
 ms_kline(struct Client *client_p, struct Client *source_p,
-	 int parc, char *parv[])
+         int parc, char *parv[])
 {
   if (parc != 6 || EmptyString(parv[5]))
     return;
@@ -317,7 +317,7 @@ ms_kline(struct Client *client_p, struct Client *source_p,
  */
 static void 
 apply_kline(struct Client *source_p, struct ConfItem *conf,
-	    const char *current_date, time_t cur_time)
+            const char *current_date, time_t cur_time)
 {
   struct AccessItem *aconf = &conf->conf.AccessItem;
 
@@ -366,7 +366,7 @@ apply_tkline(struct Client *source_p, struct ConfItem *conf,
  */
 static void
 apply_tdline(struct Client *source_p, struct ConfItem *conf,
-	     const char *current_date, int tkline_time)
+             const char *current_date, int tkline_time)
 {
   struct AccessItem *aconf;
 
@@ -435,7 +435,7 @@ mo_dline(struct Client *client_p, struct Client *source_p,
               me.name, parv[0]);
    return;
 #else
-   if ((target_p = find_chasing(client_p, source_p, dlhost, NULL)) == NULL)
+   if ((target_p = find_chasing(source_p, dlhost, NULL)) == NULL)
      return;
 
    t = HM_IPV4;

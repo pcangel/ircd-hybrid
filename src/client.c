@@ -565,25 +565,17 @@ update_client_exit_stats(struct Client *client_p)
  * output	- return client pointer
  * side effects - find person by (nick)name
  */
-/* XXX - ugly wrapper */
 struct Client *
-find_person(const struct Client *client_p, const char *name)
+find_person(const struct Client *source_p, const char *name)
 {
-  struct Client *c2ptr;
+  struct Client *target_p = NULL;
 
-  if (IsDigit(*name))
-  {
-    if ((c2ptr = hash_find_id(name)) != NULL)
-    {
-      /* invisible users shall not be found by UID guessing */
-      if (IsInvisible(c2ptr) && !IsServer(client_p))
-        c2ptr = NULL;
-    }
-  }
+  if (IsDigit(*name) && IsServer(source_p->from))
+    target_p = hash_find_id(name);
   else
-    c2ptr = find_client(name);
+    target_p = find_client(name);
 
-  return ((c2ptr != NULL && IsClient(c2ptr)) ? c2ptr : NULL);
+  return (target_p && IsClient(target_p)) ? target_p : NULL;
 }
 
 /*
@@ -593,9 +585,9 @@ find_person(const struct Client *client_p, const char *name)
  *      through the history, chasing will be 1 and otherwise 0.
  */
 struct Client *
-find_chasing(struct Client *client_p, struct Client *source_p, const char *user, int *chasing)
+find_chasing(struct Client *source_p, const char *user, int *chasing)
 {
-  struct Client *who = find_person(client_p, user);
+  struct Client *who = find_person(source_p, user);
 
   if (chasing)
     *chasing = 0;
