@@ -400,18 +400,16 @@ mo_dline(struct Client *client_p, struct Client *source_p,
 {
   char def_reason[] = "No reason";
   char *dlhost, *oper_reason, *reason;
-  const char *creason;
-#ifndef IPV6
-  struct Client *target_p;
-#endif
+  const char *creason = NULL;
+  const struct Client *target_p = NULL;
   struct irc_ssaddr daddr;
-  struct ConfItem *conf=NULL;
-  struct AccessItem *aconf=NULL;
-  time_t tkline_time=0;
+  struct ConfItem *conf = NULL;
+  struct AccessItem *aconf = NULL;
+  time_t tkline_time = 0;
   int bits, t;
-  const char* current_date;
+  const char *current_date = NULL;
   time_t cur_time;
-  char hostip[HOSTIPLEN + 1];
+  char hostip[HOSTIPLEN];
 
   if (!IsOperK(source_p))
   {
@@ -447,8 +445,9 @@ mo_dline(struct Client *client_p, struct Client *source_p,
       return;
     }
 
-    strlcpy(hostip, inetntoa((const char *)&target_p->localClient->ip),
-            sizeof(hostip));
+    irc_getnameinfo((struct sockaddr *)&target_p->localClient->ip,
+                    target_p->localClient->ip.ss_len, hostip,
+                    sizeof(hostip), NULL, 0, NI_NUMERICHOST);
     t = parse_netmask(hostip, NULL, &bits);
     dlhost = hostip;
     assert(t == HM_IPV4 || t == HM_IPV6);

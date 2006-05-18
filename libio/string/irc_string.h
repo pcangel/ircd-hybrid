@@ -65,11 +65,6 @@ LIBIO_EXTERN int irccmp(const char *, const char *);
  */
 LIBIO_EXTERN int ircncmp(const char *, const char *, size_t);
 
-/*
- * inetntoa - optimized inet_ntoa
- */
-LIBIO_EXTERN const char *inetntoa(const char *);
-
 /* XXX
  * inetntop() 
  * portable interface for inet_ntop(), kludge; please use inet_ntop if possible
