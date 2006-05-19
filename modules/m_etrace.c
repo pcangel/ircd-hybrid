@@ -144,12 +144,6 @@ report_this_status(struct Client *source_p, struct Client *target_p)
 {
   const char *name;
   const char *class_name;
-  char ip[HOSTIPLEN];
-
-  /* Should this be sockhost? - stu */
-  irc_getnameinfo((struct sockaddr*)&target_p->localClient->ip, 
-        target_p->localClient->ip.ss_len, ip, HOSTIPLEN, NULL, 0, 
-        NI_NUMERICHOST);
 
   name = get_client_name(target_p, HIDE_IP);
   class_name = get_client_className(target_p);
@@ -164,14 +158,14 @@ report_this_status(struct Client *source_p, struct Client *target_p)
 		 IsOper(target_p) ? "Oper" : "User",
 		 class_name,
 		 target_p->name, target_p->username,
-		 IsIPSpoof(target_p) ? "255.255.255.255" : ip,
+		 IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost,
 		 target_p->info);
     else
       sendto_one(source_p, FORM_STR_RPL_ETRACE,
 		 me.name, source_p->name, 
 		 IsOper(target_p) ? "Oper" : "User", 
 		 class_name,
-		 target_p->name, target_p->username, ip,
+		 target_p->name, target_p->username, target_p->sockhost,
 		 target_p->info);
   }
 }

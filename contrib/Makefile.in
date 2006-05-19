@@ -35,12 +35,11 @@ SRCS = \
   m_change.c    \
   m_clearchan.c \
   m_classlist.c \
-  m_ctrace.c \
+  m_ctrace.c    \
   m_flags.c     \
   m_force.c     \
   m_jupe.c      \
   m_killhost.c  \
-  m_ltrace.c \
   m_mkpasswd.c  \
   m_ojoin.c     \
   m_operspy.c   \
@@ -49,13 +48,13 @@ SRCS = \
   m_spoof.c
 
 SHARED_ONLY_SRCS = \
-  spy_admin_notice.c    \
-  spy_info_notice.c     \
-  spy_links_notice.c    \
-  spy_motd_notice.c     \
-  spy_stats_notice.c    \
-  spy_stats_p_notice.c  \
-  spy_trace_notice.c    \
+  spy_admin_notice.c   \
+  spy_info_notice.c    \
+  spy_links_notice.c   \
+  spy_motd_notice.c    \
+  spy_stats_notice.c   \
+  spy_stats_p_notice.c \
+  spy_trace_notice.c   \
   spy_whois_notice.c
 
 OBJS = ${SRCS:.c=.so} ${SHARED_ONLY_SRCS:.c=.so}

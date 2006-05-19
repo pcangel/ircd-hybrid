@@ -38,6 +38,7 @@
 #include "parse.h"
 #include "conf/modules.h"
 
+
 #define GLINE_NOT_PLACED     0
 #define GLINE_ALREADY_VOTED -1
 #define GLINE_PLACED         1
@@ -94,7 +95,8 @@ INIT_MODULE(m_gline, "$Revision$")
   add_capability("GLN", CAP_GLN, 1);
 
   expire_pending_glines(NULL);
-  eventAddIsh("cleanup_glines", cleanup_glines, NULL, CLEANUP_GLINES_TIME);
+  eventAddIsh("expire_pending_glines",
+               expire_pending_glines, NULL, CLEANUP_GLINES_TIME);
 }
 
 CLEANUP_MODULE
@@ -104,7 +106,7 @@ CLEANUP_MODULE
   mod_del_cmd(&gline_msgtab);
 
   expire_pending_glines(NULL);
-  eventDelete(cleanup_glines);
+  eventDelete(expire_pending_glines, NULL);
 }
 
 static struct AccessItem *
@@ -578,7 +580,7 @@ check_majority_gline(const struct Client *source_p,
 
         /* trigger the gline using the original reason --fl */
         set_local_gline(source_p, user, host, pending->request1.reason);
-        cleanup_glines(NULL);
+        expire_pending_glines(NULL);
         return GLINE_PLACED;
       }
 

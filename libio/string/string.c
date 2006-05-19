@@ -36,17 +36,6 @@
 #define INT16SZ 2
 #endif
 
-char *
-xstrldup(const char *s, size_t n)
-{
-  size_t len = strlen(s) + 1;
-  char *p = NULL;
-
-  if (len > n)
-    len = n;
-  return strlcpy((p = malloc(len)), s, len), p;
-}
-
 /*
  * myctime - This is like standard ctime()-function, but it zaps away
  *   the newline from the end of that string. Also, it takes
@@ -222,6 +211,22 @@ static const char *inet_ntop4(const unsigned char *src, char *dst, unsigned int 
 #ifdef IPV6
 static const char *inet_ntop6(const unsigned char *src, char *dst, unsigned int size);
 #endif
+
+static const char *
+inetntoa(const char *src)
+{
+  static char buf[16];
+  int oct[4];
+
+  oct[0] = *src++;
+  oct[1] = *src++;
+  oct[2] = *src++;
+  oct[3] = *src++;
+
+  snprintf(buf, sizeof(buf), "%d.%d.%d.%d",
+           oct[0], oct[1], oct[2], oct[3]);
+  return buf;
+}
 
 /* const char *
  * inet_ntop4(src, dst, size)

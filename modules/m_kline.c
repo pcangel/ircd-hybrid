@@ -445,9 +445,7 @@ mo_dline(struct Client *client_p, struct Client *source_p,
       return;
     }
 
-    irc_getnameinfo((struct sockaddr *)&target_p->localClient->ip,
-                    target_p->localClient->ip.ss_len, hostip,
-                    sizeof(hostip), NULL, 0, NI_NUMERICHOST);
+    strlcpy(hostip, source_p->sockhost, sizeof(hostip));
     t = parse_netmask(hostip, NULL, &bits);
     dlhost = hostip;
     assert(t == HM_IPV4 || t == HM_IPV6);

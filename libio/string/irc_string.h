@@ -24,7 +24,6 @@
 
 LIBIO_EXTERN int ircd_pcre_exec(const pcre *, const char *);
 LIBIO_EXTERN pcre *ircd_pcre_compile(const char *, const char **);
-LIBIO_EXTERN char *xstrldup(const char *, size_t);
 
 /*
  * match - compare name with mask, mask may contain * and ? as wildcards

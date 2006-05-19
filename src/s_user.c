@@ -271,7 +271,6 @@ void
 register_local_user(struct Client *source_p, const char *username)
 {
   struct AccessItem *aconf = NULL;
-  char ipaddr[HOSTIPLEN];
 
   assert(source_p != NULL);
   assert(MyConnect(source_p));
@@ -408,15 +407,11 @@ register_local_user(struct Client *source_p, const char *username)
     hash_add_id(source_p);
   }
 
-  irc_getnameinfo((struct sockaddr *)&source_p->localClient->ip,
-                  source_p->localClient->ip.ss_len, ipaddr,
-                  sizeof(ipaddr), NULL, 0, NI_NUMERICHOST);
-
   sendto_realops_flags(UMODE_CCONN, L_ALL,
                        "Client connecting: %s (%s@%s) [%s] {%s} [%s]",
                        source_p->name, source_p->username, source_p->host,
                        ConfigFileEntry.hide_spoof_ips && IsIPSpoof(source_p) ?
-                       "255.255.255.255" : ipaddr, get_client_className(source_p),
+                       "255.255.255.255" : source_p->sockhost, get_client_className(source_p),
                        source_p->info);
 
   if (ConfigFileEntry.invisible_on_connect)
