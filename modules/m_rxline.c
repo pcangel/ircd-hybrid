@@ -79,7 +79,7 @@ already_placed_rxline(struct Client *source_p, const char *gecos)
 
   DLINK_FOREACH(ptr, rxconf_items.head)
   {
-    struct ConfItem *aptr = ptr->data;
+    const struct ConfItem *aptr = ptr->data;
     const struct MatchItem *match_item = &aptr->conf.MatchItem;
 
     if (!strcmp(gecos, aptr->name))
@@ -334,7 +334,7 @@ write_rxline(struct Client *source_p, const char *gecos, char *reason,
                MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
                source_p->name, (int)tkline_time/60, conf->name);
     ilog(L_TRACE, "%s added temporary %d min. RX-Line for [%s] [%s]",
-         source_p->name, (int)tkline_time/60,
+         get_oper_name(source_p), (int)tkline_time/60,
          conf->name, match_item->reason);
     match_item->hold = CurrentTime + tkline_time;
     add_temp_line(conf);
@@ -357,7 +357,7 @@ remove_xline(struct Client *source_p, char *gecos)
                          "%s has removed the temporary RX-Line for: [%s]",
                          get_oper_name(source_p), gecos);
     ilog(L_NOTICE, "%s removed temporary RX-Line for [%s]",
-         source_p->name, gecos);
+         get_oper_name(source_p), gecos);
     return;
   }
 

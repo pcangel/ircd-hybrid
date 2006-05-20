@@ -72,10 +72,18 @@ chan_is_opless(const struct Channel *const chptr)
   return 1;
 }
 
-/*
- * mo_opme()
- *      parv[0] = sender prefix
- *      parv[1] = channel
+/*! \brief OPME command handler (called for operators only)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = channel name
  */
 static void
 mo_opme(struct Client *client_p, struct Client *source_p,
@@ -93,15 +101,15 @@ mo_opme(struct Client *client_p, struct Client *source_p,
 
   if ((chptr = hash_find_channel(parv[1])) == NULL)
   {
-    sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL),
-               me.name, source_p->name, parv[1]);
+    sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL), me.name,
+               source_p->name, parv[1]);
     return;
   }
 
   if ((member = find_channel_link(source_p, chptr)) == NULL)
   {
-    sendto_one(source_p, form_str(ERR_NOTONCHANNEL),
-               me.name, source_p->name, chptr->chname);
+    sendto_one(source_p, form_str(ERR_NOTONCHANNEL), me.name,
+               source_p->name, chptr->chname);
     return;
   }
 
@@ -115,27 +123,19 @@ mo_opme(struct Client *client_p, struct Client *source_p,
   AddMemberFlag(member, CHFL_CHANOP);
 
   if (*parv[1] == '&')
-  {
-    sendto_wallops_flags(UMODE_LOCOPS, &me,
-                         "OPME called for [%s] by %s!%s@%s",
-                         chptr->chname, source_p->name, source_p->username,
-                         source_p->host);
-  }
+    sendto_wallops_flags(UMODE_LOCOPS, &me, "OPME called for [%s] by %s",
+                         chptr->chname, get_oper_name(source_p));
   else
   {
-    sendto_wallops_flags(UMODE_WALLOP, &me,
-                         "OPME called for [%s] by %s!%s@%s",
-                         chptr->chname, source_p->name, source_p->username,
-                         source_p->host);
+    sendto_wallops_flags(UMODE_WALLOP, &me, "OPME called for [%s] by %s",
+                         chptr->chname, get_oper_name(source_p));
     sendto_server(NULL, source_p, NULL, NOCAPS, NOCAPS,
-                  ":%s WALLOPS :OPME called for [%s] by %s!%s@%s",
-                  me.name, chptr->chname, source_p->name, source_p->username,
-                  source_p->host);
+                  ":%s WALLOPS :OPME called for [%s] by %s",
+                  me.name, chptr->chname, get_oper_name(source_p));
   }
 
-  ilog(L_NOTICE, "OPME called for [%s] by %s!%s@%s",
-       chptr->chname, source_p->name, source_p->username,
-       source_p->host);
+  ilog(L_NOTICE, "OPME called for [%s] by %s",
+       chptr->chname, get_oper_name(source_p));
 
   sendto_server(NULL, source_p, chptr, CAP_TS6, NOCAPS,
                 ":%s PART %s", ID(source_p), chptr->chname);

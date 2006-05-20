@@ -58,18 +58,26 @@ CLEANUP_MODULE
   mod_del_cmd(&clearchan_msgtab);
 }
 
-/*
-** mo_clearchan
-**      parv[0] = sender prefix
-**      parv[1] = channel
-*/
+
+/*! \brief CLEARCHAN command handler (called for operators only)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = channel name
+ */
 static void
 mo_clearchan(struct Client *client_p, struct Client *source_p,
              int parc, char *parv[])
 {
   struct Channel *chptr = NULL;
 
-  /* admins only */
   if (!IsAdmin(source_p))
   {
     sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
@@ -91,14 +99,13 @@ mo_clearchan(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  sendto_wallops_flags(UMODE_WALLOP, &me, "CLEARCHAN called for [%s] by %s!%s@%s",
-                       chptr->chname, source_p->name, source_p->username, source_p->host);
+  sendto_wallops_flags(UMODE_WALLOP, &me, "CLEARCHAN called for [%s] by %s",
+                       chptr->chname, get_oper_name(source_p));
   sendto_server(NULL, source_p, NULL, NOCAPS, NOCAPS,
-                ":%s WALLOPS :CLEARCHAN called for [%s] by %s!%s@%s",
-                me.name, chptr->chname, source_p->name, source_p->username,
-                source_p->host);
-  ilog(L_NOTICE, "CLEARCHAN called for [%s] by %s!%s@%s",
-       chptr->chname, source_p->name, source_p->username, source_p->host);
+                ":%s WALLOPS :CLEARCHAN called for [%s] by %s",
+                me.name, chptr->chname, get_oper_name(source_p));
+  ilog(L_NOTICE, "CLEARCHAN called for [%s] by %s",
+       chptr->chname, get_oper_name(source_p));
 
   /*
    * Kill all the modes we have about the channel..
@@ -121,9 +128,10 @@ mo_clearchan(struct Client *client_p, struct Client *source_p,
   sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s MODE %s +o %s",
                        me.name, chptr->chname, source_p->name);
 
-
-  /* Take the TS down by 1, so we don't see the channel taken over
-   * again. */
+  /*
+   * Take the TS down by 1, so we don't see the channel taken over
+   * again.
+   */
   if (chptr->channelts)
     --chptr->channelts;
 

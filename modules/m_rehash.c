@@ -34,11 +34,11 @@
 #include "parse.h"
 #include "conf/modules.h"
 
-static void mo_rehash(struct Client *, struct Client *, int, char **);
+static void mo_rehash(struct Client *, struct Client *, int, char *[]);
 
 struct Message rehash_msgtab = {
   "REHASH", 0, 0, 0, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_not_oper, m_ignore, m_ignore, mo_rehash, m_ignore}
+  { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_rehash, m_ignore }
 };
 
 INIT_MODULE(m_rehash, "$Revision$")
@@ -111,7 +111,7 @@ mo_rehash(struct Client *client_p, struct Client *source_p,
     if (found)
     {
       ilog(L_NOTICE, "REHASH %s From %s",
-           parv[1], get_client_name(source_p, HIDE_IP));
+           parv[1], get_oper_name(source_p));
       return;
     }
     else

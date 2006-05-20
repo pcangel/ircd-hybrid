@@ -132,10 +132,10 @@ mo_xline(struct Client *client_p, struct Client *source_p,
   {
     if (tkline_time != 0)
       cluster_a_line(source_p, "ENCAP", CAP_ENCAP, SHARED_XLINE,
-		     "XLINE %d %s 0 :%s", (int)tkline_time, gecos, reason);
+                     "XLINE %d %s 0 :%s", (int)tkline_time, gecos, reason);
     else
       cluster_a_line(source_p, "XLINE", CAP_KLN, SHARED_XLINE,
-		     "%s 0 :%s", gecos, reason);
+                     "%s 0 :%s", gecos, reason);
   }
 
   if (!valid_xline(source_p, gecos, reason, 0))
@@ -229,7 +229,7 @@ relay_xline(struct Client *source_p, char *parv[])
                               SHARED_XLINE))
   {
     if ((conf = find_matching_name_conf(XLINE_TYPE, parv[2],
-					NULL, NULL, 0)) != NULL)
+                                        NULL, NULL, 0)) != NULL)
     {
       match_item = &conf->conf.MatchItem;
       sendto_one(source_p, ":%s NOTICE %s :[%s] already X-Lined by [%s] - %s",
@@ -282,7 +282,7 @@ mo_unxline(struct Client *client_p, struct Client *source_p,
   }
   else
     cluster_a_line(source_p, "UNXLINE", CAP_CLUSTER, SHARED_UNXLINE,
-		   "%s", gecos);
+                   "%s", gecos);
 
   remove_xline(source_p, gecos);
 }
@@ -379,15 +379,15 @@ write_xline(struct Client *source_p, char *gecos, char *reason,
   if (tkline_time != 0)
   {
     sendto_realops_flags(UMODE_ALL, L_ALL,
-			 "%s added temporary %d min. X-Line for [%s] [%s]",
-			 get_oper_name(source_p), (int)tkline_time/60,
-			 conf->name, match_item->reason);
+                         "%s added temporary %d min. X-Line for [%s] [%s]",
+                         get_oper_name(source_p), (int)tkline_time/60,
+                         conf->name, match_item->reason);
     sendto_one(source_p, ":%s NOTICE %s :Added temporary %d min. X-Line [%s]",
-	       MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
-	       source_p->name, (int)tkline_time/60, conf->name);
+               MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
+               source_p->name, (int)tkline_time/60, conf->name);
     ilog(L_TRACE, "%s added temporary %d min. X-Line for [%s] [%s]",
-	 source_p->name, (int)tkline_time/60,
-	 conf->name, match_item->reason);
+         get_oper_name(source_p), (int)tkline_time/60,
+         conf->name, match_item->reason);
     match_item->hold = CurrentTime + tkline_time;
     add_temp_line(conf);
   }
@@ -409,7 +409,7 @@ remove_xline(struct Client *source_p, char *gecos)
                          "%s has removed the temporary X-Line for: [%s]",
                          get_oper_name(source_p), gecos);
     ilog(L_NOTICE, "%s removed temporary X-Line for [%s]",
-         source_p->name, gecos);
+         get_oper_name(source_p), gecos);
     return;
   }
 
@@ -444,7 +444,7 @@ remove_txline_match(const char *gecos)
   {
     conf = ptr->data;
 
-    if (irccmp(gecos, conf->name) == 0)
+    if (!irccmp(gecos, conf->name))
     {
       dlinkDelete(ptr, &temporary_xlines);
       free_dlink_node(ptr);

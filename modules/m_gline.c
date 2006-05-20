@@ -238,9 +238,8 @@ mo_gline(struct Client *client_p, struct Client *source_p,
                        "%s requesting G-Line for [%s@%s] [%s]",
                        get_oper_name(source_p),
                        user, host, reason);
-  ilog(L_TRACE, "#gline for %s@%s [%s] requested by %s!%s@%s",
-       user, host, reason, source_p->name, source_p->username,
-       source_p->host);
+  ilog(L_TRACE, "#gline for %s@%s [%s] requested by %s",
+       user, host, reason, get_oper_name(source_p));
 #else
   set_local_gline(source_p, user, host, reason);
 #endif /* GLINE_VOTING */
@@ -685,8 +684,9 @@ mo_ungline(struct Client *client_p, struct Client *source_p,
                          get_oper_name(source_p), user, host);
     ilog(L_NOTICE, "%s removed G-Line for [%s@%s]",
          get_oper_name(source_p), user, host);
+    return;
   }
-  else
-    sendto_one(source_p, ":%s NOTICE %s :No G-Line for %s@%s",
-               me.name, source_p->name, user, host);
+
+  sendto_one(source_p, ":%s NOTICE %s :No G-Line for %s@%s",
+             me.name, source_p->name, user, host);
 }

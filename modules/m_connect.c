@@ -89,7 +89,7 @@ mo_connect(struct Client *client_p, struct Client *source_p,
                   parc, parv) != HUNTED_ISME)
     return;
 
-  if (*parv[1] == '\0')
+  if (EmptyString(parv[1]))
   {
     sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
                me.name, source_p->name, "CONNECT");
@@ -148,8 +148,8 @@ mo_connect(struct Client *client_p, struct Client *source_p,
   /*
    * Notify all operators about remote connect requests
    */
-  ilog(L_TRACE, "CONNECT From %s : %s %s", 
-       source_p->name, parv[1], parv[2] ? parv[2] : "");
+  ilog(L_TRACE, "CONNECT From %s : %s %s",
+       get_oper_name(source_p), parv[1], parv[2] ? parv[2] : "");
 
   /*
    * At this point we should be calling connect_server with a valid
@@ -166,11 +166,8 @@ mo_connect(struct Client *client_p, struct Client *source_p,
                  me.name, source_p->name, conf->name, port);
   }
   else
-  {
     sendto_one(source_p, ":%s NOTICE %s :*** Couldn't connect to %s.%d",
                me.name, source_p->name, conf->name, port);
-  }
-
   /*
    * Client is either connecting with all the data it needs or has been
    * destroyed
@@ -205,7 +202,7 @@ ms_connect(struct Client *client_p, struct Client *source_p,
                   parc, parv) != HUNTED_ISME)
     return;
 
-  if (*parv[1] == '\0')
+  if (EmptyString(parv[1]))
   {
     sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
                me.name, source_p->name, "CONNECT");
@@ -279,7 +276,7 @@ ms_connect(struct Client *client_p, struct Client *source_p,
                 me.name, parv[1], port, source_p->name);
 
   ilog(L_TRACE, "CONNECT From %s : %s %d", 
-       source_p->name, parv[1], port);
+       get_oper_name(source_p), parv[1], port);
 
   /*
    * At this point we should be calling connect_server with a valid

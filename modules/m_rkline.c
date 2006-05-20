@@ -321,7 +321,7 @@ apply_trkline(struct Client *source_p, struct ConfItem *conf,
              MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
              source_p->name, tkline_time/60, aconf->user, aconf->host);
   ilog(L_TRACE, "%s added temporary %d min. RK-Line for [%s@%s] [%s]",
-       source_p->name, tkline_time/60,
+       get_oper_name(source_p), tkline_time/60,
        aconf->user, aconf->host, aconf->reason);
   rehashed_klines = 1;
 }
@@ -373,7 +373,7 @@ mo_unrkline(struct Client *client_p,struct Client *source_p,
     return;
   }
 
-  if (parc < 2 || *parv[1] == '\0')
+  if (EmptyString(parv[1]))
   {
     sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
                me.name, source_p->name, "UNRKLINE");
@@ -409,7 +409,7 @@ mo_unrkline(struct Client *client_p,struct Client *source_p,
                          "%s has removed the temporary RK-Line for: [%s@%s]",
                          get_oper_name(source_p), user, host);
     ilog(L_NOTICE, "%s removed temporary RK-Line for [%s@%s]",
-         source_p->name, user, host);
+         get_oper_name(source_p), user, host);
     return;
   }
 
@@ -421,11 +421,12 @@ mo_unrkline(struct Client *client_p,struct Client *source_p,
                          "%s has removed the RK-Line for: [%s@%s]",
                          get_oper_name(source_p), user, host);
     ilog(L_NOTICE, "%s removed RK-Line for [%s@%s]",
-         source_p->name, user, host);
+         get_oper_name(source_p), user, host);
+    return;
   }
-  else
-    sendto_one(source_p, ":%s NOTICE %s :No RK-Line for [%s@%s] found", 
-               me.name, source_p->name, user, host);
+
+  sendto_one(source_p, ":%s NOTICE %s :No RK-Line for [%s@%s] found", 
+             me.name, source_p->name, user, host);
 }
 
 /* me_unrkline()
@@ -466,7 +467,7 @@ me_unrkline(struct Client *client_p, struct Client *source_p,
                            "%s has removed the temporary RK-Line for: [%s@%s]",
                            get_oper_name(source_p), user, host);
       ilog(L_NOTICE, "%s removed temporary RK-Line for [%s@%s]",
-           source_p->name, user, host);
+           get_oper_name(source_p), user, host);
       return;
     }
 
@@ -479,11 +480,12 @@ me_unrkline(struct Client *client_p, struct Client *source_p,
                            get_oper_name(source_p), user, host);
 
       ilog(L_NOTICE, "%s removed RK-Line for [%s@%s]",
-           source_p->name, user, host);
+           get_oper_name(source_p), user, host);
+      return;
     }
-    else
-      sendto_one(source_p, ":%s NOTICE %s :No RK-Line for [%s@%s] found",
-                 me.name, source_p->name, user, host);
+
+    sendto_one(source_p, ":%s NOTICE %s :No RK-Line for [%s@%s] found",
+               me.name, source_p->name, user, host);
   }
 }
 
