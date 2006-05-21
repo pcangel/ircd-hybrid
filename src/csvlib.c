@@ -235,7 +235,7 @@ write_conf_line(struct Client *source_p, struct ConfItem *conf,
 		const char *current_date, time_t cur_time)
 {
   FBFILE *out;
-  const char *filename, *from, *to;
+  const char *filename;
   struct AccessItem *aconf;
   struct MatchItem *xconf;
   struct ResvChannel *cresv_p=NULL;
@@ -245,111 +245,37 @@ write_conf_line(struct Client *source_p, struct ConfItem *conf,
   type = conf->type;
   filename = get_conf_name(type);
 
-  if (!MyConnect(source_p) && IsCapable(source_p->from, CAP_TS6) && HasID(source_p))
-  {
-    from = me.id;
-    to = source_p->id;
-  }
-  else
-  {
-    from = me.name;
-    to = source_p->name;
-  }
-
   if ((out = fbopen(filename, "a")) == NULL)
   {
     sendto_realops_flags(UMODE_ALL, L_ALL,
-                         "*** Problem opening %s ", filename);
+                         "*** Problem opening %s", filename);
     return;
   }
 
   switch(type)
   {
   case KLINE_TYPE:
+  case RKLINE_TYPE:
     aconf = &conf->conf.AccessItem;
-    sendto_realops_flags(UMODE_ALL, L_ALL,
-                         "%s added K-Line for [%s@%s] [%s]",
-                         get_oper_name(source_p),
-			 aconf->user, aconf->host, aconf->reason);
-    sendto_one(source_p, ":%s NOTICE %s :Added K-Line [%s@%s]",
-               from, to, aconf->user, aconf->host);
-    ilog(L_TRACE, "%s added K-Line for [%s@%s] [%s]",
-         source_p->name, aconf->user, aconf->host, aconf->reason);
-    log_oper_action(LOG_KLINE_TYPE, source_p, "[%s@%s] [%s]\n",
-		    aconf->user, aconf->host, aconf->reason);
     write_csv_line(out, "%s%s%s%s%s%s%d",
 		   aconf->user, aconf->host,
 		   aconf->reason, aconf->oper_reason, current_date,
 		   get_oper_name(source_p), cur_time);
     break;
 
-  case RKLINE_TYPE:
-    aconf = &conf->conf.AccessItem;
-    sendto_realops_flags(UMODE_ALL, L_ALL,
-                         "%s added RK-Line for [%s@%s] [%s]",
-                         get_oper_name(source_p),
-                         aconf->user, aconf->host, aconf->reason);
-    sendto_one(source_p, ":%s NOTICE %s :Added RK-Line [%s@%s]",
-               from, to, aconf->user, aconf->host);
-    ilog(L_TRACE, "%s added K-Line for [%s@%s] [%s]",
-         source_p->name, aconf->user, aconf->host, aconf->reason);
-    log_oper_action(LOG_RKLINE_TYPE, source_p, "[%s@%s] [%s]\n",
-		    aconf->user, aconf->host, aconf->reason);
-    write_csv_line(out, "%s%s%s%s%s%s%d",
-                   aconf->user, aconf->host,
-                   aconf->reason, aconf->oper_reason, current_date,
-                   get_oper_name(source_p), cur_time);
-    break;
-
   case DLINE_TYPE:
     aconf = &conf->conf.AccessItem;
-    sendto_realops_flags(UMODE_ALL, L_ALL,
-                         "%s added D-Line for [%s] [%s]",
-                         get_oper_name(source_p), aconf->host, aconf->reason);
-    sendto_one(source_p, ":%s NOTICE %s :Added D-Line [%s] to %s",
-               from, to, aconf->host, filename);
-    ilog(L_TRACE, "%s added D-Line for [%s] [%s]",
-         get_oper_name(source_p), aconf->host, aconf->reason);
-    log_oper_action(LOG_DLINE_TYPE, source_p, "[%s] [%s]\n",
-		    aconf->host, aconf->reason);
     write_csv_line(out, "%s%s%s%s%s%d",
 		   aconf->host, aconf->reason, aconf->oper_reason, 
-		   current_date,
-		   get_oper_name(source_p), cur_time);
-    break;
-
-  case XLINE_TYPE:
-    xconf = &conf->conf.MatchItem;
-    sendto_realops_flags(UMODE_ALL, L_ALL,
-                         "%s added X-Line for [%s] [%s]",
-                         get_oper_name(source_p), conf->name,
-			 xconf->reason);
-    sendto_one(source_p,
-	       ":%s NOTICE %s :Added X-Line [%s] [%d] [%s] to %s",
-               from, to, conf->name, 
-	       xconf->action, xconf->reason, filename);
-    ilog(L_TRACE, "%s added X-Line for [%s] [%s]",
-         get_oper_name(source_p), conf->name, xconf->reason);
-    write_csv_line(out, "%s%s%s%s%s%d",
-		   conf->name, xconf->reason, xconf->oper_reason,
 		   current_date, get_oper_name(source_p), cur_time);
     break;
 
+  case XLINE_TYPE:
   case RXLINE_TYPE:
     xconf = &conf->conf.MatchItem;
-    sendto_realops_flags(UMODE_ALL, L_ALL,
-                         "%s added RX-Line for [%s] [%s]",
-                         get_oper_name(source_p), conf->name,
-                         xconf->reason);
-    sendto_one(source_p,
-               ":%s NOTICE %s :Added RX-Line [%s] [%s] to %s",
-               from, to, conf->name,
-               xconf->reason, filename);
-    ilog(L_TRACE, "%s added X-Line for [%s] [%s]",
-         get_oper_name(source_p), conf->name, xconf->reason);
     write_csv_line(out, "%s%s%s%s%s%d",
-                   conf->name, xconf->reason, xconf->oper_reason,
-                   current_date, get_oper_name(source_p), cur_time);
+		   conf->name, xconf->reason, xconf->oper_reason,
+		   current_date, get_oper_name(source_p), cur_time);
     break;
 
   case CRESV_TYPE:

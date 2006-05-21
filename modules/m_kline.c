@@ -82,6 +82,7 @@ INIT_MODULE(m_kline, "$Revision$")
   mod_add_cmd(&unkline_msgtab);
   mod_add_cmd(&dline_msgtab);
   mod_add_cmd(&undline_msgtab);
+
   add_capability("KLN", CAP_KLN, 1);
   add_capability("UNKLN", CAP_UNKLN, 1);
 }
@@ -90,6 +91,7 @@ CLEANUP_MODULE
 {
   delete_capability("UNKLN");
   delete_capability("KLN");
+
   mod_del_cmd(&undline_msgtab);
   mod_del_cmd(&dline_msgtab);
   mod_del_cmd(&unkline_msgtab);
@@ -318,6 +320,19 @@ apply_kline(struct Client *source_p, struct ConfItem *conf,
 
   add_conf_by_address(CONF_KILL, aconf);
   write_conf_line(source_p, conf, current_date, cur_time);
+
+  sendto_realops_flags(UMODE_ALL, L_ALL,
+                       "%s added K-Line for [%s@%s] [%s]",
+                       get_oper_name(source_p),
+                       aconf->user, aconf->host, aconf->reason);
+  sendto_one(source_p, ":%s NOTICE %s :Added K-Line [%s@%s] to %s",
+             MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
+             source_p->name, aconf->user, aconf->host, ConfigFileEntry.klinefile);
+  ilog(L_TRACE, "%s added K-Line for [%s@%s] [%s]",
+       get_oper_name(source_p), aconf->user, aconf->host, aconf->reason);
+  log_oper_action(LOG_KLINE_TYPE, source_p, "[%s@%s] [%s]\n",
+                  aconf->user, aconf->host, aconf->reason);
+
   /* Now, activate kline against current online clients */
   rehashed_klines = 1;
 }
@@ -332,24 +347,25 @@ static void
 apply_tkline(struct Client *source_p, struct ConfItem *conf,
              int tkline_time)
 {
-  struct AccessItem *aconf;
+  struct AccessItem *aconf = &conf->conf.AccessItem;
 
-  aconf = &conf->conf.AccessItem;
   aconf->hold = CurrentTime + tkline_time;
   add_temp_line(conf);
+
   sendto_realops_flags(UMODE_ALL, L_ALL,
-		       "%s added temporary %d min. K-Line for [%s@%s] [%s]",
-		       get_oper_name(source_p), tkline_time/60,
-		       aconf->user, aconf->host,
-		       aconf->reason);
+                       "%s added temporary %d min. K-Line for [%s@%s] [%s]",
+                       get_oper_name(source_p), tkline_time/60,
+                       aconf->user, aconf->host,
+                       aconf->reason);
   sendto_one(source_p, ":%s NOTICE %s :Added temporary %d min. K-Line [%s@%s]",
-	     MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
-	     source_p->name, tkline_time/60, aconf->user, aconf->host);
+             MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
+             source_p->name, tkline_time/60, aconf->user, aconf->host);
   ilog(L_TRACE, "%s added temporary %d min. K-Line for [%s@%s] [%s]",
        get_oper_name(source_p), tkline_time/60,
        aconf->user, aconf->host, aconf->reason);
   log_oper_action(LOG_TEMP_KLINE_TYPE, source_p, "[%s@%s] [%s]\n",
-		  aconf->user, aconf->host, aconf->reason);
+                  aconf->user, aconf->host, aconf->reason);
+
   rehashed_klines = 1;
 }
 
@@ -363,24 +379,23 @@ static void
 apply_tdline(struct Client *source_p, struct ConfItem *conf,
              const char *current_date, int tkline_time)
 {
-  struct AccessItem *aconf;
+  struct AccessItem *aconf = &conf->conf.AccessItem;
 
-  aconf = &conf->conf.AccessItem;
   aconf->hold = CurrentTime + tkline_time;
-
   add_temp_line(conf);
-  sendto_realops_flags(UMODE_ALL, L_ALL,
-		       "%s added temporary %d min. D-Line for [%s] [%s]",
-		       get_oper_name(source_p), tkline_time/60,
-		       aconf->host, aconf->reason);
 
+  sendto_realops_flags(UMODE_ALL, L_ALL,
+                       "%s added temporary %d min. D-Line for [%s] [%s]",
+                       get_oper_name(source_p), tkline_time/60,
+                       aconf->host, aconf->reason);
   sendto_one(source_p, ":%s NOTICE %s :Added temporary %d min. D-Line [%s]",
-	     MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
+             MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
              source_p->name, tkline_time/60, aconf->host);
   ilog(L_TRACE, "%s added temporary %d min. D-Line for [%s] [%s]",
        get_oper_name(source_p), tkline_time/60, aconf->host, aconf->reason);
   log_oper_action(LOG_TEMP_DLINE_TYPE, source_p, "[%s@%s] [%s]\n",
-		  aconf->user, aconf->host, aconf->reason);
+                  aconf->user, aconf->host, aconf->reason);
+
   rehashed_klines = 1;
 }
 
@@ -518,6 +533,16 @@ mo_dline(struct Client *client_p, struct Client *source_p,
 
     add_conf_by_address(CONF_DLINE, aconf);
     write_conf_line(source_p, conf, current_date, cur_time);
+
+    sendto_realops_flags(UMODE_ALL, L_ALL,
+                         "%s added D-Line for [%s] [%s]",
+                         get_oper_name(source_p), aconf->host, aconf->reason);
+    sendto_one(source_p, ":%s NOTICE %s :Added D-Line [%s] to %s",
+               me.name, source_p->name, aconf->host, ConfigFileEntry.dlinefile);
+    ilog(L_TRACE, "%s added D-Line for [%s] [%s]",
+         get_oper_name(source_p), aconf->host, aconf->reason);
+    log_oper_action(LOG_DLINE_TYPE, source_p, "[%s] [%s]\n",
+                    aconf->host, aconf->reason);
   }
 
   rehashed_klines = 1;
@@ -845,8 +870,8 @@ mo_undline(struct Client *client_p, struct Client *source_p,
     sendto_one(source_p, ":%s NOTICE %s :D-Line for [%s] is removed",
                me.name, source_p->name, cidr);
     sendto_realops_flags(UMODE_ALL, L_ALL,
-			 "%s has removed the D-Line for: [%s]",
-			 get_oper_name(source_p), cidr);
+                         "%s has removed the D-Line for: [%s]",
+                         get_oper_name(source_p), cidr);
     ilog(L_NOTICE, "%s removed D-Line for [%s]",
          get_oper_name(source_p), cidr);
     return;

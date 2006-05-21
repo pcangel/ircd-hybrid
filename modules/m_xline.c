@@ -392,7 +392,23 @@ write_xline(struct Client *source_p, char *gecos, char *reason,
     add_temp_line(conf);
   }
   else
+  {
     write_conf_line(source_p, conf, current_date, cur_time);
+
+    sendto_realops_flags(UMODE_ALL, L_ALL,
+                         "%s added X-Line for [%s] [%s]",
+                         get_oper_name(source_p), conf->name,
+                         match_item->reason);
+    sendto_one(source_p,
+               ":%s NOTICE %s :Added X-Line [%s] [%s] to %s",
+               MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
+               source_p->name, conf->name,
+               match_item->reason, ConfigFileEntry.xlinefile);
+    ilog(L_TRACE, "%s added X-Line for [%s] [%s]",
+         get_oper_name(source_p), conf->name,
+         match_item->reason);
+  }
+
   rehashed_klines = 1;
 }
 
@@ -422,10 +438,11 @@ remove_xline(struct Client *source_p, char *gecos)
                          get_oper_name(source_p), gecos);
     ilog(L_NOTICE, "%s removed X-Line for [%s]",
          get_oper_name(source_p), gecos);
+    return;
   }
-  else
-    sendto_one(source_p, ":%s NOTICE %s :No X-Line for %s",
-               me.name, source_p->name, gecos);
+
+  sendto_one(source_p, ":%s NOTICE %s :No X-Line for %s",
+             me.name, source_p->name, gecos);
 }
 
 /* static int remove_tkline_match(const char *host, const char *user)

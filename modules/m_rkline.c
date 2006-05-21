@@ -293,7 +293,22 @@ static void
 apply_rkline(struct Client *source_p, struct ConfItem *conf,
              const char *current_date, time_t cur_time)
 {
+  const struct AccessItem *aconf = &conf->conf.AccessItem;
+
   write_conf_line(source_p, conf, current_date, cur_time);
+
+  sendto_realops_flags(UMODE_ALL, L_ALL,
+                       "%s added RK-Line for [%s@%s] [%s]",
+                       get_oper_name(source_p),
+                       aconf->user, aconf->host, aconf->reason);
+  sendto_one(source_p, ":%s NOTICE %s :Added RK-Line [%s@%s] to %s",
+             MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
+             source_p->name, aconf->user, aconf->host, ConfigFileEntry.rklinefile);
+  ilog(L_TRACE, "%s added K-Line for [%s@%s] [%s]",
+       get_oper_name(source_p), aconf->user, aconf->host, aconf->reason);
+  log_oper_action(LOG_RKLINE_TYPE, source_p, "[%s@%s] [%s]\n",
+                  aconf->user, aconf->host, aconf->reason);
+
   /* Now, activate kline against current online clients */
   rehashed_klines = 1;
 }
@@ -312,6 +327,7 @@ apply_trkline(struct Client *source_p, struct ConfItem *conf,
 
   aconf->hold = CurrentTime + tkline_time;
   add_temp_line(conf);
+
   sendto_realops_flags(UMODE_ALL, L_ALL,
 		       "%s added temporary %d min. RK-Line for [%s@%s] [%s]",
 		       get_oper_name(source_p), tkline_time/60,
@@ -323,6 +339,7 @@ apply_trkline(struct Client *source_p, struct ConfItem *conf,
   ilog(L_TRACE, "%s added temporary %d min. RK-Line for [%s@%s] [%s]",
        get_oper_name(source_p), tkline_time/60,
        aconf->user, aconf->host, aconf->reason);
+
   rehashed_klines = 1;
 }
 
