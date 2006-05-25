@@ -867,7 +867,7 @@ check_class_limits(struct Client *client_p, int exempt,
   SetIpHash(client_p);
 
   count_user_host(client_p->username, client_p->host,
-		  &global, &local, &ident);
+                  &global, &local, &ident);
 
   /* XXX blah. go down checking the various silly limits
    * setting a_limit_reached if any limit is reached.
@@ -875,14 +875,14 @@ check_class_limits(struct Client *client_p, int exempt,
    */
   if (MaxTotal(aclass) != 0 && CurrUserCount(aclass) >= MaxTotal(aclass))
     a_limit_reached = 1;
-  else if (MaxPerIp(aclass) != 0 && ip_found->count >= MaxPerIp(aclass))
+  else if (MaxPerIp(aclass) != 0 && ip_found->count > MaxPerIp(aclass))
     a_limit_reached = 1;
   else if (MaxLocal(aclass) != 0 && local >= MaxLocal(aclass))
     a_limit_reached = 1;
   else if (MaxGlobal(aclass) != 0 && global >= MaxGlobal(aclass))
     a_limit_reached = 1;
   else if (MaxIdent(aclass) != 0 && ident >= MaxIdent(aclass) &&
-	   client_p->username[0] != '~')
+           client_p->username[0] != '~')
     a_limit_reached = 1;
 
 
@@ -892,8 +892,8 @@ check_class_limits(struct Client *client_p, int exempt,
       return 0;  /* Already at maximum allowed */
 
     sendto_one(client_p,
-	       ":%s NOTICE %s :*** Your connection class is full, "
-	       "but you have exceed_limit = yes;", me.name, client_p->name);
+               ":%s NOTICE %s :*** Your connection class is full, "
+               "but you have exceed_limit = yes;", me.name, client_p->name);
   }
 
   if (cidr_limit_reached(exempt, &client_p->localClient->ip, aclass))
