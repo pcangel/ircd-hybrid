@@ -275,7 +275,7 @@ boot_modules(char cold)
   {
 #ifdef SHARED_MODULES
     {
-      char buf[PATH_MAX], *p;
+      char buf[PATH_MAX], *pp;
       const char **cp;
       struct dirent *ldirent;
       DIR *moddir;
@@ -294,8 +294,8 @@ boot_modules(char cold)
         while ((ldirent = readdir(moddir)) != NULL)
         {
           strlcpy(buf, ldirent->d_name, sizeof(buf));
-          if ((p = strchr(buf, '.')) != NULL)
-            *p = 0;
+          if ((pp = strchr(buf, '.')) != NULL)
+            *pp = 0;
           if (!find_module(buf, NO))
             load_shared_module(buf, AUTOMODPATH, ldirent->d_name);
         }
