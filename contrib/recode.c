@@ -255,6 +255,9 @@ INIT_MODULE(recode, "$Revision: $")
  */
 CLEANUP_MODULE
 {
+  uninstall_hook(iorecv_cb, my_iorecv);
+  uninstall_hook(iosend_cb, my_iosend);
+
   port->handler = old_port_handler;
 
   delete_conf_field(section, codepage);
