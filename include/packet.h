@@ -41,8 +41,10 @@
  * just connected.  this allows clients to rejoin multiple channels
  * without being so heavily penalised they excess flood.
  */
-#define MAX_FLOOD 5
-#define MAX_FLOOD_BURST MAX_FLOOD * 8
+#define MAX_FLOOD  5
+#define MAX_FLOOD_BURST  MAX_FLOOD * 8
+
+#define READBUF_SIZE  16384
 
 struct Callback;
 

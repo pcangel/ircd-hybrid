@@ -103,6 +103,7 @@ send_message(struct Client *to, char *buf, int len)
 {
   assert(!IsMe(to));
   assert(&me != to);
+  assert(len <= IRCD_BUFSIZE);
 
   if (dbuf_length(&to->localClient->buf_sendq) + len > get_sendq(to))
   {
@@ -262,22 +263,22 @@ send_queued_write(struct Client *to)
         retlen = SSL_write(to->localClient->fd.ssl, first->data, first->size);
 
         /* translate openssl error codes, sigh */
-	if (retlen < 0)
-	  switch (SSL_get_error(to->localClient->fd.ssl, retlen))
-	  {
+        if (retlen < 0)
+          switch (SSL_get_error(to->localClient->fd.ssl, retlen))
+          {
             case SSL_ERROR_WANT_READ:
-	      return;  /* retry later, don't register for write events */
+              return;  /* retry later, don't register for write events */
 
-	    case SSL_ERROR_WANT_WRITE:
-	      errno = EWOULDBLOCK;
+            case SSL_ERROR_WANT_WRITE:
+              errno = EWOULDBLOCK;
             case SSL_ERROR_SYSCALL:
-	      break;
+              break;
             case SSL_ERROR_SSL:
               if (errno == EAGAIN)
                 break;
             default:
-	      retlen = errno = 0;  /* either an SSL-specific error or EOF */
-	  }
+              retlen = errno = 0;  /* either an SSL-specific error or EOF */
+          }
       }
       else
 #endif
@@ -296,7 +297,8 @@ send_queued_write(struct Client *to)
       /* We have some data written .. update counters */
       to->localClient->send.bytes += retlen;
       me.localClient->send.bytes += retlen;
-    } while (dbuf_length(&to->localClient->buf_sendq));
+    }
+    while (dbuf_length(&to->localClient->buf_sendq));
 
     if ((retlen < 0) && (ignoreErrno(errno)))
     {
@@ -342,8 +344,8 @@ send_queued_slink_write(struct Client *to)
       /* If we have a fatal error */
       if (!ignoreErrno(errno))
       {
-	dead_link_on_write(to, errno);
-	return;
+        dead_link_on_write(to, errno);
+        return;
       }
     }
     else if (retlen == 0)

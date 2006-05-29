@@ -365,6 +365,23 @@ add_conf_field(struct ConfSection *section, const char *name, int type,
   return field;
 }
 
+/*
+ * delete_conf_field()
+ *
+ * Deletes a field from a section.  Will crash if called incorrectly.
+ *
+ * inputs:
+ *   section  -  pointer to ConfSection structure
+ *   field    -  pointer to ConfField to delete
+ * output: none
+ */
+void
+delete_conf_field(struct ConfSection *section, struct ConfField *field)
+{
+  dlinkDelete(&field->node, &section->fields);
+  MyFree(field);
+}
+
 struct ConfItem *
 make_conf_item2(ConfType type)
 {

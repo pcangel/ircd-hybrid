@@ -31,8 +31,6 @@
 #include "packet.h"
 #include "send.h"
 
-#define READBUF_SIZE 16384
-
 struct Callback *iorecv_cb = NULL;
 struct Callback *iorecvctrl_cb = NULL;
 
@@ -421,23 +419,23 @@ read_packet(fde_t *fd, void *data)
       /* translate openssl error codes, sigh */
       if (length < 0)
         switch (SSL_get_error(fd->ssl, length))
-	{
+        {
           case SSL_ERROR_WANT_WRITE:
             fd->flags.pending_read = 1;
-	    SetSendqBlocked(client_p);
-	    comm_setselect(fd, COMM_SELECT_WRITE, (PF *) sendq_unblocked,
-	                   client_p, 0);
-	    return;
-	  case SSL_ERROR_WANT_READ:
-	    errno = EWOULDBLOCK;
+            SetSendqBlocked(client_p);
+            comm_setselect(fd, COMM_SELECT_WRITE, (PF *) sendq_unblocked,
+                           client_p, 0);
+            return;
+          case SSL_ERROR_WANT_READ:
+            errno = EWOULDBLOCK;
           case SSL_ERROR_SYSCALL:
-	    break;
+            break;
           case SSL_ERROR_SSL:
             if (errno == EAGAIN)
               break;
           default:
-	    length = errno = 0;
-	}
+            length = errno = 0;
+        }
     }
     else
 #endif

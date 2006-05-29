@@ -86,3 +86,4 @@ EXTERN CONFF_HANDLER conf_assign_number;
 EXTERN CONFF_HANDLER conf_assign_string;
 EXTERN struct ConfField *add_conf_field(struct ConfSection *, const char *,
   int, CONFF_HANDLER *, void *);
+EXTERN void delete_conf_field(struct ConfSection *, struct ConfField *);
