@@ -180,6 +180,13 @@ m_spoof.c        --  This module adds automated auth {} block configurations
                               DELSPOOF *@other.host.edu
 
 
+recode.c         --  Load this module to extend listen{} blocks with an
+                     additional modifier, e.g. codepage = "iso-8859-2".
+                     This makes ircd recode all traffic on a specific port
+                     to/from utf-8.
+
+                     The module is not yet ready to be used.
+
 example_module.c --  This is an example module template to help users create
                      their own modules.
 
