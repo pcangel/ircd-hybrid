@@ -140,7 +140,9 @@ LIBIO_EXTERN const unsigned int CharAttrs[];
 #define SERV_C   0x2000
 #define EOL_C    0x4000
 #define MWILD_C  0x8000
+#define VCHAN_C   0x10000
 
+#define IsVisibleChanChar(c)   (CharAttrs[(unsigned char)(c)] & VCHAN_C)
 #define IsHostChar(c)   (CharAttrs[(unsigned char)(c)] & HOST_C)
 #define IsUserChar(c)   (CharAttrs[(unsigned char)(c)] & USER_C)
 #define IsChanPrefix(c) (CharAttrs[(unsigned char)(c)] & CHANPFX_C)
