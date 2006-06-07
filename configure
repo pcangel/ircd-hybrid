@@ -7272,8 +7272,7 @@ fi
 
 
 
-
-for ac_func in socketpair basename mmap snprintf vsnprintf lrand48 srand48 strtok_r usleep
+for ac_func in socketpair mmap snprintf vsnprintf lrand48 srand48 strtok_r usleep
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
 echo "$as_me:$LINENO: checking for $ac_func" >&5

@@ -429,7 +429,7 @@ AC_CHECK_TYPE([sa_family_t], [],
 #include <sys/socket.h>]])
 
 dnl check for various functions...
-AC_CHECK_FUNCS([socketpair basename mmap snprintf vsnprintf lrand48 srand48 strtok_r usleep])
+AC_CHECK_FUNCS([socketpair mmap snprintf vsnprintf lrand48 srand48 strtok_r usleep])
 
 if test "$ac_cv_func_snprintf" = no -o "$ac_cv_func_vsnprintf" = no; then
 	SNPRINTF_C="snprintf.c"

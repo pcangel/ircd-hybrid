@@ -83,7 +83,7 @@ struct Module *
 find_module(const char *filename, int exact)
 {
   dlink_node *ptr;
-  char *name = basename(filename), *p;
+  const char *name = libio_basename(filename), *p;
   int cnt = ((p = strchr(name, '.')) != NULL ? p - name : strlen(name));
 
   DLINK_FOREACH(ptr, loaded_modules.head)
@@ -191,16 +191,17 @@ load_shared_module(const char *name, const char *dir, const char *fname)
 int
 load_module(const char *filename)
 {
-  char name[PATH_MAX], *p;
+  char name[PATH_MAX], *p = NULL;
 
   if (find_module(filename, NO) != NULL)
     return -1;
 
   if (strpbrk(filename, "\\/") == NULL)
   {
-    strlcpy(name, basename(filename), sizeof(name));
+    strlcpy(name, libio_basename(filename), sizeof(name));
+
     if ((p = strchr(name, '.')) != NULL)
-      *p = 0;
+      *p = '\0';
 
 #ifdef SHARED_MODULES
     {
@@ -218,18 +219,20 @@ load_module(const char *filename)
       struct Module **mptr;
 
       for (mptr = builtin_mods; *mptr; mptr++)
+      {
         if (!_COMPARE((*mptr)->name, filename))
         {
           init_module(*mptr, mod->name);
           return 1;
         }
+      }
     }
 #endif
   }
 
   ilog(L_CRIT, "Cannot locate module %s", filename);
   sendto_realops_flags(UMODE_ALL, L_ALL, "Cannot locate module %s",
-    filename);
+                       filename);
   return 0;
 }
 
@@ -320,11 +323,13 @@ boot_modules(char cold)
       load_module(ptr->data);
 
   for (p = core_modules; *p; p++)
+  {
     if (!find_module(*p, NO))
     {
       ilog(L_CRIT, "Core module %s is missing", *p);
       server_die("No core modules", 0);
     }
+  }
 }
 
 /*

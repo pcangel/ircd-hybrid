@@ -87,9 +87,7 @@ LIBIO_EXTERN int snprintf(char *, size_t, const char *,...);
 LIBIO_EXTERN int vsnprintf(char *, size_t, const char *, va_list);
 #endif
 
-#ifndef HAVE_BASENAME
-LIBIO_EXTERN char *basename(char *);
-#endif
+LIBIO_EXTERN const char *libio_basename(const char *);
 
 /*
  * clean_string - cleanup control and high ascii characters
