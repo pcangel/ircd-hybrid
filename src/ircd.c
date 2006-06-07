@@ -431,9 +431,11 @@ changing_fdlimit(va_list args)
   int old_fdlimit = hard_fdlimit;
   int fdmax = va_arg(args, int);
 
-  /* allow MAXCLIENTS_MIN clients even at the cost of MAX_BUFFER and
-   * some not really LEAKED_FDS */
-  fdmax = IRCD_MAX(fdmax, LEAKED_FDS + MAX_BUFFER + MAXCLIENTS_MIN);
+  /*
+   * allow MAXCLIENTS_MIN clients even at the cost of MAX_BUFFER and
+   * some not really LEAKED_FDS
+   */
+  fdmax = LIBIO_MAX(fdmax, LEAKED_FDS + MAX_BUFFER + MAXCLIENTS_MIN);
 
   pass_callback(fdlimit_hook, fdmax);
 

@@ -375,7 +375,7 @@ quote_spamnum(struct Client *source_p, int newval)
       return;
     }
 
-    GlobalSetOptions.spam_num = IRCD_MAX(newval, MIN_SPAM_NUM);
+    GlobalSetOptions.spam_num = LIBIO_MAX(newval, MIN_SPAM_NUM);
 
     sendto_realops_flags(UMODE_ALL, L_ALL,"%s has changed SPAMNUM to %i",
                          source_p->name, GlobalSetOptions.spam_num);
@@ -391,7 +391,7 @@ quote_spamtime(struct Client *source_p, int newval)
 {
   if (newval > 0)
   {
-    GlobalSetOptions.spam_time = IRCD_MAX(newval, MIN_SPAM_TIME);
+    GlobalSetOptions.spam_time = LIBIO_MAX(newval, MIN_SPAM_TIME);
 
     sendto_realops_flags(UMODE_ALL, L_ALL, "%s has changed SPAMTIME to %i",
                          source_p->name, GlobalSetOptions.spam_time);

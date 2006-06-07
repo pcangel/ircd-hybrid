@@ -87,7 +87,7 @@ extract_one_line(struct dbuf_queue *qptr, char *buffer)
                 break;
         case 2: *buffer = '\0';
                 dbuf_delete(qptr, line_bytes + empty_bytes);
-                return IRCD_MIN(line_bytes, IRCD_BUFSIZE - 2);
+                return LIBIO_MIN(line_bytes, IRCD_BUFSIZE - 2);
       }
     }
   }
@@ -103,7 +103,7 @@ extract_one_line(struct dbuf_queue *qptr, char *buffer)
 
   /* Remove what is now unnecessary */
   dbuf_delete(qptr, line_bytes + empty_bytes);
-  return IRCD_MIN(line_bytes, IRCD_BUFSIZE - 2);
+  return LIBIO_MIN(line_bytes, IRCD_BUFSIZE - 2);
 }
 
 /*
@@ -297,9 +297,11 @@ read_ctrl_packet(fde_t *fd, void *data)
     {
       if ((length == -1) && ignoreErrno(errno))
         goto nodata;
+
       dead_link_on_read(server, length);
       return;
     }
+
     reply->command = tmp[0];
   }
 

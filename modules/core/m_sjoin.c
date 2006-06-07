@@ -283,7 +283,7 @@ ms_sjoin(struct Client *client_p, struct Client *source_p,
   /* check we can fit a nick on the end, as well as \r\n and a prefix "
    * @%+", and a space.
    */
-  if (buflen >= (IRCD_BUFSIZE - IRCD_MAX(NICKLEN, IDLEN) - 2 - 3 - 1))
+  if (buflen >= (IRCD_BUFSIZE - LIBIO_MAX(NICKLEN, IDLEN) - 2 - 3 - 1))
   {
     sendto_realops_flags(UMODE_ALL, L_ALL,
 			 "Long SJOIN from server: %s(via %s) (ignored)",

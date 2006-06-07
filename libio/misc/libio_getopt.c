@@ -52,24 +52,20 @@ parseargs(int *argc, char ***argv, struct lgetopt *opts)
 
   /* loop through each argument */
   for (;;)
-    {
-      int found = 0;
+  {
+    int found = 0;
 
-      (*argc)--;
-      (*argv)++;
+    (*argc)--;
+    (*argv)++;
       
-      if (*argc < 1)
-	{
-	  return;
-	}
-      
-      /* check if it *is* an arg.. */
-      if ((*argv)[0][0] != OPTCHAR)
-	{
-	  return;
-	}
-      
-      (*argv)[0]++;
+    if (*argc < 1)
+      return;
+
+    /* check if it *is* an arg.. */
+    if ((*argv)[0][0] != OPTCHAR)
+      return;
+
+    (*argv)[0]++;
 
       /* search through our argument list, and see if it matches */
       for (i = 0; opts[i].opt; i++) 
@@ -89,7 +85,7 @@ parseargs(int *argc, char ***argv, struct lgetopt *opts)
 		    {
 		      fprintf(stderr, "Error: option '%c%s' requires an argument\n",
 			      OPTCHAR, opts[i].opt);
-		      usage((*argv)[0]);
+		      libio_getopt_usage(progname, opts);
 		    }
 		  
 		  *((int *)opts[i].argloc) = atoi((*argv)[1]);
@@ -99,7 +95,7 @@ parseargs(int *argc, char ***argv, struct lgetopt *opts)
 		    {
 		      fprintf(stderr, "error: option '%c%s' requires an argument\n",
 			      OPTCHAR, opts[i].opt);
-		      usage(progname);
+		      libio_getopt_usage(progname, opts);
 		    }
 		  
 		  *((char**)opts[i].argloc) = malloc(strlen((*argv)[1]) + 1);

@@ -37,6 +37,10 @@ LIBIO_EXTERN void set_time(void);
 LIBIO_EXTERN void libio_init(int);
 LIBIO_EXTERN void setup_corefile(void);
 
+
+#define LIBIO_MAX(a, b)  ((a) > (b) ? (a) : (b))
+#define LIBIO_MIN(a, b)  ((a) < (b) ? (a) : (b))
+
 #define _1MEG     (1024.0)
 #define _1GIG     (1024.0*1024.0)
 #define _1TER     (1024.0*1024.0*1024.0)
