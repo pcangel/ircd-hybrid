@@ -278,7 +278,7 @@ quote_idletime(struct Client *source_p, int newval)
 
 /* SET LOG */
 static void
-quote_log( struct Client *source_p, int newval )
+quote_log(struct Client *source_p, int newval)
 {
   const char *log_level_as_string;
 
@@ -311,7 +311,7 @@ quote_log( struct Client *source_p, int newval )
 
 /* SET MAX */
 static void
-quote_max (struct Client *source_p, int newval)
+quote_max(struct Client *source_p, int newval)
 {
   if (newval > 0)
   {
@@ -365,7 +365,7 @@ quote_msglocale(struct Client *source_p, char *locale)
 static void
 quote_spamnum(struct Client *source_p, int newval)
 {
-  if (newval > 0)
+  if (newval >= 0)
   {
     if (newval == 0)
     {
@@ -387,7 +387,7 @@ quote_spamnum(struct Client *source_p, int newval)
 
 /* SET SPAMTIME */
 static void
-quote_spamtime( struct Client *source_p, int newval )
+quote_spamtime(struct Client *source_p, int newval)
 {
   if (newval > 0)
   {
