@@ -37,6 +37,7 @@
 #include "misc/log.h"
 #include "misc/misc.h"
 #include "misc/hook.h"
+#include "misc/libio_getopt.h"
 
 #include "net/inet_misc.h"
 #include "comm/fdlist.h"

@@ -23,11 +23,26 @@
  */
 
 #include "stdinc.h"
-#include "ircd_getopt.h"
+#include "libio_getopt.h"
 
 #define OPTCHAR '-'
 
-static void usage(const char *name);
+static void
+libio_getopt_usage(const char *name, const struct lgetopt *myopts)
+{
+  int i;
+
+  fprintf(stderr, "Usage: %s [options]\n", name);
+  fprintf(stderr, "Where valid options are:\n");
+
+  for (i = 0; myopts[i].opt; i++)
+    fprintf(stderr, "\t%c%-10s %-20s%s\n", OPTCHAR, myopts[i].opt,
+            (myopts[i].argtype == YESNO || myopts[i].argtype == USAGE) ? "" :
+            myopts[i].argtype == INTEGER ? "<number>" : "<string>",
+            myopts[i].desc);
+
+  exit(EXIT_FAILURE);
+}
 
 void
 parseargs(int *argc, char ***argv, struct lgetopt *opts)
@@ -92,7 +107,7 @@ parseargs(int *argc, char ***argv, struct lgetopt *opts)
 		  break;
 
 		case USAGE:
-		  usage(progname);
+		  libio_getopt_usage(progname, opts);
 		  /*NOTREACHED*/
 
 		default:
@@ -105,27 +120,7 @@ parseargs(int *argc, char ***argv, struct lgetopt *opts)
 	if (!found)
 	  {
 	    fprintf(stderr, "error: unknown argument '%c%s'\n", OPTCHAR, (*argv)[0]);
-	    usage(progname);
+	    libio_getopt_usage(progname, opts);
 	  }
     }
 }
-
-static void 
-usage(const char *name)
-{
-  int i;
-  
-  fprintf(stderr, "Usage: %s [options]\n", name);
-  fprintf(stderr, "Where valid options are:\n");
-  
-  for (i = 0; myopts[i].opt; i++)
-  {
-    fprintf(stderr, "\t%c%-10s %-20s%s\n", OPTCHAR, myopts[i].opt, 
-            (myopts[i].argtype == YESNO || myopts[i].argtype == USAGE) ? "" : 
-            myopts[i].argtype == INTEGER ? "<number>" : "<string>",
-            myopts[i].desc);
-  }
-
-  exit(EXIT_FAILURE);
-}
-

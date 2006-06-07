@@ -47,7 +47,6 @@
 #include "send.h"
 #include "whowas.h"
 #include "conf/modules.h"
-#include "ircd_getopt.h"
 #include "motd.h"
 #include "supported.h"
 #include "watch.h"

@@ -59,7 +59,6 @@ SRCS = \
  channel_mode.c \
  client.c \
  csvlib.c \
- getopt.c \
  hash.c	\
  hostmask.c \
  ircd.c \

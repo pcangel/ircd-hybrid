@@ -19,7 +19,8 @@ SRCS = \
   hook.c \
   list.c \
   log.c \
-  misc.c
+  misc.c \
+  libio_getopt.c
 
 OBJS = ${SRCS:.c=.o}
 
