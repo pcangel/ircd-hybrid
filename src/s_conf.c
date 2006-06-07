@@ -1726,10 +1726,11 @@ lookup_confhost(struct ConfItem *conf)
     return;
   }
 
-  if (strchr(aconf->host, '*') || strchr(aconf->host, '?'))
+  if (has_wildcards(aconf->host))
     return;
 
-  /* Do name lookup now on hostnames given and store the
+  /*
+   * Do name lookup now on hostnames given and store the
    * ip numbers in conf structure.
    */
   memset(&hints, 0, sizeof(hints));

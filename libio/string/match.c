@@ -53,12 +53,9 @@ match(const char *mask, const char *name)
   {
     if (*m == '*')
     {
-      /*
-       * XXX - shouldn't need to spin here, the mask should have been
-       * collapsed before match is called
-       */
       while (*m == '*')
-        m++;
+        ++m;
+
       ma = m;
       na = n;
     }
@@ -78,13 +75,10 @@ match(const char *mask, const char *name)
     }
     else if (!*n)
     {
-      /*
-       * XXX - shouldn't need to spin here, the mask should have been
-       * collapsed before match is called
-       */
       while (*m == '*')
-        m++;
-      return (*m == 0);
+        ++m;
+
+      return *m == '\0';
     }
 
     if (ToLower(*m) != ToLower(*n) && *m != '?' && (*m != '#' || !IsDigit(*n)))
@@ -121,12 +115,9 @@ match_esc(const char *mask, const char *name)
   {
     if (*m == '*')
     {
-      /*
-       * XXX - shouldn't need to spin here, the mask should have been
-       * collapsed before match is called
-       */
       while (*m == '*')
-        m++;
+        ++m;
+
       ma = m;
       na = n;
     }
@@ -146,13 +137,10 @@ match_esc(const char *mask, const char *name)
     }
     else if (!*n)
     {
-      /*
-       * XXX - shouldn't need to spin here, the mask should have been
-       * collapsed before match is called
-       */
       while (*m == '*')
-        m++;
-      return (*m == 0);
+        ++m;
+
+      return *m == '\0';
     }
 
     if (*m != '?' && (*m != '#' || IsDigit(*n)))

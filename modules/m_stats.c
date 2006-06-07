@@ -378,11 +378,6 @@ count_memory(struct Client *source_p)
   unsigned long away_memory = 0;       /* memory used by aways           */
   unsigned long conf_memory = 0;       /* memory used by conf lines      */
   unsigned long mem_ips_stored;        /* memory used by ip address hash */
-
-  unsigned long client_hash_table_size = 0;
-  unsigned long channel_hash_table_size = 0;
-  unsigned long resv_hash_table_size = 0;
-  unsigned long id_hash_table_size = 0;
   unsigned long total_channel_memory = 0;
 
   unsigned int local_client_count  = 0;
@@ -560,10 +555,6 @@ count_memory(struct Client *source_p)
 
   total_memory = total_channel_memory + conf_memory + class_count *
                  sizeof(struct ClassItem);
-  total_memory += client_hash_table_size;
-  total_memory += channel_hash_table_size;
-  total_memory += resv_hash_table_size;
-  total_memory += id_hash_table_size;
 
   sendto_one(source_p, ":%s %d %s z :Total: channel %d conf %d",
              me.name, RPL_STATSDEBUG, source_p->name,
@@ -1341,14 +1332,12 @@ stats_events(struct Client *source_p)
     ":%s %d %s : -------------------------------------------",
     me.name, RPL_STATSDEBUG, source_p->name);
 
-  for (i = 0; i < MAX_EVENTS; i++)
+  for (i = 0; i < MAX_EVENTS; ++i)
     if (event_table[i].active)
-    {
       sendto_one(source_p, ":%s %d %s : %-28s %-4d seconds",
                  me.name, RPL_STATSDEBUG, source_p->name,
                  event_table[i].name,
                  (int)(event_table[i].when - CurrentTime));
-    }
 
   sendto_one(source_p, ":%s %d %s : ",
              me.name, RPL_STATSDEBUG, source_p->name);
@@ -1376,7 +1365,7 @@ fd_dump(struct Client *source_p)
   int i;
   fde_t *F;
 
-  for (i = 0; i < FD_HASH_SIZE; i++)
+  for (i = 0; i < FD_HASH_SIZE; ++i)
     for (F = fd_hash[i]; F != NULL; F = F->hnext)
       sendto_one(source_p, ":%s %d %s :fd %-5d desc '%s'",
                  me.name, RPL_STATSDEBUG, source_p->name,
@@ -1419,8 +1408,8 @@ stats_L_list(struct Client *source_p, char *name, int doall, int wilds,
     const struct Client *target_p = ptr->data;
 
     if (IsInvisible(target_p) && (doall || wilds) &&
-	!(MyConnect(source_p) && IsOper(source_p)) &&
-	!IsOper(target_p) && (target_p != source_p))
+        !(MyConnect(source_p) && IsOper(source_p)) &&
+        !IsOper(target_p) && (target_p != source_p))
       continue;
     if (!doall && wilds && !match(name, target_p->name))
       continue;
@@ -1473,8 +1462,7 @@ parse_stats_args(int parc, char *parv[], int *doall, int *wilds)
     else if (match(name, from))
       *doall = 1;
 
-    if (has_wildcards(name))
-      *wilds = 1;
+    *wilds = has_wildcards(name);
 
     return name;
   }
