@@ -353,7 +353,6 @@ count_memory(struct Client *source_p)
 {
   const dlink_node *gptr = NULL;
   const dlink_node *dlink = NULL;
-  const dlink_list *bh_list = NULL;
 
   int users_counted = 0;   /* real Clients counted, i.e. not a server */
 
@@ -367,7 +366,7 @@ count_memory(struct Client *source_p)
   int aways_counted = 0;
   int number_ips_stored;        /* number of ip addresses hashed */
 
-  unsigned long channel_memory = 0;
+  size_t channel_memory = 0;
   size_t channel_ban_memory = 0;
   size_t channel_except_memory = 0;
   size_t channel_invex_memory = 0;
@@ -375,10 +374,9 @@ count_memory(struct Client *source_p)
   unsigned int safelist_count = 0;
   size_t safelist_memory = 0;
 
-  unsigned long away_memory = 0;       /* memory used by aways           */
-  unsigned long conf_memory = 0;       /* memory used by conf lines      */
-  unsigned long mem_ips_stored;        /* memory used by ip address hash */
-  unsigned long total_channel_memory = 0;
+  size_t away_memory = 0;       /* memory used by aways           */
+  size_t mem_ips_stored;        /* memory used by ip address hash */
+  size_t total_channel_memory = 0;
 
   unsigned int local_client_count  = 0;
   unsigned int remote_client_count = 0;
@@ -386,12 +384,12 @@ count_memory(struct Client *source_p)
   unsigned int local_client_memory_used  = 0;
   unsigned int remote_client_memory_used = 0;
 
-  unsigned long total_memory = 0;
+  size_t total_memory = 0;
   unsigned int topic_count = 0;
 
   unsigned int wlh = 0;   /* watchlist headers     */
   unsigned int wle = 0;   /* watchlist entries     */
-  unsigned int wlhm  = 0; /* watchlist memory used */
+  unsigned int wlhm = 0; /* watchlist memory used */
 
   DLINK_FOREACH(gptr, global_client_list.head)
   {
@@ -502,9 +500,9 @@ count_memory(struct Client *source_p)
              me.name, RPL_STATSDEBUG, source_p->name, users_counted,
              (unsigned long)(users_counted * sizeof(struct Client)));
 
-  sendto_one(source_p, ":%s %d %s z :User aways %u(%d)",
+  sendto_one(source_p, ":%s %d %s z :User aways %u(%u)",
              me.name, RPL_STATSDEBUG, source_p->name,
-             aways_counted, (int)away_memory);
+             aways_counted, away_memory);
 
   sendto_one(source_p, ":%s %d %s z :Resv channels %lu(%lu) nicks %lu(%lu)",
              me.name, RPL_STATSDEBUG, source_p->name,
@@ -517,7 +515,7 @@ count_memory(struct Client *source_p)
              me.name, RPL_STATSDEBUG, source_p->name,
              class_count, (unsigned long)(class_count * sizeof(struct ClassItem)));
 
-  sendto_one(source_p, ":%s %d %s z :Channels %lu(%lu) Topics %u(%d)",
+  sendto_one(source_p, ":%s %d %s z :Channels %lu(%u) Topics %u(%d)",
              me.name, RPL_STATSDEBUG, source_p->name,
              dlink_list_length(&global_channel_list),
              channel_memory, topic_count, topic_count *
@@ -548,17 +546,18 @@ count_memory(struct Client *source_p)
              me.name, RPL_STATSDEBUG, source_p->name,
              safelist_count, safelist_memory);
 
-  count_ip_hash(&number_ips_stored,&mem_ips_stored);
-  sendto_one(source_p, ":%s %d %s z :iphash %u(%d)",
-             me.name, RPL_STATSDEBUG, source_p->name,
-             number_ips_stored, (int)mem_ips_stored);
+  count_ip_hash(&number_ips_stored, &mem_ips_stored);
 
-  total_memory = total_channel_memory + conf_memory + class_count *
+  sendto_one(source_p, ":%s %d %s z :iphash %u(%u)",
+             me.name, RPL_STATSDEBUG, source_p->name,
+             number_ips_stored, mem_ips_stored);
+
+  total_memory = total_channel_memory + class_count *
                  sizeof(struct ClassItem);
 
-  sendto_one(source_p, ":%s %d %s z :Total: channel %d conf %d",
+  sendto_one(source_p, ":%s %d %s z :Total: channel %u",
              me.name, RPL_STATSDEBUG, source_p->name,
-             (int)total_channel_memory, (int)conf_memory);
+             total_channel_memory);
 
   local_client_memory_used = local_client_count*(sizeof(struct Client) + sizeof(struct LocalUser));
   total_memory += local_client_memory_used;
@@ -572,9 +571,7 @@ count_memory(struct Client *source_p)
              me.name, RPL_STATSDEBUG, source_p->name, remote_client_count,
              remote_client_memory_used);
 
-  bh_list = block_heap_get_heap_list();
-
-  DLINK_FOREACH(gptr, bh_list->head)
+  DLINK_FOREACH(gptr, block_heap_get_heap_list()->head)
   {
     const struct BlockHeap *bh = gptr->data;
     sendto_one(source_p,
@@ -588,10 +585,9 @@ count_memory(struct Client *source_p)
                block_heap_get_size_mem(bh));
   }
 
-  sendto_one(source_p,
-             ":%s %d %s z :TOTAL: %d Available:  Current max RSS: %lu",
+  sendto_one(source_p, ":%s %d %s z :TOTAL: %u",
              me.name, RPL_STATSDEBUG, source_p->name,
-             (int)total_memory, get_maxrss());
+             total_memory);
 }
 
 static void

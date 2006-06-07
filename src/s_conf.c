@@ -1077,7 +1077,7 @@ hash_ip(const struct irc_ssaddr *addr)
  * used in the hash.
  */
 void
-count_ip_hash(int *number_ips_stored, unsigned long *mem_ips_stored)
+count_ip_hash(int *number_ips_stored, size_t *mem_ips_stored)
 {
   struct ip_entry *ptr;
   int i;

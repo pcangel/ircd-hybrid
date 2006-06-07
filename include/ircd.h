@@ -124,6 +124,4 @@ EXTERN dlink_list serv_list;          /* local servers to this server ONLY      
 EXTERN dlink_list global_serv_list;   /* global servers on the network              */
 EXTERN dlink_list oper_list;          /* our opers, duplicated in local_client_list */
 EXTERN int rehashed_klines;
-EXTERN unsigned long get_maxrss(void);
-
 #endif

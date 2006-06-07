@@ -531,7 +531,7 @@ EXTERN unsigned long get_sendq(struct Client *);
 EXTERN const char *get_client_className(struct Client *);
 EXTERN int get_client_ping(struct Client *, int *);
 EXTERN struct ConfItem *find_class(const char *);
-EXTERN void count_ip_hash(int *, unsigned long *);
+EXTERN void count_ip_hash(int *, size_t *);
 EXTERN void remove_one_ip(struct irc_ssaddr *);
 EXTERN struct ConfItem *make_conf_item(ConfType);
 EXTERN int attach_class(struct Client *, struct ConfItem *);
