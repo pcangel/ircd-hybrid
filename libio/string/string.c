@@ -169,9 +169,14 @@ strtoken(char** save, char* str, const char* fs)
 const char *
 libio_basename(const char *path)
 {
-  const char *s;
+  const char *s = strrchr(path, '/');
+#ifdef _WIN32
+  const char *s2 = strrchr(path, '\\');
 
-  if ((s = strrchr(path, '/')) == NULL)
+  s = IRCD_MAX(s, s2);
+#endif
+
+  if (s == NULL)
     s = path;
   else
     s++;
