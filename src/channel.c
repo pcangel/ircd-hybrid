@@ -830,7 +830,8 @@ check_splitmode(void *unused)
   {
     const unsigned int server = dlink_list_length(&global_serv_list);
 
-    if (!splitmode && ((server < split_servers) || (Count.total < split_users)))
+    if (!splitmode && ((server < GlobalSetOptions.split_servers) ||
+                       (Count.total < GlobalSetOptions.split_users)))
     {
       splitmode = 1;
 
@@ -838,7 +839,8 @@ check_splitmode(void *unused)
                            "Network split, activating splitmode");
       eventAddIsh("check_splitmode", check_splitmode, NULL, 10);
     }
-    else if (splitmode && (server > split_servers) && (Count.total > split_users))
+    else if (splitmode && (server > GlobalSetOptions.split_servers) &&
+             (Count.total > GlobalSetOptions.split_users))
     {
       splitmode = 0;
 

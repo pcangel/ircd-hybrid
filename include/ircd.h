@@ -45,6 +45,8 @@ struct SetOptions
   int spam_num;
   int spam_time;
   int maxlisters;
+  int split_users;
+  int split_servers;
 };
 
 struct Counter
@@ -115,8 +117,6 @@ EXTERN int bio_spare_fd;
 
 EXTERN int splitmode;
 EXTERN int splitchecking;
-EXTERN int split_users;
-EXTERN unsigned int split_servers;
 
 EXTERN dlink_list unknown_list;       /* unknown clients ON this server only        */
 EXTERN dlink_list local_client_list;  /* local clients only ON this server          */

@@ -92,8 +92,6 @@ int bio_spare_fd = -1;
 
 int splitmode;
 int splitchecking;
-int split_users;
-unsigned int split_servers;
 
 static dlink_node *fdlimit_hook;
 
@@ -248,11 +246,12 @@ initialize_global_set_options(void)
   GlobalSetOptions.joinfloodcount = 16;
   GlobalSetOptions.joinfloodtime = 8;
 
-  split_servers = ConfigChannel.default_split_server_count;
-  split_users   = ConfigChannel.default_split_user_count;
+  GlobalSetOptions.split_servers = ConfigChannel.default_split_server_count;
+  GlobalSetOptions.split_users   = ConfigChannel.default_split_user_count;
 
-  if (split_users && split_servers && (ConfigChannel.no_create_on_split ||
-                                       ConfigChannel.no_join_on_split))
+  if (GlobalSetOptions.split_users &&
+      GlobalSetOptions.split_servers && (ConfigChannel.no_create_on_split ||
+                                         ConfigChannel.no_join_on_split))
   {
     splitmode     = 1;
     splitchecking = 1;
