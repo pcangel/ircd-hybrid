@@ -189,6 +189,28 @@ set_time(void)
   SystemTime.tv_usec = newtime.tv_usec;
 }
 
+/* setup_corefile()
+ *
+ * inputs       - nothing
+ * output       - nothing
+ * side effects - setups corefile to system limits.
+ * -kre
+ */
+void
+setup_corefile(void)
+{
+#ifdef HAVE_SYS_RESOURCE_H
+  struct rlimit rlim; /* resource limits */
+
+  /* Set corefilesize to maximum */
+  if (!getrlimit(RLIMIT_CORE, &rlim))
+  {
+    rlim.rlim_cur = rlim.rlim_max;
+    setrlimit(RLIMIT_CORE, &rlim);
+  }
+#endif
+}
+
 void
 libio_init(int daemonn)
 {

@@ -35,6 +35,7 @@ LIBIO_EXTERN char *ssl_get_cipher(SSL *);
 #endif
 LIBIO_EXTERN void set_time(void);
 LIBIO_EXTERN void libio_init(int);
+LIBIO_EXTERN void setup_corefile(void);
 
 #define _1MEG     (1024.0)
 #define _1GIG     (1024.0*1024.0)
