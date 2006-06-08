@@ -343,7 +343,7 @@ check_pings_list(dlink_list *list)
 static void
 check_unknowns_list(void)
 {
-  dlink_node *ptr, *next_ptr;
+  dlink_node *ptr = NULL, *next_ptr = NULL;
 
   DLINK_FOREACH_SAFE(ptr, next_ptr, unknown_list.head)
   {
@@ -356,11 +356,12 @@ check_unknowns_list(void)
       continue;
     }
 
-    /* Check UNKNOWN connections - if they have been in this state
+    /*
+     * Check UNKNOWN connections - if they have been in this state
      * for > 30s, close them.
      */
-    if (client_p->firsttime ? ((CurrentTime - client_p->firsttime) > 30) : 0)
-      exit_client(client_p, &me, "Connection timed out");
+    if (IsAuthFinished(client_p) && (CurrentTime - client_p->firsttime) > 30)
+      exit_client(client_p, &me, "Registration timed out");
   }
 }
 
@@ -1212,7 +1213,7 @@ dead_link_on_write(struct Client *client_p, int ierrno)
 void
 dead_link_on_read(struct Client *client_p, int error)
 {
-  char errmsg[255];
+  char errmsg[IRCD_BUFSIZE];
   int current_error;
 
   if (IsDefunct(client_p))

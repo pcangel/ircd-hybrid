@@ -112,7 +112,7 @@ struct Client
   time_t            tsinfo;     /* TS on the nick, SVINFO on server */
   unsigned long	    connect_id; /* unique connection ID */
   unsigned int      umodes;     /* opers, normal users subset */
-  unsigned int      flags;      /* client flags */
+  uint64_t          flags;      /* client flags */
 
   unsigned short    hopcount;   /* number of servers to this 0 = local */
   unsigned short    status;     /* Client type */
@@ -320,38 +320,39 @@ struct LocalUser
 
 
 /* housekeeping flags */
-#define FLAGS_PINGSENT      0x00000001 /* Unreplied ping sent                      */
-#define FLAGS_DEADSOCKET    0x00000002 /* Local socket is dead--Exiting soon       */
-#define FLAGS_KILLED        0x00000004 /* Prevents "QUIT" from being sent for this */
-#define FLAGS_CLOSING       0x00000008 /* set when closing to suppress errors      */
-#define FLAGS_GOTID         0x00000010 /* successful ident lookup achieved         */
-#define FLAGS_NEEDID        0x00000020 /* I-lines say must use ident return        */
-#define FLAGS_SENDQEX       0x00000040 /* Sendq exceeded                           */
-#define FLAGS_IPHASH        0x00000080 /* iphashed this client                     */
-#define FLAGS_CRYPTIN       0x00000100 /* incoming data must be decrypted          */
-#define FLAGS_CRYPTOUT      0x00000200 /* outgoing data must be encrypted          */
-#define FLAGS_WAITAUTH      0x00000400 /* waiting for CRYPTLINK AUTH command       */
-#define FLAGS_SERVLINK      0x00000800 /* servlink has servlink process            */
-#define FLAGS_MARK	    0x00001000 /* marked client                            */
-#define FLAGS_CANFLOOD	    0x00002000 /* client has the ability to flood          */
-#define FLAGS_EXEMPTGLINE   0x00004000 /* client can't be G-lined                  */
-#define FLAGS_EXEMPTKLINE   0x00008000 /* client is exempt from kline              */
-#define FLAGS_NOLIMIT       0x00010000 /* client is exempt from limits             */
-#define FLAGS_RESTRICTED    0x00020000 /* client cannot op others                  */
-#define FLAGS_PING_COOKIE   0x00040000 /* PING Cookie                              */
-#define FLAGS_IDLE_LINED    0x00080000 /* client is exempt from idle-time limits   */
-#define FLAGS_IP_SPOOFING   0x00100000 /* client IP is spoofed                     */
-#define FLAGS_FLOODDONE     0x00200000 /* Flood grace period has been ended.       */
-#define FLAGS_EOB           0x00400000 /* server has received EOB                  */
-#define FLAGS_HIDDEN        0x00800000 /* a hidden server. not shown in /links     */
-#define FLAGS_BLOCKED       0x01000000 /* must wait for COMM_SELECT_WRITE          */
-#define FLAGS_SBLOCKED      0x02000000 /* slinkq is blocked                        */
-#define FLAGS_USERHOST      0x04000000 /* client is in userhost hash               */
-#define FLAGS_BURSTED       0x08000000 /* user was already bursted                 */
-#define FLAGS_EXEMPTRESV    0x10000000 /* client is exempt from RESV               */
-#define FLAGS_GOTUSER       0x20000000 /* if we received a USER command            */
-#define FLAGS_PINGWARNING   0x40000000 /* unreplied ping warning already sent      */
-#define FLAGS_FLOOD_NOTICED 0x80000000 /* if we already sent a notice to opers     */
+#define FLAGS_PINGSENT      0x0000000000000001ULL /* Unreplied ping sent                      */
+#define FLAGS_DEADSOCKET    0x0000000000000002ULL /* Local socket is dead--Exiting soon       */
+#define FLAGS_KILLED        0x0000000000000004ULL /* Prevents "QUIT" from being sent for this */
+#define FLAGS_CLOSING       0x0000000000000008ULL /* set when closing to suppress errors      */
+#define FLAGS_GOTID         0x0000000000000010ULL /* successful ident lookup achieved         */
+#define FLAGS_NEEDID        0x0000000000000020ULL /* I-lines say must use ident return        */
+#define FLAGS_SENDQEX       0x0000000000000040ULL /* Sendq exceeded                           */
+#define FLAGS_IPHASH        0x0000000000000080ULL /* iphashed this client                     */
+#define FLAGS_CRYPTIN       0x0000000000000100ULL /* incoming data must be decrypted          */
+#define FLAGS_CRYPTOUT      0x0000000000000200ULL /* outgoing data must be encrypted          */
+#define FLAGS_WAITAUTH      0x0000000000000400ULL /* waiting for CRYPTLINK AUTH command       */
+#define FLAGS_SERVLINK      0x0000000000000800ULL /* servlink has servlink process            */
+#define FLAGS_MARK	    0x0000000000001000ULL /* marked client                            */
+#define FLAGS_CANFLOOD	    0x0000000000002000ULL /* client has the ability to flood          */
+#define FLAGS_EXEMPTGLINE   0x0000000000004000ULL /* client can't be G-lined                  */
+#define FLAGS_EXEMPTKLINE   0x0000000000008000ULL /* client is exempt from kline              */
+#define FLAGS_NOLIMIT       0x0000000000010000ULL /* client is exempt from limits             */
+#define FLAGS_RESTRICTED    0x0000000000020000ULL /* client cannot op others                  */
+#define FLAGS_PING_COOKIE   0x0000000000040000ULL /* PING Cookie                              */
+#define FLAGS_IDLE_LINED    0x0000000000080000ULL /* client is exempt from idle-time limits   */
+#define FLAGS_IP_SPOOFING   0x0000000000100000ULL /* client IP is spoofed                     */
+#define FLAGS_FLOODDONE     0x0000000000200000ULL /* Flood grace period has been ended.       */
+#define FLAGS_EOB           0x0000000000400000ULL /* server has received EOB                  */
+#define FLAGS_HIDDEN        0x0000000000800000ULL /* a hidden server. not shown in /links     */
+#define FLAGS_BLOCKED       0x0000000001000000ULL /* must wait for COMM_SELECT_WRITE          */
+#define FLAGS_SBLOCKED      0x0000000002000000ULL /* slinkq is blocked                        */
+#define FLAGS_USERHOST      0x0000000004000000ULL /* client is in userhost hash               */
+#define FLAGS_BURSTED       0x0000000008000000ULL /* user was already bursted                 */
+#define FLAGS_EXEMPTRESV    0x0000000010000000ULL /* client is exempt from RESV               */
+#define FLAGS_GOTUSER       0x0000000020000000ULL /* if we received a USER command            */
+#define FLAGS_PINGWARNING   0x0000000040000000ULL /* unreplied ping warning already sent      */
+#define FLAGS_FLOOD_NOTICED 0x0000000080000000ULL /* if we already sent a notice to opers     */
+#define FLAGS_FINISHED_AUTH 0x0000000100000000ULL /* Client has been released from auth       */
 
 
 /* umodes, settable flags */
@@ -404,6 +405,7 @@ struct LocalUser
 
 
 /* flags macros. */
+#define IsAuthFinished(x)       ((x)->flags & FLAGS_FINISHED_AUTH)
 #define IsDead(x)               ((x)->flags & FLAGS_DEADSOCKET)
 #define SetDead(x)              ((x)->flags |= FLAGS_DEADSOCKET)
 #define IsClosing(x)		((x)->flags & FLAGS_CLOSING)

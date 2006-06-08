@@ -105,7 +105,7 @@ make_auth_request(struct Client *client)
   request->client  = client;
   request->timeout = CurrentTime + CONNECTTIMEOUT;
 
-  return (request);
+  return request;
 }
 
 /*
@@ -123,17 +123,11 @@ release_auth_client(struct Client *client)
    */
   client->localClient->allow_read = MAX_FLOOD;
   comm_setflush(&client->localClient->fd, 1000, flood_recalc, client);
-  if ((client->node.prev != NULL) || (client->node.next != NULL))
-  {
-    sendto_realops_flags(UMODE_ALL, L_OPER,
-			 "already linked %s at %s:%d", client->name,
-			 __FILE__, __LINE__);
-    ilog(L_ERROR, "already linked %s at %s:%d", client->name,
-	 __FILE__, __LINE__);
-    assert(0==5);
-  }
-  else
-    dlinkAdd(client, &client->node, &global_client_list);
+
+  client_p->flags |= FLAGS_FINISHED_AUTH;
+  client_p->since = client_p->lasttime = client_p->firsttime = CurrentTime;
+
+  dlinkAdd(client, &client->node, &global_client_list);
   read_packet(&client->localClient->fd, client);
 }
  
