@@ -281,8 +281,8 @@ register_local_user(struct Client *source_p, const char *username)
   {
     if (!IsPingSent(source_p) && !source_p->localClient->random_ping)
     {
-      source_p->localClient->random_ping = (unsigned long)rand();
-      sendto_one(source_p, "PING :%lu",
+      source_p->localClient->random_ping = (unsigned int)rand();
+      sendto_one(source_p, "PING :%u",
                  source_p->localClient->random_ping);
       SetPingSent(source_p);
       return;

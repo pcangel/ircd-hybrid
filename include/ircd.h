@@ -98,7 +98,6 @@ struct ServerState_t
 char *get_ircd_platform(char *);
 
 EXTERN struct SetOptions GlobalSetOptions; /* defined in ircd.c */
-EXTERN unsigned long connect_id;	/* unique connect ID */
 EXTERN struct ServerState_t server_state;
 EXTERN char **myargv;
 EXTERN char ircd_platform[PLATFORMLEN];

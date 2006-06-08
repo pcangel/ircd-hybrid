@@ -110,7 +110,7 @@ struct Client
   time_t            firsttime;  /* time client was created */
   time_t            since;      /* last time we parsed something */
   time_t            tsinfo;     /* TS on the nick, SVINFO on server */
-  unsigned long	    connect_id; /* unique connection ID */
+
   unsigned int      umodes;     /* opers, normal users subset */
   uint64_t          flags;      /* client flags */
 
@@ -239,8 +239,8 @@ struct LocalUser
   int allow_read;	/* how many we're allowed to read in this second */
   int sent_parsed;      /* how many messages we've parsed in this second */
   time_t last_knock;    /* time of last knock */
-  unsigned long random_ping;
-  unsigned long serial;     /* used to enforce 1 send per nick */
+  unsigned int random_ping;
+  unsigned int serial;     /* used to enforce 1 send per nick */
 
   char*          response;  /* expected response from client */
   char*          auth_oper; /* Operator to become if they supply the response.*/
