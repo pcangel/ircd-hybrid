@@ -60,8 +60,20 @@ CLEANUP_MODULE
   uninstall_hook(trace_cb, do_actual_trace);
 }
 
-static void report_this_status(struct Client *,
-                               struct Client *, int, int, int);
+static void report_this_status(struct Client *, struct Client *, int);
+
+static void
+trace_get_dependent(int *const server,
+                    int *const client, const struct Client *target_p)
+{
+  const dlink_node *ptr = NULL;
+
+  (*server)++;
+  (*client) += dlink_list_length(&target_p->serv->client_list);
+
+  DLINK_FOREACH(ptr, target_p->serv->server_list.head)
+    trace_get_dependent(ptr->data, server, client);
+}
 
 /*
  * m_trace()
@@ -73,7 +85,7 @@ static void
 m_trace(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
 {
-  const char *tname;
+  const char *tname = NULL;
 
   if (parc > 1)
     tname = parv[1];
@@ -243,7 +255,7 @@ do_actual_trace(va_list args)
     if (!dow && irccmp(tname, target_p->name))
       continue;
 
-    report_this_status(source_p, target_p, dow, 0, 0);
+    report_this_status(source_p, target_p, dow);
   }
 
   DLINK_FOREACH(ptr, serv_list.head)
@@ -255,8 +267,7 @@ do_actual_trace(va_list args)
     if (!dow && irccmp(tname, target_p->name))
       continue;
 
-    report_this_status(source_p, target_p, dow,
-      target_p->serv->dep_users, target_p->serv->dep_servers);
+    report_this_status(source_p, target_p, dow);
   }
 
   /* This section is to report the unknowns */
@@ -269,7 +280,7 @@ do_actual_trace(va_list args)
     if (!dow && irccmp(tname, target_p->name))
       continue;
 
-    report_this_status(source_p, target_p, dow, 0, 0);
+    report_this_status(source_p, target_p, dow);
   }
 
   DLINK_FOREACH(ptr, class_items.head)
@@ -309,8 +320,7 @@ ms_trace(struct Client *client_p, struct Client *source_p,
  * side effects - NONE
  */
 static void
-report_this_status(struct Client *source_p, struct Client *target_p,
-                   int dow, int link_u_p, int link_s_p)
+report_this_status(struct Client *source_p, struct Client *target_p, int dow)
 {
   const char *name;
   const char *class_name;
@@ -406,14 +416,20 @@ report_this_status(struct Client *source_p, struct Client *target_p,
 	}
       break;
     case STAT_SERVER:
+    {
+      int clients = 0;
+      int servers = 0;
+
+      trace_get_dependent(&servers, &clients, target_p)
       if (!IsOperAdmin(source_p))
         name = get_client_name(target_p, MASK_IP);
 
       sendto_one(source_p, form_str(RPL_TRACESERVER),
-		 from, to, class_name, link_s_p,
-		 link_u_p, name, *(target_p->serv->by) ?
+		 from, to, class_name, servers,
+		 clients, name, *(target_p->serv->by) ?
 		 target_p->serv->by : "*", "*",
 		 me.name, CurrentTime - target_p->lasttime);
+     }
       break;
       
     default: /* ...we actually shouldn't come here... --msa */

@@ -409,11 +409,9 @@ ms_server(struct Client *client_p, struct Client *source_p,
 
   dlinkAdd(target_p, &target_p->node, &global_client_list);
   dlinkAdd(target_p, make_dlink_node(), &global_serv_list);
-  dlinkAdd(target_p, &target_p->lnode, &target_p->servptr->serv->servers);
+  dlinkAdd(target_p, &target_p->lnode, &target_p->servptr->serv->server_list);
 
   hash_add_client(target_p);
-
-  ++client_p->serv->dep_servers;
 
   /*
    * Old sendto_serv_but_one() call removed because we now
@@ -644,38 +642,12 @@ ms_sid(struct Client *client_p, struct Client *source_p,
 
   SetServer(target_p);
 
-  if ((target_p->node.prev != NULL) || (target_p->node.next != NULL))
-  {
-    sendto_realops_flags(UMODE_ALL, L_ADMIN,
-			 "already linked %s at %s:%d", target_p->name,
-			 __FILE__, __LINE__);
-    ilog(L_ERROR, "already linked %s at %s:%d", target_p->name,
-	 __FILE__, __LINE__);
-    assert(0==3);
-  }
-  else
-  {
-    dlinkAdd(target_p, &target_p->node, &global_client_list);
-    dlinkAdd(target_p, make_dlink_node(), &global_serv_list);
-  }
+  dlinkAdd(target_p, &target_p->node, &global_client_list);
+  dlinkAdd(target_p, make_dlink_node(), &global_serv_list);
+  dlinkAdd(target_p, &target_p->lnode, &target_p->servptr->serv->server_list);
 
   hash_add_client(target_p);
-  /* XXX test that target_p->lnode.prev and next are NULL as well? */
-  if ((target_p->lnode.prev != NULL) || (target_p->lnode.next != NULL))
-  {
-    sendto_realops_flags(UMODE_ALL, L_OPER,
-			 "already lnode linked %s at %s:%d", target_p->name,
-			 __FILE__, __LINE__);
-    ilog(L_ERROR, "already lnode linked %s at %s:%d", target_p->name,
-	 __FILE__, __LINE__);
-    assert(0==4);
-  }
-  else
-    dlinkAdd(target_p, &target_p->lnode, &target_p->servptr->serv->servers);
-
   hash_add_id(target_p);
-
-  client_p->serv->dep_servers++;
 
   DLINK_FOREACH_SAFE(ptr, ptr_next, serv_list.head)
   {

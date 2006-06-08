@@ -138,16 +138,16 @@ dump_map(struct Client *client_p, struct Client *root_p, int start_len,
   *pb++ = ' ';
   *pb++ = '|';
 
-  users = dlink_list_length(&root_p->serv->users);
+  users = dlink_list_length(&root_p->serv->client_list);
 
   sprintf(pb, " Users: %5d (%1.1f%%)", users,
 	  100 * (float)users / (float)Count.total);
 
   sendto_one(client_p, form_str(RPL_MAP), me.name, client_p->name, buf);
         
-  if (root_p->serv->servers.head)
+  if (root_p->serv->server_list.head)
   {
-    cnt += dlink_list_length(&root_p->serv->servers);
+    cnt += dlink_list_length(&root_p->serv->server_list);
 
     if (cnt)
     {
@@ -163,11 +163,12 @@ dump_map(struct Client *client_p, struct Client *root_p, int start_len,
 
   i = 1;
 
-  DLINK_FOREACH(ptr, root_p->serv->servers.head)
+  DLINK_FOREACH(ptr, root_p->serv->server_list.head)
   {
     server_p = ptr->data;
 
     *pbuf = ' ';
+
     if (i < cnt)
       *(pbuf + 1) = '|';
     else

@@ -969,10 +969,7 @@ struct Server *
 make_server(struct Client *client_p)
 {
   if (client_p->serv == NULL)
-  {
-    client_p->serv = MyMalloc(sizeof(struct Server));
-    client_p->serv->dep_servers = 1;
-  }
+    client_p->serv = MyMalloc(sizeof(*client_p->serv));
 
   return client_p->serv;
 }
@@ -1129,7 +1126,7 @@ server_estab(struct Client *client_p)
   /* Update the capability combination usage counts. -A1kmm */
   set_chcap_usage_counts(client_p);
 
-  dlinkAdd(client_p, &client_p->lnode, &me.serv->servers);
+  dlinkAdd(client_p, &client_p->lnode, &me.serv->server_list);
 
   m = dlinkFind(&unknown_list, client_p);
   assert(NULL != m);

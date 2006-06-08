@@ -159,7 +159,7 @@ mo_jupe(struct Client *client_p, struct Client *source_p,
 
   hash_add_client(ajupe);
 
-  dlinkAdd(ajupe, &ajupe->lnode, &ajupe->servptr->serv->servers);
+  dlinkAdd(ajupe, &ajupe->lnode, &ajupe->servptr->serv->server_list);
   dlinkAdd(ajupe, make_dlink_node(), &global_serv_list);
   dlinkAdd(ajupe, &ajupe->node, &global_client_list);
 }

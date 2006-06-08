@@ -712,8 +712,10 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
 
   if (IsClient(source_p))
   {
-    if (source_p->servptr->serv != NULL)
-      dlinkDelete(&source_p->lnode, &source_p->servptr->serv->users);
+    assert(source_p->servptr);
+    assert(source_p->servptr->serv);
+
+    dlinkDelete(&source_p->lnode, &source_p->servptr->serv->client_list);
 
     /*
      * If a person is on a channel, send a QUIT notice
@@ -745,24 +747,13 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
       /* Clean up allow lists */
       del_all_accepts(source_p);
     }
-    else
-    {
-      source_p->from->serv->dep_users--;
-      assert(source_p->from->serv->dep_users >= 0);
-    }
   }
   else if (IsServer(source_p))
   {
-    dlinkDelete(&source_p->lnode, &source_p->servptr->serv->servers);
+    dlinkDelete(&source_p->lnode, &source_p->servptr->serv->server_list);
 
     if ((lp = dlinkFindDelete(&global_serv_list, source_p)) != NULL)
       free_dlink_node(lp);
-
-    if (!MyConnect(source_p))
-    {
-      source_p->from->serv->dep_servers--;
-      assert(source_p->from->serv->dep_servers > 0);
-    }
   }
 
   /* Remove source_p from the client lists */
@@ -818,13 +809,15 @@ recurse_send_quits(struct Client *original_source_p, struct Client *source_p,
    * hidden behind fakename. If so, send out the QUITs -adx
    */
   if (hidden || !IsCapable(to, CAP_QS))
-    DLINK_FOREACH_SAFE(ptr, next, source_p->serv->users.head)
+  {
+    DLINK_FOREACH_SAFE(ptr, next, source_p->serv->client_list.head)
     {
       target_p = ptr->data;
       sendto_one(to, ":%s QUIT :%s", target_p->name, splitstr);
     }
+  }
 
-  DLINK_FOREACH_SAFE(ptr, next, source_p->serv->servers.head)
+  DLINK_FOREACH_SAFE(ptr, next, source_p->serv->server_list.head)
     recurse_send_quits(original_source_p, ptr->data, from, to,
                        comment, splitstr, myname);
 
@@ -846,19 +839,16 @@ recurse_send_quits(struct Client *original_source_p, struct Client *source_p,
 static void
 recurse_remove_clients(struct Client *source_p, const char *quitmsg)
 {
-  dlink_node *ptr, *next;
+  dlink_node *ptr = NULL, *next = NULL;
 
-  DLINK_FOREACH_SAFE(ptr, next, source_p->serv->users.head)
+  DLINK_FOREACH_SAFE(ptr, next, source_p->serv->client_list.head)
     exit_one_client(ptr->data, quitmsg);
 
-  DLINK_FOREACH_SAFE(ptr, next, source_p->serv->servers.head)
+  DLINK_FOREACH_SAFE(ptr, next, source_p->serv->server_list.head)
   {
     recurse_remove_clients(ptr->data, quitmsg);
     exit_one_client(ptr->data, quitmsg);
   }
-
-  assert(source_p->serv->dep_servers == 1);
-  assert(source_p->serv->dep_users == 0);
 }
 
 /*
