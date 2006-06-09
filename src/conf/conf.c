@@ -59,6 +59,7 @@ init_conf(void)
 
   init_serverinfo();
   init_admin();
+  init_listen();
   init_logging();
   init_class();
   init_channel();

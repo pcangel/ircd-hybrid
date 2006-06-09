@@ -50,6 +50,7 @@ SRCS = \
  conf/conf_channel.c \
  conf/conf.c \
  conf/general.c \
+ conf/listen.c \
  conf/logging.c \
  conf/modules.c \
  conf/operator.c \

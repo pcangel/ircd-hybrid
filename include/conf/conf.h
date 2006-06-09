@@ -29,6 +29,7 @@
 #include "conf/manager.h"
 #include "conf/serverinfo.h"
 #include "conf/admin.h"
+#include "conf/listen.h"
 #include "conf/logging.h"
 #include "conf/class.h"
 #include "conf/channel.h"

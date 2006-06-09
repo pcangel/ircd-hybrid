@@ -1,6 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  channel.c: Defines the channel{} block of ircd.conf.
+ *  conf_channel.c: Defines the channel{} block of ircd.conf.
  *
  *  Copyright (C) 2005 by the Hybrid Development Team.
  *
