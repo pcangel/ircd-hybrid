@@ -651,18 +651,19 @@ nick_from_server(struct Client *client_p, struct Client *source_p, int parc,
   else if (source_p->name[0])
   {
     samenick = !irccmp(parv[0], nick);
+
     /* client changing their nick */
     if (!samenick)
     {
       source_p->tsinfo = newts ? newts : CurrentTime;
-      hash_check_watch(source_p, RPL_LOGOFF);
+      watch_check_hash(source_p, RPL_LOGOFF);
     }
 
     sendto_common_channels_local(source_p, 1, ":%s!%s@%s NICK :%s",
                                  source_p->name, source_p->username,
                                  source_p->host, nick);
 
-    add_history(source_p, 1);
+    whowas_add_history(source_p, 1);
     sendto_server(client_p, source_p, NULL, CAP_TS6, NOCAPS,
                   ":%s NICK %s :%lu",
                   ID(source_p), nick, (unsigned long)source_p->tsinfo);
@@ -679,7 +680,7 @@ nick_from_server(struct Client *client_p, struct Client *source_p, int parc,
   hash_add_client(source_p);
 
   if (!samenick)
-    hash_check_watch(source_p, RPL_LOGON);
+    watch_check_hash(source_p, RPL_LOGON);
 }
 
 /*

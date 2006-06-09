@@ -45,7 +45,7 @@ static dlink_list watchTable[HASHSIZE];
 static BlockHeap *watch_heap = NULL;
 
 void
-init_watch(void)
+watch_init(void)
 {
   memset(watchTable, 0, sizeof(watchTable));
 
@@ -69,7 +69,7 @@ init_watch(void)
  * count_watch_memory()
  */
 void
-count_watch_memory(unsigned int *count, unsigned int *memory)
+watch_count_memory(unsigned int *const count, size_t *const memory)
 {
   unsigned int idx;
 
@@ -83,7 +83,7 @@ count_watch_memory(unsigned int *count, unsigned int *memory)
  * hash_check_watch()
  */
 void
-hash_check_watch(struct Client *client_p, int reply)
+watch_check_hash(struct Client *client_p, int reply)
 {
   struct Watch *anptr = NULL;
   dlink_node *ptr = NULL;
@@ -110,7 +110,7 @@ hash_check_watch(struct Client *client_p, int reply)
  * hash_get_watch()
  */
 struct Watch *
-hash_get_watch(const char *name)
+watch_find_hash(const char *name)
 {
   dlink_node *ptr = NULL;
 
@@ -129,7 +129,7 @@ hash_get_watch(const char *name)
  * add_to_watch_hash_table()
  */
 void
-add_to_watch_hash_table(const char *nick, struct Client *client_p)
+watch_add_to_hash_table(const char *nick, struct Client *client_p)
 {
   struct Watch *anptr = NULL;
   dlink_node *ptr = NULL;
@@ -161,7 +161,7 @@ add_to_watch_hash_table(const char *nick, struct Client *client_p)
  * del_from_watch_hash_table()
  */
 void
-del_from_watch_hash_table(const char *nick, struct Client *client_p)
+watch_del_from_hash_table(const char *nick, struct Client *client_p)
 {
   struct Watch *anptr = NULL;
   dlink_node *ptr = NULL;
@@ -191,7 +191,7 @@ del_from_watch_hash_table(const char *nick, struct Client *client_p)
  * hash_del_watch_list()
  */
 void
-hash_del_watch_list(struct Client *client_p)
+watch_del_watch_list(struct Client *client_p)
 {
   dlink_node *ptr = NULL, *ptr_next = NULL;
   dlink_node *tmp = NULL;

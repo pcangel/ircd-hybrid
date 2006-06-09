@@ -72,7 +72,7 @@ trace_get_dependent(int *const server,
   (*client) += dlink_list_length(&target_p->serv->client_list);
 
   DLINK_FOREACH(ptr, target_p->serv->server_list.head)
-    trace_get_dependent(ptr->data, server, client);
+    trace_get_dependent(server, client, ptr->data);
 }
 
 /*

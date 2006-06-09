@@ -39,7 +39,7 @@ static struct Whowas WHOWAS[NICKNAMEHISTORYLENGTH];
 dlink_list WHOWASHASH[HASHSIZE];
 
 void
-add_history(struct Client *client_p, int online)
+whowas_add_history(struct Client *client_p, int online)
 {
   static unsigned int whowas_next = 0;
   struct Whowas *who = &WHOWAS[whowas_next];
@@ -85,7 +85,7 @@ add_history(struct Client *client_p, int online)
 }
 
 void
-off_history(struct Client *client_p)
+whowas_off_history(struct Client *client_p)
 {
   dlink_node *ptr = NULL, *ptr_next = NULL;
 
@@ -98,7 +98,7 @@ off_history(struct Client *client_p)
 }
 
 struct Client *
-get_history(const char *nick, time_t timelimit)
+whowas_get_history(const char *nick, time_t timelimit)
 {
   dlink_node *ptr = NULL;
 
@@ -119,7 +119,7 @@ get_history(const char *nick, time_t timelimit)
 }
 
 void
-init_whowas(void)
+whowas_init(void)
 {
   unsigned int i;
 

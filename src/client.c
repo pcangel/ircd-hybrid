@@ -599,7 +599,7 @@ find_chasing(struct Client *source_p, const char *user, int *chasing)
   if (IsDigit(*user))
     return NULL;
 
-  if ((who = get_history(user,
+  if ((who = whowas_get_history(user,
 			(time_t)ConfigFileEntry.kill_chase_time_limit))
 			 == NULL)
   {
@@ -729,13 +729,13 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
     DLINK_FOREACH_SAFE(lp, next_lp, source_p->channel.head)
       remove_user_from_channel(lp->data);
 
-    add_history(source_p, 0);
-    off_history(source_p);
+    whowas_add_history(source_p, 0);
+    whowas_off_history(source_p);
 
     assert(source_p->whowas.head == NULL);
     assert(source_p->whowas.tail == NULL);
 
-    hash_check_watch(source_p, RPL_LOGOFF);
+    watch_check_hash(source_p, RPL_LOGOFF);
 
     /* Do local vs. remote processing here */
     if (MyConnect(source_p))
@@ -937,7 +937,7 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
       if (source_p->localClient->list_task != NULL)
         free_list_task(source_p->localClient->list_task, source_p);
 
-      hash_del_watch_list(source_p);
+      watch_del_watch_list(source_p);
       sendto_realops_flags(UMODE_CCONN, L_ALL, "Client exiting: %s (%s@%s) [%s] [%s]",
                            source_p->name, source_p->username, source_p->host, comment,
                            ConfigFileEntry.hide_spoof_ips && IsIPSpoof(source_p) ?
@@ -1460,7 +1460,7 @@ change_local_nick(struct Client *client_p, struct Client *source_p, const char *
                                  source_p->name, source_p->username,
                                  source_p->host, nick);
 
-    add_history(source_p, 1);
+    whowas_add_history(source_p, 1);
 
     sendto_server(client_p, source_p, NULL, CAP_TS6, NOCAPS,
                   ":%s NICK %s :%lu",
@@ -1483,12 +1483,12 @@ change_local_nick(struct Client *client_p, struct Client *source_p, const char *
   hash_del_client(source_p);
 
   if (!samenick)
-    hash_check_watch(source_p, RPL_LOGOFF);
+    watch_check_hash(source_p, RPL_LOGOFF);
   strcpy(source_p->name, nick);
   hash_add_client(source_p);
 
   if (!samenick)
-    hash_check_watch(source_p, RPL_LOGON);
+    watch_check_hash(source_p, RPL_LOGON);
 
   /* fd_desc is long enough */
   fd_note(&client_p->localClient->fd, "Nick: %s", nick);

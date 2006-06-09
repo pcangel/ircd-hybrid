@@ -538,7 +538,9 @@ main(int argc, char *argv[])
   clear_tree_parse();
   init_client();
   init_class();
-  init_whowas();
+  whowas_init();
+  watch_init();
+
   init_auth();          /* Initialise the auth code */
   init_channels();
   init_channel_modes();
@@ -546,7 +548,6 @@ main(int argc, char *argv[])
 
   read_conf_files(1);   /* cold start init conf files */
   check_class();
-  init_watch();
 
   if (ServerInfo.name == NULL)
   {

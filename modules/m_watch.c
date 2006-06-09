@@ -123,7 +123,7 @@ m_watch(struct Client *client_p, struct Client *source_p, int parc, char *parv[]
           continue;
         }
 
-        add_to_watch_hash_table(s + 1, source_p);
+        watch_add_to_hash_table(s + 1, source_p);
       }
 
       show_watch(source_p, s + 1, RPL_NOWON, RPL_NOWOFF);
@@ -136,7 +136,7 @@ m_watch(struct Client *client_p, struct Client *source_p, int parc, char *parv[]
      */
     if (*s == '-')
     {
-      del_from_watch_hash_table(s + 1, source_p);
+      watch_del_from_hash_table(s + 1, source_p);
       show_watch(source_p, s + 1, RPL_WATCHOFF, RPL_WATCHOFF);
       continue;
     }
@@ -147,7 +147,7 @@ m_watch(struct Client *client_p, struct Client *source_p, int parc, char *parv[]
      */
     if (*s == 'C' || *s == 'c')
     {
-      hash_del_watch_list(source_p);
+      watch_del_watch_list(source_p);
       continue;
     }
 
@@ -166,7 +166,7 @@ m_watch(struct Client *client_p, struct Client *source_p, int parc, char *parv[]
        * Send a list of how many users they have on their WATCH list
        * and how many WATCH lists they are on.
        */
-      if ((anptr = hash_get_watch(source_p->name)))
+      if ((anptr = watch_find_hash(source_p->name)))
         count = dlink_list_length(&anptr->watched_by);
 
       sendto_one(source_p, form_str(RPL_WATCHSTAT),

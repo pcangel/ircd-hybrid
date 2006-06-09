@@ -389,7 +389,7 @@ count_memory(struct Client *source_p)
 
   unsigned int wlh = 0;   /* watchlist headers     */
   unsigned int wle = 0;   /* watchlist entries     */
-  unsigned int wlhm = 0; /* watchlist memory used */
+  size_t wlhm = 0; /* watchlist memory used */
 
   DLINK_FOREACH(gptr, global_client_list.head)
   {
@@ -487,7 +487,7 @@ count_memory(struct Client *source_p)
     }
   }
 
-  count_watch_memory(&wlh, &wlhm);
+  watch_count_memory(&wlh, &wlhm);
 
   sendto_one(source_p, ":%s %d %s z :WATCH headers %u(%u) entries %d(%d)",
              me.name, RPL_STATSDEBUG, source_p->name, wlh, wlhm, wle,
