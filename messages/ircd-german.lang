@@ -4,7 +4,7 @@
 ; Markus R. <mxr@chatjunkies.org>, 2005. 
 ; $Id$
 
-RPL_WELCOME:		 :%s 001 %s :Wilkommen im %s Internet Relay Chat Netz, %s!
+RPL_WELCOME:		 :%s 001 %s :Wilkommen im %s Internet Relay Chat Netzwerk, %s!
 RPL_YOURHOST:		 :%s 002 %s :Du bist verbunden mit %s, version %s
 RPL_CREATED:		 :%s 003 %s :Dieser Server wurde erstellt: %s
 RPL_ISUPPORT:		 :%s 005 %s %s :werden von diesem Server unterstützt.
@@ -47,7 +47,7 @@ RPL_WHOISACTUALLY:	 :%s 338 %s %s %s :wirklicher Host:
 RPL_ENDOFINVEXLIST:	 :%s 347 %s %s :Ende der Liste von Einladungen für diesen Raum.
 RPL_ENDOFEXCEPTLIST:	 :%s 349 %s %s :Ende der Liste von Sperr-Ausnahmen für diesen Raum.
 RPL_CLOSING:		 :%s 362 %s %s :Geschlossen. Status = %d
-RPL_CLOSEEND:		 :%s 363 %s %d:Verbindung getrennt.
+RPL_CLOSEEND:		 :%s 363 %s %d :Verbindung getrennt.
 RPL_ENDOFLINKS:		 :%s 365 %s %s :Ende der /LINKS-Liste.
 RPL_ENDOFNAMES:		 :%s 366 %s %s :Ende der /NAMES-Liste.
 RPL_ENDOFBANLIST:	 :%s 368 %s %s :Ende der Sperr-Liste für diesen Raum
@@ -84,10 +84,10 @@ ERR_SERVICESDOWN:	 :%s 440 %s :Services sind momentan nicht verfügbar
 ERR_USERNOTINCHANNEL:	 :%s 441 %s %s %s :Diese Benutzer sind nicht in diesem Raum
 ERR_NOTONCHANNEL:	 :%s 442 %s %s :Du bist nicht in diesem Raum
 ERR_USERONCHANNEL:	 :%s 443 %s %s %s :ist schon in diesem Raum
-ERR_NOTREGISTERED:	 :%s 451 %s :Du hast Dich noch nicht registriert
+ERR_NOTREGISTERED:	 :%s 451 %s :Du hast dich noch nicht registriert
 ERR_ACCEPTFULL:		 :%s 456 %s :Accept-Liste ist voll.
-ERR_ACCEPTEXIST:	 :%s 457 %s %s :ist bereits auf Deiner Accept-Liste.
-ERR_ACCEPTNOT:		 :%s 458 %s %s :ist nicht auf Deiner Accept-Liste.
+ERR_ACCEPTEXIST:	 :%s 457 %s %s :ist bereits auf deiner Accept-Liste.
+ERR_ACCEPTNOT:		 :%s 458 %s %s :ist nicht auf deiner Accept-Liste.
 ERR_NEEDMOREPARAMS:	 :%s 461 %s %s :Nicht genug Parameter
 ERR_ALREADYREGISTRED:	 :%s 462 %s :Erneute Registrierung nicht möglich
 ERR_PASSWDMISMATCH:	 :%s 464 %s :Passwort falsch
@@ -108,20 +108,20 @@ ERR_UMODEUNKNOWNFLAG:	 :%s 501 %s :unbekannter Modus
 ERR_USERSDONTMATCH:	 :%s 502 %s :Modus-Änderung an anderen Benutzern nicht möglich.
 ERR_GHOSTEDCLIENT:	 :%s 503 %s :Nachricht konnte %s nicht zugestellt werden.
 ERR_USERNOTONSERV:	 :%s 504 %s %s :Benutzer ist nicht auf diesem Server.
-ERR_WRONGPONG:		 :%s 513 %s :Um den Verbindungsaufbau abzuschliessen, gib ein: /QUOTE PONG %lu
+ERR_WRONGPONG:		 :%s 513 %s :Um den Verbindungsaufbau abzuschließen, gib ein: /QUOTE PONG %u
 ERR_LISTSYNTAX:		 :%s 521 %s :falscher LIST-Syntax.
 ERR_HELPNOTFOUND:	 :%s 524 %s %s :keine Hilfe verfügbar.
 RPL_ENDOFMODLIST:	 :%s 703 %s :Ende von /MODLIST.
 RPL_ENDOFHELP:		 :%s 706 %s %s :Ende von /HELP.
 RPL_KNOCK:		 :%s 710 %s %s %s!%s@%s :fragt nach einer Einladung.
 RPL_KNOCKDLVR:		 :%s 711 %s %s :Dein KNOCK wurde zugestellt.
-ERR_TOOMANYKNOCK:	 :%s 712 %s %s :Zuviele KNOCK's (%s).
+ERR_TOOMANYKNOCK:	 :%s 712 %s %s :Zuviele KNOCKs (%s).
 ERR_CHANOPEN:		 :%s 713 %s %s :Raum ist offen.
 ERR_KNOCKONCHAN:	 :%s 714 %s %s :Du bist bereits in diesem Raum.
-ERR_KNOCKDISABLED:	 :%s 715 %s :KNOCK's sind abgeschalten.
-RPL_TARGUMODEG:		 :%s 716 %s %s :ist im +g Modus (Serverseitiges ignoren)
-RPL_TARGNOTIFY:		 :%s 717 %s %s :wurde über Deine Nachricht informiert.
-RPL_UMODEGMSG:		 :%s 718 %s %s :will Dir eine Nachricht schreiben, Du hast aber Benutzer-Modus +g gesetzt.
+ERR_KNOCKDISABLED:	 :%s 715 %s :KNOCK ist auf diesem Server deaktiviert
+RPL_TARGUMODEG:		 :%s 716 %s %s :ist im +g Modus (Serverseitiges ignorieren)
+RPL_TARGNOTIFY:		 :%s 717 %s %s :wurde über deine Nachricht informiert.
+RPL_UMODEGMSG:		 :%s 718 %s %s :will dir eine Nachricht schreiben, du hast aber Benutzer-Modus +g gesetzt.
 RPL_OMOTDSTART:		 :%s 720 %s :Start der OPER MOTD.
 RPL_ENDOFOMOTD:		 :%s 722 %s :Ende der OPER MOTD.
 ERR_NOPRIVS:		 :%s 723 %s %s :Operator-Privilegien nicht ausreichend.
