@@ -139,50 +139,52 @@ uname(struct utsname *uts)
 
   memset(uts, 0, sizeof(*uts));
 
-  osver.dwOSVersionInfoSize = sizeof (osver);
-  GetVersionEx (&osver);
-  GetSystemInfo (&sysinfo);
+  osver.dwOSVersionInfoSize = sizeof(osver);
+  GetVersionEx(&osver);
+  GetSystemInfo(&sysinfo);
 
   switch (osver.dwPlatformId)
-    {
+  {
     case VER_PLATFORM_WIN32_NT: /* NT, Windows 2000 or Windows XP */
       if (osver.dwMajorVersion == 4)
-        strcpy (uts->sysname, "Windows NT4x"); /* NT4x */
+        strcpy (uts->sysname, "Windows NT4x");    /* NT4x */
       else if (osver.dwMajorVersion <= 3)
-        strcpy (uts->sysname, "Windows NT3x"); /* NT3x */
+        strcpy (uts->sysname, "Windows NT3x");    /* NT3x */
       else if (osver.dwMajorVersion == 5 && osver.dwMinorVersion  < 1)
-        strcpy (uts->sysname, "Windows 2000"); /* 2k */
+        strcpy (uts->sysname, "Windows 2000");    /* 2k */
       else if (osver.dwMajorVersion == 5 && osver.dwMinorVersion == 2)
-        strcpy (uts->sysname, "Windows 2003"); /* 2003 */
+        strcpy (uts->sysname, "Windows 2003");    /* 2003 */
       else if (osver.dwMajorVersion == 5 && osver.dwMinorVersion == 1)
-        strcpy (uts->sysname, "Windows XP");   /* XP */
+        strcpy (uts->sysname, "Windows XP");      /* XP */
+      else if (osver.dwMajorVersion == 6 && osver.dwMinorVersion == 0)
+        strcpy (uts->sysname, "Windows Vista");   /* Vista */
       os = WinNT;
       break;
 
     case VER_PLATFORM_WIN32_WINDOWS: /* Win95, Win98 or WinME */
       if ((osver.dwMajorVersion > 4) ||
           ((osver.dwMajorVersion == 4) && (osver.dwMinorVersion > 0)))
-        {
-          if (osver.dwMinorVersion >= 90)
-            strcpy (uts->sysname, "Windows ME"); /* ME */
-          else
-            strcpy (uts->sysname, "Windows 98"); /* 98 */
-          os = Win98;
-        }
+      {
+        if (osver.dwMinorVersion >= 90)
+          strcpy (uts->sysname, "Windows ME"); /* ME */
+        else
+          strcpy (uts->sysname, "Windows 98"); /* 98 */
+        os = Win98;
+      }
       else
-        {
-          strcpy (uts->sysname, "Windows 95"); /* 95 */
-          os = Win95;
-        }
+      {
+        strcpy (uts->sysname, "Windows 95"); /* 95 */
+        os = Win95;
+      }
       break;
 
     case VER_PLATFORM_WIN32s: /* Windows 3.x */
       strcpy (uts->sysname, "Windows");
       break;
-    }
+  }
 
-  sprintf (uts->version, "%ld.%02ld",
-           osver.dwMajorVersion, osver.dwMinorVersion);
+  sprintf(uts->version, "%ld.%02ld",
+          osver.dwMajorVersion, osver.dwMinorVersion);
 
   if (osver.szCSDVersion[0] != '\0' &&
       (strlen (osver.szCSDVersion) + strlen (uts->version) + 1) <
@@ -211,18 +213,18 @@ uname(struct utsname *uts)
        * wProcessorLevel is only valid in WinNT
        */
       switch (os)
-        {
+      {
         case Win95:
         case Win98:
           switch (sysinfo.dwProcessorType)
-            {
+          {
             case PROCESSOR_INTEL_386:
             case PROCESSOR_INTEL_486:
             case PROCESSOR_INTEL_PENTIUM:
-              sprintf (uts->machine, "i%ld", sysinfo.dwProcessorType);
+              sprintf(uts->machine, "i%ld", sysinfo.dwProcessorType);
               break;
             default:
-              strcpy (uts->machine, "i386");
+              strcpy(uts->machine, "i386");
               break;
           }
           break;
@@ -246,7 +248,7 @@ uname(struct utsname *uts)
             }
           break;
         default:
-          strcpy (uts->machine, "unknown");
+          strcpy(uts->machine, "unknown");
       }
       break;
     default:
@@ -254,12 +256,11 @@ uname(struct utsname *uts)
       break;
   }
 
-  sLength = sizeof (uts->nodename) - 1;
-  GetComputerName (uts->nodename, &sLength);
+  sLength = sizeof(uts->nodename) - 1;
+  GetComputerName(uts->nodename, &sLength);
   return 0;
 }
 #endif
-
 
 #ifdef HAVE_LIBCRYPTO
 char *
