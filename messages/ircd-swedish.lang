@@ -90,7 +90,7 @@ ERR_UMODEUNKNOWNFLAG:    :%s 501 %s :Okänd MODE flagga
 ERR_USERSDONTMATCH:      :%s 502 %s :Kan inte ändra mode for andra användare
 ERR_GHOSTEDCLIENT:       :%s 503 %s :Meddelandet kunde inte levereras till %s
 ERR_USERNOTONSERV:       :%s 504 %s %s :Användaren är inte på denna server
-ERR_WRONGPONG:		 :%s 513 %s :För att ansluta, skriv /QUOTE PONG %lu
+ERR_WRONGPONG:		 :%s 513 %s :För att ansluta, skriv /QUOTE PONG %u
 ERR_LISTSYNTAX:		 :%s 521 %s :Felaktig listning.
 ERR_HELPNOTFOUND:        :%s 524 %s %s :Hjälp ej funnen.
 RPL_ENDOFMODLIST:        :%s 703 %s :Slut på /MODLIST.

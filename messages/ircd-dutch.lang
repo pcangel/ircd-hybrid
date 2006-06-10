@@ -99,13 +99,12 @@ ERR_BADCHANNAME:         :%s 479 %s %s :Foutief kanaal-naam
 ERR_NOPRIVILEGES:        :%s 481 %s :Toestemming geweigerd - Je bent geen IRC operator
 ERR_CHANOPRIVSNEEDED:    :%s 482 %s %s :Je bent geen operator in dit kanaal
 ERR_CANTKILLSERVER:      :%s 483 %s :Je kunt een server niet killen!
-ERR_RESTRICTED:          :%s 484 %s :Je mogelijkheden zijn beperkt
 ERR_NOOPERHOST:          :%s 491 %s :Slechts weinigen van de stervelijken mogen de Harde Kern betreden
 ERR_UMODEUNKNOWNFLAG:    :%s 501 %s :Onbekende MODE flag
 ERR_USERSDONTMATCH:      :%s 502 %s :Je kunt een mode niet veranderen voor een andere gebruiker
 ERR_GHOSTEDCLIENT:       :%s 503 %s :Bericht kon niet worden afgeleverd aan %s
 ERR_USERNOTONSERV:       :%s 504 %s %s :Gebruiker zit niet op deze server
-ERR_WRONGPONG:           :%s 513 %s :Om te verbinden type /QUOTE PONG %lu
+ERR_WRONGPONG:           :%s 513 %s :Om te verbinden type /QUOTE PONG %u
 ERR_LISTSYNTAX:          :%s 521 %s :Foutieve lijst syntaxis
 ERR_HELPNOTFOUND:        :%s 524 %s %s :Hulp niet gevonden en/of beschikbaar
 RPL_ENDOFMODLIST:        :%s 703 %s :Einde van /MODLIST.

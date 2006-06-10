@@ -86,7 +86,6 @@ ERR_BADCHANNAME:         :%s 479 %s %s :Krivo ime kanala
 ERR_NOPRIVILEGES:        :%s 481 %s :Nije ti dozvoljeno, ¾ao mi je, nisi IRC operator
 ERR_CHANOPRIVSNEEDED:    :%s 482 %s %s :Ne mo¾e¹ to napraviti, nisi operator na kanalu.
 ERR_CANTKILLSERVER:      :%s 483 %s :Ne budi blesav, ne mo¾e¹ /KILL-ati server :)
-ERR_RESTRICTED:          :%s 484 %s :Na ogranièenoj si vezi
 ERR_NOOPERHOST:          :%s 491 %s :®ao mi je, ne mo¾e¹ se /OPER-ati ovdje.
 ERR_UMODEUNKNOWNFLAG:    :%s 501 %s :Nepoznata MODE oznaka
 ERR_USERSDONTMATCH:      :%s 502 %s :Ne mo¾e¹ mijenjati modove drugim korisnicima

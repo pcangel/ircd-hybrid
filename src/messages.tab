@@ -508,7 +508,7 @@ static struct NumericInfo replies[] = {
 /* 481 */  {"ERR_NOPRIVILEGES", ":%s 481 %s :Permission Denied - You're not an IRC operator", NULL},
 /* 482 */  {"ERR_CHANOPRIVSNEEDED", ":%s 482 %s %s :You're not channel operator", NULL},
 /* 483 */  {"ERR_CANTKILLSERVER", ":%s 483 %s :You can't kill a server!", NULL},
-/* 484 */  {"ERR_RESTRICTED", ":%s 484 %s :You are restricted", NULL},
+/* 484 */  {NULL, NULL, NULL},
 /* 485 */  {NULL, NULL, NULL},
 /* 486 */  {NULL, NULL, NULL},
 /* 487 */  {NULL, NULL, NULL},

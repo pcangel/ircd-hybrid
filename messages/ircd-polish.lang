@@ -85,13 +85,12 @@ ERR_BANLISTFULL:        :%s 478 %s %s %s :Lista banów kana³owych jest przepe³nio
 ERR_BADCHANNAME:        :%s 479 %s %s :Niedopuszczalna nazwa kana³u
 ERR_NOPRIVILEGES:       :%s 481 %s :Brak uprawnieñ - nie jestes IRC Operatorem
 ERR_CHANOPRIVSNEEDED:   :%s 482 %s %s :Nie jestes operatorem kana³u
-ERR_RESTRICTED:         :%s 484 %s :Twoje po³aczenie jest objête restrykcja
 ERR_NOOPERHOST:         :%s 491 %s :Tylko nieliczni smiertelnicy moga uzyskaæ prawa IRC Operatora
 ERR_UMODEUNKNOWNFLAG:   :%s 501 %s :Nieznana flaga MODE
 ERR_USERSDONTMATCH:     :%s 502 %s :Nie mo¿esz zmieniaæ trybów innych u¿ytkowników
 ERR_GHOSTEDCLIENT:      :%s 503 %s :Wiadomosc dla %s nie mo¿e byæ dostarczona
 ERR_USERNOTONSERV:      :%s 504 %s %s :U¿ytkownik nie korzysta z tego serwera
-ERR_WRONGPONG:          :%s 513 %s :Aby siê po³aczyæ, wpisz /QUOTE PONG %lu
+ERR_WRONGPONG:          :%s 513 %s :Aby siê po³aczyæ, wpisz /QUOTE PONG %u
 ERR_LISTSYNTAX:         :%s 521 %s :Z³a sk³adnia dla LIST, wpisz /QUOTE HELP LIST
 ERR_HELPNOTFOUND:       :%s 524 %s %s :Nie odnaleziono pomocy
 RPL_ENDOFHELP:          :%s 706 %s %s :Koniec /HELP.

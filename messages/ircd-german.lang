@@ -1,6 +1,5 @@
 ; ircd-hybrid-7 custom message file
 ; Copyright (C) 2000-2005
-; David Taylor <davidt@yadt.co.uk>, 2000.
 ; Markus R. <mxr@chatjunkies.org>, 2005. 
 ; $Id$
 
@@ -43,7 +42,7 @@ RPL_ENDOFWHOIS:		 :%s 318 %s %s :Ende der /WHOIS-Liste.
 RPL_LISTSTART:		 :%s 321 %s Raum :Besucher  Name
 RPL_LISTEND:		 :%s 323 %s :End von /LIST
 RPL_NOTOPIC:		 :%s 331 %s %s :Kein Thema für diesen Raum gesetzt.
-RPL_WHOISACTUALLY:	 :%s 338 %s %s %s :wirklicher Host:
+RPL_WHOISACTUALLY:	 :%s 338 %s %s %s :tatsächlicher Host
 RPL_ENDOFINVEXLIST:	 :%s 347 %s %s :Ende der Liste von Einladungen für diesen Raum.
 RPL_ENDOFEXCEPTLIST:	 :%s 349 %s %s :Ende der Liste von Sperr-Ausnahmen für diesen Raum.
 RPL_CLOSING:		 :%s 362 %s %s :Geschlossen. Status = %d
@@ -73,10 +72,10 @@ ERR_NOTOPLEVEL:		 :%s 413 %s %s :keine TLD (top level domain) angegeben.
 ERR_WILDTOPLEVEL:	 :%s 414 %s %s :Platzhalter in der TLD (top level domain)
 ERR_UNKNOWNCOMMAND:	 :%s 421 %s %s :unbekannter Befehl
 ERR_NOMOTD:		 :%s 422 %s :Keine MOTD Datei gefunden.
-ERR_NOADMININFO:	 :%s 423 %s %s :Es stehen keine Administrativen Informationen zur Verfügung
+ERR_NOADMININFO:	 :%s 423 %s %s :Es stehen keine administrativen Informationen zur Verfügung
 ERR_NONICKNAMEGIVEN:	 :%s 431 %s :Kein Benutzer angegeben
 ERR_ERRONEUSNICKNAME:	 :%s 432 %s %s :Fehlerhafter Benutzername
-ERR_NICKNAMEINUSE:	 :%s 433 %s %s :Benutzername bereits in verwendung
+ERR_NICKNAMEINUSE:	 :%s 433 %s %s :Benutzername bereits in Verwendung
 ERR_NICKCOLLISION:	 :%s 436 %s %s :Benutzernamen-Kollision, KILL
 ERR_UNAVAILRESOURCE:	 :%s 437 %s %s :Benutzername/Raum vorübergehend nicht verfügbar
 ERR_NICKTOOFAST:	 :%s 438 %s %s %s :Du hast zu schnell Benutzername gewechselt. Bitte warte %d Sekunden.
@@ -102,7 +101,6 @@ ERR_BADCHANNAME:	 :%s 479 %s %s :Raum-Name nicht zulässig.
 ERR_NOPRIVILEGES:	 :%s 481 %s :Zugriff verweigert - nur für IRC Operatoren.
 ERR_CHANOPRIVSNEEDED:	 :%s 482 %s %s :Zugriff verweigert - nur für Raum-Operatoren.
 ERR_CANTKILLSERVER:	 :%s 483 %s :Ein Server reagiert nicht auf das KILL Kommando.
-ERR_RESTRICTED:		 :%s 484 %s :Verbindung unterliegt Restriktionen.
 ERR_NOOPERHOST:		 :%s 491 %s :netter Versuch - aber nur für IRC Operatoren!
 ERR_UMODEUNKNOWNFLAG:	 :%s 501 %s :unbekannter Modus
 ERR_USERSDONTMATCH:	 :%s 502 %s :Modus-Änderung an anderen Benutzern nicht möglich.

@@ -95,12 +95,11 @@ ERR_BANNEDFROMCHAN:	 :%s 474 %s %s :Impossible de joindre (+b)
 ERR_BADCHANNELKEY:	 :%s 475 %s %s :Impossible de joindre (+k)
 ERR_BANLISTFULL:	 :%s 478 %s %s %s :Liste d'interdits est plein
 ERR_BADCHANNAME:	 :%s 479 %s %s :Nom de chaîne illégale
-ERR_RESTRICTED:		 :%s 484 %s :Vous êtes restraint
 ERR_UMODEUNKNOWNFLAG:	 :%s 501 %s :MODE client inconnue
 ERR_USERSDONTMATCH:	 :%s 502 %s :Impossible de modifier la mode des autres clients
 ERR_GHOSTEDCLIENT:	 :%s 503 %s :Le message n'est pas parvenu à %s
 ERR_USERNOTONSERV:	 :%s 504 %s %s :Client n'est pas sur ce serveur
-ERR_WRONGPONG:		 :%s 513 %s :Pour connecter tapez /QUOTE PONG %lu
+ERR_WRONGPONG:		 :%s 513 %s :Pour connecter tapez /QUOTE PONG %u
 ERR_LISTSYNTAX:		 :%s 521 %s :Mauvaise syntaxe /LIST
 ERR_HELPNOTFOUND:	 :%s 524 %s %s :Ce renseignement n'existe pas
 RPL_ENDOFMODLIST:	 :%s 703 %s :Fin de /MODLIST.
