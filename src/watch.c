@@ -88,7 +88,7 @@ watch_check_hash(struct Client *client_p, int reply)
   struct Watch *anptr = NULL;
   dlink_node *ptr = NULL;
   assert(IsClient(client_p));
-  if ((anptr = hash_get_watch(client_p->name)) == NULL)
+  if ((anptr = watch_find_hash(client_p->name)) == NULL)
     return;    /* This nick isn't on watch */
 
   /* Update the time of last change to item */
@@ -135,7 +135,7 @@ watch_add_to_hash_table(const char *nick, struct Client *client_p)
   dlink_node *ptr = NULL;
 
   /* If found NULL (no header for this nick), make one... */
-  if ((anptr = hash_get_watch(nick)) == NULL)
+  if ((anptr = watch_find_hash(nick)) == NULL)
   {
     anptr = BlockHeapAlloc(watch_heap);
     anptr->lasttime = CurrentTime;
@@ -166,7 +166,7 @@ watch_del_from_hash_table(const char *nick, struct Client *client_p)
   struct Watch *anptr = NULL;
   dlink_node *ptr = NULL;
 
-  if ((anptr = hash_get_watch(nick)) == NULL)
+  if ((anptr = watch_find_hash(nick)) == NULL)
     return;    /* No header found for that nick. i.e. it's not being watched */
 
   if ((ptr = dlinkFind(&anptr->watched_by, client_p)) == NULL)
@@ -195,9 +195,6 @@ watch_del_watch_list(struct Client *client_p)
 {
   dlink_node *ptr = NULL, *ptr_next = NULL;
   dlink_node *tmp = NULL;
-
-  if (client_p->localClient->watches.head == NULL)
-    return;    /* Nothing to do */
 
   DLINK_FOREACH_SAFE(ptr, ptr_next, client_p->localClient->watches.head)
   {

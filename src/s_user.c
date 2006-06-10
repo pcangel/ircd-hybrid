@@ -547,7 +547,7 @@ introduce_client(struct Client *client_p, struct Client *source_p)
   else
     send_umode(NULL, source_p, 0, SEND_UMODES, ubuf);
 
-  hash_check_watch(source_p, RPL_LOGON);
+  watch_check_hash(source_p, RPL_LOGON);
 
   if (*ubuf == '\0')
   {

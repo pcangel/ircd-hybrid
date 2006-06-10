@@ -37,10 +37,10 @@ struct Watch
 };
 
 EXTERN void watch_init(void);
-EXTERN void add_to_watch_hash_table(const char *, struct Client *);
-EXTERN void del_from_watch_hash_table(const char *, struct Client *);
-EXTERN void hash_check_watch(struct Client *, int);
-EXTERN void hash_del_watch_list(struct Client *);
+EXTERN void watch_add_to_hash_table(const char *, struct Client *);
+EXTERN void watch_del_from_hash_table(const char *, struct Client *);
+EXTERN void watch_check_hash(struct Client *, int);
+EXTERN void watch_del_watch_list(struct Client *);
 EXTERN void watch_count_memory(unsigned int *const, size_t *const);
-EXTERN struct Watch *hash_get_watch(const char *);
+EXTERN struct Watch *watch_find_hash(const char *);
 #endif

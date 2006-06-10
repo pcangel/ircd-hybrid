@@ -420,7 +420,7 @@ report_this_status(struct Client *source_p, struct Client *target_p, int dow)
       int clients = 0;
       int servers = 0;
 
-      trace_get_dependent(&servers, &clients, target_p)
+      trace_get_dependent(&servers, &clients, target_p);
       if (!IsOperAdmin(source_p))
         name = get_client_name(target_p, MASK_IP);
 

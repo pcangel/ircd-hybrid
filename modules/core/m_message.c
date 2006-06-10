@@ -317,6 +317,7 @@ build_target_list(int p_or_n, const char *command, struct Client *client_p,
         targets[ntargets].ptr = (void *)target_p;
         targets[ntargets].type = ENTITY_CLIENT;
       }
+
       continue;
     }
 
@@ -324,6 +325,7 @@ build_target_list(int p_or_n, const char *command, struct Client *client_p,
 
     type = 0;
     with_prefix = nick;
+
     // allow %+@ if someone wants to do that
     while (1)
     {
@@ -354,10 +356,10 @@ build_target_list(int p_or_n, const char *command, struct Client *client_p,
       if (*nick == '&' && IsServer(client_p))
         continue;
 
-      /* At this point, nick+1 should be a channel name i.e. #foo or &foo
+      /*
+       * At this point, nick+1 should be a channel name i.e. #foo or &foo
        * if the channel is found, fine, if not report an error
        */
-
       if ((chptr = hash_find_channel(nick)) != NULL)
       {
         if (!has_member_flags(find_channel_link(source_p, chptr), type))
@@ -599,7 +601,7 @@ msg_client(int p_or_n, const char *command, struct Client *source_p,
       {
         // check for accept, flag recipient incoming message
         if (p_or_n != NOTICE)
-          sendto_one(source_p, form_str(ERR_TARGUMODEG),
+          sendto_one(source_p, form_str(RPL_TARGUMODEG),
 		     ID_or_name(&me, source_p->from),
 		     ID_or_name(source_p, source_p->from), target_p->name);
 

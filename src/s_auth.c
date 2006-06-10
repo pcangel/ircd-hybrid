@@ -124,8 +124,8 @@ release_auth_client(struct Client *client)
   client->localClient->allow_read = MAX_FLOOD;
   comm_setflush(&client->localClient->fd, 1000, flood_recalc, client);
 
-  client_p->flags |= FLAGS_FINISHED_AUTH;
-  client_p->since = client_p->lasttime = client_p->firsttime = CurrentTime;
+  client->flags |= FLAGS_FINISHED_AUTH;
+  client->since = client->lasttime = client->firsttime = CurrentTime;
 
   dlinkAdd(client, &client->node, &global_client_list);
   read_packet(&client->localClient->fd, client);
