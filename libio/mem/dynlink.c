@@ -53,7 +53,7 @@ modload(const char *name, void **base)
     struct link_map *map;
 
     if (!dlinfo(handle, RTLD_DI_LINKMAP, &map))
-      *base = map->l_addr;
+      *base = (void*)map->l_addr;
     else
 #endif
       *base = NULL;
