@@ -158,7 +158,6 @@ EXTERN dlink_list pending_glines;
 #define CONF_FLAGS_SPOOF_NOTICE         0x00000400
 #define CONF_FLAGS_REDIR                0x00000800
 #define CONF_FLAGS_EXEMPTGLINE          0x00001000
-#define CONF_FLAGS_RESTRICTED           0x00002000
 #define CONF_FLAGS_CAN_FLOOD            0x00100000
 #define CONF_FLAGS_NEED_PASSWORD        0x00200000
 /* server flags */
@@ -186,7 +185,6 @@ EXTERN dlink_list pending_glines;
 #define IsConfDoIdentd(x)       ((x)->flags & CONF_FLAGS_DO_IDENTD)
 #define IsConfDoSpoofIp(x)      ((x)->flags & CONF_FLAGS_SPOOF_IP)
 #define IsConfSpoofNotice(x)    ((x)->flags & CONF_FLAGS_SPOOF_NOTICE)
-#define IsConfRestricted(x)     ((x)->flags & CONF_FLAGS_RESTRICTED)
 #define IsConfEncrypted(x)      ((x)->flags & CONF_FLAGS_ENCRYPTED)
 #define SetConfEncrypted(x)	((x)->flags |= CONF_FLAGS_ENCRYPTED)
 #define ClearConfEncrypted(x)	((x)->flags &= ~CONF_FLAGS_ENCRYPTED)

@@ -335,22 +335,21 @@ struct LocalUser
 #define FLAGS_EXEMPTGLINE   0x0000000000004000ULL /* client can't be G-lined                  */
 #define FLAGS_EXEMPTKLINE   0x0000000000008000ULL /* client is exempt from kline              */
 #define FLAGS_NOLIMIT       0x0000000000010000ULL /* client is exempt from limits             */
-#define FLAGS_RESTRICTED    0x0000000000020000ULL /* client cannot op others                  */
-#define FLAGS_PING_COOKIE   0x0000000000040000ULL /* PING Cookie                              */
-#define FLAGS_IDLE_LINED    0x0000000000080000ULL /* client is exempt from idle-time limits   */
-#define FLAGS_IP_SPOOFING   0x0000000000100000ULL /* client IP is spoofed                     */
-#define FLAGS_FLOODDONE     0x0000000000200000ULL /* Flood grace period has been ended.       */
-#define FLAGS_EOB           0x0000000000400000ULL /* server has received EOB                  */
-#define FLAGS_HIDDEN        0x0000000000800000ULL /* a hidden server. not shown in /links     */
-#define FLAGS_BLOCKED       0x0000000001000000ULL /* must wait for COMM_SELECT_WRITE          */
-#define FLAGS_SBLOCKED      0x0000000002000000ULL /* slinkq is blocked                        */
-#define FLAGS_USERHOST      0x0000000004000000ULL /* client is in userhost hash               */
-#define FLAGS_BURSTED       0x0000000008000000ULL /* user was already bursted                 */
-#define FLAGS_EXEMPTRESV    0x0000000010000000ULL /* client is exempt from RESV               */
-#define FLAGS_GOTUSER       0x0000000020000000ULL /* if we received a USER command            */
-#define FLAGS_PINGWARNING   0x0000000040000000ULL /* unreplied ping warning already sent      */
-#define FLAGS_FLOOD_NOTICED 0x0000000080000000ULL /* if we already sent a notice to opers     */
-#define FLAGS_FINISHED_AUTH 0x0000000100000000ULL /* Client has been released from auth       */
+#define FLAGS_PING_COOKIE   0x0000000000020000ULL /* PING Cookie                              */
+#define FLAGS_IDLE_LINED    0x0000000000040000ULL /* client is exempt from idle-time limits   */
+#define FLAGS_IP_SPOOFING   0x0000000000080000ULL /* client IP is spoofed                     */
+#define FLAGS_FLOODDONE     0x0000000000100000ULL /* Flood grace period has been ended.       */
+#define FLAGS_EOB           0x0000000000200000ULL /* server has received EOB                  */
+#define FLAGS_HIDDEN        0x0000000000400000ULL /* a hidden server. not shown in /links     */
+#define FLAGS_BLOCKED       0x0000000000800000ULL /* must wait for COMM_SELECT_WRITE          */
+#define FLAGS_SBLOCKED      0x0000000001000000ULL /* slinkq is blocked                        */
+#define FLAGS_USERHOST      0x0000000002000000ULL /* client is in userhost hash               */
+#define FLAGS_BURSTED       0x0000000004000000ULL /* user was already bursted                 */
+#define FLAGS_EXEMPTRESV    0x0000000008000000ULL /* client is exempt from RESV               */
+#define FLAGS_GOTUSER       0x0000000010000000ULL /* if we received a USER command            */
+#define FLAGS_PINGWARNING   0x0000000020000000ULL /* unreplied ping warning already sent      */
+#define FLAGS_FLOOD_NOTICED 0x0000000040000000ULL /* if we already sent a notice to opers     */
+#define FLAGS_FINISHED_AUTH 0x0000000080000000ULL /* Client has been released from auth       */
 
 
 /* umodes, settable flags */
@@ -488,8 +487,6 @@ struct LocalUser
 
 #define IsIdlelined(x)          ((x)->flags &  FLAGS_IDLE_LINED)
 #define SetIdlelined(x)         ((x)->flags |= FLAGS_IDLE_LINED)
-#define IsRestricted(x)         ((x)->flags &  FLAGS_RESTRICTED)
-#define SetRestricted(x)        ((x)->flags |= FLAGS_RESTRICTED)
 
 #define IsFloodDone(x)          ((x)->flags &  FLAGS_FLOODDONE)
 #define SetFloodDone(x)         ((x)->flags |= FLAGS_FLOODDONE)
@@ -542,11 +539,11 @@ EXTERN struct Client me;
 EXTERN dlink_list listing_client_list;
 EXTERN dlink_list global_client_list;
 
-void init_client(void);
-void dead_link_on_write(struct Client *, int);
-void dead_link_on_read(struct Client *, int);
-void exit_aborted_clients(void);
-void free_exited_clients(void);
+EXTERN void init_client(void);
+EXTERN void dead_link_on_write(struct Client *, int);
+EXTERN void dead_link_on_read(struct Client *, int);
+EXTERN void exit_aborted_clients(void);
+EXTERN void free_exited_clients(void);
 
 EXTERN int accept_message(struct Client *, struct Client *);
 EXTERN struct Accept *find_accept(const char *, const char *,
