@@ -26,6 +26,9 @@
 %option case-insensitive
 %option noyywrap
 %option nounput
+%option never-interactive
+
+%x IN_COMMENT
 
 %{
 
@@ -42,64 +45,79 @@ int conf_include_sptr = 0;
 
 #define MAX_INCLUDE_DEPTH 10
 
-YY_BUFFER_STATE conf_include_yystack[MAX_INCLUDE_DEPTH];
+static YY_BUFFER_STATE conf_include_yystack[MAX_INCLUDE_DEPTH];
 struct ConfParserContext conf_include_ctxstack[MAX_INCLUDE_DEPTH];
 
 static void conf_include(void);
 static int conf_eof(void);
 static int conf_yy_fatal_error(const char *msg)
 {
-  return(0);
+  return 0;
 }
 
 %}
 
-ws		[ \t]*
-include		\.include{ws}(\<.*\>|\".*\")
-qstring		\"[^\"]*\"
-identifier	[a-zA-Z_][a-zA-Z0-9_:]*
+WS              [ \t]*
+DIGIT           [[:digit:]]+
+INCLUDE         \.include{WS}(\<.*\>|\".*\")
+COMMENT         ("//"|"#").*
+qstring         \"[^\"\n]*[\"\n]
+IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_:]*
 
 %%
 
-{include}	{ conf_include(); }
-"/*"		{
-              int c;
+"/*"                { BEGIN IN_COMMENT; }
+<IN_COMMENT>"*/"    { BEGIN INITIAL;    }
+<IN_COMMENT>.       ;    /* eat everything but a newline */
+<IN_COMMENT>\n      { ++conf_curctx.lineno; }
+<IN_COMMENT><<EOF>> { BEGIN INITIAL; if (conf_eof()) yyterminate(); }
 
-              while (1)
-              {
-                while ((c = input()) != '*' && c != EOF)
-                  if (c == '\n')
-                  {
-                    conf_curctx.lineno++;
-                    conf_linebuf[0] = '\0';
-                  }
-                while (c == '*')
-                  c = input();
-                if (c == '/')
-                  break;
-                if (c == EOF)
-                {
-                  yyerror("EOF in comment");
-                  break;
+{INCLUDE}       { conf_include(); }
+\n.*		{ ++conf_curctx.lineno;
+                  strlcpy(conf_linebuf, yytext + 1, CONF_BUFSIZE);
+                  yyless(1);
                 }
-              }
-        	}
-\n.*		{
-              conf_curctx.lineno++;
-              strlcpy(conf_linebuf, yytext + 1, CONF_BUFSIZE);
-              yyless(1);
-            }
-{ws}		;
-#.*		{
-          if (!strncasecmp(yytext, "#include", 8))
-          yyerror("You probably meant '.include', ignoring");
-		}
-[0-9]+		{ yylval.number = atoi(yytext); return NUMBER; }
+{WS}		;
+{COMMENT}       ;
+{DIGIT}	        { yylval.number = atoi(yytext); return NUMBER; }
 {qstring}	{
-              yytext[yyleng - 1] = '\0';
-              yylval.string = yytext + 1;
-              return QSTRING;
-            }
+                  if (yytext[yyleng - 2] == '\\')
+                  {
+                    yyless(yyleng - 1);    /* return last quote */
+                    yymore();    /* append next string */
+                  }
+                  else
+                  {
+                    yylval.string = yytext + 1;
+
+                    if (yylval.string[yyleng - 2] != '"')
+                      ilog(L_ERROR, "Unterminated character string");
+                    else
+                    {
+                      int i = 0, j = 0;
+
+                      yylval.string[yyleng - 2] = '\0'; /* remove close quote */
+
+                      for (; yylval.string[i]; ++i, ++j)
+                      {
+                        if (yylval.string[i] == '\\')
+                        {
+                          if (yylval.string[++i] == '\0')
+                          {
+                            ilog(L_ERROR, "Unterminated character string");
+                            break;
+                          }
+                        }
+
+                        yylval.string[j] = yylval.string[i];
+                      }
+
+                      yylval.string[j] = '\0';
+                      return QSTRING;
+                    }
+                  }
+                }
+
 b           { return BYTES; }
 byte        { return BYTES; }
 bytes       { return BYTES; }
@@ -138,7 +156,7 @@ w           { return WEEKS; }
 week		{ return WEEKS; }
 weeks		{ return WEEKS; }
 yes         { yylval.number = 1; return BOOL; }
-{identifier}	{ yylval.string = yytext; return IDENTIFIER; }
+{IDENTIFIER}	{ yylval.string = yytext; return IDENTIFIER; }
 .           { return yytext[0]; }
 <<EOF>>		{ if (conf_eof()) yyterminate(); }
 
