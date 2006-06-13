@@ -78,10 +78,8 @@
  * values for things which are now configurable at runtime.
  */
 
-#define HANGONRETRYDELAY 60     /* Recommended value: 30-60 seconds */
 #define HYBRID_SOMAXCONN 25
 #define MAX_TDKLINE_TIME	(24*60*10)
-#define HANGONGOODLINK 3600     /* Recommended value: 30-60 minutes */
 
 /* tests show that about 7 fds are not registered by fdlist.c, these
  * include std* descriptors + some others (by OpenSSL etc.). Note this is

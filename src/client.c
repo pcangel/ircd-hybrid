@@ -1057,10 +1057,6 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
 static void
 close_connection(struct Client *client_p)
 {
-  struct ConfItem *conf;
-  struct AccessItem *aconf;
-  struct ClassItem *aclass;
-
   assert(NULL != client_p);
 
   if (IsClient(client_p))
@@ -1076,31 +1072,6 @@ close_connection(struct Client *client_p)
     ServerStats.is_sbs += client_p->localClient->send.bytes;
     ServerStats.is_sbr += client_p->localClient->recv.bytes;
     ServerStats.is_sti += CurrentTime - client_p->firsttime;
-
-    /* XXX Does this even make any sense at all anymore?
-     * scheduling a 'quick' reconnect could cause a pile of
-     * nick collides under TSora protocol... -db
-     */
-    /*
-     * If the connection has been up for a long amount of time, schedule
-     * a 'quick' reconnect, else reset the next-connect cycle.
-     */
-    if ((conf = find_exact_name_conf(SERVER_TYPE,
-				     client_p->name, client_p->username,
-				     client_p->host)))
-    {
-      /*
-       * Reschedule a faster reconnect, if this was a automatically
-       * connected configuration entry. (Note that if we have had
-       * a rehash in between, the status has been changed to
-       * CONF_ILLEGAL). But only do this if it was a "good" link.
-       */
-      aconf = &conf->conf.AccessItem;
-      aclass = &((struct ConfItem *)aconf->class_ptr)->conf.ClassItem;
-      aconf->hold = time(NULL);
-      aconf->hold += (aconf->hold - client_p->since > HANGONGOODLINK) ?
-        HANGONRETRYDELAY : ConFreq(aclass);
-    }
   }
   else
     ++ServerStats.is_ni;
