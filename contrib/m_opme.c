@@ -35,7 +35,7 @@
 #include "hash.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "common.h"
 
 // Change to #define to allow /OPME use on any channel, even if it's not opless

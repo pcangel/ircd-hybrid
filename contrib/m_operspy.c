@@ -42,7 +42,7 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "hash.h"
 
 /* enable logging of OPERSPY functions */

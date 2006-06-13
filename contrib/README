@@ -115,15 +115,6 @@ m_killhost.c     --  Similar to the OperServ command KILLHOST, allows you to
                      Example: KILLHOST *@cloners.com clones
 
 
-m_ltrace.c       --  This module will give a limited trace. This is similar to
-                     TRACE except that it only reports current operators and servers.
-
-                     Syntax: LTRACE [nick|mask [server]]
-
-                     Example: LTRACE god
-                              LTRACE node.server.com
-
-
 m_mkpasswd.c     --  This module will generate a DES or MD5 encrypted password
                      similar to the console version bundled with hybrid.
 

@@ -61,7 +61,7 @@
 #include "s_user.h"
 #include "send.h"
 #include "s_conf.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 static unsigned int umode_vhost = 0;
 static int vhost_ipv6_err;

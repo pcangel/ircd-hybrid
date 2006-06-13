@@ -84,7 +84,7 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 
 static void mo_spoof(struct Client *, struct Client *, int, char *[]);
 static void mo_delspoof(struct Client *, struct Client *, int, char *[]);

@@ -34,7 +34,7 @@
 #include "hash.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "common.h"
 #include "s_conf.h"
 
@@ -141,7 +141,7 @@ mo_jupe(struct Client *client_p, struct Client *source_p,
   ajupe = make_client(NULL);
 
   /* make_client() adds client to unknown_list */
-  dlinkDelete(&ajupe->localClient->lclient_node, &unknown_list)
+  dlinkDelete(&ajupe->localClient->lclient_node, &unknown_list);
 
   make_server(ajupe);
 

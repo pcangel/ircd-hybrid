@@ -23,15 +23,14 @@
  */
 
 #include "stdinc.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "client.h"
 #include "ircd.h"
 #include "send.h"
 
 static struct Callback *trace_cb = NULL;
 static struct Callback *ctrace_cb = NULL, *etrace_cb = NULL;
-static dlink_node *prev_trace, *prev_ltrace;
-static dlink_node *prev_ctrace, *prev_etrace;
+static dlink_node *prev_trace, *prev_ctrace, *prev_etrace;
 
 static void *show_trace(va_list);
 static void *show_ctrace(va_list);

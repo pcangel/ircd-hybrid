@@ -23,7 +23,7 @@
  */
 
 #include "stdinc.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "client.h"
 #include "ircd.h"
 #include "send.h"

@@ -22,7 +22,7 @@
  *  $Id$
  */
 #include "stdinc.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "hash.h"
 #include "client.h"
 #include "ircd.h"

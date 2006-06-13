@@ -16,7 +16,9 @@
 #include "s_conf.h"
 #include "s_serv.h"
 #include "send.h"
-#include "modules.h"
+#include "msg.h"
+#include "parse.h"
+#include "conf/modules.h"
 
 static void m_mkpasswd(struct Client *, struct Client *, int, char *[]);
 static const char *m_mkpasswd_des(void);

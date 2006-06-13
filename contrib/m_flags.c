@@ -42,7 +42,7 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "modules.h"
+#include "conf/modules.h"
 #include "s_user.h"    /* send_umode_out() */
 
 static void m_flags(struct Client *, struct Client *, int, char *[]);
