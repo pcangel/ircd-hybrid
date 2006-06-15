@@ -962,10 +962,7 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
     if (IsServer(source_p) || IsConnecting(source_p) || IsHandshake(source_p))
     {
       if ((m = dlinkFindDelete(&serv_list, source_p)) != NULL)
-      {
-        free_dlink_node(m);
         unset_chcap_usage_counts(source_p);
-      }
 
       if (IsServer(source_p))
         --Count.myserver;

@@ -30,7 +30,7 @@
 #include "s_serv.h"
 #include "s_user.h"
 
-struct ServerInfoConf ServerInfo = {0};
+struct ServerInfoConf ServerInfoX = {0};
 
 static dlink_node *hreset, *hverify;
 
@@ -45,12 +45,12 @@ static dlink_node *hreset, *hverify;
 static void *
 reset_serverinfo(va_list args)
 {
-  memset(&ServerInfo.vhost, 0, sizeof(ServerInfo.vhost));
+  memset(&ServerInfoX.vhost, 0, sizeof(ServerInfoX.vhost));
 #ifdef IPV6
-  memset(&ServerInfo.vhost6, 0, sizeof(ServerInfo.vhost6));
+  memset(&ServerInfoX.vhost6, 0, sizeof(ServerInfoX.vhost6));
 #endif
-  ServerInfo.hub = NO;
-  ServerInfo.max_clients = 512;
+  ServerInfoX.hub = NO;
+  ServerInfoX.max_clients = 512;
 
   return pass_callback(hreset);
 }
@@ -74,14 +74,14 @@ verify_serverinfo(va_list args)
   if (!me.info[0])
     parse_fatal("description= field missing in serverinfo{} section");
 
-  if (ServerInfo.network_name == NULL)
+  if (ServerInfoX.network_name == NULL)
     parse_fatal("network_name= field missing in serverinfo{} section");
 
-  if ((p = strchr(ServerInfo.network_name, ' ')) != NULL)
+  if ((p = strchr(ServerInfoX.network_name, ' ')) != NULL)
     *p = 0;
 
-  if (ServerInfo.network_desc == NULL)
-    DupString(ServerInfo.network_desc, ServerInfo.network_name);
+  if (ServerInfoX.network_desc == NULL)
+    DupString(ServerInfoX.network_desc, ServerInfoX.network_name);
 
   if (conf_cold && me.id[0])
   {
@@ -91,19 +91,19 @@ verify_serverinfo(va_list args)
 
   recalc_fdlimit(NULL);
 
-  if (ServerInfo.max_clients < MAXCLIENTS_MIN)
+  if (ServerInfoX.max_clients < MAXCLIENTS_MIN)
   {
     parse_error("MAXCLIENTS=%d too low, setting to %d",
-      ServerInfo.max_clients, MAXCLIENTS_MIN);
+      ServerInfoX.max_clients, MAXCLIENTS_MIN);
 
-    ServerInfo.max_clients = MAXCLIENTS_MIN;
+    ServerInfoX.max_clients = MAXCLIENTS_MIN;
   }
-  else if (ServerInfo.max_clients > MAXCLIENTS_MAX)
+  else if (ServerInfoX.max_clients > MAXCLIENTS_MAX)
   {
     parse_error("MAXCLIENTS=%d too high, setting to %d",
-      ServerInfo.max_clients, MAXCLIENTS_MAX);
+      ServerInfoX.max_clients, MAXCLIENTS_MAX);
 
-    ServerInfo.max_clients = MAXCLIENTS_MAX;
+    ServerInfoX.max_clients = MAXCLIENTS_MAX;
   }
 
   return pass_callback(hverify);
@@ -160,7 +160,7 @@ si_set_vhost(void *value, void *where)
   memset(&hints, 0, sizeof(hints));
 
 #ifdef IPV6
-  hints.ai_family   = (where == ServerInfo.vhost6 ? AF_INET6 : AF_INET);
+  hints.ai_family   = (where == ServerInfoX.vhost6 ? AF_INET6 : AF_INET);
 #else
   hints.ai_family   = AF_INET;
 #endif
@@ -207,14 +207,14 @@ init_serverinfo(void)
   add_conf_field(s, "name", CT_STRING, si_set_name, NULL);
   add_conf_field(s, "sid", CT_STRING, si_set_sid, NULL);
   add_conf_field(s, "description", CT_STRING, si_set_description, NULL);
-  add_conf_field(s, "network_name", CT_STRING, NULL, &ServerInfo.network_name);
-  add_conf_field(s, "network_desc", CT_STRING, NULL, &ServerInfo.network_desc);
-  add_conf_field(s, "hub", CT_BOOL, NULL, &ServerInfo.hub);
-  add_conf_field(s, "vhost", CT_STRING, si_set_vhost, &ServerInfo.vhost);
+  add_conf_field(s, "network_name", CT_STRING, NULL, &ServerInfoX.network_name);
+  add_conf_field(s, "network_desc", CT_STRING, NULL, &ServerInfoX.network_desc);
+  add_conf_field(s, "hub", CT_BOOL, NULL, &ServerInfoX.hub);
+  add_conf_field(s, "vhost", CT_STRING, si_set_vhost, &ServerInfoX.vhost);
 #ifdef IPV6
-  add_conf_field(s, "vhost6", CT_STRING, si_set_vhost, &ServerInfo.vhost6);
+  add_conf_field(s, "vhost6", CT_STRING, si_set_vhost, &ServerInfoX.vhost6);
 #endif
-  add_conf_field(s, "max_clients", CT_NUMBER, NULL, &ServerInfo.max_clients);
+  add_conf_field(s, "max_clients", CT_NUMBER, NULL, &ServerInfoX.max_clients);
 #ifdef HAVE_LIBCRYPTO
   add_conf_field(s, "rsa_private_key_file", CT_STRING, si_set_rsa_private_key,
     NULL);
