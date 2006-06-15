@@ -2001,23 +2001,24 @@ clear_out_old_conf(void)
     DLINK_FOREACH_SAFE(ptr, next_ptr, (*iterator)->head)
     {
       conf = ptr->data;
-      if ((conf->type == LEAF_TYPE) || (conf->type == HUB_TYPE))
+      if (conf->type == LEAF_TYPE || conf->type == HUB_TYPE)
       {
-	match_item = &conf->conf.MatchItem;
-	if ((match_item->ref_count <= 0))
-	  delete_conf_item(conf);
-	{
-	  match_item->illegal = 1;
-	  dlinkDelete(&conf->node, *iterator);
-	}
+        match_item = &conf->conf.MatchItem;
+        if (match_item->ref_count <= 0)
+          delete_conf_item(conf);
+        else
+        {
+          match_item->illegal = 1;
+          dlinkDelete(&conf->node, *iterator);
+        }
       }
       else
       {
-	/* temporary (r)xlines are also on
-	 * the (r)xconf items list 
-	 */
-	if ((conf->flags & CONF_FLAGS_TEMPORARY) == 0)
-	  delete_conf_item(conf);
+        /* temporary (r)xlines are also on
+         * the (r)xconf items list 
+         */
+        if ((conf->flags & CONF_FLAGS_TEMPORARY) == 0)
+          delete_conf_item(conf);
       }
     }
   }
