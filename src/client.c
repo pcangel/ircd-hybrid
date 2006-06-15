@@ -943,29 +943,24 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
                            ConfigFileEntry.hide_spoof_ips && IsIPSpoof(source_p) ?
                            "255.255.255.255" : source_p->sockhost);
     }
-    else if (!IsRegistered(source_p))
-    {
-      /*
-       * This source_p could have status of one of STAT_UNKNOWN, STAT_CONNECTING
-       * STAT_HANDSHAKE or STAT_UNKNOWN
-       * all of which are lumped together into unknown_list
-       *
-       * In all above cases IsRegistered() will not be true.
-       */
-      dlinkDelete(&source_p->localClient->lclient_node, &unknown_list);
-    }
-
-    /* As soon as a client is known to be a server of some sort
-     * it has to be put on the serv_list, or SJOIN's to this new server
-     * from the connect burst will not be seen.
-     */
-    if (IsServer(source_p) || IsConnecting(source_p) || IsHandshake(source_p))
+    else if (IsServer(source_p))
     {
       if ((m = dlinkFindDelete(&serv_list, source_p)) != NULL)
         unset_chcap_usage_counts(source_p);
 
-      if (IsServer(source_p))
-        --Count.myserver;
+      --Count.myserver;
+    }
+    else
+    {
+      /*
+       * This source_p could have status of one of STAT_UNKNOWN,
+       * STAT_CONNECTING or STAT_HANDSHAKE
+       * all of which are lumped together into unknown_list
+       *
+       * In all above cases IsRegistered() will not be true.
+       */
+      assert(!IsRegistered(source_p));
+      dlinkDelete(&source_p->localClient->lclient_node, &unknown_list);
     }
 
     log_user_exit(source_p);
@@ -1014,7 +1009,7 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
     if (ConfigServerHide.hide_servers)
       /*
        * set netsplit message to "*.net *.split" to still show 
-       * that its a split, but hide the servers splitting
+       * that it's a split, but hide the servers splitting
        */
       strcpy(splitstr, "*.net *.split");
     else
@@ -1023,7 +1018,7 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
 
     remove_dependents(source_p, from->from, comment, splitstr);
 
-    if (source_p->servptr == &me)
+    if (MyConnect(source_p))
     {
       sendto_realops_flags(UMODE_ALL, L_ALL,
                            "%s was connected for %d seconds.  %llu/%llu sendK/recvK.",
@@ -1048,13 +1043,23 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
 
 /*
  * close_connection
- *        Close the physical connection. This function must make
- *        MyConnect(client_p) == FALSE, and set client_p->from == NULL.
+ *        Close the physical connection. This function sets client_p->from == NULL.
  */
 static void
 close_connection(struct Client *client_p)
 {
   assert(NULL != client_p);
+
+  if (!IsDead(client_p))
+  {
+    /* attempt to flush any pending dbufs. Evil, but .. -- adrian */
+    /* there is still a chance that we might send data to this socket
+     * even if it is marked as blocked (COMM_SELECT_READ handler is called
+     * before COMM_SELECT_WRITE). Let's try, nothing to lose.. -adx
+     */
+    ClearSendqBlocked(client_p);
+    send_queued_write(client_p);
+  }
 
   if (IsClient(client_p))
   {
@@ -1073,17 +1078,6 @@ close_connection(struct Client *client_p)
   else
     ++ServerStats.is_ni;
 
-  if (!IsDead(client_p))
-  {
-    /* attempt to flush any pending dbufs. Evil, but .. -- adrian */
-    /* there is still a chance that we might send data to this socket
-     * even if it is marked as blocked (COMM_SELECT_READ handler is called
-     * before COMM_SELECT_WRITE). Let's try, nothing to lose.. -adx
-     */
-    ClearSendqBlocked(client_p);
-    send_queued_write(client_p);
-  }
-
 #ifdef HAVE_LIBCRYPTO
   if (client_p->localClient->fd.ssl)
   {
@@ -1097,10 +1091,8 @@ close_connection(struct Client *client_p)
     fd_close(&client_p->localClient->fd);
 
   if (HasServlink(client_p))
-  {
     if (client_p->localClient->ctrlfd.flags.open)
       fd_close(&client_p->localClient->ctrlfd);
-  }
 
   dbuf_clear(&client_p->localClient->buf_sendq);
   dbuf_clear(&client_p->localClient->buf_recvq);
