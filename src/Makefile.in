@@ -79,7 +79,6 @@ SRCS = \
  s_serv.c \
  s_user.c \
  send.c \
- version.c \
  watch.c \
  whowas.c \
  y.tab.c

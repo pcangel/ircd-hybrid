@@ -50,10 +50,9 @@
 #include "motd.h"
 #include "supported.h"
 #include "watch.h"
+#include "patchlevel.h"
+#include "serno.h"
 
-/* Try and find the correct name to use with getrlimit() for setting the max.
- * number of files allowed to be open by this process.
- */
 
 /* /quote set variables */
 struct SetOptions GlobalSetOptions;
@@ -74,7 +73,9 @@ const char *logFileName = LPATH;
 const char *pidFileName = PPATH;
 
 char **myargv;
-char ircd_platform[PLATFORMLEN];
+const char *ircd_version = PATCHLEVEL;
+const char *serno = SERIALNUM;
+char ircd_platform[IRCD_BUFSIZE];
 
 int dorehash = 0;
 int doremotd = 0;
@@ -513,7 +514,7 @@ main(int argc, char *argv[])
 
   check_pidfile(pidFileName);
   setup_signals();
-  get_ircd_platform(ircd_platform);
+  libio_get_platform(ircd_platform, sizeof(ircd_platform));
   init_log(logFileName);
   ServerInfo.can_use_v6 = check_can_use_v6();
 

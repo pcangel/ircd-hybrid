@@ -54,6 +54,7 @@ LIBIO_EXTERN char *ssl_get_cipher(SSL *);
 LIBIO_EXTERN void set_time(void);
 LIBIO_EXTERN void libio_init(int);
 LIBIO_EXTERN void setup_corefile(void);
+LIBIO_EXTERN char *libio_get_platform(char *, size_t);
 
 
 #define LIBIO_MAX(a, b)  ((a) > (b) ? (a) : (b))

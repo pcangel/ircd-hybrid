@@ -95,13 +95,10 @@ struct ServerState_t
   int foreground;
 };
 
-char *get_ircd_platform(char *);
-
 EXTERN struct SetOptions GlobalSetOptions; /* defined in ircd.c */
 EXTERN struct ServerState_t server_state;
 EXTERN char **myargv;
-EXTERN char ircd_platform[PLATFORMLEN];
-EXTERN const char *infotext[];
+EXTERN char ircd_platform[];
 EXTERN const char *serno;
 EXTERN const char *ircd_version;
 EXTERN const char *logFileName;

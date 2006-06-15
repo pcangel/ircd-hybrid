@@ -54,8 +54,6 @@
 
 #define USERHOST_REPLYLEN       (NICKLEN+HOSTLEN+USERLEN+5)
 
-#define PLATFORMLEN     200     /* platform string used in info response */
-
 #define REJECT_HOLD_TIME GlobalSetOptions.rejecttime
 
 #endif /* INCLUDED_ircd_defs_h */

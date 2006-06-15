@@ -25,6 +25,10 @@
 #define IN_MISC_C
 #include "stdinc.h"
 
+#ifndef _WIN32
+#include <sys/utsname.h>
+#endif
+
 struct timeval SystemTime;
 
 static const char *months[] =
@@ -261,6 +265,17 @@ uname(struct utsname *uts)
   return 0;
 }
 #endif
+
+char *
+libio_get_platform(char *str, size_t size)
+{
+  struct utsname uts;
+
+  uname(&uts);
+  snprintf(str, size, "%s %s %s %s %s", uts.sysname, uts.nodename,
+           uts.release, uts.version, uts.machine);
+  return str;
+}
 
 #ifdef HAVE_LIBCRYPTO
 char *
