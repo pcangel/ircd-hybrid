@@ -534,32 +534,6 @@ ban_them(struct Client *client_p, struct ConfItem *conf)
   exit_client(client_p, &me, channel_reason);
 }
 
-/* update_client_exit_stats()
- *
- * input	- pointer to client
- * output	- NONE
- * side effects	- 
- */
-static void
-update_client_exit_stats(struct Client *client_p)
-{
-  if (IsClient(client_p))
-  {
-    --Count.total;
-    if (IsOper(client_p))
-      --Count.oper;
-    if (IsInvisible(client_p))
-      --Count.invisi;
-  }
-  else if (IsServer(client_p))
-    sendto_realops_flags(UMODE_EXTERNAL, L_ALL,
-                         "Server %s split from %s",
-                         client_p->name, client_p->servptr->name);
-
-  if (splitchecking && !splitmode)
-    check_splitmode(NULL);
-}
-
 /* find_person()
  *
  * inputs	- pointer to name
@@ -676,22 +650,10 @@ void
 free_exited_clients(void)
 {
   dlink_node *ptr, *next;
-  struct Client *target_p;
-  
+
   DLINK_FOREACH_SAFE(ptr, next, dead_list.head)
   {
-    target_p = ptr->data;
-
-    if (ptr->data == NULL)
-    {
-      sendto_realops_flags(UMODE_ALL, L_ALL,
-                           "Warning: null client on dead_list!");
-      dlinkDelete(ptr, &dead_list);
-      free_dlink_node(ptr);
-      continue;
-    }
-
-    free_client(target_p);
+    free_client(ptr->data);
     dlinkDelete(ptr, &dead_list);
     free_dlink_node(ptr);
   }
@@ -715,13 +677,19 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
     assert(source_p->servptr);
     assert(source_p->servptr->serv);
 
+    --Count.total;
+    if (IsOper(source_p))
+      --Count.oper;
+    if (IsInvisible(source_p))
+      --Count.invisi;
+
     dlinkDelete(&source_p->lnode, &source_p->servptr->serv->client_list);
 
     /*
-     * If a person is on a channel, send a QUIT notice
-     * to every client (person) on the same channel (so
-     * that the client can show the "**signoff" message).
-     * (Note: The notice is to the local clients *only*)
+     * If a person is on a channel, send a QUIT notice to every
+     * client (person) on the same channel (so that the client
+     * can show the "**signoff" message).  (Note: The notice is
+     * to the local clients *only*)
      */
     sendto_common_channels_local(source_p, 0, ":%s!%s@%s QUIT :%s",
                                  source_p->name, source_p->username,
@@ -750,11 +718,18 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
   }
   else if (IsServer(source_p))
   {
+    sendto_realops_flags(UMODE_EXTERNAL, L_ALL,
+                         "Server %s split from %s",
+                         source_p->name, source_p->servptr->name);
+
     dlinkDelete(&source_p->lnode, &source_p->servptr->serv->server_list);
 
     if ((lp = dlinkFindDelete(&global_serv_list, source_p)) != NULL)
       free_dlink_node(lp);
   }
+
+  if (splitchecking && !splitmode)
+    check_splitmode(NULL);
 
   /* Remove source_p from the client lists */
   if (HasID(source_p))
@@ -771,8 +746,6 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
    */
   if (source_p != NULL && source_p->node.next != NULL)
     dlinkDelete(&source_p->node, &global_client_list);
-
-  update_client_exit_stats(source_p);
 
   /* Check to see if the client isn't already on the dead list */
   assert(dlinkFind(&dead_list, source_p) == NULL);
@@ -928,12 +901,11 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
       --Count.local;
 
       if (IsOper(source_p))
-      {
         if ((m = dlinkFindDelete(&oper_list, source_p)) != NULL)
           free_dlink_node(m);
-      }
 
       dlinkDelete(&source_p->localClient->lclient_node, &local_client_list);
+
       if (source_p->localClient->list_task != NULL)
         free_list_task(source_p->localClient->list_task, source_p);
 
@@ -979,16 +951,10 @@ exit_client(struct Client *source_p, struct Client *from, const char *comment)
     }
 
     /*
-    ** Currently only server connections can have
-    ** depending remote clients here, but it does no
-    ** harm to check for all local clients. In
-    ** future some other clients than servers might
-    ** have remotes too...
-    **
-    ** Close the Client connection first and mark it
-    ** so that no messages are attempted to send to it.
-    ** Remember it makes source_p->from == NULL.
-    */
+     * Close the Client connection first and mark it so that no
+     * messages are attempted to send to it.  Remember it makes
+     * source_p->from == NULL.
+     */
     close_connection(source_p);
   }
 
