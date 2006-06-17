@@ -41,6 +41,13 @@ static dlink_list ListenerPollList = { NULL, NULL, 0 };
 static void close_listener(struct Listener *);
 static void add_connection(struct Listener *, struct irc_ssaddr *, int);
 
+
+const dlink_list *
+listener_get_list(void)
+{
+  return &ListenerPollList;
+}
+
 static struct Listener *
 make_listener(int port, struct irc_ssaddr *addr)
 {
@@ -81,41 +88,6 @@ get_listener_name(const struct Listener *listener)
   ircsprintf(buf, "%s[%s/%u]", me.name, listener->name,
              listener->port);
   return buf;
-}
-
-/* show_ports()
- *
- * inputs       - pointer to client to show ports to
- * output       - none
- * side effects - send port listing to a client
- */
-void 
-show_ports(struct Client *source_p)
-{
-  char buf[4];
-  char *p = NULL;
-  dlink_node *ptr;
-
-  DLINK_FOREACH(ptr, ListenerPollList.head)
-  {
-    const struct Listener *listener = ptr->data;
-    p = buf;
-
-    if (listener->flags & LISTENER_HIDDEN) {
-      if (!IsAdmin(source_p))
-        continue;
-      *p++ = 'H';
-    }
-
-    if (listener->flags & LISTENER_SSL)
-      *p++ = 's';
-    *p = '\0';
-    sendto_one(source_p, form_str(RPL_STATSPLINE),
-               me.name, source_p->name, 'P', listener->port,
-               IsAdmin(source_p) ? listener->name : me.name,
-               listener->ref_count, buf,
-               listener->active ? "active" : "disabled");
-  }
 }
 
 /*

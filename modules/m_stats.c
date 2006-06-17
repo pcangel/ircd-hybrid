@@ -1006,6 +1006,41 @@ stats_operedup(struct Client *source_p)
              from, RPL_STATSDEBUG, to, dlink_list_length(&oper_list));
 }
 
+/* show_ports()
+ *
+ * inputs       - pointer to client to show ports to
+ * output       - none
+ * side effects - send port listing to a client
+ */
+static void
+show_ports(struct Client *source_p)
+{
+  char buf[4];
+  char *p = NULL;
+  const dlink_node *ptr = NULL;
+
+  DLINK_FOREACH(ptr, listener_get_list()->head)
+  {
+    const struct Listener *listener = ptr->data;
+    p = buf;
+
+    if (listener->flags & LISTENER_HIDDEN) {
+      if (!IsAdmin(source_p))
+        continue;
+      *p++ = 'H';
+    }
+
+    if (listener->flags & LISTENER_SSL)
+      *p++ = 's';
+    *p = '\0';
+    sendto_one(source_p, form_str(RPL_STATSPLINE),
+               me.name, source_p->name, 'P', listener->port,
+               IsAdmin(source_p) ? listener->name : me.name,
+               listener->ref_count, buf,
+               listener->active ? "active" : "disabled");
+  }
+}
+
 static void
 stats_ports(struct Client *source_p)
 {
