@@ -67,6 +67,34 @@ CLEANUP_MODULE
   mod_del_cmd(&join_msgtab);
 }
 
+/*!
+ * \param source_p pointer to client attempting to join
+ * \param chptr    pointer to channel
+ * \param key      key sent by client attempting to join if present
+ * \return ERR_BANNEDFROMCHAN, ERR_INVITEONLYCHAN, ERR_CHANNELISFULL
+ *         or 0 if allowed to join.
+ */
+static int
+can_join(struct Client *source_p, struct Channel *chptr, const char *key)
+{
+  if (is_banned(chptr, source_p))
+   return ERR_BANNEDFROMCHAN;
+
+  if (chptr->mode.mode & MODE_INVITEONLY)
+    if (!dlinkFind(&source_p->localClient->invited, chptr))
+      if (!ConfigChannel.use_invex || !find_bmask(source_p, &chptr->invexlist))
+        return ERR_INVITEONLYCHAN;
+
+  if (chptr->mode.key[0] && (!key || irccmp(chptr->mode.key, key)))
+    return ERR_BADCHANNELKEY;
+
+  if (chptr->mode.limit && dlink_list_length(&chptr->members) >=
+      chptr->mode.limit)
+    return ERR_CHANNELISFULL;
+
+  return 0;
+}
+
 /* last0() stolen from ircu */
 static char *
 last0(struct Client *client_p, struct Client *source_p, char *chanlist)

@@ -86,7 +86,7 @@ add_user_to_channel(struct Channel *chptr, struct Client *who,
   if (GlobalSetOptions.joinfloodtime > 0)
   {
     if (flood_ctrl)
-      chptr->number_joined++;
+      ++chptr->number_joined;
 
     chptr->number_joined -= (CurrentTime - chptr->last_join_time) *
       (((float)GlobalSetOptions.joinfloodcount) /
@@ -155,8 +155,7 @@ static void
 send_members(struct Client *client_p, struct Channel *chptr,
              char *lmodebuf, char *lparabuf)
 {
-  struct Membership *ms;
-  dlink_node *ptr;
+  const dlink_node *ptr = NULL;
   int tlen;              /* length of text to append */
   char *t, *start;       /* temp char pointer */
 
@@ -167,7 +166,7 @@ send_members(struct Client *client_p, struct Channel *chptr,
 
   DLINK_FOREACH(ptr, chptr->members.head)
   {
-    ms = ptr->data;
+    const struct Membership *ms = ptr->data;
 
     tlen = strlen(IsCapable(client_p, CAP_TS6) ?
       ID(ms->client_p) : ms->client_p->name) + 1;  /* nick + space */
@@ -181,9 +180,11 @@ send_members(struct Client *client_p, struct Channel *chptr,
     if (ms->flags & CHFL_VOICE)
       ++tlen;
 
-    /* space will be converted into CR, but we also need space for LF..
+    /*
+     * space will be converted into CR, but we also need space for LF..
      * That's why we use '- 1' here
-     * -adx */
+     * -adx
+     */
     if (t + tlen - buf > sizeof(buf) - 1)
     {
       *(t - 1) = '\0';  /* kill the space and terminate the string */
@@ -267,7 +268,8 @@ send_mode_list(struct Client *client_p, struct Channel *chptr,
       count = 0;
     }
 
-    count++;
+    ++count;
+
     if (ts5)
     {
       *mp++ = flag;
@@ -366,8 +368,7 @@ free_channel_list(dlink_list *list)
   assert(list->tail == NULL && list->head == NULL);
 }
 
-/*! \brief Get Channel block for chname (and allocate a new channel
- *         block, if it didn't exist before)
+/*! \brief Allocates and initializes a new Channel structure
  * \param chname channel name
  * \return channel block
  */
@@ -408,7 +409,6 @@ destroy_channel(struct Channel *chptr)
   free_channel_list(&chptr->exceptlist);
   free_channel_list(&chptr->invexlist);
 
-  /* Free the topic */
   free_topic(chptr);
 
   dlinkDelete(&chptr->node, &global_channel_list);
@@ -422,7 +422,7 @@ destroy_channel(struct Channel *chptr)
  * \return string pointer "=" if public, "@" if secret else "*"
  */
 static const char *
-channel_pub_or_secret(struct Channel *chptr)
+channel_pub_or_secret(const struct Channel *chptr)
 {
   if (SecretChannel(chptr))
     return "@";
@@ -441,9 +441,7 @@ void
 channel_member_names(struct Client *source_p, struct Channel *chptr,
                      int show_eon)
 {
-  struct Client *target_p = NULL;
-  struct Membership *ms = NULL;
-  dlink_node *ptr = NULL;
+  const dlink_node *ptr = NULL;
   char lbuf[IRCD_BUFSIZE + 1];
   char *t = NULL, *start = NULL;
   int tlen = 0;
@@ -452,16 +450,15 @@ channel_member_names(struct Client *source_p, struct Channel *chptr,
 
   if (PubChannel(chptr) || is_member)
   {
-    t = lbuf + ircsprintf(lbuf, form_str(RPL_NAMREPLY),
-                          me.name, source_p->name,
-                          channel_pub_or_secret(chptr),
-                          chptr->chname);
-    start = t;
+    start = t = lbuf + ircsprintf(lbuf, form_str(RPL_NAMREPLY),
+                                  me.name, source_p->name,
+                                  channel_pub_or_secret(chptr),
+                                  chptr->chname);
 
     DLINK_FOREACH(ptr, chptr->members.head)
     {
-      ms       = ptr->data;
-      target_p = ms->client_p;
+      const struct Membership *ms = ptr->data;
+      const struct Client *target_p = ms->client_p;
 
       if (IsInvisible(target_p) && !is_member)
         continue;
@@ -502,8 +499,8 @@ channel_member_names(struct Client *source_p, struct Channel *chptr,
   }
 
   if (show_eon)
-    sendto_one(source_p, form_str(RPL_ENDOFNAMES),
-               me.name, source_p->name, chptr->chname);
+    sendto_one(source_p, form_str(RPL_ENDOFNAMES), me.name,
+               source_p->name, chptr->chname);
 }
 
 /*! \brief adds client to invite list
@@ -596,7 +593,7 @@ get_member_status(const struct Membership *ms, int combine)
  * \return 1 if ban found for given n!u\@h mask, 0 otherwise
  *
  */
-static int
+int
 find_bmask(const struct Client *who, const dlink_list *const list)
 {
   const dlink_node *ptr = NULL;
@@ -647,34 +644,6 @@ is_banned(const struct Channel *chptr, const struct Client *who)
   if (find_bmask(who, &chptr->banlist))
     if (!ConfigChannel.use_except || !find_bmask(who, &chptr->exceptlist))
       return 1;
-
-  return 0;
-}
-
-/*!
- * \param source_p pointer to client attempting to join
- * \param chptr    pointer to channel 
- * \param key      key sent by client attempting to join if present
- * \return ERR_BANNEDFROMCHAN, ERR_INVITEONLYCHAN, ERR_CHANNELISFULL
- *         or 0 if allowed to join.
- */
-int
-can_join(struct Client *source_p, struct Channel *chptr, const char *key)
-{
-  if (is_banned(chptr, source_p))
-   return ERR_BANNEDFROMCHAN;
-
-  if (chptr->mode.mode & MODE_INVITEONLY)
-    if (!dlinkFind(&source_p->localClient->invited, chptr))
-      if (!ConfigChannel.use_invex || !find_bmask(source_p, &chptr->invexlist))
-        return ERR_INVITEONLYCHAN;
-
-  if (chptr->mode.key[0] && (EmptyString(key) || irccmp(chptr->mode.key, key)))
-    return ERR_BADCHANNELKEY;
-
-  if (chptr->mode.limit && dlink_list_length(&chptr->members) >=
-      chptr->mode.limit)
-    return ERR_CHANNELISFULL;
 
   return 0;
 }
