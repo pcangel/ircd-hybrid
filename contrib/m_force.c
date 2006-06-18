@@ -31,7 +31,6 @@
 #include "stdinc.h"
 #include "handlers.h"
 #include "client.h"
-#include "common.h"     /* FALSE bleah */
 #include "ircd.h"
 #include "numeric.h"
 #include "hash.h"
@@ -44,8 +43,8 @@
 #include "channel.h"
 #include "channel_mode.h"
 
-static void mo_forcejoin(struct Client *, struct Client *, int parc, char *[]);
-static void mo_forcepart(struct Client *, struct Client *, int parc, char *[]);
+static void mo_forcejoin(struct Client *, struct Client *, int, char *[]);
+static void mo_forcepart(struct Client *, struct Client *, int, char *[]);
 
 struct Message forcejoin_msgtab = {
   "FORCEJOIN", 0, 0, 3, 0, MFLG_SLOW, 0,
@@ -69,10 +68,20 @@ CLEANUP_MODULE
   mod_del_cmd(&forcejoin_msgtab);
 }
 
-/* m_forcejoin()
- *  parv[0] = sender prefix
- *  parv[1] = user to force
- *  parv[2] = channel to force them into
+
+/*! \brief FORCEJOIN command handler (called for operators only)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = name of target to join
+ *      - parv[2] = channel name
  */
 static void
 mo_forcejoin(struct Client *client_p, struct Client *source_p,
@@ -154,14 +163,14 @@ mo_forcejoin(struct Client *client_p, struct Client *source_p,
       return;
     }
 
-    add_user_to_channel(chptr, target_p, type, NO);
+    add_user_to_channel(chptr, target_p, type, 0);
 
-    sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s!%s@%s JOIN :%s",
+    sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s!%s@%s JOIN :%s",
                          target_p->name, target_p->username,
                          target_p->host, chptr->chname);
 
     if (sjmode)
-      sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s MODE %s +%c %s",
+      sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s MODE %s +%c %s",
                            me.name, chptr->chname, mode, target_p->name);
 
     if (chptr->chname[0] == '#')
@@ -193,6 +202,8 @@ mo_forcejoin(struct Client *client_p, struct Client *source_p,
                       chptr->chname, target_p->name);
       }
     }
+
+    del_invite(chptr, target_p);
 
     if (chptr->topic != NULL)
     {
@@ -233,7 +244,7 @@ mo_forcejoin(struct Client *client_p, struct Client *source_p,
     }
 
     chptr = make_channel(newch);
-    add_user_to_channel(chptr, target_p, CHFL_CHANOP, NO);
+    add_user_to_channel(chptr, target_p, CHFL_CHANOP, 0);
 
     /* send out a join, make target_p join chptr */
     if (chptr->chname[0] == '#')
@@ -248,13 +259,13 @@ mo_forcejoin(struct Client *client_p, struct Client *source_p,
                     chptr->chname, target_p->name);
     }
 
-    sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s!%s@%s JOIN :%s",
+    sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s!%s@%s JOIN :%s",
                          target_p->name, target_p->username,
                          target_p->host, chptr->chname);
 
     chptr->mode.mode |= MODE_TOPICLIMIT | MODE_NOPRIVMSGS;
 
-    sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s MODE %s +nt",
+    sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s MODE %s +nt",
                          me.name, chptr->chname);
 
     target_p->localClient->last_join_time = CurrentTime;
@@ -270,6 +281,20 @@ mo_forcejoin(struct Client *client_p, struct Client *source_p,
   }
 }
 
+/*! \brief FORCEPART command handler (called for operators only)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = name of target to part
+ *      - parv[2] = channel name
+ */
 static void
 mo_forcepart(struct Client *client_p, struct Client *source_p,
              int parc, char *parv[])
@@ -333,7 +358,7 @@ mo_forcepart(struct Client *client_p, struct Client *source_p,
                   chptr->chname, target_p->name);
   }
 
-  sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s!%s@%s PART %s :%s",
+  sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s!%s@%s PART %s :%s",
                        target_p->name, target_p->username,
                        target_p->host, chptr->chname,
                        target_p->name);

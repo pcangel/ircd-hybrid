@@ -34,7 +34,6 @@
 #include "s_serv.h"
 #include "conf/modules.h"
 #include "channel_mode.h"
-#include "common.h"
 #include "parse.h"
 
 static void mo_ojoin(struct Client *, struct Client *, int, char *[]);
@@ -54,9 +53,19 @@ CLEANUP_MODULE
   mod_del_cmd(&ojoin_msgtab);
 }
 
-/* mo_ojoin()
- *      parv[0] = sender prefix
- *      parv[1] = channels separated by commas
+
+/*! \brief OJOIN command handler (called for operators only)
+ *
+ * \param client_p Pointer to allocated Client struct with physical connection
+ *                 to this server, i.e. with an open socket connected.
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = sender prefix
+ *      - parv[1] = comma separated list of channels
  */
 static void
 mo_ojoin(struct Client *client_p, struct Client *source_p,
@@ -68,7 +77,6 @@ mo_ojoin(struct Client *client_p, struct Client *source_p,
   char *name = parv[1];
   char *t = NULL;
   unsigned int flags = 0;
-  dlink_node *ptr;
 
   if (!IsAdmin(source_p))
   {
@@ -124,10 +132,12 @@ mo_ojoin(struct Client *client_p, struct Client *source_p,
                  me.name, source_p->name, chptr->chname);
     else
     {
-      add_user_to_channel(chptr, source_p, flags, NO);
+      add_user_to_channel(chptr, source_p, flags, 0);
 
       if (chptr->chname[0] == '#')
       {
+        dlink_node *ptr = NULL;
+
         DLINK_FOREACH(ptr, serv_list.head)
         {
           struct Client *serv_p = ptr->data;
@@ -139,13 +149,15 @@ mo_ojoin(struct Client *client_p, struct Client *source_p,
         }
       }
 
-      sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s!%s@%s JOIN %s",
+      sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s!%s@%s JOIN %s",
                            source_p->name, source_p->username,
                            source_p->host, chptr->chname);
 
       if (modeletter != '\0')
-        sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s MODE %s +%c %s",
+        sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s MODE %s +%c %s",
                              me.name, chptr->chname, modeletter, source_p->name);
+
+      del_invite(chptr, source_p);
 
       /* send the topic... */
       if (chptr->topic != NULL)
