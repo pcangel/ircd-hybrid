@@ -27,7 +27,6 @@
 #include "client.h"
 #include "ircd.h"
 #include "ircd_defs.h"
-#include "numeric.h"
 #include "s_conf.h"
 #include "send.h"
 #ifdef HAVE_LIBCRYPTO

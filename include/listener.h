@@ -45,7 +45,7 @@ struct Listener
   unsigned int      flags;
 };
 
-EXTEREN const dlink_list *listener_get_list(void);
+EXTERN const dlink_list *listener_get_list(void);
 EXTERN void add_listener(int, const char *, unsigned int);
 EXTERN void close_listeners(void);
 EXTERN const char *get_listener_name(const struct Listener *);

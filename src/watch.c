@@ -27,14 +27,11 @@
 
 #include "stdinc.h"
 #include "client.h"
-#include "common.h"
 #include "hash.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "s_conf.h"
 #include "s_user.h"
 #include "send.h"
-#include "supported.h"
 #include "watch.h"
 #include "msg.h"
 

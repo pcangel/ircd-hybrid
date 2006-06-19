@@ -97,7 +97,7 @@ EXTERN dlink_list global_channel_list;
 
 EXTERN void init_channels(void);
 
-EXTERN static int find_bmask(const struct Client *, const dlink_list *const);
+EXTERN int find_bmask(const struct Client *, const dlink_list *const);
 EXTERN int check_channel_name(const char *, int);
 EXTERN int can_send(struct Channel *, struct Client *, struct Membership *);
 EXTERN int is_banned(const struct Channel *, const struct Client *);

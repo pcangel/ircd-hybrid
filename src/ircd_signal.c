@@ -23,7 +23,6 @@
  */
 
 #include "stdinc.h"
-#include "common.h"
 #include "ircd_signal.h"
 #include "ircd.h"         /* dorehash */
 #include "restart.h"      /* server_die */
