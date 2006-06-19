@@ -44,7 +44,7 @@ enum {
   HASH_TYPE_RESERVED
 };
 
-void init_hash(void);
+EXTERN void init_hash(void);
 
 EXTERN void hash_add_client(struct Client *);
 EXTERN void hash_del_client(struct Client *);
@@ -64,9 +64,6 @@ EXTERN struct Client *find_server(const char *);
 EXTERN struct Channel *hash_find_channel(const char *);
 EXTERN void *hash_get_bucket(int, unsigned int);
 EXTERN struct ResvChannel *hash_find_resv(const char *);
-
-EXTERN void free_list_task(struct ListTask *, struct Client *);
-EXTERN void safe_list_channels(struct Client *, struct ListTask *, int);
 
 EXTERN unsigned int strhash(const char *);
 #endif  /* INCLUDED_hash_h */

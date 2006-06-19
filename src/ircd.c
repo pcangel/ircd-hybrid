@@ -141,7 +141,7 @@ make_daemon(void)
 
 static int printVersion = 0;
 
-struct lgetopt myopts[] = {
+static struct lgetopt myopts[] = {
   {"dlinefile",  &ConfigFileEntry.dlinefile, 
    STRING, "File to use for dline.conf"},
   {"configfile", &ConfigFileEntry.configfile, 
@@ -543,7 +543,7 @@ main(int argc, char *argv[])
   watch_init();
 
   init_auth();          /* Initialise the auth code */
-  init_channels();
+  channel_init();
   init_channel_modes();
   initialize_server_capabs();   /* Set up default_server_capabs */
 

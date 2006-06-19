@@ -95,14 +95,15 @@ struct Ban
 
 EXTERN dlink_list global_channel_list;
 
-EXTERN void init_channels(void);
-
 EXTERN int find_bmask(const struct Client *, const dlink_list *const);
 EXTERN int check_channel_name(const char *, int);
 EXTERN int can_send(struct Channel *, struct Client *, struct Membership *);
 EXTERN int is_banned(const struct Channel *, const struct Client *);
 EXTERN int has_member_flags(struct Membership *, unsigned int);
 
+EXTERN void channel_init(void);
+EXTERN void free_list_task(struct ListTask *, struct Client *);
+EXTERN void safe_list_channels(struct Client *, struct ListTask *, int);
 EXTERN void remove_ban(struct Ban *, dlink_list *);
 EXTERN void add_user_to_channel(struct Channel *, struct Client *,
                                 unsigned int, int);
