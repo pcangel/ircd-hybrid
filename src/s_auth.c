@@ -381,9 +381,11 @@ start_auth(va_list args)
   if (ConfigFileEntry.disable_auth == 0)
     start_auth_query(auth);
 
-  /* auth order changed, before gethost_byaddr can immediately call
+  /*
+   * auth order changed, before gethost_byaddr can immediately call
    * dns callback under win32 when the lookup cannot be started.
-   * And that would do MyFree(auth) etc -adx */
+   * And that would do MyFree(auth) etc -adx
+   */
   SetDNSPending(auth);
   dlinkAdd(auth, &auth->dns_node, &auth_doing_dns_list);
   ClearCrit(auth);
@@ -505,6 +507,7 @@ auth_connect_callback(fde_t *fd, int error, void *data)
     auth_error(auth);
     return;
   }
+
   read_auth_reply(&auth->fd, auth);
 }
 
@@ -611,14 +614,14 @@ read_auth_reply(fde_t *fd, void *data)
 void 
 delete_auth(struct Client *target_p)
 {
-  dlink_node *ptr;
-  dlink_node *next_ptr;
-  struct AuthRequest *auth;
+  dlink_node *ptr = NULL, *next_ptr = NULL;
+  struct AuthRequest *auth = NULL;
 
   if (!IsUnknown(target_p))
     return;
 
   if (target_p->localClient->dns_query != NULL)
+  {
     DLINK_FOREACH_SAFE(ptr, next_ptr, auth_doing_dns_list.head)
     {
       auth = ptr->data;
@@ -627,7 +630,11 @@ delete_auth(struct Client *target_p)
       {
         delete_resolver_queries(target_p->localClient->dns_query);
 
+        MyFree(target_p->localClient->dns_query);
+        target_p->localClient->dns_query = NULL;
+
         dlinkDelete(&auth->dns_node, &auth_doing_dns_list);
+
         if (!IsDoingAuth(auth))
         {
           MyFree(auth);
@@ -635,6 +642,7 @@ delete_auth(struct Client *target_p)
         }
       }
     }
+  }
 
   DLINK_FOREACH_SAFE(ptr, next_ptr, auth_doing_ident_list.head)
   {
