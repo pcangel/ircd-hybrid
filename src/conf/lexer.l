@@ -232,6 +232,7 @@ conf_eof(void)
 
   /* destroy current buffer */
   yy_delete_buffer(YY_CURRENT_BUFFER);
+  MyFree(conf_curctx.filename);
   fbclose(conf_curctx.f);
 
   /* restore old context */
