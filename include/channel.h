@@ -27,9 +27,10 @@
 #ifndef INCLUDED_channel_h
 #define INCLUDED_channel_h
 
-#include "ircd_defs.h"        /* KEYLEN, CHANNELLEN */
+#include "ircd_defs.h"
 
 struct Client;
+struct ListTask;
 
 /*! \brief Mode structure for channels */
 struct Mode

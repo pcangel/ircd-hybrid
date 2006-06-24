@@ -25,8 +25,6 @@
 #ifndef INCLUDED_motd_h
 #define INCLUDED_motd_h
 
-#include "ircd_defs.h"   
-
 #define MESSAGELINELEN 256
 
 struct MessageFileLine

@@ -24,7 +24,6 @@
 
 #ifndef INCLUDED_serv_h
 #define INCLUDED_serv_h
-#include "setup.h"
 
 /* collect ziplinks compression ratios/etc every minute */
 #define ZIPSTATS_TIME           60
@@ -69,12 +68,6 @@ struct Capability
 #define CAP_ENCAP	0x00010000 /* supports ENCAP message		  */
 #define CAP_HOPS	0x00020000 /* supports HALFOPS			  */
 #define CAP_TBURST      0x00040000 /* supports TBURST (Topic burst)       */
-
-#ifdef HAVE_LIBZ
-#define CAP_ZIP_SUPPORTED CAP_ZIP
-#else
-#define CAP_ZIP_SUPPORTED 0
-#endif
 
 #ifdef HAVE_LIBCRYPTO
 struct EncCapability

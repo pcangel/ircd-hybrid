@@ -27,7 +27,7 @@
 
 #include "setup.h"
 #include "ircd_handler.h"
-#include "channel.h"
+#include "ircd_defs.h"
 
 #define PASSWDLEN       20
 #define CIPHERKEYLEN    64 /* 512bit */

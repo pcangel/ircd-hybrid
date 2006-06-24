@@ -23,20 +23,19 @@
  */
 
 #include "stdinc.h"
+#include "ircd_defs.h"
 #include "whowas.h"
 #include "handlers.h"
 #include "client.h"
-#include "common.h"
 #include "hash.h"
 #include "ircd.h"
-#include "ircd_defs.h"
 #include "numeric.h"
 #include "s_serv.h"
 #include "s_user.h"
 #include "send.h"
 #include "s_conf.h"
-#include "msg.h"
 #include "parse.h"
+#include "msg.h"
 #include "conf/modules.h"
 
 

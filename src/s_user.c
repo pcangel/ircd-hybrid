@@ -36,7 +36,6 @@
 #include "s_user.h"
 #include "s_serv.h"
 #include "send.h"
-#include "supported.h"
 #include "whowas.h"
 #include "packet.h"
 #include "userhost.h"
@@ -1264,7 +1263,7 @@ init_isupport(void)
   isupportFile = init_MessageLine();
 
   add_isupport("CALLERID", NULL, -1);
-  add_isupport("CASEMAPPING", CASEMAP, -1);
+  add_isupport("CASEMAPPING", "rfc1459", -1);
   add_isupport("KICKLEN", NULL, KICKLEN);
   add_isupport("MODES", NULL, MAXMODEPARAMS);
   add_isupport("NICKLEN", NULL, NICKLEN-1);

@@ -23,10 +23,10 @@
  */
 
 #include "stdinc.h"
+#include "ircd_defs.h"
 #include "listener.h"
 #include "client.h"
 #include "ircd.h"
-#include "ircd_defs.h"
 #include "s_conf.h"
 #include "send.h"
 #ifdef HAVE_LIBCRYPTO
@@ -78,7 +78,7 @@ free_listener(struct Listener *listener)
  * returns "host.foo.org:6667" for a given listener
  */
 const char *
-get_listener_name(const struct Listener *listener)
+get_listener_name(const struct Listener *const listener)
 {
   static char buf[HOSTLEN + HOSTLEN + PORTNAMELEN + 4];
 

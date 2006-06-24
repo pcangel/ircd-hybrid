@@ -28,10 +28,6 @@
 #define LISTENER_SSL    0x1
 #define LISTENER_HIDDEN 0x2
 
-#include "ircd_defs.h"  
-
-struct Client;
-
 struct Listener
 {
   dlink_node	   listener_node;      /* list node pointer */
@@ -48,7 +44,6 @@ struct Listener
 EXTERN const dlink_list *listener_get_list(void);
 EXTERN void add_listener(int, const char *, unsigned int);
 EXTERN void close_listeners(void);
-EXTERN const char *get_listener_name(const struct Listener *);
-EXTERN void show_ports(struct Client *);
+EXTERN const char *get_listener_name(const struct Listener *const);
 EXTERN void free_listener(struct Listener *);
 #endif /* INCLUDED_listener_h */

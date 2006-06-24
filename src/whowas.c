@@ -23,8 +23,8 @@
  */
 
 #include "stdinc.h"
-#include "whowas.h"
 #include "client.h"
+#include "whowas.h"
 #include "hash.h"
 #include "ircd.h"
 #include "ircd_defs.h"

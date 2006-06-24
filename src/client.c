@@ -24,6 +24,7 @@
 
 #include "stdinc.h"
 #include "client.h"
+#include "channel.h"
 #include "channel_mode.h"
 #include "common.h"
 #include "hash.h"

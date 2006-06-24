@@ -40,6 +40,7 @@
 #include "hash.h"
 #include "s_serv.h"
 #include "s_conf.h"
+#include "channel.h"
 
 static void ms_tb(struct Client *, struct Client *, int, char *[]);
 static void ms_tburst(struct Client *, struct Client *, int, char *[]);

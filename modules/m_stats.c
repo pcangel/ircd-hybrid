@@ -41,6 +41,7 @@
 #include "resv.h"  /* report_resv */
 #include "whowas.h"
 #include "watch.h"
+#include "channel.h"
 
 static void *do_stats(va_list args);
 static void m_stats(struct Client *, struct Client *, int, char *[]);

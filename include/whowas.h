@@ -25,10 +25,6 @@
 #ifndef INCLUDED_whowas_h
 #define INCLUDED_whowas_h
 
-#include "ircd_defs.h"
-#include "client.h"
-#include "setup.h"
-
 struct Whowas
 {
   int hashv;
@@ -43,9 +39,6 @@ struct Whowas
   dlink_node cnode; /* for client struct linked list */
 };
 
-/*
-** initwhowas
-*/
 EXTERN void whowas_init(void);
 
 /*

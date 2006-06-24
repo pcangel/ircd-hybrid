@@ -25,11 +25,7 @@
 #ifndef INCLUDED_ircd_h
 #define INCLUDED_ircd_h
 
-#include "ircd_defs.h"
-#include "setup.h"
-
-struct Client;
-struct dlink_list;
+struct _dlink_list;
 
 struct SetOptions
 {
@@ -58,7 +54,7 @@ struct Counter
   int invisi;   /* invisible clients   */
   int max_loc;  /* MAX local clients   */
   int max_tot;  /* MAX global clients  */
-  unsigned long totalrestartcount; /* Total client count ever */
+  unsigned int totalrestartcount; /* Total client count ever */
 };
 
 /*
