@@ -94,6 +94,20 @@ struct SlinkRplDef slinkrpltab[] = {
 
 
 void
+server_init(void)
+{
+  add_capability("QS", CAP_QS, 1);
+  add_capability("EOB", CAP_EOB, 1);
+  add_capability("HUB", CAP_HUB, 0);
+  add_capability("TS6", CAP_TS6, 0);
+  add_capability("ZIP", CAP_ZIP, 0);
+  add_capability("CLUSTER", CAP_CLUSTER, 1);
+#ifdef HALFOPS
+  add_capability("HOPS", CAP_HOPS, 1);
+#endif
+}
+
+void
 slink_error(unsigned int rpl, unsigned int len, unsigned char *data,
             struct Client *server_p)
 {

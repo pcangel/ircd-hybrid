@@ -280,25 +280,6 @@ initialize_message_files(void)
   init_isupport();
 }
 
-/* initialize_server_capabs()
- *
- * inputs       - none
- * output       - none
- */
-static void
-initialize_server_capabs(void)
-{
-  add_capability("QS", CAP_QS, 1);
-  add_capability("EOB", CAP_EOB, 1);
-  add_capability("HUB", CAP_HUB, 0);
-  add_capability("TS6", CAP_TS6, 0);
-  add_capability("ZIP", CAP_ZIP, 0);
-  add_capability("CLUSTER", CAP_CLUSTER, 1);
-#ifdef HALFOPS
-  add_capability("HOPS", CAP_HOPS, 1);
-#endif
-}
-
 /* write_pidfile()
  *
  * inputs       - filename+path of pid file
@@ -381,7 +362,7 @@ check_pidfile(const char *filename)
  * side effects - setups SSL context.
  */
 static void
-init_ssl(void)
+ssl_init(void)
 {
 #ifdef HAVE_LIBCRYPTO
   SSL_library_init();
@@ -498,7 +479,7 @@ main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
-  init_ssl();
+  ssl_init();
 
 #ifndef _WIN32
   if (!server_state.foreground)
@@ -527,12 +508,13 @@ main(int argc, char *argv[])
 
   SetMe(&me);
   make_server(&me);
+
   dlinkAdd(&me, &me.node, &global_client_list);
   dlinkAdd(&me, make_dlink_node(), &global_serv_list);
 
   init_callbacks();
   initialize_message_files();
-  init_hash();
+  hash_init();
   init_ip_hash_table();      /* client host ip hash table */
   init_host_hash();          /* Host-hashtable. */
   clear_tree_parse();
@@ -541,13 +523,12 @@ main(int argc, char *argv[])
   whowas_init();
   watch_init();
 
-  init_auth();          /* Initialise the auth code */
+  init_auth();
   channel_init();
   init_channel_modes();
-  initialize_server_capabs();   /* Set up default_server_capabs */
+  server_init();
 
   read_conf_files(1);   /* cold start init conf files */
-  check_class();
 
   if (ServerInfo.name == NULL)
   {

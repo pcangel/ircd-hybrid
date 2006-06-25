@@ -64,7 +64,7 @@ static struct ResvChannel *resvchannelTable[HASHSIZE];
  *                functions and clear the tables
  */
 void
-init_hash(void)
+hash_init(void)
 {
   unsigned int i;
 

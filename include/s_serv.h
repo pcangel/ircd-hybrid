@@ -28,8 +28,6 @@
 /* collect ziplinks compression ratios/etc every minute */
 #define ZIPSTATS_TIME           60
 
-struct ConfItem;
-
 /*
  * number of seconds to wait after server starts up, before
  * starting try_connections()
@@ -37,9 +35,9 @@ struct ConfItem;
  */
 #define STARTUP_CONNECTIONS_TIME 60
 
+
 struct Client;
 struct AccessItem;
-struct Channel;
 
 /* Capabilities */
 struct Capability
@@ -106,7 +104,6 @@ struct EncCapability
 #define CAP_ENC_ALL             0xFFFFFFFF
 
 
-/* */
 #ifdef HAVE_EVP_BF_CFB
 #define USE_CIPHER_BF       1
 /* Check for bug handling variable length blowfish keys */
@@ -195,8 +192,8 @@ struct EncCapability
 #define SLINKRPL_ERROR          1
 #define SLINKRPL_ZIPSTATS       2
 
-typedef void SlinkRplHnd(unsigned int replyid, unsigned int datalen,
-                         unsigned char *data, struct Client *client_p);
+typedef void SlinkRplHnd(unsigned int, unsigned int,
+                         unsigned char *, struct Client *);
 struct SlinkRplDef
 {
   unsigned int replyid;
@@ -204,17 +201,8 @@ struct SlinkRplDef
   unsigned int flags;
 };
 
-extern struct SlinkRplDef slinkrpltab[];
+EXTERN struct SlinkRplDef slinkrpltab[];
 
-/*
- * Globals
- *
- *
- * list of recognized server capabilities.  "TS" is not on the list
- * because all servers that we talk to already do TS, and the kludged
- * extra argument to "PASS" takes care of checking that.  -orabidoo
- */
-EXTERN struct Capability captab[];
 #ifdef HAVE_LIBCRYPTO
 EXTERN struct EncCapability CipherTable[];
 #endif
@@ -239,11 +227,10 @@ EXTERN void server_estab(struct Client *);
 EXTERN const char *show_capabilities(const struct Client *);
 EXTERN void try_connections(void *);
 EXTERN void collect_zipstats(void *);
-EXTERN void burst_channel(struct Client *, struct Channel *);
 EXTERN void sendnick_TS(struct Client *, struct Client *);
 EXTERN int serv_connect(struct AccessItem *, struct Client *, int);
 EXTERN struct Client *find_servconn_in_progress(const char *);
-EXTERN unsigned long nextFreeMask(void);
+EXTERN void server_init(void);
 EXTERN void cryptlink_init(struct Client *, struct AccessItem *, fde_t *);
 EXTERN void cryptlink_regen_key(void *);
 EXTERN void cryptlink_error(struct Client *, const char *,

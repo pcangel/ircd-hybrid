@@ -44,8 +44,7 @@ enum {
   HASH_TYPE_RESERVED
 };
 
-EXTERN void init_hash(void);
-
+EXTERN void hash_init(void);
 EXTERN void hash_add_client(struct Client *);
 EXTERN void hash_del_client(struct Client *);
 EXTERN void hash_add_channel(struct Channel *);

@@ -76,9 +76,9 @@ SRCS = \
  @SSL_SRCS_ENABLE@ \
  s_auth.c \
  s_conf.c \
- s_serv.c \
  s_user.c \
  send.c \
+ server.c \
  watch.c \
  whowas.c \
  y.tab.c

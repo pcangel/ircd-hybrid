@@ -28,12 +28,11 @@
 struct Message;
 struct Client;
 
-void clear_tree_parse(void);
-
+EXTERN void clear_tree_parse(void);
 EXTERN void parse(struct Client *, char *, char *);
 EXTERN void mod_add_cmd(struct Message *);
 EXTERN void mod_del_cmd(struct Message *);
-EXTERN struct Message *find_command(const char *);
 EXTERN void report_messages(struct Client *);
 
+EXTERN struct Message *find_command(const char *);
 #endif /* INCLUDED_parse_h */
