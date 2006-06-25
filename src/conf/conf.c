@@ -85,21 +85,21 @@ do_parse_error(int fatal, const char *fmt, va_list args)
   char *newbuf = stripws(conf_linebuf);
   char msg[CONF_BUFSIZE];
 
-  vsnprintf(msg, CONF_BUFSIZE, fmt, args);
+  vsnprintf(msg, sizeof(msg), fmt, args);
 
   if (conf_pass != 0)
   {
     sendto_realops_flags(UMODE_ALL, L_ALL, "\"%s\", line %u: %s: %s",
-      conf_curctx.filename, conf_curctx.lineno, msg, newbuf);
+      conf_curctx.filename, conf_curctx.lineno+1, msg, newbuf);
     ilog(fatal ? L_CRIT : L_WARN, "\"%s\", line %u: %s: %s",
-      conf_curctx.filename, conf_curctx.lineno, msg, newbuf);
+      conf_curctx.filename, conf_curctx.lineno+1, msg, newbuf);
   }
   else
   {
     sendto_realops_flags(UMODE_ALL, L_ALL, "Conf %s: %s",
-      fatal ? "FATAL" : "ERROR", msg);
+                         fatal ? "FATAL" : "ERROR", msg);
     ilog(fatal ? L_CRIT : L_WARN, "Conf %s: %s",
-      fatal ? "FATAL" : "ERROR", msg);
+         fatal ? "FATAL" : "ERROR", msg);
   }
 }
 
