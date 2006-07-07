@@ -169,37 +169,44 @@ parse_resvconf(void)
     if ((p = strpbrk(input, "\r\n")) != NULL)
       *p = '\0';
 
-    /* Ignore comment lines immediately */
-    if (input[0] == '#' || input[0] == ';')
-      continue;
-
     p = input;
+
     /* skip until something thats not a space is seen */
     while (IsSpace(*p))
-      p++;
+      ++p;
+
     /* if at this point, have a '\0' then continue */
     if (*p == '\0')
       continue;
 
+    /* Ignore comment lines immediately */
+    if (*p == ';' || *p == '#')
+      continue;
+
     /* skip until a space is found */
-    opt = input;
-    while (!IsSpace(*p))
-      if (*p++ == '\0')
-        continue;  /* no arguments?.. ignore this line */
+    opt = p;
+    while (!IsSpace(*p) && *p)
+      ++p;
+
+    if (*p == '\0')
+      continue;  /* no arguments?.. ignore this line */
+
     /* blow away the space character */
     *p++ = '\0';
 
     /* skip these spaces that are before the argument */
     while (IsSpace(*p))
-      p++;
+      ++p;
+
     /* Now arg should be right where p is pointing */
     arg = p;
+
     if ((p = strpbrk(arg, " \t")) != NULL)
       *p = '\0';  /* take the first word */
 
-    if (irccmp(opt, "domain") == 0)
-      strlcpy(irc_domain, arg, sizeof(irc_domain));
-    else if (irccmp(opt, "nameserver") == 0)
+    if (!irccmp(opt, "domain"))
+      strlcpy(irc_domain, arg, HOSTLEN);
+    else if (!irccmp(opt, "nameserver"))
       add_nameserver(arg);
   }
 
