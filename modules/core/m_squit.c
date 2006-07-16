@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "common.h"      /* FALSE bleah */
@@ -34,7 +35,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 
 static void ms_squit(struct Client *, struct Client *, int, char *[]);

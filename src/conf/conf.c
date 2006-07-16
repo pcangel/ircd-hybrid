@@ -68,6 +68,8 @@ init_conf(void)
 #ifndef STATIC_MODULES
   init_modules();
 #endif
+  init_ilines();
+  init_operator();
 }
 
 /*
@@ -381,10 +383,4 @@ delete_conf_field(struct ConfSection *section, struct ConfField *field)
 {
   dlinkDelete(&field->node, &section->fields);
   MyFree(field);
-}
-
-struct ConfItem *
-make_conf_item2(ConfType type)
-{
-  return NULL;
 }

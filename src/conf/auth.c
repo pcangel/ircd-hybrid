@@ -1,9 +1,8 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  conf.h: Includes all configuration headers.
+ *  auth.c: Defines the auth{} block of ircd.conf.
  *
- *  Copyright (C) 2003 by Piotr Nizynski, Advanced IRC Services Project
- *  Copyright (C) 2005 by the Hybrid Development Team.
+ *  Copyright (C) 2006 by the Hybrid Development Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,23 +19,22 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
  *
- *  $Id: conf.h 69 2005-10-04 16:09:51Z adx $
+ *  $Id$
  */
 
-#ifndef INCLUDED_CONF_H
-#define INCLUDED_CONF_H
+#include "stdinc.h"
+#include "conf/conf.h"
 
-#include "conf/manager.h"
-#include "conf/serverinfo.h"
-#include "conf/admin.h"
-#include "conf/auth.h"
-#include "conf/listen.h"
-#include "conf/logging.h"
-#include "conf/class.h"
-#include "conf/channel.h"
-#include "conf/serverhide.h"
-#include "conf/general.h"
-#include "conf/modules.h"
-#include "conf/operator.h"
-
-#endif
+/*
+ * init_ilines()
+ *
+ * Defines the auth{} conf section.
+ *
+ * inputs: none
+ * output: none
+ */
+void
+init_ilines(void)
+{
+  add_conf_section("auth", 2);
+}

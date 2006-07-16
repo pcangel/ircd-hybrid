@@ -14,6 +14,7 @@ INCLUDES	= -I.. -I../../include
 CPPFLAGS	= ${INCLUDES} -DIN_LIBIO @CPPFLAGS@
 
 SRCS = \
+  hostmask.c \
   @INET_MISC@ \
   irc_getaddrinfo.c \
   irc_getnameinfo.c \

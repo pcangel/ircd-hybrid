@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "common.h"
@@ -33,10 +34,8 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "packet.h"
 
-static struct ConfItem *find_password_conf(const char *, struct Client *);
 static void failed_oper_notice(struct Client *, const char *, const char *);
 static void m_oper(struct Client *, struct Client *, int, char *[]);
 static void mo_oper(struct Client *, struct Client *, int, char *[]);
@@ -66,8 +65,7 @@ static void
 m_oper(struct Client *client_p, struct Client *source_p,
        int parc, char *parv[])
 {
-  struct ConfItem *conf = NULL;
-  struct AccessItem *aconf = NULL;
+  struct OperatorConf *conf = NULL;
   const char *name = parv[1];
   const char *password = parv[2];
 
@@ -82,20 +80,19 @@ m_oper(struct Client *client_p, struct Client *source_p,
   if (!IsFloodDone(source_p))
     flood_endgrace(source_p);
 
-  if ((conf = find_password_conf(name, source_p)) == NULL)
+  conf = find_operconf(name, source_p->username, source_p->host,
+                       &source_p->localClient->ip);
+  if (conf == NULL)
   {
     sendto_one(source_p, form_str(ERR_NOOPERHOST), me.name, source_p->name);
-    /* XXX - eh? what's that find_exact_name_conf() call for? why is it here? */
-    conf = find_exact_name_conf(OPER_TYPE, name, NULL, NULL);
+    conf = find_operconf(name, NULL, NULL, NULL);
     failed_oper_notice(source_p, name, (conf != NULL) ?
                        "host mismatch" : "no oper {} block");
     log_oper_action(LOG_FAILED_OPER_TYPE, source_p, "%s\n", name);
     return;
   }
 
-  aconf = &conf->conf.AccessItem;
-
-  if (match_conf_password(password, aconf))
+  if (match_password(conf->passwd, password, conf->flags & OPER_FLAG_ENCRYPTED))
   {
     oper_up(source_p, conf);
 
@@ -123,35 +120,6 @@ mo_oper(struct Client *client_p, struct Client *source_p,
 {
   sendto_one(source_p, form_str(RPL_YOUREOPER), me.name, source_p->name);
   send_message_file(source_p, &ConfigFileEntry.opermotd);
-}
-
-/* find_password_conf()
- *
- * inputs       - name
- *		- pointer to source_p
- * output       - pointer to oper conf or NULL
- * side effects	- NONE
- */
-static struct ConfItem *
-find_password_conf(const char *name, struct Client *source_p)
-{
-  struct ConfItem *conf = NULL;
-
-  if ((conf = find_exact_name_conf(OPER_TYPE,
-				   name, source_p->username, source_p->host
-				   )) != NULL)
-  {
-    return(conf);
-  }
-
-  if ((conf = find_exact_name_conf(OPER_TYPE,
-				   name, source_p->username,
-				   source_p->sockhost)) != NULL)
-  {
-    return(conf);
-  }
-
-  return(NULL);
 }
 
 /* failed_oper_notice()

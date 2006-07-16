@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "common.h"  
 #include "handlers.h"
 #include "client.h"
@@ -36,7 +37,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 static void *do_whois(va_list);
 static int single_whois(struct Client *, struct Client *);

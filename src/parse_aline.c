@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "ircd_defs.h"
 #include "s_conf.h"
 #include "parse_aline.h"
@@ -35,7 +36,6 @@
 #include "ircd.h"
 #include "listener.h"
 #include "hostmask.h"
-#include "conf/modules.h"
 #include "numeric.h"
 #include "send.h"
 #include "userhost.h"

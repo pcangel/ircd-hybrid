@@ -380,27 +380,6 @@ struct LocalUser
 #define SEND_UMODES  (UMODE_INVISIBLE | UMODE_OPER | UMODE_WALLOP | \
                       UMODE_ADMIN)
 
-
-/* oper priv flags */
-#define OPER_FLAG_GLOBAL_KILL  0x00000001 /* oper can global kill        */
-#define OPER_FLAG_REMOTE       0x00000002 /* oper can do squits/connects */
-#define OPER_FLAG_UNKLINE      0x00000004 /* oper can use unkline        */
-#define OPER_FLAG_GLINE        0x00000008 /* oper can use gline          */
-#define OPER_FLAG_N            0x00000010 /* oper can umode n            */
-#define OPER_FLAG_K            0x00000020 /* oper can kill/kline         */
-#define OPER_FLAG_X            0x00000040 /* oper can xline              */
-#define OPER_FLAG_DIE          0x00000080 /* oper can die                */
-#define OPER_FLAG_REHASH       0x00000100 /* oper can rehash             */
-#define OPER_FLAG_ADMIN        0x00000200 /* oper can set umode +a       */
-#define OPER_FLAG_HIDDEN_ADMIN 0x00000400 /* admin is hidden             */
-#define OPER_FLAG_OPERWALL     0x00000800 /* */
-#define OPER_FLAG_OPER_SPY     0x00001000 /* */
-#define OPER_FLAG_REMOTEBAN    0x00002000 /* */
-#define OPER_FLAG_HIDDEN_OPER  0x00004000 /* */
-
-#define SetOFlag(x, y) ((x)->localClient->operflags |= (y))
-
-
 /* flags macros. */
 #define IsAuthFinished(x)       ((x)->flags & FLAGS_FINISHED_AUTH)
 #define IsDead(x)               ((x)->flags & FLAGS_DEADSOCKET)
@@ -509,23 +488,6 @@ struct LocalUser
 #define IsCaptured(x)           ((x)->handler == DUMMY_HANDLER)
 #define SetCaptured(x)          ((x)->handler = DUMMY_HANDLER)
 #define ClearCaptured(x)        ((x)->handler = CLIENT_HANDLER)
-
-/* operflags macros */
-#define ClearOperFlags(x)	((x)->localClient->operflags = 0)
-#define IsOperGlobalKill(x)     (MyConnect(x) ? (x)->localClient->operflags & OPER_FLAG_GLOBAL_KILL : 0)
-#define IsOperRemote(x)         (MyConnect(x) ? (x)->localClient->operflags & OPER_FLAG_REMOTE : 0)
-#define IsOperUnkline(x)        (MyConnect(x) ? (x)->localClient->operflags & OPER_FLAG_UNKLINE : 0)
-#define IsOperGline(x)          (MyConnect(x) ? (x)->localClient->operflags & OPER_FLAG_GLINE : 0)
-#define IsOperN(x)              (MyConnect(x) ? (x)->localClient->operflags & OPER_FLAG_N : 0)
-#define IsOperK(x)              (MyConnect(x) ? (x)->localClient->operflags & OPER_FLAG_K : 0)
-#define IsOperDie(x)            (MyConnect(x) ? (x)->localClient->operflags & OPER_FLAG_DIE : 0)
-#define IsOperRehash(x)         (MyConnect(x) ? (x)->localClient->operflags & OPER_FLAG_REHASH : 0)
-#define IsOperAdmin(x)          (MyConnect(x) ? (x)->localClient->operflags & OPER_FLAG_ADMIN : 0)
-#define IsOperHiddenAdmin(x)	(MyConnect(x) ? (x)->localClient->operflags & OPER_FLAG_HIDDEN_ADMIN : 0)
-#define IsOperX(x)              (MyConnect(x) ? (x)->localClient->operflags & OPER_FLAG_X : 0)
-#define IsOperWall(x)           (MyConnect(x) ? (x)->localClient->operflags & OPER_FLAG_OPERWALL : 0)
-#define IsOperRemoteBan(x)      (MyConnect(x) ? (x)->localClient->operflags & OPER_FLAG_REMOTEBAN : 0)
-#define IsOperHidden(x)         (MyConnect(x) ? (x)->localClient->operflags & OPER_FLAG_HIDDEN_OPER : 0)
 
 /*
  * definitions for get_client_name

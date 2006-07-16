@@ -47,6 +47,8 @@ SSL_SRCS = rsa.c
 
 SRCS = \
  conf/admin.c \
+ conf/auth.c \
+ conf/class.c \
  conf/conf_channel.c \
  conf/conf.c \
  conf/general.c \
@@ -64,7 +66,6 @@ SRCS = \
  hostmask.c \
  ircd.c \
  ircd_signal.c \
- lex.yy.c \
  listener.c \
  motd.c \
  numeric.c \
@@ -80,8 +81,7 @@ SRCS = \
  send.c \
  server.c \
  watch.c \
- whowas.c \
- y.tab.c
+ whowas.c
 
 OBJS = ${SRCS:.c=.o}
 

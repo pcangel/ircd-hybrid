@@ -1,6 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  s_serv.c: Server related functions.
+ *  server.c: Server related functions.
  *
  *  Copyright (C) 2005 by the past and present ircd coders, and others.
  *
@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #ifdef HAVE_LIBCRYPTO
 #include <openssl/rsa.h>
 #include "rsa.h"

@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "hash.h"
@@ -33,7 +34,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "s_conf.h"
 
 static void m_trace(struct Client *, struct Client *, int, char *[]);

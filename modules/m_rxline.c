@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "channel.h"
 #include "client.h"
 #include "common.h"
@@ -37,7 +38,6 @@
 #include "s_serv.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "resv.h"
 
 static void mo_rxline(struct Client *, struct Client *, int, char *[]);

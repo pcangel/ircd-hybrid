@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "ircd_defs.h"
 #include "s_conf.h"
 #include "parse_aline.h"
@@ -35,7 +36,6 @@
 #include "ircd.h"
 #include "listener.h"
 #include "hostmask.h"
-#include "conf/modules.h"
 #include "numeric.h"
 #include "send.h"
 #include "userhost.h"
@@ -1788,55 +1788,6 @@ conf_connect_allowed(const struct irc_ssaddr *addr)
   return 0;
 }
 
-/* oper_privs_as_string()
- *
- * inputs        - pointer to client_p
- * output        - pointer to static string showing oper privs
- * side effects  - return as string, the oper privs as derived from port
- */
-static const struct oper_privs
-{
-  const unsigned int oprivs;
-  const unsigned int hidden;
-  const unsigned char c;
-} flag_list[] = {
-  { OPER_FLAG_ADMIN,       OPER_FLAG_HIDDEN_ADMIN,  'A' },
-  { OPER_FLAG_REMOTEBAN,   0,                       'B' },
-  { OPER_FLAG_DIE,         0,                       'D' },
-  { OPER_FLAG_GLINE,       0,                       'G' },
-  { OPER_FLAG_REHASH,      0,                       'H' },
-  { OPER_FLAG_K,           0,                       'K' },
-  { OPER_FLAG_OPERWALL,    0,                       'L' },
-  { OPER_FLAG_N,           0,                       'N' },
-  { OPER_FLAG_GLOBAL_KILL, 0,                       'O' },
-  { OPER_FLAG_REMOTE,      0,                       'R' },
-  { OPER_FLAG_OPER_SPY,    0,                       'S' },
-  { OPER_FLAG_UNKLINE,     0,                       'U' },
-  { OPER_FLAG_X,           0,                       'X' },
-  { 0, 0, '\0' }
-};
-
-char *
-oper_privs_as_string(const unsigned int port)
-{
-  static char privs_out[16];
-  char *privs_ptr = privs_out;
-  unsigned int i = 0;
-
-  for (; flag_list[i].oprivs; ++i)
-  {
-    if ((port & flag_list[i].oprivs) &&
-        (port & flag_list[i].hidden) == 0)
-      *privs_ptr++ = flag_list[i].c;
-    else
-      *privs_ptr++ = ToLowerTab[flag_list[i].c];
-  }
-
-  *privs_ptr = '\0';
-
-  return privs_out;
-}
-
 /*
  * Input: A client to find the active oper{} name for.
  * Output: The nick!user@host{oper} of the oper.
@@ -2238,19 +2189,8 @@ check_class(void)
  * side effects	- 
  */
 void
-init_class(void)
+_init_class(void)
 {
-  struct ClassItem *aclass;
-
-  class_default = make_conf_item(CLASS_TYPE);
-  aclass = &class_default->conf.ClassItem;
-  DupString(class_default->name, "default");
-  ConFreq(aclass)  = DEFAULT_CONNECTFREQUENCY;
-  PingFreq(aclass) = DEFAULT_PINGFREQUENCY;
-  MaxTotal(aclass) = MAXIMUM_LINKS_DEFAULT;
-  MaxSendq(aclass) = DEFAULT_SENDQ;
-  CurrUserCount(aclass) = 0;
-
   client_check_cb = register_callback("check_client", check_client);
 }
 
@@ -2447,123 +2387,6 @@ int
 conf_yy_fatal_error(const char *msg)
 {
   return 0;
-}
-
-/* match_conf_password()
- *
- * inputs       - pointer to given password
- *              - pointer to Conf
- * output       - 1 or 0 if match
- * side effects - none
- */
-int
-match_conf_password(const char *password, const struct AccessItem *aconf)
-{
-  const char *encr = NULL;
-
-  if (password == NULL || aconf->passwd == NULL)
-    return 0;
-
-  if (aconf->flags & CONF_FLAGS_ENCRYPTED)
-  {
-    /* use first two chars of the password they send in as salt */
-    /* If the password in the conf is MD5, and ircd is linked
-     * to scrypt on FreeBSD, or the standard crypt library on
-     * glibc Linux, then this code will work fine on generating
-     * the proper encrypted hash for comparison.
-     */
-    if (*aconf->passwd)
-      encr = crypt(password, aconf->passwd);
-    else
-      encr = "";
-  }
-  else
-    encr = password;
-
-  return !strcmp(encr, aconf->passwd);
-}
-
-
-/*
- * split_nuh
- *
- * inputs	- pointer to original mask (modified in place)
- *		- pointer to pointer where nick should go
- *		- pointer to pointer where user should go
- *		- pointer to pointer where host should go
- * output	- NONE
- * side effects	- mask is modified in place
- *		  If nick pointer is NULL, ignore writing to it
- *		  this allows us to use this function elsewhere.
- *
- * mask				nick	user	host
- * ----------------------	------- ------- ------
- * Dianora!db@db.net		Dianora	db	db.net
- * Dianora			Dianora	*	*
- * db.net                       *       *       db.net
- * OR if nick pointer is NULL
- * Dianora			-	*	Dianora
- * Dianora!			Dianora	*	*
- * Dianora!@			Dianora	*	*
- * Dianora!db			Dianora	db	*
- * Dianora!@db.net		Dianora	*	db.net
- * db@db.net			*	db	db.net
- * !@				*	*	*
- * @				*	*	*
- * !				*	*	*
- */
-void
-split_nuh(struct split_nuh_item *const iptr)
-{
-  char *p = NULL, *q = NULL;
-
-  if (iptr->nickptr)
-    strlcpy(iptr->nickptr, "*", iptr->nicksize);
-  if (iptr->userptr)
-    strlcpy(iptr->userptr, "*", iptr->usersize);
-  if (iptr->hostptr)
-    strlcpy(iptr->hostptr, "*", iptr->hostsize);
-
-  if ((p = strchr(iptr->nuhmask, '!'))) {
-    *p = '\0';
-
-    if (iptr->nickptr && *iptr->nuhmask != '\0')
-      strlcpy(iptr->nickptr, iptr->nuhmask, iptr->nicksize);
-
-    if ((q = strchr(++p, '@'))) {
-      *q++ = '\0';
-
-      if (*p != '\0')
-        strlcpy(iptr->userptr, p, iptr->usersize);
-
-      if (*q != '\0')
-        strlcpy(iptr->hostptr, q, iptr->hostsize);
-    }
-    else {
-      if (*p != '\0')
-        strlcpy(iptr->userptr, p, iptr->usersize);
-    }
-  }
-  else {
-    /* No ! found so lets look for a user@host */
-    if ((p = strchr(iptr->nuhmask, '@'))) {
-      /* if found a @ */
-      *p++ = '\0';
-
-      if (*iptr->nuhmask != '\0')
-        strlcpy(iptr->userptr, iptr->nuhmask, iptr->usersize);
-
-      if (*p != '\0')
-        strlcpy(iptr->hostptr, p, iptr->hostsize);
-    }
-    else {
-      /* no @ found */
-      if (!iptr->nickptr || strpbrk(iptr->nuhmask, ".:"))
-        strlcpy(iptr->hostptr, iptr->nuhmask, iptr->hostsize);
-      else
-        strlcpy(iptr->nickptr, iptr->nuhmask, iptr->nicksize);
-    }
-  }
 }
 
 /*
@@ -2811,5 +2634,3 @@ destroy_cidr_class(struct ClassItem *aclass)
   destroy_cidr_list(&aclass->list_ipv4);
   destroy_cidr_list(&aclass->list_ipv6);
 }
-
-

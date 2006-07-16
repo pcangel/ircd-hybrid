@@ -23,10 +23,10 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
-#include "conf/modules.h"
 #include "numeric.h"
 #include "send.h"
 #include "s_conf.h"
@@ -76,8 +76,7 @@ m_challenge(struct Client *client_p, struct Client *source_p,
             int parc, char *parv[])
 {
   char *challenge = NULL;
-  struct ConfItem *conf = NULL;
-  struct AccessItem *aconf = NULL;
+  struct OperatorConf *conf = NULL;
 
   assert(source_p->localClient);
 
@@ -98,39 +97,38 @@ m_challenge(struct Client *client_p, struct Client *source_p,
     if (irccmp(source_p->localClient->response, ++parv[1]))
     {
       sendto_one(source_p, form_str(ERR_PASSWDMISMATCH), me.name,
-		 source_p->name);
+                 source_p->name);
       failed_challenge_notice(source_p, source_p->localClient->auth_oper,
-			      "challenge failed");
+                              "challenge failed");
       return;
     }
      
-    if ((conf = find_exact_name_conf(OPER_TYPE,
-				     source_p->localClient->auth_oper,
-				     source_p->username, source_p->host
-				   )) == NULL)
+    if ((conf = find_operconf(source_p->localClient->auth_oper,
+                              source_p->username, source_p->host,
+                              &source_p->localClient->ip)) == NULL)
     {
-      sendto_one (source_p, form_str(ERR_NOOPERHOST), me.name, source_p->name);
+      sendto_one(source_p, form_str(ERR_NOOPERHOST), me.name, source_p->name);
       log_oper_action(LOG_FAILED_OPER_TYPE, source_p, "%s\n",
-		      source_p->localClient->auth_oper);
+                      source_p->localClient->auth_oper);
       return;
     }
 
     oper_up(source_p, conf);
 
     ilog(L_TRACE, "OPER %s by %s!%s@%s",
-	 source_p->localClient->auth_oper, source_p->name, source_p->username,
-	 source_p->host);
+         source_p->localClient->auth_oper, source_p->name, source_p->username,
+         source_p->host);
     log_oper_action(LOG_OPER_TYPE, source_p,
-		    "%s\n", source_p->localClient->auth_oper);
+                    "%s\n", source_p->localClient->auth_oper);
 
     MyFree(source_p->localClient->response);
-/*
- *  Do NOT free auth_oper here as it is already done and
- *  a new string is copied to it in oper_up()
- */
-/*  MyFree(source_p->localClient->auth_oper);*/
+    /*
+     * Do NOT free auth_oper here as it is already done and
+     * a new string is copied to it in oper_up()
+     */
+//  MyFree(source_p->localClient->auth_oper);
     source_p->localClient->response  = NULL;
-/*  source_p->localClient->auth_oper = NULL; */
+//  source_p->localClient->auth_oper = NULL;
     return;
   }
 
@@ -139,39 +137,28 @@ m_challenge(struct Client *client_p, struct Client *source_p,
   source_p->localClient->response  = NULL;
   source_p->localClient->auth_oper = NULL;
 
-  if ((conf = find_exact_name_conf(OPER_TYPE,
-				   parv[1], source_p->username, source_p->host
-				   )) != NULL)
+  conf = find_operconf(parv[1], source_p->username, source_p->host,
+                       &source_p->localClient->ip);
+  if (conf == NULL)
   {
-    aconf = &conf->conf.AccessItem;
-  }
-  else if ((conf = find_exact_name_conf(OPER_TYPE,
-					parv[1], source_p->username,
-					source_p->sockhost)) != NULL)
-  {
-    aconf = &conf->conf.AccessItem;
-  }
-
-  if (aconf == NULL)
-  {
-    sendto_one (source_p, form_str(ERR_NOOPERHOST), me.name, source_p->name);
-    conf = find_exact_name_conf(OPER_TYPE, parv[1], NULL, NULL);
+    sendto_one(source_p, form_str(ERR_NOOPERHOST), me.name, source_p->name);
+    conf = find_operconf(parv[1], NULL, NULL, NULL);
     failed_challenge_notice(source_p, parv[1], (conf != NULL)
                             ? "host mismatch" : "no oper {} block");
     log_oper_action(LOG_FAILED_OPER_TYPE, source_p, "%s\n", parv[1]);
     return;
   }
 
-  if (aconf->rsa_public_key == NULL)
+  if (conf->rsa_public_key == NULL)
   {
-    sendto_one (source_p, ":%s NOTICE %s :I'm sorry, PK authentication "
-		"is not enabled for your oper{} block.", me.name,
-		source_p->name);
+    sendto_one(source_p, ":%s NOTICE %s :I'm sorry, PK authentication "
+               "is not enabled for your oper{} block.", me.name,
+               source_p->name);
     return;
   }
 
   if (!generate_challenge(&challenge, &(source_p->localClient->response),
-                          aconf->rsa_public_key))
+                          conf->rsa_public_key))
     sendto_one(source_p, form_str(RPL_RSACHALLENGE),
                me.name, source_p->name, challenge);
 

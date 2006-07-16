@@ -25,13 +25,6 @@
 #ifndef INCLUDE_hostmask_h
 #define INCLUDE_hostmask_h 1
 
-enum
-{
-  HM_HOST,
-  HM_IPV4,
-  HM_IPV6
-};
-
 struct HostMaskEntry
 {
   int type, subtype;
@@ -43,11 +36,6 @@ struct HostMaskEntry
 
 void clear_out_address_conf(void);
 void init_host_hash(void);
-
-EXTERN int match_ipv6(const struct irc_ssaddr *, const struct irc_ssaddr *, int);
-EXTERN int match_ipv4(const struct irc_ssaddr *, const struct irc_ssaddr *, int);
-EXTERN void mask_addr(struct irc_ssaddr *, int);
-EXTERN int parse_netmask(const char *, struct irc_ssaddr *, int *);
 
 EXTERN void add_conf_by_address(int, struct AccessItem *);
 EXTERN void delete_one_address_conf(const char *, struct AccessItem *);

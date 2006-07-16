@@ -47,20 +47,6 @@ struct CidrItem
   dlink_node node;
 };
 
-struct split_nuh_item
-{
-  dlink_node node;
-
-  char *nuhmask;
-  char *nickptr;
-  char *userptr;
-  char *hostptr;
-
-  size_t nicksize;
-  size_t usersize;
-  size_t hostsize;
-};
-
 struct gline_pending
 {
   dlink_node node;
@@ -539,8 +525,6 @@ EXTERN int attach_leaf_hub(struct Client *, struct ConfItem *);
 EXTERN int detach_confs(struct Client *);
 
 EXTERN int conf_connect_allowed(const struct irc_ssaddr *);
-EXTERN char *oper_privs_as_string(const unsigned int);
-EXTERN void split_nuh(struct split_nuh_item *);
 EXTERN struct ConfItem *find_matching_name_conf(ConfType, const char *,
                                                 const char *, const char *, int);
 EXTERN struct ConfItem *find_exact_name_conf(ConfType, const char *,
@@ -563,8 +547,6 @@ EXTERN void conf_add_d_conf(struct AccessItem *);
 EXTERN void parse_csv_file(FBFILE *, ConfType);
 
 EXTERN char *get_oper_name(const struct Client *);
-
-EXTERN int match_conf_password(const char *, const struct AccessItem *);
 
 #define NOT_AUTHORIZED    (-1)
 #define I_LINE_FULL       (-2)

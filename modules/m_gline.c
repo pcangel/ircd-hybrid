@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "common.h"
@@ -36,7 +37,6 @@
 #include "s_serv.h"
 #include "hash.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 
 #define GLINE_NOT_PLACED     0

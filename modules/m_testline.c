@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "common.h"
@@ -37,7 +38,6 @@
 #include "parse.h"
 #include "resv.h"
 #include "hash.h"
-#include "conf/modules.h"
 
 static void mo_testline(struct Client *, struct Client *, int, char *[]);
 static void mo_testgecos(struct Client *, struct Client *, int, char *[]);

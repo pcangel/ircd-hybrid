@@ -111,6 +111,24 @@ LIBIO_EXTERN const char *myctime(time_t);
 LIBIO_EXTERN char *strtoken(char **, char *, const char *);
 #endif
 
+LIBIO_EXTERN int match_password(const char *, const char *, int);
+
+struct split_nuh_item
+{
+  dlink_node node;
+
+  char *nuhmask;
+  char *nickptr;
+  char *userptr;
+  char *hostptr;
+
+  size_t nicksize;
+  size_t usersize;
+  size_t hostsize;
+};
+
+LIBIO_EXTERN void split_nuh(struct split_nuh_item *);
+
 /*
  * character macros
  */

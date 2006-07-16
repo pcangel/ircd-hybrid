@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"    /* m_pass prototype */
 #include "client.h"      /* Client */
 #include "common.h"      /* TRUE/FALSE */
@@ -37,7 +38,6 @@
 #include "s_serv.h"      /* hunt_server */
 #include "s_user.h"      /* show_opers */
 #include "parse.h"
-#include "conf/modules.h"
 #include "resv.h"  /* report_resv */
 #include "whowas.h"
 #include "watch.h"

@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -31,7 +32,6 @@
 #include "s_user.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "s_serv.h"
 
 static void mo_operwall(struct Client *, struct Client *, int, char *[]);

@@ -23,138 +23,301 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "ircd_defs.h"
 #include "client.h"
-#include "s_serv.h"
-#include "resv.h"
-#include "channel.h"
-#include "common.h"
-#include "hash.h"
-#include "ircd.h"
-#include "hostmask.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_user.h"
-#include "conf/conf.h"
 
+dlink_list oper_confs = {NULL, NULL, 0};
 
-extern struct ConfItem *
-make_conf_item2(ConfType type);
-extern dlink_list oconf_items; /* XXX */
-
-static dlink_node *hreset = NULL;
-static struct ConfItem tmpoper;
+static dlink_node *hreset;
+static struct OperatorConf tmpoper = {0};
 
 static const struct FlagMapping {
+  char letter;
   const char *name;
   unsigned int flag;
 } flag_mappings[] = {
-  {"global_kill", OPER_FLAG_GLOBAL_KILL},
-  {"remote", OPER_FLAG_REMOTE},
-  {"remoteban", OPER_FLAG_REMOTEBAN},
-  {"kline", OPER_FLAG_K},
-  {"unkline", OPER_FLAG_UNKLINE},
-  {"gline", OPER_FLAG_GLINE},
-  {"xline", OPER_FLAG_X},
-  {"operwall", OPER_FLAG_OPERWALL},
-  {"nick_changes", OPER_FLAG_N},
-  {"rehash", OPER_FLAG_REHASH},
-  {"die", OPER_FLAG_DIE},
-  {"admin", OPER_FLAG_ADMIN},
-  {"hidden_admin", OPER_FLAG_HIDDEN_ADMIN},
-  {"hidden_oper", OPER_FLAG_HIDDEN_OPER},
-  { NULL, 0 }
+  {'A', "admin", OPER_FLAG_ADMIN},
+  {'B', "remoteban", OPER_FLAG_REMOTEBAN},
+  {'D', "die", OPER_FLAG_DIE},
+  {'G', "gline", OPER_FLAG_GLINE},
+  {'H', "rehash", OPER_FLAG_REHASH},
+  {'K', "kline", OPER_FLAG_K},
+  {'L', "operwall", OPER_FLAG_OPERWALL},
+  {'N', "nick_changes", OPER_FLAG_N},
+  {'O', "global_kill", OPER_FLAG_GLOBAL_KILL},
+  {'R', "remote", OPER_FLAG_REMOTE},
+  {'U', "unkline", OPER_FLAG_UNKLINE},
+  {'X', "xline", OPER_FLAG_X},
+  {0, "hidden_admin", OPER_FLAG_HIDDEN_ADMIN},
+  {0, "hidden_oper", OPER_FLAG_HIDDEN_OPER},
+  {0, NULL, 0}
 };
 
+/*
+ * oper_privs_as_string()
+ *
+ * Translates an integer flags value to a string representation.
+ *
+ * inputs: flags
+ * output: static string
+ */
+char *
+oper_privs_as_string(int flags)
+{
+  const struct FlagMapping *m;
+  static char str[32];
+  char *p = str;
+
+  for (m = flag_mappings; m->letter; m++)
+    if ((flags & m->flag) != 0)
+      *p++ = m->letter;
+    else
+      *p++ = tolower(m->letter);
+
+  *p = 0;
+  return str;
+}
+
+/*
+ * conf_operator_report()
+ *
+ * Reports all OperatorConf blocks along with their mask lists.
+ *
+ * inputs: a client to send to
+ * output: none
+ */
 void
 conf_operator_report(struct Client *source_p)
 {
   dlink_node *ptr = NULL;
 
-  DLINK_FOREACH(ptr, oconf_items.head)
+  DLINK_FOREACH(ptr, oper_confs.head)
   {
     dlink_node *ptr_mask = NULL;
-    struct ConfItem *conf = ptr->data;
-    struct AccessItem *aconf = &conf->conf.AccessItem;
-    assert(aconf->class_ptr);
+    struct OperatorConf *conf = ptr->data;
 
-    DLINK_FOREACH(ptr_mask, conf->mask_list.head)
+    assert(conf->class_ptr);
+
+    DLINK_FOREACH(ptr_mask, conf->masks.head)
     {
       const struct split_nuh_item *nuh = ptr_mask->data;
 
-      /* Don't allow non opers to see oper privs */
-      if (IsOper(source_p))
-        sendto_one(source_p, form_str(RPL_STATSOLINE), me.name,
-                   source_p->name, 'O', nuh->userptr, nuh->hostptr,
-                   conf->name, oper_privs_as_string(aconf->port),
-                   aconf->class_ptr->name);
-      else
-        sendto_one(source_p, form_str(RPL_STATSOLINE),
-                   me.name, source_p->name, 'O', nuh->userptr, nuh->hostptr,
-                   conf->name, "0",
-                   aconf->class_ptr->name);
+      // Don't allow non opers to see oper privs
+      sendto_one(source_p, form_str(RPL_STATSOLINE), me.name, source_p->name,
+                 'O', nuh->userptr, nuh->hostptr, conf->name,
+                 IsOper(source_p) ? oper_privs_as_string(conf->flags) : "0",
+                 conf->class_ptr->name);
     }
   }
 }
 
+/*
+ * clear_operconf()
+ *
+ * Frees all memory used by fields of a OperatorConf struct.
+ *
+ * inputs: pointer to operconf
+ * output: none
+ */
 static void
-reset_operator(void)
+clear_operconf(struct OperatorConf *conf)
 {
-  dlink_node *ptr = NULL, *ptr_next = NULL;
+  dlink_node *ptr, *ptr_next;
 
-  DLINK_FOREACH_SAFE(ptr, ptr_next, oconf_items.head)
-    delete_conf_item(ptr->data);
+  MyFree(conf->name);
+  MyFree(conf->passwd);
+  conf->name = conf->passwd = NULL;
+
+  DLINK_FOREACH_SAFE(ptr, ptr_next, conf->masks.head)
+  {
+    struct split_nuh_item *mask = ptr->data;
+
+    dlinkDelete(ptr, &conf->masks);
+
+    MyFree(mask->userptr);
+    MyFree(mask->hostptr);
+    MyFree(mask);
+  }
+
+  unref_class(conf->class_ptr);
+  conf->class_ptr = NULL;
+
+#ifdef HAVE_LIBCRYPTO
+  if (conf->rsa_public_key != NULL)
+  {
+    RSA_free(conf->rsa_public_key);
+    conf->rsa_public_key = NULL;
+  }
+#endif
 }
 
+/*
+ * find_operconf()
+ *
+ * Looks for a OperatorConf struct matching given parameters.
+ *
+ * inputs:
+ *   name  -  operator name
+ *   user  -  username to match, can be NULL
+ *   host  -  hostname to match, can be NULL
+ *   ip    -  IP address to match, can be NULL
+ * output: pointer to struct OperatorConf or NULL
+ */
+struct OperatorConf *
+find_operconf(const char *name, const char *user, const char *host,
+              const struct irc_ssaddr *ip)
+{
+  dlink_node *ptr, *ptr_mask;
+  struct OperatorConf *conf;
+  struct irc_ssaddr ipmask;
+  int mbits;
+
+  DLINK_FOREACH(ptr, oper_confs.head)
+  {
+    conf = ptr->data;
+    if (irccmp(conf->name, name))
+      continue;
+
+    DLINK_FOREACH(ptr_mask, conf->masks.head)
+    {
+      struct split_nuh_item *uh = ptr_mask->data;
+
+      if (user && !match(uh->userptr, user))
+        continue;
+
+      if (host != NULL || ip != NULL)
+      {
+        /* We get here once or twice per find_operconf() call,
+         * so we can afford this.   -- adx
+         */
+        switch (parse_netmask(uh->hostptr, &ipmask, &mbits))
+        {
+          case HM_IPV4: if (!ip || !match_ipv4(ip, &ipmask, mbits))
+                          continue;
+#ifdef IPV6
+          case HM_IPV6: if (!ip || !match_ipv6(ip, &ipmask, mbits))
+                          continue;
+#endif
+          default: if (!host || !match(uh->hostptr, host))
+                     continue;
+        }
+      }
+
+      return conf;
+    }
+  }
+
+  return NULL;
+}
+
+/*
+ * reset_operator()
+ *
+ * Frees all operator{} blocks.  Called on a rehash.
+ *
+ * inputs: none
+ * output: none
+ */
+static void *
+reset_operator(va_list args)
+{
+  struct OperatorConf *conf;
+
+  while (oper_confs.head != NULL)
+  {
+    conf = oper_confs.head->data;
+    dlinkDelete(&conf->node, &oper_confs);
+    clear_operconf(conf);
+    MyFree(conf);
+  }
+
+  return pass_callback(hreset);
+}
+
+/*
+ * before_operator()
+ *
+ * Called before processing a single operator{} block.
+ *
+ * inputs: none
+ * output: none
+ */
 static void
 before_operator(void)
 {
-  memset(&tmpoper, 0, sizeof(tmpoper));
-
-  SetConfEncrypted(&tmpoper.conf.AccessItem);
+  clear_operconf(&tmpoper);
+  tmpoper.flags |= OPER_FLAG_ENCRYPTED;
 }
 
+/*
+ * after_operator()
+ *
+ * Called after parsing a single operator{} block.
+ *
+ * inputs: none
+ * output: none
+ */
 static void
 after_operator(void)
 {
-  struct ConfItem *oper = NULL;
-  struct AccessItem *yy_tmp = &tmpoper.conf.AccessItem;
+  struct OperatorConf *oper;
 
-  if (tmpoper.name == NULL ||
-      yy_tmp->host == NULL ||
-      yy_tmp->user == NULL)
-    return;
-
-  if (yy_tmp->class_ptr == NULL)
+  if (tmpoper.class_ptr == NULL)
   {
     parse_error("Invalid or non-existant class in operator{}");
+    clear_operconf(&tmpoper);
     return;
   }
 
-  if (!yy_tmp->passwd && !yy_tmp->rsa_public_key)
+  if (tmpoper.name == NULL || dlink_list_length(&tmpoper.masks) == 0 ||
+#ifdef HAVE_LIBCRYPTO
+      !tmpoper.passwd
+#else
+      (!tmpoper.passwd && !tmpoper.rsa_public_key)
+#endif
+     )
+  {
+    parse_error("Incomplete operator{} block");
+    clear_operconf(&tmpoper);
     return;
+  }
 
-  oper = make_conf_item2(OPER_TYPE);
-
-  /* XXX Temporary hack until we changed make_conf_item() so it doesn't add
-   * newly created items onto doubly linked lists immediately after creation */
-  tmpoper.node.data = oper->node.data;
-  tmpoper.node.prev = oper->node.prev;
-  tmpoper.node.next = oper->node.next;
+  oper = MyMalloc(sizeof(struct OperatorConf));
 
   memcpy(oper, &tmpoper, sizeof(*oper));
+  memset(&tmpoper, 0, sizeof(tmpoper));
+
+  dlinkAddTail(oper, &oper->node, &oper_confs);
 }
 
+/*
+ * oper_encrypted()
+ *
+ * Parses the "encrypted=" directive.
+ *
+ * inputs: binary value (given as a pointer)
+ * output: none
+ */
 static void
 oper_encrypted(void *value, void *where)
 {
-
-  if (*(int *)value)
-    SetConfEncrypted(&tmpoper.conf.AccessItem);
+  if (*(int *) value)
+    tmpoper.flags |= OPER_FLAG_ENCRYPTED;
   else
-    ClearConfEncrypted(&tmpoper.conf.AccessItem);
+    tmpoper.flags &= ~OPER_FLAG_ENCRYPTED;
 }
 
+/*
+ * oper_user()
+ *
+ * Parses the "user=" directive.
+ *
+ * inputs: new user@host mask
+ * output: none
+ */
 static void
 oper_user(void *value, void *where)
 {
@@ -178,53 +341,59 @@ oper_user(void *value, void *where)
   DupString(cuh->userptr, nuh.userptr);
   DupString(cuh->hostptr, nuh.hostptr);
 
-  dlinkAdd(cuh, &cuh->node, &tmpoper.mask_list);
+  dlinkAdd(cuh, &cuh->node, &tmpoper.masks);
 }
 
+/*
+ * oper_class()
+ *
+ * Parses the "class=" directive.
+ *
+ * inputs: class name pointer
+ * output: none
+ */
 static void
 oper_class(void *value, void *where)
 {
-  tmpoper.conf.AccessItem.class_ptr = find_class(value);
+  tmpoper.class_ptr = ref_class_by_name(value);
 }
 
+/*
+ * oper_rsa_public_key_file()
+ *
+ * Parses the "rsa_public_key_file=" directive.
+ *
+ * inputs: file name pointer
+ * output: none
+ */
 static void
 oper_rsa_public_key_file(void *value, void *where)
 {
+#ifndef HAVE_LIBCRYPTO
+  parse_error("Ignoring rsa_public_key_file -- no OpenSSL support.");
+#else
   const char *str = value;
-  struct AccessItem *yy_aconf = &tmpoper.conf.AccessItem;
   BIO *file = NULL;
 
-  if (yy_aconf->rsa_public_key != NULL)
+  if (tmpoper.rsa_public_key != NULL)
   {
-    RSA_free(yy_aconf->rsa_public_key);
-    yy_aconf->rsa_public_key = NULL;
+    RSA_free(tmpoper.rsa_public_key);
+    tmpoper.rsa_public_key = NULL;
   }
 
-  if (yy_aconf->rsa_public_key_file != NULL)
-  {
-    MyFree(yy_aconf->rsa_public_key_file);
-    yy_aconf->rsa_public_key_file = NULL;
-  }
-
-  DupString(yy_aconf->rsa_public_key_file, str);
-  file = BIO_new_file(str, "r");
-
-  if (file == NULL)
+  if ((file = BIO_new_file(str, "r")) == NULL)
   {
     parse_error("Ignoring rsa_public_key_file -- file doesn't exist");
     return;
   }
 
-  yy_aconf->rsa_public_key = (RSA *)PEM_read_bio_RSA_PUBKEY(file, NULL, 0, NULL);
-
-  if (yy_aconf->rsa_public_key == NULL)
-  {
+  tmpoper.rsa_public_key = (RSA *)PEM_read_bio_RSA_PUBKEY(file, NULL, 0, NULL);
+  if (tmpoper.rsa_public_key == NULL)
     parse_error("Ignoring rsa_public_key_file -- Key invalid; check key syntax.");
-    return;
-  }
 
   BIO_set_close(file, BIO_CLOSE);
   BIO_free(file);
+#endif
 }
 
 /*
@@ -240,51 +409,61 @@ oper_rsa_public_key_file(void *value, void *where)
 static void
 parse_flag_list(void *list, void *where)
 {
+  const struct FlagMapping *p;
+  int errors = NO;
   dlink_node *ptr;
-  unsigned int flags = 0;
-  int found;
-  struct FlagMapping *p;
+
+  tmpoper.flags &= OPER_FLAG_ENCRYPTED;
 
   DLINK_FOREACH(ptr, ((dlink_list *)list)->head)
   {
     const char *str = ptr->data;
+    int found = NO, all = !irccmp(str, "all");
 
-    found = 0;
     for (p = flag_mappings; p->name; ++p)
-    {
-      if (!irccmp(str, p->name))
+      if (all || !irccmp(str, p->name))
       {
-        flags |= p->flag;
         found = YES;
-        break;
+        if (!all || p->letter)
+          tmpoper.flags |= p->flag;
+        if (!all || !p->letter)
+          break;
       }
-    }
 
     if (!found)
-      parse_error("Unknown flag [%s]", str);
+      errors = YES;
   }
 
-  tmpoper.conf.AccessItem.port = flags;
+  if (errors)
+    parse_error("Invalid oper flags encountered, check your syntax");
 }
 
+/*
+ * init_operator()
+ *
+ * Initializes oper{} block support.
+ *
+ * inputs: none
+ * output: none
+ */
 void
 init_operator(void)
 {
   const char *alias[] = { "oper", "operator", NULL };
-  const char *p = alias;
+  const char **p = alias;
 
   hreset = install_hook(reset_conf, reset_operator);
 
-  for (; p != NULL; ++p)
+  for (; *p != NULL; ++p)
   {
-    struct ConfSection *s = add_conf_section(p, 2);
+    struct ConfSection *s = add_conf_section(*p, 2);
 
     s->before = before_operator;
 
     s->def_field = add_conf_field(s, "name", CT_STRING, NULL, &tmpoper.name);
     add_conf_field(s, "user", CT_STRING, oper_user, NULL);
     add_conf_field(s, "class", CT_STRING, oper_class, NULL);
-    add_conf_field(s, "password", CT_STRING, NULL, tmpoper.conf.AccessItem.passwd);
+    add_conf_field(s, "password", CT_STRING, NULL, &tmpoper.passwd);
     add_conf_field(s, "encrypted", CT_BOOL, oper_encrypted, NULL);
     add_conf_field(s, "rsa_public_keyfile", CT_STRING, oper_rsa_public_key_file, NULL);
     add_conf_field(s, "flags", CT_LIST, parse_flag_list, NULL);

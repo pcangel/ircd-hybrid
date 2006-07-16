@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -33,7 +34,6 @@
 #include "msg.h"
 #include "parse.h"
 #include "hash.h"
-#include "conf/modules.h"
 
 static void mo_connect(struct Client *, struct Client *, int, char *[]);
 static void ms_connect(struct Client *, struct Client *, int, char *[]);

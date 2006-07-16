@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "client.h"
 #include "common.h"
 #include "ircd.h"
@@ -36,7 +37,6 @@
 #include "s_serv.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 static void me_rkline(struct Client *, struct Client *, int, char *[]);
 static void mo_rkline(struct Client *, struct Client *, int, char *[]);

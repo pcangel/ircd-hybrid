@@ -1,9 +1,8 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  conf.h: Includes all configuration headers.
+ *  hostmask.h: Provides support for IPv4/IPv6/DNS hostmasks.
  *
- *  Copyright (C) 2003 by Piotr Nizynski, Advanced IRC Services Project
- *  Copyright (C) 2005 by the Hybrid Development Team.
+ *  Copyright (C) 2002-2006 by the past and present ircd coders, and others.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,23 +19,19 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
  *
- *  $Id: conf.h 69 2005-10-04 16:09:51Z adx $
+ *  $Id$
  */
 
-#ifndef INCLUDED_CONF_H
-#define INCLUDED_CONF_H
+enum
+{
+  HM_HOST,
+  HM_IPV4,
+  HM_IPV6
+};
 
-#include "conf/manager.h"
-#include "conf/serverinfo.h"
-#include "conf/admin.h"
-#include "conf/auth.h"
-#include "conf/listen.h"
-#include "conf/logging.h"
-#include "conf/class.h"
-#include "conf/channel.h"
-#include "conf/serverhide.h"
-#include "conf/general.h"
-#include "conf/modules.h"
-#include "conf/operator.h"
-
-#endif
+LIBIO_EXTERN int match_ipv6(const struct irc_ssaddr *,
+  const struct irc_ssaddr *, int);
+LIBIO_EXTERN int match_ipv4(const struct irc_ssaddr *,
+  const struct irc_ssaddr *, int);
+LIBIO_EXTERN void mask_addr(struct irc_ssaddr *, int);
+LIBIO_EXTERN int parse_netmask(const char *, struct irc_ssaddr *, int *);

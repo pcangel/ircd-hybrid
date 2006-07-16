@@ -32,13 +32,15 @@ struct CidrItem
   dlink_node node;
 };
 
+struct Class *default_class = NULL;
+
 static dlink_list class_list = {NULL, NULL, 0};
 static dlink_node *enum_node = NULL;
 static dlink_node *hreset, *hverify;
 static struct Class tmpclass;
 
 //
-// Reference counting for classes.
+// Low configuration layer: object storage and reference counting.
 //
 
 struct Class *
@@ -49,13 +51,9 @@ ref_class_by_name(const char *name)
   DLINK_FOREACH(ptr, class_list.head)
   {
     struct Class *cl = ptr->data;
-    assert(!(cl->flags & CL_DEAD));
 
     if (!strcasecmp(cl->name, name))
-    {
-      cl->refcnt++;
-      return cl;
-    }
+      return ref_class_by_ptr(cl);
   }
 
   return NULL;
@@ -93,12 +91,6 @@ unref_class(struct Class *cl)
   }
 }
 
-// TODO: Class matching and assigning (limits!)
-
-//
-// Creating, deleting and enumerating class objects.
-//
-
 struct Class *
 make_class(const char *name)
 {
@@ -107,7 +99,7 @@ make_class(const char *name)
   DupString(cl->name, name);
 
   ref_class_by_ptr(cl);
-  dlinkAdd(cl, &cl->node, &class_list);
+  dlinkAddTail(cl, &cl->node, &class_list);
 
   return cl;
 }
@@ -132,15 +124,33 @@ enum_classes(ENUMCLASSFUNC ef)
 }
 
 //
-// Middle configuration layer.
+// TODO: Class matching and assigning (limits!)
 //
 
-static void do_reset_class(struct Class *cl) { cl->stale = YES; }
-static void do_verify_class(struct Class *cl) { if (cl->stale) delete_class(cl); }
+//
+// Configuration manager interface.
+//
+
+static void do_reset_class(struct Class *cl)
+{
+  if (cl != default_class)
+    cl->stale = YES;
+}
+
+static void do_verify_class(struct Class *cl)
+{
+  if (cl->stale)
+    delete_class(cl);
+}
 
 static void *
 reset_classes(va_list args)
 {
+  default_class->connectfreq = DEFAULT_CONNECTFREQUENCY;
+  default_class->ping_time = DEFAULT_PINGFREQUENCY;
+  default_class->max_number = MAXIMUM_LINKS_DEFAULT;
+  default_class->sendq_size = DEFAULT_SENDQ;
+
   enum_classes(do_reset_class);
   return pass_callback(hreset);
 }
@@ -260,11 +270,14 @@ init_class(void)
   add_conf_field(s, "max_noident", CT_NUMBER, NULL, &tmpclass.max_noident);
   add_conf_field(s, "max_number", CT_NUMBER, NULL, &tmpclass.max_number);
 
-  // for compatibility only, these names really sucked
+  // for backwards compatibility only, these names really sucked
   add_conf_field(s, "max_local", CT_NUMBER, NULL,
     &tmpclass.userhost_limit[0]);
   add_conf_field(s, "max_global", CT_NUMBER, NULL,
     &tmpclass.userhost_limit[1]);
 
   s->after = after_class;
+
+  default_class = make_class("default");
+  
 }

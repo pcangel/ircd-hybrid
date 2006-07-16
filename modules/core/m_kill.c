@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "hash.h"       /* for find_client() */
@@ -34,7 +35,6 @@
 #include "whowas.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 
 static char buf[IRCD_BUFSIZE];

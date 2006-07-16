@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "channel.h"
 #include "channel_mode.h"
 #include "client.h"
@@ -342,7 +343,8 @@ register_local_user(struct Client *source_p, const char *username)
   {
     const char *pass = source_p->localClient->passwd;
 
-    if (!match_conf_password(pass, aconf))
+    if (!match_password(pass, aconf->passwd,
+                        aconf->flags & CONF_FLAGS_ENCRYPTED))
     {
       ++ServerStats.is_ref;
       sendto_one(source_p, form_str(ERR_PASSWDMISMATCH),
@@ -1066,6 +1068,51 @@ user_welcome(struct Client *source_p)
     send_message_file(source_p, &ConfigFileEntry.motd);
 }
 
+/*
+ * oper_up()
+ *
+ * Blindly opers up given source_p, using conf info.
+ * All checks on passwords have already been done.
+ *
+ * inputs:
+ *   source_p  -  pointer to given client to oper
+ *   conf      -  pointer to oper conf found
+ * output: none
+ */
+void
+oper_up(struct Client *source_p, struct OperatorConf *conf)
+{
+  unsigned int old = source_p->umodes;
+
+  SetOper(source_p);
+  Count.oper++;
+
+  assert(dlinkFind(&oper_list, source_p) == NULL);
+  dlinkAdd(source_p, make_dlink_node(), &oper_list);
+
+  SetOperFlags(source_p, conf->flags);
+
+  source_p->umodes |= General.oper_umodes;
+
+  if (IsOperAdmin(source_p) || IsOperHiddenAdmin(source_p))
+    source_p->umodes |= UMODE_ADMIN;
+  if (!IsOperN(source_p))
+    source_p->umodes &= ~UMODE_NCHANGE;
+
+  send_umode_out(source_p, source_p, old);
+
+  MyFree(source_p->localClient->auth_oper);
+  DupString(source_p->localClient->auth_oper, conf->name);
+
+  sendto_one(source_p, form_str(RPL_YOUREOPER), me.name, source_p->name);
+  sendto_realops_flags(UMODE_ALL, L_ALL, "%s (%s@%s) is now an operator",
+                       source_p->name, source_p->username, source_p->host);
+
+  sendto_one(source_p, ":%s NOTICE %s :*** Oper privs are %s",
+             me.name, source_p->name, oper_privs_as_string(conf->flags));
+  send_message_file(source_p, &ConfigFileEntry.opermotd);
+}
+
 /* check_xline()
  *
  * inputs       - pointer to client to test
@@ -1110,55 +1157,6 @@ check_xline(struct Client *source_p)
   }
 
   return 0;
-}
-
-/* oper_up()
- *
- * inputs	- pointer to given client to oper
- * 		- pointer to oper conf found
- * output	- NONE
- * side effects	- Blindly opers up given source_p, using conf info
- *                all checks on passwords have already been done.
- *                This is also used by rsa oper routines. 
- */
-void
-oper_up(struct Client *source_p, struct ConfItem *conf)
-{
-  unsigned int old = source_p->umodes;
-  const char *operprivs = "";
-  struct AccessItem *aconf;
-
-  aconf = &conf->conf.AccessItem;
-  ++Count.oper;
-  SetOper(source_p);
-
-  if (aconf->modes)
-    source_p->umodes |= aconf->modes;
-  else if (ConfigFileEntry.oper_umodes)
-    source_p->umodes |= ConfigFileEntry.oper_umodes;
-  else
-    source_p->umodes |= (UMODE_SERVNOTICE|UMODE_OPERWALL|
-                         UMODE_WALLOP|UMODE_LOCOPS);
-
-  assert(dlinkFind(&oper_list, source_p) == NULL);
-  dlinkAdd(source_p, make_dlink_node(), &oper_list);
-
-  operprivs = oper_privs_as_string(aconf->port);
-  SetOFlag(source_p, aconf->port);
-
-  if (IsOperAdmin(source_p) || IsOperHiddenAdmin(source_p))
-    source_p->umodes |= UMODE_ADMIN;
-  if (!IsOperN(source_p))
-    source_p->umodes &= ~UMODE_NCHANGE;
-  MyFree(source_p->localClient->auth_oper);
-  DupString(source_p->localClient->auth_oper, conf->name);
-  sendto_realops_flags(UMODE_ALL, L_ALL, "%s (%s@%s) is now an operator",
-                       source_p->name, source_p->username, source_p->host);
-  send_umode_out(source_p, source_p, old);
-  sendto_one(source_p, form_str(RPL_YOUREOPER), me.name, source_p->name);
-  sendto_one(source_p, ":%s NOTICE %s :*** Oper privs are %s",
-             me.name, source_p->name, operprivs);
-  send_message_file(source_p, &ConfigFileEntry.opermotd);
 }
 
 /*
