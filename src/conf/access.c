@@ -27,8 +27,8 @@
 
 struct AccessConf *atable[ATABLE_SIZE] = {0};
 struct Callback *cb_expire_confs = NULL;
-ACB_FREE_HANDLER *acb_types[MAX_ACB_TYPES] = {0};
 
+static ACB_FREE_HANDLER *acb_types[MAX_ACB_TYPES] = {0};
 static dlink_node *hreset;
 
 /*
