@@ -1,6 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  auth.h: Defines auth{} conf section.
+ *  access.h: Common code for user@host access control blocks.
  *
  *  Copyright (C) 2006 by the Hybrid Development Team.
  *
@@ -22,26 +22,36 @@
  *  $Id$
  */
 
-#define AUTH_FLAG_ENCRYPTED     1
-#define AUTH_FLAG_SPOOF_NOTICE  2
-#define AUTH_FLAG_EXCEED_LIMIT  4
-#define AUTH_FLAG_KLINE_EXEMPT  8
-#define AUTH_FLAG_NEED_IDENT    16
-#define AUTH_FLAG_CAN_FLOOD     32
-#define AUTH_FLAG_CAN_IDLE      64
-#define AUTH_FLAG_NO_TILDE      128
-#define AUTH_FLAG_GLINE_EXEMPT  256
-#define AUTH_FLAG_RESV_EXEMPT   512
-#define AUTH_FLAG_NEED_PASSWORD 1024
-
-struct AuthConf
+struct AccessConf
 {
-  struct AccessConf access;
-  struct Class *class_ptr;
-  char *redirserv;
-  int redirport;
+  unsigned int type;
+  unsigned int flags;
+  uint64_t precedence;
+  char *user;
+  char *host;
+  struct irc_ssaddr ip;
+  struct AccessConf *hnext;
+  time_t expires;
+  char *text;
 };
 
+#define ATABLE_SIZE         4096
+#define EXPIRE_FREQUENCY    60
+#define MAX_ACB_TYPES       20
+
+EXTERN struct AccessConf *atable[];
+EXTERN struct Callback *cb_expire_confs;
+
+typedef void ACB_FREE_HANDLER(struct AccessConf *);
+typedef int ACB_EXAMINE_HANDLER(struct AccessConf *);
+
+EXTERN void add_access_conf(struct AccessConf *);
+EXTERN void destroy_access_conf(struct AccessConf *);
+EXTERN void acb_generic_free(struct AccessConf *);
+EXTERN void del_matching_access_confs(ACB_EXAMINE_HANDLER *);
+EXTERN int register_acb_type(void *);
+EXTERN void unregister_acb_type(int);
+
 #ifdef IN_CONF_C
-void init_ilines(void);
+void init_access(void);
 #endif

@@ -34,11 +34,6 @@ struct HostMaskEntry
   struct HostMaskEntry *next, *nexthash;
 };
 
-void clear_out_address_conf(void);
-void init_host_hash(void);
-
-EXTERN void add_conf_by_address(int, struct AccessItem *);
-EXTERN void delete_one_address_conf(const char *, struct AccessItem *);
 EXTERN void report_Klines(struct Client *, int);
 EXTERN void report_auth(struct Client *);
 
@@ -53,40 +48,4 @@ EXTERN struct AccessItem *find_dline_conf(const struct irc_ssaddr *, int);
 EXTERN struct AccessItem *find_conf_by_address(const char *, const struct irc_ssaddr *,
                                                int, int, const char *, const char *);
 
-/* Hashtable stuff... */
-#define ATABLE_SIZE 0x1000
-
-EXTERN struct AddressRec *atable[ATABLE_SIZE];
-
-struct AddressRec
-{
-  /* masktype: HM_HOST, HM_IPV4, HM_IPV6 -A1kmm */
-  int masktype;
-
-  union
-  {
-    struct
-    {
-      /* Pointer into AccessItem... -A1kmm */
-      struct irc_ssaddr addr;
-      int bits;
-    } ipa;
-
-    /* Pointer into AccessItem... -A1kmm */
-    const char *hostname;
-  } Mask;
-
-  /* type: CONF_CLIENT, CONF_DLINE, CONF_KILL etc... -A1kmm */
-  int type;
-
-  /* Higher precedences overrule lower ones... */
-  unsigned long precedence;
-
-  /* Only checked if !(type & 1)... */
-  const char *username;
-  struct AccessItem *aconf;
-
-  /* The next record in this hash bucket. */
-  struct AddressRec *next;
-};
 #endif /* INCLUDE_hostmask_h */

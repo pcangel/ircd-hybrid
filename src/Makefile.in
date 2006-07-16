@@ -46,6 +46,7 @@ lex.yy.o:	y.tab.c lex.yy.c ircd_lexer.l
 SSL_SRCS = rsa.c
 
 SRCS = \
+ conf/access.c \
  conf/admin.c \
  conf/auth.c \
  conf/class.c \

@@ -28,6 +28,7 @@
 
 #include "conf/manager.h"
 #include "conf/serverinfo.h"
+#include "conf/access.h"
 #include "conf/admin.h"
 #include "conf/auth.h"
 #include "conf/listen.h"

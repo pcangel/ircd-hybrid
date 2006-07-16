@@ -25,6 +25,24 @@
 #include "stdinc.h"
 #include "conf/conf.h"
 
+static unsigned int acb_type_auth;
+
+/*
+ * free_iline()
+ *
+ * Frees an auth{} block.
+ *
+ * inputs: pointer to struct AuthConf
+ * output: none
+ */
+static void
+free_iline(struct AuthConf *conf)
+{
+  unref_class(conf->class_ptr);
+  MyFree(conf->redirserv);
+  acb_generic_free(&conf->access);
+}
+
 /*
  * init_ilines()
  *
@@ -36,5 +54,7 @@
 void
 init_ilines(void)
 {
+  acb_type_auth = register_acb_type(free_iline);
+
   add_conf_section("auth", 2);
 }

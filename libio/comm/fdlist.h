@@ -51,7 +51,12 @@ typedef void CNCB(struct _fde *, int, void *);
  */
 struct irc_ssaddr
 {
-  struct sockaddr_storage ss;
+  union {
+    struct sockaddr_in ss;
+#ifdef IPV6
+    struct sockaddr_in6 ss6;
+#endif
+  };
   unsigned char ss_len;
   in_port_t ss_port;
 };

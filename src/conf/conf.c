@@ -58,6 +58,7 @@ init_conf(void)
   switch_conf_pass = register_callback("switch_conf_pass", NULL);
 
   init_serverinfo();
+  init_access();
   init_admin();
   init_listen();
   init_logging();
