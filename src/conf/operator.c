@@ -355,6 +355,9 @@ oper_user(void *value, void *where)
 static void
 oper_class(void *value, void *where)
 {
+  if (tmpoper.class_ptr != NULL)
+    unref_class(tmpoper.class_ptr);
+
   tmpoper.class_ptr = ref_class_by_name(value);
 }
 

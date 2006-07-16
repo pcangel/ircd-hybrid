@@ -279,5 +279,4 @@ init_class(void)
   s->after = after_class;
 
   default_class = make_class("default");
-  
 }
