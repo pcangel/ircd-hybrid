@@ -341,7 +341,7 @@ oper_user(void *value, void *where)
   DupString(cuh->userptr, nuh.userptr);
   DupString(cuh->hostptr, nuh.hostptr);
 
-  dlinkAdd(cuh, &cuh->node, &tmpoper.masks);
+  dlinkAddTail(cuh, &cuh->node, &tmpoper.masks);
 }
 
 /*
