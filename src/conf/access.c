@@ -316,6 +316,69 @@ reset_access(va_list args)
 }
 
 /*
+ * find_access_conf()
+ *
+ * Looks for an access conf matching given criteria.
+ *
+ * inputs:
+ *   type  -  only check confs of this type
+ *   user  -  if non-NULL, limit to confs matching given username
+ *   host  -  limit to confs matching given hostname...
+ *   ip    -  ...or IP address (either host or ip must be non-NULL)
+ *   func  -  function which verifies additional criteria, can be NULL
+ * output: pointer to struct AccessConf or NULL if not found
+ */
+struct AccessConf *
+find_access_conf(int type, const char *user, const char *host,
+                 const struct irc_ssaddr *ip, ACB_EXAMINE_HANDLER *func)
+{
+  struct AccessConf *conf, *best = NULL;
+  int bits;
+
+  if (ip != NULL)
+    if (ip->ss.sin_family == AF_INET)
+      for (bits = 32; bits >= 0; bits -= 8)
+        for (conf = atable[hash_ipv4(ip, bits)]; conf; conf = conf->hnext)
+          if ((best == NULL || conf->precedence > best->precedence) &&
+              conf->type == type && match_ipv4(ip, &conf->ip, conf->ip.ss_port)
+              && (EmptyString(user) || match(conf->user, user)) &&
+              (!func || func(conf)))
+            best = conf;
+#ifdef IPV6
+    else if (ip->ss.sin_family == AF_INET6)
+      for (bits = 128; bits >= 0; bits -= 16)
+        for (conf = atable[hash_ipv6(ip, bits)]; conf; conf = conf->hnext)
+          if ((best == NULL || conf->precedence > best->precedence) &&
+              conf->type == type && match_ipv6(ip, &conf->ip, conf->ip.ss_port)
+              && (EmptyString(user) || match(conf->user, user)) &&
+              (!func || func(conf)))
+            best = conf;
+#endif
+
+  if (host != NULL)
+    while (1)
+    {
+      for (conf = atable[hash_text(host)]; conf; conf = conf->hnext)
+        if ((best == NULL || conf->precedence > best->precedence) &&
+            conf->type == type && match(conf->host, host) &&
+            (EmptyString(user) || match(conf->user, user)) &&
+            (!func || func(conf)))
+          best = conf;
+
+      if (*host)
+        do {
+          if (*host++ == '.')
+            break;
+        }
+        while (*host);
+      else
+        break;
+    }
+
+  return best;
+}
+
+/*
  * expire_confs()
  *
  * Called periodically to remove expired conf entries.

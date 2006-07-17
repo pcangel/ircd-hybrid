@@ -24,7 +24,7 @@
 
 struct AccessConf
 {
-  unsigned int type;
+  int type;
   unsigned int flags;
   uint64_t precedence;
   char *user;
@@ -51,6 +51,8 @@ EXTERN void acb_generic_free(struct AccessConf *);
 EXTERN void del_matching_access_confs(ACB_EXAMINE_HANDLER *);
 EXTERN int register_acb_type(void *);
 EXTERN void unregister_acb_type(int);
+EXTERN struct AccessConf *find_access_conf(int, const char *, const char *,
+  const struct irc_ssaddr *, ACB_EXAMINE_HANDLER *);
 
 #ifdef IN_CONF_C
 void init_access(void);
