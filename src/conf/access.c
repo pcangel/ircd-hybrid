@@ -209,12 +209,11 @@ acb_generic_free(struct AccessConf *conf)
 {
   MyFree(conf->user);
   MyFree(conf->host);
-  MyFree(conf->text);
   MyFree(conf);
 }
 
 /*
- * del_matching_access_confs()
+ * enum_access_confs()
  *
  * Enumerates all AccessConfs.  Calls the supplied routine on each one,
  * if 1 is returned then this one is deleted and freed.
@@ -224,7 +223,7 @@ acb_generic_free(struct AccessConf *conf)
  * output: none
  */
 void
-del_matching_access_confs(ACB_EXAMINE_HANDLER *examine)
+enum_access_confs(ACB_EXAMINE_HANDLER *examine, void *param)
 {
   unsigned int hv;
   struct AccessConf *prev, *conf;
@@ -233,7 +232,7 @@ del_matching_access_confs(ACB_EXAMINE_HANDLER *examine)
     for (prev = NULL, conf = atable[hv]; conf != NULL;
          conf = (prev ? prev->hnext : atable[hv]))
     {
-      if (examine(conf))
+      if (examine(conf, param))
       {
         if (prev != NULL)
           prev->hnext = conf->hnext;
@@ -247,17 +246,17 @@ del_matching_access_confs(ACB_EXAMINE_HANDLER *examine)
     }
 }
 
-static int is_acb_permanent(struct AccessConf *conf)
+static int is_acb_permanent(struct AccessConf *conf, void *unused)
 {
   return !conf->expires;
 }
 
-static int is_acb_expired(struct AccessConf *conf)
+static int is_acb_expired(struct AccessConf *conf, void *unused)
 {
   return conf->expires && conf->expires <= CurrentTime;
 }
 
-static int is_acb_orphaned(struct AccessConf *conf)
+static int is_acb_orphaned(struct AccessConf *conf, void *unused)
 {
   return !acb_types[conf->type];
 }
@@ -297,7 +296,7 @@ void
 unregister_acb_type(int id)
 {
   acb_types[id] = NULL;
-  del_matching_access_confs(is_acb_orphaned);
+  enum_access_confs(is_acb_orphaned, NULL);
 }
 
 /*
@@ -311,7 +310,7 @@ unregister_acb_type(int id)
 static void *
 reset_access(va_list args)
 {
-  del_matching_access_confs(is_acb_permanent);
+  enum_access_confs(is_acb_permanent, NULL);
   return pass_callback(hreset);
 }
 
@@ -330,7 +329,8 @@ reset_access(va_list args)
  */
 struct AccessConf *
 find_access_conf(int type, const char *user, const char *host,
-                 const struct irc_ssaddr *ip, ACB_EXAMINE_HANDLER *func)
+                 const struct irc_ssaddr *ip, ACB_EXAMINE_HANDLER *func,
+                 void *param)
 {
   struct AccessConf *conf, *best = NULL;
   int bits;
@@ -342,7 +342,7 @@ find_access_conf(int type, const char *user, const char *host,
           if ((best == NULL || conf->precedence > best->precedence) &&
               conf->type == type && match_ipv4(ip, &conf->ip, conf->ip.ss_port)
               && (EmptyString(user) || match(conf->user, user)) &&
-              (!func || func(conf)))
+              (!func || func(conf, param)))
             best = conf;
 #ifdef IPV6
     else if (ip->ss.sin_family == AF_INET6)
@@ -351,7 +351,7 @@ find_access_conf(int type, const char *user, const char *host,
           if ((best == NULL || conf->precedence > best->precedence) &&
               conf->type == type && match_ipv6(ip, &conf->ip, conf->ip.ss_port)
               && (EmptyString(user) || match(conf->user, user)) &&
-              (!func || func(conf)))
+              (!func || func(conf, param)))
             best = conf;
 #endif
 
@@ -362,7 +362,7 @@ find_access_conf(int type, const char *user, const char *host,
         if ((best == NULL || conf->precedence > best->precedence) &&
             conf->type == type && match(conf->host, host) &&
             (EmptyString(user) || match(conf->user, user)) &&
-            (!func || func(conf)))
+            (!func || func(conf, param)))
           best = conf;
 
       if (*host)
@@ -389,7 +389,7 @@ find_access_conf(int type, const char *user, const char *host,
 static void
 expire_confs(void *unused)
 {
-  del_matching_access_confs(is_acb_expired);
+  enum_access_confs(is_acb_expired, NULL);
   execute_callback(cb_expire_confs);
 }
 

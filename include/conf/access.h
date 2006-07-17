@@ -25,14 +25,12 @@
 struct AccessConf
 {
   int type;
-  unsigned int flags;
-  uint64_t precedence;
   char *user;
   char *host;
+  uint64_t precedence;
   struct irc_ssaddr ip;
   struct AccessConf *hnext;
   time_t expires;
-  char *text;
 };
 
 #define ATABLE_SIZE         4096
@@ -43,16 +41,16 @@ EXTERN struct AccessConf *atable[];
 EXTERN struct Callback *cb_expire_confs;
 
 typedef void ACB_FREE_HANDLER(struct AccessConf *);
-typedef int ACB_EXAMINE_HANDLER(struct AccessConf *);
+typedef int ACB_EXAMINE_HANDLER(struct AccessConf *, void *);
 
 EXTERN void add_access_conf(struct AccessConf *);
 EXTERN void destroy_access_conf(struct AccessConf *);
 EXTERN void acb_generic_free(struct AccessConf *);
-EXTERN void del_matching_access_confs(ACB_EXAMINE_HANDLER *);
+EXTERN void enum_access_confs(ACB_EXAMINE_HANDLER *, void *);
 EXTERN int register_acb_type(void *);
 EXTERN void unregister_acb_type(int);
 EXTERN struct AccessConf *find_access_conf(int, const char *, const char *,
-  const struct irc_ssaddr *, ACB_EXAMINE_HANDLER *);
+  const struct irc_ssaddr *, ACB_EXAMINE_HANDLER *, void *);
 
 #ifdef IN_CONF_C
 void init_access(void);

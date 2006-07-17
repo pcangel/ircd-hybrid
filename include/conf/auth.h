@@ -22,25 +22,34 @@
  *  $Id$
  */
 
-#define AUTH_FLAG_ENCRYPTED     1
-#define AUTH_FLAG_SPOOF_NOTICE  2
-#define AUTH_FLAG_EXCEED_LIMIT  4
-#define AUTH_FLAG_KLINE_EXEMPT  8
-#define AUTH_FLAG_NEED_IDENT    16
-#define AUTH_FLAG_CAN_FLOOD     32
-#define AUTH_FLAG_CAN_IDLE      64
-#define AUTH_FLAG_NO_TILDE      128
-#define AUTH_FLAG_GLINE_EXEMPT  256
-#define AUTH_FLAG_RESV_EXEMPT   512
-#define AUTH_FLAG_NEED_PASSWORD 1024
+#define AUTH_FLAG_SPOOF_NOTICE  1
+#define AUTH_FLAG_EXCEED_LIMIT  2
+#define AUTH_FLAG_KLINE_EXEMPT  4
+#define AUTH_FLAG_NEED_IDENT    8
+#define AUTH_FLAG_CAN_FLOOD     16
+#define AUTH_FLAG_CAN_IDLE      32
+#define AUTH_FLAG_NO_TILDE      64
+#define AUTH_FLAG_GLINE_EXEMPT  128
+#define AUTH_FLAG_RESV_EXEMPT   256
+#define AUTH_FLAG_NEED_PASSWORD 512
+#define AUTH_FLAG_ENCRYPTED     1024
 
 struct AuthConf
 {
   struct AccessConf access;
   struct Class *class_ptr;
+  unsigned int flags;
+  char *spoof;
+  char *password;
   char *redirserv;
   int redirport;
 };
+
+struct Client;
+
+EXTERN struct AuthConf *find_iline(const char *, const char *,
+  const struct irc_ssaddr *, const char *);
+EXTERN void report_auth(struct Client *);
 
 #ifdef IN_CONF_C
 void init_ilines(void);
