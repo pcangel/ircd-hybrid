@@ -24,12 +24,19 @@
 
 #include "stdinc.h"
 #include "conf/conf.h"
+#include "client.h"
+#include "send.h"
 
 struct AccessConf *atable[ATABLE_SIZE] = {0};
 struct Callback *cb_expire_confs = NULL;
+uint64_t curprec = ~0;
 
-static ACB_FREE_HANDLER *acb_types[MAX_ACB_TYPES] = {0};
 static dlink_node *hreset;
+static struct
+{
+  const char *name;
+  ACB_FREE_HANDLER *free;
+} acb_types[MAX_ACB_TYPES] = {{0}};
 
 /*
  * hash_ipv4()
@@ -162,7 +169,6 @@ void
 add_access_conf(struct AccessConf *conf)
 {
   unsigned int hv = hash_hostmask(conf->host, &conf->ip);
-  static uint64_t curprec = ~0;
 
   conf->precedence = curprec--;
   conf->hnext = atable[hv];
@@ -189,11 +195,11 @@ destroy_access_conf(struct AccessConf *conf)
   else
   {
     for (prev = atable[hv]; prev->hnext != conf; prev = prev->hnext)
-      ;     // let it core if not found
+      assert(prev->type >= 0);  // let it core if not found
     prev->hnext = conf->hnext;
   }
 
-  acb_types[conf->type](conf);
+  acb_types[conf->type].free(conf);
 }
 
 /*
@@ -232,6 +238,7 @@ enum_access_confs(ACB_EXAMINE_HANDLER *examine, void *param)
     for (prev = NULL, conf = atable[hv]; conf != NULL;
          conf = (prev ? prev->hnext : atable[hv]))
     {
+      assert(conf->type >= 0);
       if (examine(conf, param))
       {
         if (prev != NULL)
@@ -239,7 +246,7 @@ enum_access_confs(ACB_EXAMINE_HANDLER *examine, void *param)
         else
           atable[hv] = conf->hnext;
 
-        acb_types[conf->type](conf);
+        acb_types[conf->type].free(conf);
       }
       else
         prev = conf;
@@ -253,12 +260,20 @@ static int is_acb_permanent(struct AccessConf *conf, void *unused)
 
 static int is_acb_expired(struct AccessConf *conf, void *unused)
 {
-  return conf->expires && conf->expires <= CurrentTime;
+  if (conf->expires && conf->expires <= CurrentTime)
+  {
+    sendto_realops_flags(UMODE_ALL, L_ALL,
+      "Temporary %s for [%s@%s] expired",
+      acb_types[conf->type].name, conf->user, conf->host);
+    return YES;
+  }
+
+  return NO;
 }
 
 static int is_acb_orphaned(struct AccessConf *conf, void *unused)
 {
-  return !acb_types[conf->type];
+  return !acb_types[conf->type].name;
 }
 
 /*
@@ -270,14 +285,18 @@ static int is_acb_orphaned(struct AccessConf *conf, void *unused)
  * output: requested value
  */
 int
-register_acb_type(void *fh)
+register_acb_type(const char *name, void *fh)
 {
   int i;
 
+  assert(name != NULL);
+  assert(fh != NULL);
+
   for (i = 0; i < MAX_ACB_TYPES; i++)
-    if (acb_types[i] == NULL)
+    if (acb_types[i].name == NULL)
     {
-      acb_types[i] = (ACB_FREE_HANDLER *) fh;
+      acb_types[i].name = name;
+      acb_types[i].free = (ACB_FREE_HANDLER *) fh;
       return i;
     }
 
@@ -295,7 +314,8 @@ register_acb_type(void *fh)
 void
 unregister_acb_type(int id)
 {
-  acb_types[id] = NULL;
+  acb_types[id].name = NULL;
+  acb_types[id].free = NULL;
   enum_access_confs(is_acb_orphaned, NULL);
 }
 

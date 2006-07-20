@@ -28,7 +28,7 @@
 #include "numeric.h"
 #include "send.h"
 
-static unsigned int acb_type_auth;
+static int acb_type_auth = -1;
 static struct AuthConf tmpauth = {{0}, 0};
 static dlink_list tmpuh = {0};
 
@@ -334,7 +334,7 @@ init_ilines(void)
   struct ConfSection *s = add_conf_section("auth", 2);
   const struct FlagMapping *p;
 
-  acb_type_auth = register_acb_type(free_iline);
+  acb_type_auth = register_acb_type("I-line", free_iline);
 
   s->before = before_iline;
 

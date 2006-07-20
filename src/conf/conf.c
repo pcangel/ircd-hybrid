@@ -70,6 +70,7 @@ init_conf(void)
   init_modules();
 #endif
   init_ilines();
+  init_kill();
   init_operator();
 }
 
