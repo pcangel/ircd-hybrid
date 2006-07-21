@@ -72,6 +72,7 @@ init_conf(void)
   init_ilines();
   init_kill();
   init_operator();
+  init_deny();
 }
 
 /*

@@ -139,11 +139,13 @@ try_parse_v6_netmask(const char *text, struct irc_ssaddr *addr, int *b)
   for (dp = bits / 16 + (bits % 16 ? 1 : 0); dp < 8; dp++)
     dc[dp] = 0;
   /* And assign... -A1kmm */
-  v6->sin6_family = AF_INET6;
   if (addr)
+  {
+    v6->sin6_family = AF_INET6;
     for (dp = 0; dp < 8; dp++)
       /* The cast is a kludge to make netbsd work. */
       ((unsigned short *)&v6->sin6_addr)[dp] = htons(dc[dp]);
+  }
   if (b != NULL)
     *b = bits;
   return HM_IPV6;
@@ -210,10 +212,12 @@ try_parse_v4_netmask(const char *text, struct irc_ssaddr *addr, int *b)
     addb[bits / 8] &= ~((1 << (8 - bits % 8)) - 1);
   for (n = bits / 8 + (bits % 8 ? 1 : 0); n < 4; n++)
     addb[n] = 0;
-  v4->sin_family = AF_INET;
   if (addr)
+  {
+    v4->sin_family = AF_INET;
     v4->sin_addr.s_addr =
       htonl(addb[0] << 24 | addb[1] << 16 | addb[2] << 8 | addb[3]);
+  }
   if (b != NULL)
     *b = bits;
   return HM_IPV4;

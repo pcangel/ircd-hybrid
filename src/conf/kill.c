@@ -123,6 +123,8 @@ kline_user(void *mask, void *unused)
 
   split_nuh(&uh);
 
+  MyFree(tmpkill.access.user);
+  MyFree(tmpkill.access.host);
   DupString(tmpkill.access.user, userbuf);
   DupString(tmpkill.access.host, hostbuf);
 }
@@ -286,7 +288,8 @@ report_klines(struct Client *client_p, int tkline)
 static void
 report_kline(struct KillConf *conf, struct Client *client_p)
 {
-  if ((report_letter[0] == 'K') == (conf->access.expires == 0))
+  if (conf->access.type == acb_type_kline &&
+      (report_letter[0] == 'K') == (conf->access.expires == 0))
     sendto_one(client_p, form_str(RPL_STATSKLINE), me.name,
                client_p->name, report_letter, conf->access.host,
                conf->access.user, conf->reason,
@@ -313,8 +316,8 @@ init_kill(void)
 
   s->before = before_kline;
 
+  s->def_field = add_conf_field(s, "user", CT_STRING, kline_user, NULL);
   add_conf_field(s, "type", CT_LIST, kline_type, NULL);
-  add_conf_field(s, "user", CT_STRING, kline_user, NULL);
   add_conf_field(s, "reason", CT_STRING, NULL, &tmpkill.reason);
 
   s->after = after_kline;

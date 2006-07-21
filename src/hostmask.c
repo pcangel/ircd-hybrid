@@ -43,24 +43,6 @@ find_gline_conf(const char *host, const char *user,
   return(find_conf_by_address(host, ip, CONF_GLINE, aftype, user, NULL));
 }
 
-/* struct AccessItem* find_dline_conf(struct irc_ssaddr*, int)
- *
- * Input:	An address, an address family.
- * Output:	The best matching D-line or exempt line.
- * Side effects: None.
- */
-struct AccessItem *
-find_dline_conf(const struct irc_ssaddr *addr, int aftype)
-{
-  struct AccessItem *eline;
-
-  eline = find_conf_by_address(NULL, addr, CONF_EXEMPTDLINE | 1, aftype,
-                               NULL, NULL);
-  if (eline != NULL)
-    return(eline);
-  return(find_conf_by_address(NULL, addr, CONF_DLINE | 1, aftype, NULL, NULL));
-}
-
 /* report_Klines()
  * Inputs: Client to report to,
  *	   type(==0 for perm, !=0 for temporary)

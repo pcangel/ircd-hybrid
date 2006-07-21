@@ -52,6 +52,7 @@ SRCS = \
  conf/class.c \
  conf/conf_channel.c \
  conf/conf.c \
+ conf/deny.c \
  conf/general.c \
  conf/kill.c \
  conf/listen.c \

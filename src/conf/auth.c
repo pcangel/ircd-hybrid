@@ -105,6 +105,7 @@ before_iline(void)
     unref_class(tmpauth.class_ptr);
 
   memset(&tmpauth, 0, sizeof(tmpauth));
+  tmpauth.access.type = acb_type_auth;
 }
 
 /*
