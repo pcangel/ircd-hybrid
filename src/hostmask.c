@@ -29,42 +29,6 @@
 #include "numeric.h"
 #include "send.h"
 
-/* struct AccessItem* find_address_conf(const char*, const char*,
- * 	                               struct irc_ssaddr*, int, char *);
- * Input: The hostname, username, address, address family.
- * Output: The applicable AccessItem.
- * Side-effects: None
- */
-struct AccessItem *
-find_address_conf(const char *host, const char *user,
-                  struct irc_ssaddr *ip, int aftype, char *password)
-{
-  struct AccessItem *iconf, *kconf;
-
-  /* Find the best I-line... If none, return NULL -A1kmm */
-  if ((iconf = find_conf_by_address(host, ip, CONF_CLIENT, aftype, user,
-                                    password)) == NULL)
-    return(NULL);
-
-  /* If they are exempt from K-lines, return the best I-line. -A1kmm */
-  if (IsConfExemptKline(iconf))
-    return(iconf);
-
-  /* Find the best K-line... -A1kmm */
-  kconf = find_conf_by_address(host, ip, CONF_KILL, aftype, user, NULL);
-
-  /* If they are K-lined, return the K-line. Otherwise, return the
-   * I-line. -A1kmm */
-  if (kconf != NULL)
-    return(kconf);
-
-  kconf = find_conf_by_address(host, ip, CONF_GLINE, aftype, user, NULL);
-  if (kconf != NULL && !IsConfExemptGline(iconf))
-    return(kconf);
-
-  return(iconf);
-}
-
 struct AccessItem *
 find_gline_conf(const char *host, const char *user,
                 struct irc_ssaddr *ip, int aftype)
@@ -77,28 +41,6 @@ find_gline_conf(const char *host, const char *user,
     return(eline);
 
   return(find_conf_by_address(host, ip, CONF_GLINE, aftype, user, NULL));
-}
-
-/* find_kline_conf
- *
- * inputs	- pointer to hostname
- *		- pointer to username
- *		- incoming IP and type (IPv4 vs. IPv6)
- * outut	- pointer to kline conf if found NULL if not
- * side effects	-
- */
-struct AccessItem *
-find_kline_conf(const char *host, const char *user,
-		struct irc_ssaddr *ip, int aftype)
-{
-  struct AccessItem *eline;
-
-  eline = find_conf_by_address(host, ip, CONF_EXEMPTKLINE, aftype,
-                               user, NULL);
-  if (eline != NULL)
-    return(eline);
-
-  return(find_conf_by_address(host, ip, CONF_KILL, aftype, user, NULL));
 }
 
 /* struct AccessItem* find_dline_conf(struct irc_ssaddr*, int)

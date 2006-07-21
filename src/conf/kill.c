@@ -25,6 +25,7 @@
 #include "stdinc.h"
 #include "conf/conf.h"
 #include "client.h"
+#include "numeric.h"
 #include "send.h"
 
 dlink_list rkline_confs = {NULL, NULL, 0};
@@ -32,6 +33,9 @@ dlink_list rkline_confs = {NULL, NULL, 0};
 static int acb_type_kline = -1;
 static struct KillConf tmpkill = {{0}, 0};
 static dlink_node *hreset, *hexpire;
+static char *report_letter;
+
+static void report_kline(struct KillConf *, struct Client *);
 
 /*
  * free_kline()
@@ -65,6 +69,7 @@ before_kline(void)
   MyFree(tmpkill.access.host);
   MyFree(tmpkill.regexuser);
   MyFree(tmpkill.regexhost);
+  MyFree(tmpkill.oper_reason);
   MyFree(tmpkill.reason);
   memset(&tmpkill, 0, sizeof(tmpkill));
   tmpkill.access.type = acb_type_kline;
@@ -259,6 +264,34 @@ find_kline(const char *user, const char *host, const char *sockhost,
   }
 
   return best;
+}
+
+/*
+ * report_klines()
+ *
+ * Sends a list of [Kk]-lines to client_p in /stats format.
+ *
+ * inputs:
+ *   client_p  -  where to send
+ *   tkline    -  YES if we should list temporary klines, NO if permanent ones
+ * output: none
+ */
+void
+report_klines(struct Client *client_p, int tkline)
+{
+  report_letter = tkline ? "k" : "K";
+  enum_access_confs((ACB_EXAMINE_HANDLER *) report_kline, client_p);
+}
+
+static void
+report_kline(struct KillConf *conf, struct Client *client_p)
+{
+  if ((report_letter[0] == 'K') == (conf->access.expires == 0))
+    sendto_one(client_p, form_str(RPL_STATSKLINE), me.name,
+               client_p->name, report_letter, conf->access.host,
+               conf->access.user, conf->reason,
+               (IsOper(client_p) && conf->oper_reason) ?
+               conf->oper_reason : "");
 }
 
 /*

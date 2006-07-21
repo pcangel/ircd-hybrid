@@ -28,11 +28,13 @@ struct KillConf
   pcre *regexuser;
   pcre *regexhost;
   dlink_node node;
+  char *oper_reason;
   char *reason;
 };
 
 struct KillConf *find_kline(const char *, const char *, const char *,
   const struct irc_ssaddr *);
+void report_klines(struct Client *, int);
 
 #ifdef IN_CONF_C
 void init_kill(void);
