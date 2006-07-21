@@ -26,7 +26,8 @@
 #include "conf/conf.h"
 
 static struct DenyConf tmpdeny = {{0}};
-static int acb_type_deny;
+static struct AccessConf tmpexempt = {0};
+static int acb_type_deny, acb_type_exempt;
 
 /*
  * free_dline()
@@ -56,7 +57,24 @@ before_deny(void)
 {
   MyFree(tmpdeny.reason);
   MyFree(tmpdeny.access.host);
+  memset(&tmpdeny, 0, sizeof(tmpdeny));
   tmpdeny.access.type = acb_type_deny;
+}
+
+/*
+ * before_exempt()
+ *
+ * Called before parsing a single exempt{ block.
+ *
+ * inputs: none
+ * output: none
+ */
+static void
+before_exempt(void)
+{
+  MyFree(tmpexempt.host);
+  memset(&tmpexempt, 0, sizeof(tmpexempt));
+  tmpexempt.type = acb_type_exempt;
 }
 
 /*
@@ -68,10 +86,10 @@ before_deny(void)
  * output: none
  */
 static void
-parse_ip(void *value, void *unused)
+parse_ip(void *value, void *where)
 {
   struct split_nuh_item uh;
-  char hostbuf[HOSTLEN + 1];
+  char hostbuf[HOSTLEN + 1], **s = where;
 
   uh.nuhmask = value;
   uh.nickptr = uh.userptr = NULL;
@@ -82,8 +100,8 @@ parse_ip(void *value, void *unused)
 
   split_nuh(&uh);
 
-  MyFree(tmpdeny.access.host);
-  DupString(tmpdeny.access.host, hostbuf);
+  MyFree(*s);
+  DupString(*s, hostbuf);
 }
 
 /*
@@ -99,8 +117,8 @@ after_deny(void)
 {
   struct DenyConf *conf;
 
-  if (conf->access.host == NULL ||
-      parse_netmask(conf->access.host, NULL, NULL) == HM_HOST)
+  if (tmpdeny.access.host == NULL ||
+      parse_netmask(tmpdeny.access.host, NULL, NULL) == HM_HOST)
   {
     before_deny();
     return;
@@ -110,6 +128,31 @@ after_deny(void)
   memcpy(conf, &tmpdeny, sizeof(*conf));
   memset(&tmpdeny, 0, sizeof(tmpdeny));
   add_access_conf(&conf->access);
+}
+
+/*
+ * after_exempt()
+ *
+ * Called after parsing a single exempt{} block.
+ *
+ * inputs: none
+ * output: none
+ */
+static void
+after_exempt(void)
+{
+  struct AccessConf *conf;
+
+  if (!tmpexempt.host || parse_netmask(tmpexempt.host, NULL, NULL) == HM_HOST)
+  {
+    before_exempt();
+    return;
+  }
+
+  conf = MyMalloc(sizeof(*conf));
+  memcpy(conf, &tmpexempt, sizeof(*conf));
+  memset(&tmpexempt, 0, sizeof(tmpexempt));
+  add_access_conf(conf);
 }
 
 /*
@@ -123,8 +166,27 @@ after_deny(void)
 struct DenyConf *
 find_dline(const struct irc_ssaddr *ip)
 {
-  return (struct DenyConf *) find_access_conf(acb_type_deny, NULL, NULL, ip,
-    NULL, NULL);
+  struct DenyConf *conf = (struct DenyConf *) find_access_conf(acb_type_deny,
+    NULL, NULL, ip, NULL, NULL);
+
+  if (conf && find_exempt(ip))
+    conf = NULL;
+
+  return conf;
+}
+
+/*
+ * find_exempt()
+ *
+ * Returns a matching exempt entry.
+ *
+ * inputs: IP address
+ * output: pointer to the conf or NULL if not found
+ */
+struct AccessConf *
+find_exempt(const struct irc_ssaddr *ip)
+{
+  return find_access_conf(acb_type_exempt, NULL, NULL, ip, NULL, NULL);
 }
 
 /*
@@ -139,13 +201,21 @@ void
 init_deny(void)
 {
   struct ConfSection *s = add_conf_section("deny", 2);
+  struct ConfSection *s2 = add_conf_section("exempt", 2);
 
   acb_type_deny = register_acb_type("D-line", (ACB_FREE_HANDLER *) free_dline);
+  acb_type_exempt = register_acb_type("exempt",
+    (ACB_FREE_HANDLER *) acb_generic_free);
 
   s->before = before_deny;
+  s2->before = before_exempt;
 
-  s->def_field = add_conf_field(s, "ip", CT_STRING, parse_ip, NULL);
+  s->def_field = add_conf_field(s, "ip", CT_STRING, parse_ip,
+    &tmpdeny.access.host);
+  s2->def_field = add_conf_field(s, "ip", CT_STRING, parse_ip,
+    &tmpexempt.host);
   add_conf_field(s, "reason", CT_STRING, NULL, &tmpdeny.reason);
 
   s->after = after_deny;
+  s2->after = after_exempt;
 }
