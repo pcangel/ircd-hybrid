@@ -335,7 +335,7 @@ init_ilines(void)
   struct ConfSection *s = add_conf_section("auth", 2);
   const struct FlagMapping *p;
 
-  acb_type_auth = register_acb_type("I-line", free_iline);
+  acb_type_auth = register_acb_type("auth", free_iline);
 
   s->before = before_iline;
 

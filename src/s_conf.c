@@ -939,9 +939,9 @@ find_or_add_ip(const struct irc_ssaddr *ip_in)
   for (ptr = ip_hash_table[hash_index]; ptr; ptr = ptr->next)
   {
 #ifdef IPV6
-    if (ptr->ip.ss.ss_family != ip_in->ss.ss_family)
+    if (ptr->ip.ss.sin_family != ip_in->ss.sin_family)
       continue;
-    if (ip_in->ss.ss_family == AF_INET6)
+    if (ip_in->ss.sin_family == AF_INET6)
     {
       ptr_v6 = (struct sockaddr_in6 *)&ptr->ip;
       res = memcmp(&v6->sin6_addr, &ptr_v6->sin6_addr, sizeof(struct in6_addr));
@@ -996,9 +996,9 @@ remove_one_ip(struct irc_ssaddr *ip_in)
   for (ptr = ip_hash_table[hash_index]; ptr; ptr = ptr->next)
   {
 #ifdef IPV6
-    if (ptr->ip.ss.ss_family != ip_in->ss.ss_family)
+    if (ptr->ip.ss.sin_family != ip_in->ss.sin_family)
       continue;
-    if (ip_in->ss.ss_family == AF_INET6)
+    if (ip_in->ss.sin_family == AF_INET6)
     {
       ptr_v6 = (struct sockaddr_in6 *)&ptr->ip;
       res = memcmp(&v6->sin6_addr, &ptr_v6->sin6_addr, sizeof(struct in6_addr));
@@ -1038,7 +1038,7 @@ remove_one_ip(struct irc_ssaddr *ip_in)
 static int
 hash_ip(const struct irc_ssaddr *addr)
 {
-  if (addr->ss.ss_family == AF_INET)
+  if (addr->ss.sin_family == AF_INET)
   {
     const struct sockaddr_in *v4 = (const struct sockaddr_in *)addr;
     int hash;
@@ -1751,7 +1751,7 @@ lookup_confhost(struct ConfItem *conf)
 
   memcpy(&aconf->ipnum, res->ai_addr, res->ai_addrlen);
   aconf->ipnum.ss_len = res->ai_addrlen;
-  aconf->ipnum.ss.ss_family = res->ai_family;
+  aconf->ipnum.ss.sin_family = res->ai_family;
   irc_freeaddrinfo(res);
 }
 
@@ -1766,7 +1766,7 @@ int
 conf_connect_allowed(const struct irc_ssaddr *addr)
 {
   struct ip_entry *ip_found = NULL;
-  struct AccessItem *aconf = find_dline_conf(addr, addr->ss.ss_family);
+  struct AccessItem *aconf = find_dline_conf(addr, addr->ss.sin_family);
 
   /* DLINE exempt also gets you out of static limits/pacing... */
   if (aconf && (aconf->status & CONF_EXEMPTDLINE))
@@ -1985,7 +1985,7 @@ clear_out_old_conf(void)
       MaxTotal(cltmp) = -1;
   }
 
-  clear_out_address_conf();
+//  clear_out_address_conf();
 
   /* clean out ServerInfo */
   MyFree(ServerInfo.description);
@@ -2437,7 +2437,7 @@ cidr_limit_reached(int exempt,
   if (NumberPerCidr(aclass) <= 0)
     return 0;
 
-  if (ip->ss.ss_family == AF_INET)
+  if (ip->ss.sin_family == AF_INET)
   {
     if (CidrBitlenIPV4(aclass) <= 0)
       return 0;
@@ -2501,7 +2501,7 @@ remove_from_cidr_check(struct irc_ssaddr *ip, struct ClassItem *aclass)
   if (NumberPerCidr(aclass) == 0)
     return;
 
-  if (ip->ss.ss_family == AF_INET)
+  if (ip->ss.sin_family == AF_INET)
   {
     if (CidrBitlenIPV4(aclass) <= 0)
       return;

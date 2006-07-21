@@ -1,9 +1,8 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  conf.h: Includes all configuration headers.
+ *  resv.h: Defines resv{} conf section.
  *
- *  Copyright (C) 2003 by Piotr Nizynski, Advanced IRC Services Project
- *  Copyright (C) 2005 by the Hybrid Development Team.
+ *  Copyright (C) 2006 by the Hybrid Development Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,27 +19,20 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
  *
- *  $Id: conf.h 69 2005-10-04 16:09:51Z adx $
+ *  $Id$
  */
 
-#ifndef INCLUDED_CONF_H
-#define INCLUDED_CONF_H
+struct ResvConf
+{
+  char *mask;
+  char *reason;
+  time_t expires;
+  dlink_node node;
+};
 
-#include "conf/manager.h"
-#include "conf/access.h"
-#include "conf/admin.h"
-#include "conf/auth.h"
-#include "conf/channel.h"
-#include "conf/class.h"
-#include "conf/deny.h"
-#include "conf/general.h"
-#include "conf/kill.h"
-#include "conf/listen.h"
-#include "conf/logging.h"
-#include "conf/modules.h"
-#include "conf/operator.h"
-#include "conf/resv.h"
-#include "conf/serverhide.h"
-#include "conf/serverinfo.h"
+struct ResvConf *find_nick_resv(const char *);
+struct ResvConf *find_channel_resv(const char *);
 
+#ifdef IN_CONF_C
+void init_resv(void);
 #endif

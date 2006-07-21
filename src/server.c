@@ -1661,7 +1661,7 @@ serv_connect(struct AccessItem *aconf, struct Client *by, int connect_port)
   strlcpy(client_p->sockhost, buf, HOSTIPLEN);
 
   /* create a socket for the server connection */ 
-  if (comm_open(&client_p->localClient->fd, aconf->ipnum.ss.ss_family,
+  if (comm_open(&client_p->localClient->fd, aconf->ipnum.ss.sin_family,
                 SOCK_STREAM, 0, NULL) < 0)
   {
     /* Eek, failure to create the socket */
@@ -1725,7 +1725,7 @@ serv_connect(struct AccessItem *aconf, struct Client *by, int connect_port)
       {
         struct irc_ssaddr ipn;
         memset(&ipn, 0, sizeof(struct irc_ssaddr));
-        ipn.ss.ss_family = AF_INET;
+        ipn.ss.sin_family = AF_INET;
         ipn.ss_port = 0;
         memcpy(&ipn, &aconf->my_ipnum, sizeof(struct irc_ssaddr));
 	comm_connect_tcp(&client_p->localClient->fd, aconf->host, connect_port,
@@ -1737,7 +1737,7 @@ serv_connect(struct AccessItem *aconf, struct Client *by, int connect_port)
       {
         struct irc_ssaddr ipn;
         memset(&ipn, 0, sizeof(struct irc_ssaddr));
-        ipn.ss.ss_family = AF_INET;
+        ipn.ss.sin_family = AF_INET;
         ipn.ss_port = 0;
         memcpy(&ipn, &ServerInfo.ip, sizeof(struct irc_ssaddr));
         comm_connect_tcp(&client_p->localClient->fd, aconf->host, connect_port,
@@ -1765,7 +1765,7 @@ serv_connect(struct AccessItem *aconf, struct Client *by, int connect_port)
 		   sizeof(struct in6_addr)) != 0)
 	{
 	  memcpy(&ipn, &aconf->my_ipnum, sizeof(struct irc_ssaddr));
-	  ipn.ss.ss_family = AF_INET6;
+	  ipn.ss.sin_family = AF_INET6;
 	  ipn.ss_port = 0;
 	  comm_connect_tcp(&client_p->localClient->fd,
 			   aconf->host, connect_port,
@@ -1776,7 +1776,7 @@ serv_connect(struct AccessItem *aconf, struct Client *by, int connect_port)
 	else if (ServerInfo.specific_ipv6_vhost)
         {
 	  memcpy(&ipn, &ServerInfo.ip6, sizeof(struct irc_ssaddr));
-	  ipn.ss.ss_family = AF_INET6;
+	  ipn.ss.sin_family = AF_INET6;
 	  ipn.ss_port = 0;
 	  comm_connect_tcp(&client_p->localClient->fd,
 			   aconf->host, connect_port,

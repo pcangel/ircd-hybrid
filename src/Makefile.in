@@ -59,6 +59,7 @@ SRCS = \
  conf/logging.c \
  conf/modules.c \
  conf/operator.c \
+ conf/resv.c \
  conf/serverhide.c \
  conf/serverinfo.c \
  channel.c \

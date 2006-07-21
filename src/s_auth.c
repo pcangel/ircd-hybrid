@@ -155,7 +155,7 @@ auth_dns_callback(void *vptr, struct DNSReply *reply)
     int good = 1;
 
 #ifdef IPV6
-    if (auth->client->localClient->ip.ss.ss_family == AF_INET6)
+    if (auth->client->localClient->ip.ss.sin_family == AF_INET6)
     {
       v6 = (struct sockaddr_in6 *)&auth->client->localClient->ip;
       v6dns = (struct sockaddr_in6 *)&reply->addr;
@@ -241,7 +241,7 @@ start_auth_query(struct AuthRequest *auth)
 #endif
 
   /* open a socket of the same type as the client socket */
-  if (comm_open(&auth->fd, auth->client->localClient->ip.ss.ss_family,
+  if (comm_open(&auth->fd, auth->client->localClient->ip.ss.sin_family,
                 SOCK_STREAM, 0, "ident") == -1)
   {
     report_error(L_ALL, "creating auth stream socket %s:%s", 
@@ -281,7 +281,7 @@ start_auth_query(struct AuthRequest *auth)
 
   comm_connect_tcp(&auth->fd, auth->client->sockhost, 113, 
       (struct sockaddr *)&localaddr, localaddr.ss_len, auth_connect_callback, 
-      auth, auth->client->localClient->ip.ss.ss_family, 
+      auth, auth->client->localClient->ip.ss.sin_family, 
       GlobalSetOptions.ident_timeout);
   return 1; /* We suceed here for now */
 }

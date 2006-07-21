@@ -172,7 +172,7 @@ si_set_vhost(void *value, void *where)
   else
   {
     memcpy(dest, res->ai_addr, res->ai_addrlen);
-    dest->ss.ss_family = res->ai_family;
+    dest->ss.sin_family = res->ai_family;
     dest->ss_len = res->ai_addrlen;
     irc_freeaddrinfo(res);
   }

@@ -588,3 +588,22 @@ split_nuh(struct split_nuh_item *iptr)
     }
   }
 }
+
+/*
+ * hash_text()
+ *
+ * Hash algorithm for case-insensitive strings.
+ *
+ * inputs: text to hash
+ * output: hash value
+ */
+unsigned int
+hash_text(const char *p, unsigned int size)
+{
+  unsigned int av = 0;
+
+  for (; *p; p++)
+    av = (av << 4) - (av + ToLower(*p));
+
+  return av % size;
+}

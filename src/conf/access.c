@@ -93,25 +93,6 @@ hash_ipv6(const struct irc_ssaddr *addr, int bits)
 #endif
 
 /*
- * hash_text()
- *
- * Hash algorithm for DNS names.
- *
- * inputs: the start of text to hash
- * output: hash value
- */
-static unsigned int
-hash_text(const char *p)
-{
-  unsigned int av = 0;
-
-  for (; *p; p++)
-    av = (av << 4) - (av + ToLower(*p));
-
-  return av % ATABLE_SIZE;
-}
-
-/*
  * hash_hostmask()
  *
  * Calculates the hash value for a given hostmask.
@@ -149,7 +130,7 @@ hash_hostmask(const char *p, struct irc_ssaddr *addr)
         else if (IsMWildChar(*p))
           seg = NULL;
 
-      hv = seg ? hash_text(seg) : 0;
+      hv = seg ? hash_text(seg, ATABLE_SIZE) : 0;
   }
 
   addr->ss_port = (in_port_t) bits;
@@ -378,7 +359,7 @@ find_access_conf(int type, const char *user, const char *host,
   if (host != NULL)
     while (1)
     {
-      for (conf = atable[hash_text(host)]; conf; conf = conf->hnext)
+      for (conf = atable[hash_text(host, ATABLE_SIZE)]; conf; conf = conf->hnext)
         if ((best == NULL || conf->precedence > best->precedence) &&
             conf->type == type && match(conf->host, host) &&
             (EmptyString(user) || match(conf->user, user)) &&

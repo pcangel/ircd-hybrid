@@ -111,7 +111,7 @@ inetport(struct Listener *listener)
   /*
    * At first, open a new socket
    */
-  if (comm_open(&listener->fd, listener->addr.ss.ss_family, SOCK_STREAM, 0,
+  if (comm_open(&listener->fd, listener->addr.ss.sin_family, SOCK_STREAM, 0,
                 "Listener socket") == -1)
   {
     report_error(L_ALL, "opening listener socket %s:%s",
@@ -238,7 +238,7 @@ add_listener(int port, const char *vhost_ip, unsigned int flags)
   {
     snprintf(portname, PORTNAMELEN, "%d", port);
     irc_getaddrinfo("::", portname, &hints, &res);
-    vaddr.ss.ss_family = AF_INET6;
+    vaddr.ss.sin_family = AF_INET6;
     assert(res != NULL);
 
     memcpy((struct sockaddr*)&vaddr, res->ai_addr, res->ai_addrlen);
@@ -251,7 +251,7 @@ add_listener(int port, const char *vhost_ip, unsigned int flags)
   {
     struct sockaddr_in *v4 = (struct sockaddr_in*) &vaddr;
     v4->sin_addr.s_addr = INADDR_ANY;
-    vaddr.ss.ss_family = AF_INET;
+    vaddr.ss.sin_family = AF_INET;
     vaddr.ss_len = sizeof(struct sockaddr_in);
     v4->sin_port = htons(port);
   }
@@ -483,7 +483,7 @@ add_connection(struct Listener *listener, struct irc_ssaddr *irn, int fd)
         new_client->localClient->ip.ss_len,  new_client->sockhost,
         sizeof(new_client->sockhost), NULL, 0, NI_NUMERICHOST);
 
-  new_client->localClient->aftype = new_client->localClient->ip.ss.ss_family;
+  new_client->localClient->aftype = new_client->localClient->ip.ss.sin_family;
 
 #ifdef IPV6
   if (*new_client->sockhost == ':')

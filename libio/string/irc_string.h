@@ -128,6 +128,7 @@ struct split_nuh_item
 };
 
 LIBIO_EXTERN void split_nuh(struct split_nuh_item *);
+LIBIO_EXTERN unsigned int hash_text(const char *, unsigned int);
 
 /*
  * character macros
