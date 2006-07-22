@@ -33,6 +33,7 @@
 #include "conf/channel.h"
 #include "conf/class.h"
 #include "conf/deny.h"
+#include "conf/gecos.h"
 #include "conf/general.h"
 #include "conf/glines.h"
 #include "conf/kill.h"

@@ -75,6 +75,7 @@ init_conf(void)
   init_deny();
   init_glines();
   init_shared();
+  init_gecos();
 }
 
 /*

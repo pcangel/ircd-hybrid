@@ -1,8 +1,8 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  hostmask.c: Code to efficiently find IP & hostmask based configs.
+ *  gecos.h: Defines gecos{} conf section.
  *
- *  Copyright (C) 2005 by the past and present ircd coders, and others.
+ *  Copyright (C) 2006 by the Hybrid Development Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,23 +22,17 @@
  *  $Id$
  */
 
-#include "stdinc.h"
-#include "ircd_defs.h"
-#include "s_conf.h"
-#include "hostmask.h"
-#include "numeric.h"
-#include "send.h"
-
-struct AccessItem *
-find_gline_conf(const char *host, const char *user,
-                struct irc_ssaddr *ip, int aftype)
+struct GecosConf
 {
-  struct AccessItem *eline;
+  char *mask;
+  char *reason;
+  pcre *regex;
+  time_t expires;
+  dlink_node node;
+};
 
-  eline = find_conf_by_address(host, ip, CONF_EXEMPTKLINE, aftype,
-                               user, NULL);
-  if (eline != NULL)
-    return(eline);
+EXTERN struct GecosConf *find_gecos_ban(const char *);
 
-  return(find_conf_by_address(host, ip, CONF_GLINE, aftype, user, NULL));
-}
+#ifdef IN_CONF_C
+void init_gecos(void);
+#endif
