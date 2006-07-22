@@ -1,6 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  deny.c: Defines the deny{} block of ircd.conf.
+ *  deny.c: Defines the deny{} and exempt{} blocks of ircd.conf.
  *
  *  Copyright (C) 2006 by the Hybrid Development Team.
  *
@@ -24,6 +24,8 @@
 
 #include "stdinc.h"
 #include "conf/conf.h"
+
+// TODO: Add callbacks for dline.conf support with default handlers
 
 static struct DenyConf tmpdeny = {{0}};
 static struct AccessConf tmpexempt = {0};
@@ -192,7 +194,7 @@ find_exempt(const struct irc_ssaddr *ip)
 /*
  * init_deny()
  *
- * Defines the deny{} conf section.
+ * Defines the deny{} and exempt{} conf sections.
  *
  * inputs: none
  * output: none

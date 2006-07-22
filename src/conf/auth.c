@@ -32,6 +32,7 @@ static int acb_type_auth = -1;
 static struct AuthConf tmpauth = {{0}, 0};
 static dlink_list tmpuh = {0};
 
+// TODO: These should be modularised like acb_types
 static const struct FlagMapping {
   char letter;
   const char *name;

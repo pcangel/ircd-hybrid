@@ -27,6 +27,8 @@
 #include "client.h"
 #include "send.h"
 
+// TODO: Add callbacks for ?resv.conf support with default handlers
+
 static dlink_node *hreset, *hexpire;
 static dlink_list nresv_confs = {0};
 static dlink_list cresv_confs = {0};

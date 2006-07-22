@@ -28,6 +28,8 @@
 #include "numeric.h"
 #include "send.h"
 
+// TODO: Add callbacks for (r)kline.conf support with default handlers
+
 dlink_list rkline_confs = {NULL, NULL, 0};
 
 static int acb_type_kline = -1;

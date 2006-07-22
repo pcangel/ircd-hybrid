@@ -34,6 +34,7 @@ dlink_list oper_confs = {NULL, NULL, 0};
 static dlink_node *hreset;
 static struct OperatorConf tmpoper = {0};
 
+// TODO: These should be modularised like acb_types
 static const struct FlagMapping {
   char letter;
   const char *name;

@@ -63,6 +63,7 @@ SRCS = \
  conf/resv.c \
  conf/serverhide.c \
  conf/serverinfo.c \
+ conf/shared.c \
  channel.c \
  channel_mode.c \
  client.c \

@@ -1,6 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  deny.h: Defines deny{} and exempt{} conf sections.
+ *  shared.h: Defines admin{} and shared{} conf sections.
  *
  *  Copyright (C) 2006 by the Hybrid Development Team.
  *
@@ -22,15 +22,38 @@
  *  $Id$
  */
 
-struct DenyConf
+#define SHARED_KLINE    1
+#define SHARED_TKLINE   2
+#define SHARED_UNKLINE  4
+#define SHARED_XLINE    8
+#define SHARED_TXLINE   16
+#define SHARED_UNXLINE  32
+#define SHARED_RESV     64
+#define SHARED_TRESV    128
+#define SHARED_UNRESV   256
+#define SHARED_LOCOPS   512
+
+struct SharedConf
 {
-  struct AccessConf access;
-  char *reason;
+  char *server;
+  char *user;
+  char *host;
+  struct irc_ssaddr ip;
+  int type;
+  dlink_node node;
 };
 
-struct DenyConf *find_dline(const struct irc_ssaddr *);
-struct AccessConf *find_exempt(const struct irc_ssaddr *);
+struct ClusterConf
+{
+  char *server;
+  int type;
+  dlink_node node;
+};
+
+EXTERN struct SharedConf *find_shared(const char *, const char *, const char *,
+  const struct irc_ssaddr *, int);
+EXTERN struct ClusterConf *find_cluster(const char *, int);
 
 #ifdef IN_CONF_C
-void init_deny(void);
+void init_shared(void);
 #endif

@@ -43,5 +43,6 @@
 #include "conf/resv.h"
 #include "conf/serverhide.h"
 #include "conf/serverinfo.h"
+#include "conf/shared.h"
 
 #endif
