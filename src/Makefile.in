@@ -54,6 +54,7 @@ SRCS = \
  conf/conf.c \
  conf/deny.c \
  conf/general.c \
+ conf/glines.c \
  conf/kill.c \
  conf/listen.c \
  conf/logging.c \

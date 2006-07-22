@@ -128,7 +128,7 @@ init_module(struct Module *mod, const char *fullname)
   sendto_realops_flags(UMODE_ALL, L_ALL, "%s", message);
 
   DupString(mod->fullname, fullname);
-  dlinkAdd(mod, &mod->node, &loaded_modules);
+  dlinkAddTail(mod, &mod->node, &loaded_modules);
   mod->modinit();
 }
 

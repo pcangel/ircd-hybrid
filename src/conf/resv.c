@@ -175,7 +175,7 @@ resv_nick(void *mask, void *unused)
 
     DupString(resv->mask, collapse(mask));
     DupString(resv->reason, tmpreason ? tmpreason : "No reason");
-    dlinkAdd(resv, &resv->node, &nresv_confs);
+    dlinkAddTail(resv, &resv->node, &nresv_confs);
   }
 }
 
@@ -189,7 +189,7 @@ resv_channel(void *mask, void *unused)
 
     DupString(resv->mask, collapse_esc(mask));
     DupString(resv->reason, tmpreason ? tmpreason : "No reason");
-    dlinkAdd(resv, &resv->node, &cresv_confs);
+    dlinkAddTail(resv, &resv->node, &cresv_confs);
   }
 }
 

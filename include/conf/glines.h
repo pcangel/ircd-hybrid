@@ -1,9 +1,8 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  conf.h: Includes all configuration headers.
+ *  glines.h: Defines glines{} conf section.
  *
- *  Copyright (C) 2003 by Piotr Nizynski, Advanced IRC Services Project
- *  Copyright (C) 2005 by the Hybrid Development Team.
+ *  Copyright (C) 2006 by the Hybrid Development Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,28 +19,39 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
  *
- *  $Id: conf.h 69 2005-10-04 16:09:51Z adx $
+ *  $Id$
  */
 
-#ifndef INCLUDED_CONF_H
-#define INCLUDED_CONF_H
+#define GDENY_REJECT    1
+#define GDENY_BLOCK     2
+#define GDENY_ERROR     4
 
-#include "conf/manager.h"
-#include "conf/access.h"
-#include "conf/admin.h"
-#include "conf/auth.h"
-#include "conf/channel.h"
-#include "conf/class.h"
-#include "conf/deny.h"
-#include "conf/general.h"
-#include "conf/glines.h"
-#include "conf/kill.h"
-#include "conf/listen.h"
-#include "conf/logging.h"
-#include "conf/modules.h"
-#include "conf/operator.h"
-#include "conf/resv.h"
-#include "conf/serverhide.h"
-#include "conf/serverinfo.h"
+struct GlineDenyConf
+{
+  char *server;
+  char *user;
+  char *host;
+  struct irc_ssaddr ip;
+  int action;
+  dlink_node node;
+};
 
+struct GlineConf
+{
+  struct AccessConf access;
+  time_t expires;
+  char *reason;
+};
+
+EXTERN int enable_glines;
+EXTERN time_t gline_duration;
+EXTERN int gline_logging;
+
+EXTERN int is_gline_allowed(const char *, const char *, const char *,
+  const struct irc_ssaddr *);
+EXTERN struct GlineConf *place_gline(const char *, const char *, const char *);
+EXTERN struct GlineConf *find_gline(const char *, const char *, const struct irc_ssaddr *);
+
+#ifdef IN_CONF_C
+void init_glines(void);
 #endif

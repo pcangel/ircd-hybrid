@@ -168,7 +168,7 @@ after_kline(void)
   else
   {
     conf->access.precedence = curprec--;
-    dlinkAdd(conf, &conf->node, &rkline_confs);
+    dlinkAddTail(conf, &conf->node, &rkline_confs);
   }
 
   memset(&tmpkill, 0, sizeof(tmpkill));
