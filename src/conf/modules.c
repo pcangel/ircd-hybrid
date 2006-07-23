@@ -323,13 +323,11 @@ boot_modules(char cold)
       load_module(ptr->data);
 
   for (p = core_modules; *p; p++)
-  {
     if (!find_module(*p, NO))
     {
       ilog(L_CRIT, "Core module %s is missing", *p);
       server_die("No core modules", 0);
     }
-  }
 }
 
 /*

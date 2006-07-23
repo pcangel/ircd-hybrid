@@ -94,8 +94,9 @@
 /* class {} default values */
 #define DEFAULT_SENDQ 9000000           /* default max SendQ */
 #define PORTNUM 6667                    /* default outgoing portnum */
-#define DEFAULT_PINGFREQUENCY    120    /* Default ping frequency */
+#define DEFAULT_PINGFREQUENCY    35     /* Ping frequency for unknowns */
 #define DEFAULT_CONNECTFREQUENCY 600    /* Default connect frequency */
+#define CONNECTTIMEOUT           30     /* Connect timeout for auth */
 
 #define TS_MAX_DELTA_MIN      10        /* min value for ts_max_delta */
 #define TS_MAX_DELTA_DEFAULT  600       /* default for ts_max_delta */
@@ -119,7 +120,6 @@
 
 #define INIT_LOG_LEVEL L_NOTICE         /* default for log_level */
 
-#define CONNECTTIMEOUT  30      /* Recommended value: 30 */
 #define IDENT_TIMEOUT 10
 
 #define MIN_JOIN_LEAVE_TIME  60

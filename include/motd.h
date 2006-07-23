@@ -52,7 +52,13 @@ struct MessageFile
 
 typedef struct MessageFile MessageFile;
 
+EXTERN MessageFile motd;
+EXTERN MessageFile opermotd;
+EXTERN MessageFile linksfile;
+
 struct Client;
+
+void init_motd(void);
 
 EXTERN void init_message_file(MotdType, const char *, struct MessageFile *);
 EXTERN int send_message_file(struct Client *, struct MessageFile *);

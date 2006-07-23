@@ -43,6 +43,8 @@ struct Class
 
 typedef void (* ENUMCLASSFUNC) (struct Class *);
 
+EXTERN struct Class *default_class;
+
 EXTERN struct Class *ref_class_by_name(const char *);
 EXTERN struct Class *ref_class_by_ptr(struct Class *);
 EXTERN void unref_class(struct Class *);

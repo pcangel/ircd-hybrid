@@ -29,7 +29,7 @@
 
 // TODO: Add callbacks for (r)xline.conf support with default handlers
 
-static dlink_node *hreset, *hexpire;
+static dlink_node *hreset, *hexpire, *hbanned;
 static dlink_list gecos_confs = {0};
 static struct GecosConf tmpgecos = {0};
 static char regex_flag = NO;
@@ -204,6 +204,36 @@ after_gecos(void)
 }
 
 /*
+ * is_client_xlined()
+ *
+ * Hook function for is_client_banned.
+ *
+ * inputs:
+ *   client  -  local client to check
+ *   type    -  we set it to ban type if there's a match
+ *   reason  -  we set it to ban reason (if any)
+ * output: not NULL if they're banned
+ */
+static void *
+is_client_xlined(va_list args)
+{
+  struct Client *client = va_arg(args, struct Client *);
+  char **type = va_arg(args, char **);
+  char **reason = va_arg(args, char **);
+  struct GecosConf *conf = IsExemptKline(client) ? NULL :
+    find_gecos_ban(client->info);
+
+  if (conf)
+  {
+    *type = "X-line";
+    *reason = conf->reason;
+    return conf;
+  }
+
+  return pass_callback(hbanned, client, type, reason);
+}
+
+/*
  * init_gecos()
  *
  * Defines the gecos{} conf section.
@@ -217,7 +247,8 @@ init_gecos(void)
   struct ConfSection *s = add_conf_section("gecos", 2);
 
   hreset = install_hook(reset_conf, reset_gecos);
-  hexpire = install_hook(cb_expire_confs, expire_gecos);
+  hexpire = install_hook(expire_confs, expire_gecos);
+  hbanned = install_hook(is_client_banned, is_client_xlined);
 
   s->before = before_gecos;
 

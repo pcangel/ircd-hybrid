@@ -25,6 +25,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "channel.h"
 #include "channel_mode.h"
 #include "client.h"
@@ -37,7 +38,6 @@
 #include "s_user.h"
 #include "send.h"
 
-struct config_channel_entry ConfigChannel;
 dlink_list global_channel_list = { NULL, NULL, 0 };
 BlockHeap *ban_heap;    /*! \todo ban_heap shouldn't be a global var */
 
@@ -321,7 +321,7 @@ check_channel_name(const char *name, int local)
   if (!IsChanPrefix(*p))
     return 0;
 
-  if (!local || !ConfigChannel.disable_fake_channels)
+  if (!local || !Channel.disable_fake_channels)
   {
     while (*++p)
       if (!IsChanChar(*p))
@@ -515,7 +515,7 @@ add_invite(struct Channel *chptr, struct Client *who)
    * delete last link in chain if the list is max length
    */
   if (dlink_list_length(&who->localClient->invited) >=
-      ConfigChannel.max_chans_per_user)
+      Channel.max_chans_per_user)
     del_invite(who->localClient->invited.tail->data, who);
 
   /* add client to channel invite list */
@@ -641,7 +641,7 @@ is_banned(const struct Channel *chptr, const struct Client *who)
   assert(IsClient(who));
 
   if (find_bmask(who, &chptr->banlist))
-    if (!ConfigChannel.use_except || !find_bmask(who, &chptr->exceptlist))
+    if (!Channel.use_except || !find_bmask(who, &chptr->exceptlist))
       return 1;
 
   return 0;
@@ -685,8 +685,8 @@ can_send(struct Channel *chptr, struct Client *source_p, struct Membership *ms)
     return CAN_SEND_OPV;
 
   if (MyClient(source_p) && !IsExemptResv(source_p))
-    if (!(IsOper(source_p) && ConfigFileEntry.oper_pass_resv))
-      if (!hash_find_resv(chptr->chname) == ConfigChannel.restrict_channels)
+    if (!(IsOper(source_p) && General.oper_pass_resv))
+      if (!hash_find_resv(chptr->chname) == Channel.restrict_channels)
         return CAN_SEND_NO;
 
   if (ms != NULL || (ms = find_channel_link(source_p, chptr)))
@@ -695,7 +695,7 @@ can_send(struct Channel *chptr, struct Client *source_p, struct Membership *ms)
       return CAN_SEND_OPV;
 
     /* cache can send if quiet_on_ban and banned */
-    if (ConfigChannel.quiet_on_ban && MyClient(source_p))
+    if (Channel.quiet_on_ban && MyClient(source_p))
     {
       if (ms->flags & CHFL_BAN_SILENCED)
         return CAN_SEND_NO;
@@ -793,8 +793,8 @@ check_spambot_warning(struct Client *source_p, const char *name)
 void
 check_splitmode(void *unused)
 {
-  if (splitchecking && (ConfigChannel.no_join_on_split ||
-                        ConfigChannel.no_create_on_split))
+  if (splitchecking && (Channel.no_join_on_split ||
+                        Channel.no_create_on_split))
   {
     const unsigned int server = dlink_list_length(&global_serv_list);
 
@@ -908,10 +908,8 @@ set_channel_topic(struct Channel *chptr, const char *topic,
 static int
 exceeding_sendq(struct Client *to)
 {
-  if (dbuf_length(&to->localClient->buf_sendq) > (get_sendq(to) / 2))
-    return 1;
-  else
-    return 0;
+  return dbuf_length(&to->localClient->buf_sendq) >
+      (to->localClient->class->sendq_size / 2);
 }
 
 /* free_list_task()

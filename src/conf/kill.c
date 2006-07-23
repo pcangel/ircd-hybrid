@@ -31,10 +31,10 @@
 // TODO: Add callbacks for (r)kline.conf support with default handlers
 
 dlink_list rkline_confs = {NULL, NULL, 0};
+int acb_type_kline;
 
-static int acb_type_kline = -1;
 static struct KillConf tmpkill = {{0}, 0};
-static dlink_node *hreset, *hexpire;
+static dlink_node *hreset, *hexpire, *hbanned;
 static char *report_letter;
 
 static void report_kline(struct KillConf *, struct Client *);
@@ -159,9 +159,6 @@ after_kline(void)
       before_kline();
       return;
     }
-
-  if (!tmpkill.reason)
-    DupString(tmpkill.reason, "No reason");
 
   conf = MyMalloc(sizeof(*conf));
   memcpy(conf, &tmpkill, sizeof(*conf));
@@ -300,6 +297,37 @@ report_kline(struct KillConf *conf, struct Client *client_p)
 }
 
 /*
+ * is_client_klined()
+ *
+ * Hook function for is_client_banned.
+ *
+ * inputs:
+ *   client  -  local client to check
+ *   type    -  we set it to ban type if there's a match
+ *   reason  -  we set it to ban reason (if any)
+ * output: not NULL if they're banned
+ */
+static void *
+is_client_klined(va_list args)
+{
+  struct Client *client = va_arg(args, struct Client *);
+  char **type = va_arg(args, char **);
+  char **reason = va_arg(args, char **);
+  struct KillConf *conf = IsExemptKline(client) ? NULL :
+    find_kline(client->username, client->host, client->sockhost,
+               &client->localClient->ip);
+
+  if (conf)
+  {
+    *type = "K-line";
+    *reason = conf->reason;
+    return conf;
+  }
+
+  return pass_callback(hbanned, client, type, reason);
+}
+
+/*
  * init_kill()
  *
  * Defines the kill{} conf section.
@@ -314,7 +342,8 @@ init_kill(void)
 
   acb_type_kline = register_acb_type("K-line", free_kline);
   hreset = install_hook(reset_conf, reset_rklines);
-  hexpire = install_hook(cb_expire_confs, expire_rklines);
+  hexpire = install_hook(expire_confs, expire_rklines);
+  hbanned = install_hook(is_client_banned, is_client_klined);
 
   s->before = before_kline;
 

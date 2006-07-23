@@ -34,6 +34,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "s_auth.h"
 #include "client.h"
 #include "common.h"
@@ -185,7 +186,7 @@ auth_dns_callback(void *vptr, struct DNSReply *reply)
       sendheader(auth->client, REPORT_HOST_TOOLONG);
   }
   else
-      sendheader(auth->client, REPORT_FAIL_DNS);
+    sendheader(auth->client, REPORT_FAIL_DNS);
 
   MyFree(auth->client->localClient->dns_query);
   auth->client->localClient->dns_query = NULL;
@@ -377,7 +378,7 @@ start_auth(va_list args)
 
   sendheader(client, REPORT_DO_DNS);
 
-  if (ConfigFileEntry.disable_auth == 0)
+  if (!General.disable_auth)
     start_auth_query(auth);
 
   /*

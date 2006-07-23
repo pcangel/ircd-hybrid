@@ -24,12 +24,15 @@
 
 #include "stdinc.h"
 #include "conf/conf.h"
+#include "client.h"
 
 // TODO: Add callbacks for dline.conf support with default handlers
 
+int acb_type_deny, acb_type_exempt;
+
 static struct DenyConf tmpdeny = {{0}};
 static struct AccessConf tmpexempt = {0};
-static int acb_type_deny, acb_type_exempt;
+static dlink_node *hbanned;
 
 /*
  * free_dline()
@@ -192,6 +195,36 @@ find_exempt(const struct irc_ssaddr *ip)
 }
 
 /*
+ * is_client_dlined()
+ *
+ * Hook function for is_client_banned.
+ *
+ * inputs:
+ *   client  -  local client to check
+ *   type    -  we set it to ban type if there's a match
+ *   reason  -  we set it to ban reason (if any)
+ * output: not NULL if they're banned
+ */
+static void *
+is_client_dlined(va_list args)
+{
+  struct Client *client = va_arg(args, struct Client *);
+  char **type = va_arg(args, char **);
+  char **reason = va_arg(args, char **);
+  struct DenyConf *conf = IsExemptKline(client) ? NULL :
+    find_dline(&client->localClient->ip);
+
+  if (conf)
+  {
+    *type = "D-line";
+    *reason = conf->reason;
+    return conf;
+  }
+
+  return pass_callback(hbanned, client, type, reason);
+}
+
+/*
  * init_deny()
  *
  * Defines the deny{} and exempt{} conf sections.
@@ -204,6 +237,8 @@ init_deny(void)
 {
   struct ConfSection *s = add_conf_section("deny", 2);
   struct ConfSection *s2 = add_conf_section("exempt", 2);
+
+  hbanned = install_hook(is_client_banned, is_client_dlined);
 
   acb_type_deny = register_acb_type("D-line", (ACB_FREE_HANDLER *) free_dline);
   acb_type_exempt = register_acb_type("exempt",

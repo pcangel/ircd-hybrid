@@ -37,13 +37,15 @@ extern char new_uid[];
 void init_uid(void);
 void init_isupport(void);
 void *change_simple_umode(va_list);
-void *uid_get(va_list);
+void *do_uid_get(va_list);
+void *do_authorize_client(va_list);
 
 EXTERN int MaxClientCount;     /* GLOBAL - highest number of clients     */
 EXTERN int MaxConnectionCount; /* GLOBAL - highest number of connections */
+EXTERN struct Callback *authorize_client;
 EXTERN struct Callback *entering_umode_cb;
 EXTERN struct Callback *umode_cb;
-EXTERN struct Callback *uid_get_cb;
+EXTERN struct Callback *uid_get;
 EXTERN unsigned int user_modes[];
 
 EXTERN void assemble_umode_buffer(void);
@@ -52,9 +54,9 @@ EXTERN void send_umode(struct Client *, struct Client *,
                        unsigned int, unsigned int, char *);
 EXTERN void send_umode_out(struct Client *, struct Client *, unsigned int);
 EXTERN void show_lusers(struct Client *);
-EXTERN void show_isupport(struct Client *);
 EXTERN void oper_up(struct Client *, struct OperatorConf *);
-EXTERN void register_local_user(struct Client *, const char *);
+EXTERN void *reject_user(struct Client *, const char *);
+EXTERN void *register_local_user(struct Client *, const char *);
 EXTERN void register_remote_user(struct Client *, struct Client *,
                                  const char *, const char *,
                                  const char *, const char *);

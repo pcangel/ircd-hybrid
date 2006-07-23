@@ -30,8 +30,8 @@ struct ResvConf
   dlink_node node;
 };
 
-struct ResvConf *find_nick_resv(const char *);
-struct ResvConf *find_channel_resv(const char *);
+EXTERN struct ResvConf *find_nick_resv(const char *);
+EXTERN struct ResvConf *find_channel_resv(const char *);
 
 #ifdef IN_CONF_C
 void init_resv(void);

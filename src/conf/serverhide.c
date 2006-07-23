@@ -72,11 +72,12 @@ verify_serverhide(va_list args)
   {
     if (old_links_delay != 0)
       eventDelete(write_links_file, NULL);
-    else
-      write_links_file(NULL);
 
     if (new_links_delay != 0)
+    {
       eventAdd("write_links_file", write_links_file, NULL, new_links_delay);
+      write_links_file(NULL);
+    }
   }
 
   return pass_callback(hverify);

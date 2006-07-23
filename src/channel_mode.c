@@ -118,7 +118,7 @@ add_id(struct Client *client_p, struct Channel *chptr, char *banid, int type)
                dlink_list_length(&chptr->exceptlist) +
                dlink_list_length(&chptr->invexlist);
 
-    if (num_mask >= ConfigChannel.max_bans)
+    if (num_mask >= Channel.max_bans)
     {
       sendto_one(client_p, form_str(ERR_BANLISTFULL),
                  me.name, client_p->name, chptr->chname, banid);
@@ -655,7 +655,7 @@ chm_except(struct Client *client_p, struct Client *source_p,
    * set the mode.  This prevents the abuse of +e when just a few
    * servers support it. --fl
    */
-  if (!ConfigChannel.use_except && MyClient(source_p) && 
+  if (!Channel.use_except && MyClient(source_p) && 
       ((dir == MODE_ADD) && (parc > *parn)))
   {
     if (*errors & SM_ERR_RPL_E)
@@ -728,7 +728,7 @@ chm_except(struct Client *client_p, struct Client *source_p,
   mode_changes[mode_count].caps = CAP_EX;
   mode_changes[mode_count].nocaps = 0;
 
-  if (ConfigChannel.use_except)
+  if (Channel.use_except)
     mode_changes[mode_count].mems = ONLY_CHANOPS;
   else
     mode_changes[mode_count].mems = ONLY_SERVERS;
@@ -749,7 +749,7 @@ chm_invex(struct Client *client_p, struct Client *source_p,
    * set the mode.  This prevents the abuse of +I when just a few
    * servers support it --fl
    */
-  if (!ConfigChannel.use_invex && MyClient(source_p) && 
+  if (!Channel.use_invex && MyClient(source_p) && 
       (dir == MODE_ADD) && (parc > *parn))
   {
     if (*errors & SM_ERR_RPL_I)
@@ -822,7 +822,7 @@ chm_invex(struct Client *client_p, struct Client *source_p,
   mode_changes[mode_count].caps = CAP_IE;
   mode_changes[mode_count].nocaps = 0;
 
-  if (ConfigChannel.use_invex)
+  if (Channel.use_invex)
     mode_changes[mode_count].mems = ONLY_CHANOPS;
   else
     mode_changes[mode_count].mems = ONLY_SERVERS;
@@ -1506,9 +1506,9 @@ send_mode_changes(struct Client *client_p, struct Client *source_p,
     return;
 
   if (IsServer(source_p))
-    mbl = ircsprintf(modebuf, ":%s MODE %s ", (IsHidden(source_p) ||
-		     ConfigServerHide.hide_servers) ?
-		     me.name : source_p->name, chname);
+    mbl = ircsprintf(modebuf, ":%s MODE %s ",
+                     (IsHidden(source_p) || ServerHide.hide_servers) ?
+                     me.name : source_p->name, chname);
   else
     mbl = ircsprintf(modebuf, ":%s!%s@%s MODE %s ", source_p->name,
                      source_p->username, source_p->host, chname);

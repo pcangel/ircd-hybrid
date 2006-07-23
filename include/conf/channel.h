@@ -25,7 +25,7 @@
 struct ChannelConf
 {
   char restrict_channels;
-  char disable_local_channels;
+  char disable_local_channels, disable_fake_channels;
   char use_invex, use_except;
 
   char use_knock;

@@ -68,7 +68,7 @@ server_die(const char *mesg, int rboot)
   send_queued_all();
   close_fds(NULL);
 
-  unlink(pidFileName);
+  unlink(ServerState.pidfile);
 
   if (rboot)
   {
@@ -82,5 +82,5 @@ server_die(const char *mesg, int rboot)
 void
 ircd_outofmemory(void)
 {
-  server_die("Out of memory", 1);
+  server_die("Out of memory", YES);
 }

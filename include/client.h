@@ -46,12 +46,11 @@ struct LocalUser;
 
 struct Server
 {
-  char by[NICKLEN];         /**< who activated this connection */
-  /* TBD - Add back support for user@host info in /TRACE */
-  struct ConfItem *sconf; /* ConfItem connect{} pointer for this server */
-  dlink_list server_list;   /**< Servers on this server      */
-  dlink_list client_list;   /**< Clients on this server      */
-  dlink_list leafs_hubs;  /* leafs and hubs masks for server */
+  char by[NICKLEN];           // who activated this connection
+  // TBD - Add back support for user@host info in /TRACE
+  struct ConnectConf *sconf;  // ConfItem connect{} pointer for this server
+  dlink_list server_list;     // Servers on this server
+  dlink_list client_list;     // Clients on this server
 };
 
 struct SlinkRpl
@@ -196,13 +195,13 @@ struct LocalUser
     uint64_t bytes;             /* Statistics: total bytes sent/received */
   } recv, send;
 
-  struct Listener *listener;    /* listener accepted from */
-  struct ClassItem *class;	/* Client's class */
+  struct Listener   *listener;  /* listener accepted from */
+  struct Class      *class;	    /* Client's class */
   struct irc_ssaddr ip;
-  int 		    aftype;	/* Makes life easier for DNS res in IPV6 */
-  struct DNSQuery   *dns_query;  /* result returned from resolver query */
+  int               aftype;	    /* Makes life easier for DNS res in IPV6 */
+  struct DNSQuery   *dns_query; /* result returned from resolver query */
 
-  time_t last;                  /* Last time client sent a PRIVMSG */
+  time_t            last;       /* Last time client sent a PRIVMSG */
   time_t            last_nick_change;
   int               number_of_nick_changes;
 
@@ -446,9 +445,6 @@ struct LocalUser
 #define SetPingWarning(x)       ((x)->flags |= FLAGS_PINGWARNING)
 #define IsPingWarning(x)        ((x)->flags & FLAGS_PINGWARNING)
 #define ClearPingWarning(x)     ((x)->flags &= ~FLAGS_PINGWARNING)
-
-#define SetNeedId(x)            ((x)->flags |= FLAGS_NEEDID)
-#define IsNeedId(x)             ((x)->flags & FLAGS_NEEDID)
 
 #define SetGotId(x)             ((x)->flags |= FLAGS_GOTID)
 #define IsGotId(x)              ((x)->flags & FLAGS_GOTID)

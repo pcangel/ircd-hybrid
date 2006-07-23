@@ -46,6 +46,7 @@ struct GlineConf
 EXTERN int enable_glines;
 EXTERN time_t gline_duration;
 EXTERN int gline_logging;
+EXTERN int acb_type_gline;
 
 EXTERN int is_gline_allowed(const char *, const char *, const char *,
   const struct irc_ssaddr *);

@@ -91,7 +91,7 @@ set_listen_port(void *list, void *unused)
 
   if ((flags & LISTENER_SSL))
 #ifdef HAVE_LIBCRYPTO
-    if (!ServerInfoX.ctx)
+    if (!ServerInfo.ctx)
 #endif
     {
       parse_error("SSL not available, port closed");

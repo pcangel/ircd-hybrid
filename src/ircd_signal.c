@@ -39,7 +39,7 @@ signal_handler(int sig)
       server_die("received signal SIGTERM", NO);
       break;
     case SIG_RESTART:
-      server_die("received signal SIGINT", !server_state.foreground);
+      server_die("received signal SIGINT", !ServerState.foreground);
       break;
     case SIG_REHASH:
       dorehash = 1;

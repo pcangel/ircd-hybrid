@@ -37,7 +37,7 @@
 
 
 struct Client;
-struct AccessItem;
+struct ConnectConf;
 
 /* Capabilities */
 struct Capability
@@ -217,28 +217,30 @@ EXTERN struct EncCapability CipherTable[];
 EXTERN int bogus_host(const char *);
 EXTERN int check_server(const char *, struct Client *, int);
 EXTERN int hunt_server(struct Client *, const char *, int, int, char *[]);
-EXTERN const char *my_name_for_link(struct AccessItem *);
+EXTERN const char *my_name_for_link(struct ConnectConf *);
 EXTERN void add_capability(const char *, int, int);
 EXTERN int delete_capability(const char *);
 EXTERN int find_capability(const char *);
-EXTERN void send_capabilities(struct Client *, struct AccessItem *, int, int);
+EXTERN void send_capabilities(struct Client *, struct ConnectConf *, int, int);
 EXTERN void write_links_file(void *);
 EXTERN void server_estab(struct Client *);
 EXTERN const char *show_capabilities(const struct Client *);
 EXTERN void try_connections(void *);
 EXTERN void collect_zipstats(void *);
 EXTERN void sendnick_TS(struct Client *, struct Client *);
-EXTERN int serv_connect(struct AccessItem *, struct Client *, int);
+EXTERN int serv_connect(struct ConnectConf *, struct Client *, int);
 EXTERN struct Client *find_servconn_in_progress(const char *);
 EXTERN void server_init(void);
-EXTERN void cryptlink_init(struct Client *, struct AccessItem *, fde_t *);
+EXTERN void cryptlink_init(struct Client *, struct ConnectConf *, fde_t *);
 EXTERN void cryptlink_regen_key(void *);
 EXTERN void cryptlink_error(struct Client *, const char *,
                             const char *, const char *);
-EXTERN struct EncCapability *check_cipher(struct Client *, struct AccessItem *);
+EXTERN struct EncCapability *check_cipher(struct Client *, struct ConnectConf *);
 EXTERN struct Server *make_server(struct Client *);
 
-/* XXX don't belong in the now gone md5, but do these belong in s_serv.c ? */
+// XXX don't belong in the now gone md5, but do these belong in s_serv.c ?
+// No, they should be moved to libio.
 EXTERN int base64_block(unsigned char **, char *, int);
 EXTERN int unbase64_block(unsigned char **, char *, int);
+
 #endif /* INCLUDED_s_serv_h */

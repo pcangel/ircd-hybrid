@@ -28,8 +28,11 @@ struct DenyConf
   char *reason;
 };
 
-struct DenyConf *find_dline(const struct irc_ssaddr *);
-struct AccessConf *find_exempt(const struct irc_ssaddr *);
+EXTERN int acb_type_deny;
+EXTERN int acb_type_exempt;
+
+EXTERN struct DenyConf *find_dline(const struct irc_ssaddr *);
+EXTERN struct AccessConf *find_exempt(const struct irc_ssaddr *);
 
 #ifdef IN_CONF_C
 void init_deny(void);

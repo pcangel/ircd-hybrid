@@ -29,15 +29,15 @@ struct _dlink_list;
 
 struct SetOptions
 {
-  int autoconn;      /* autoconn enabled for all servers? */
+  int autoconn;      // autoconn enabled for all servers?
   int idletime;
-  int floodcount;    /* Number of messages in 1 second    */
-  /* XXX for join flood catching - Dianora */
+  int floodcount;    // Number of messages in 1 second
+  // XXX for join flood catching - Dianora
   int joinfloodtime;
   int joinfloodcount;
-  /* XXX */
+  // XXX
   int rejecttime;
-  int ident_timeout; /* timeout for identd lookups        */
+  int ident_timeout; // timeout for identd lookups
   int spam_num;
   int spam_time;
   int maxlisters;
@@ -47,14 +47,14 @@ struct SetOptions
 
 struct Counter
 {
-  int myserver; /* my servers          */
-  int oper;     /* Opers               */
-  int local;    /* Local Clients       */
-  int total;    /* total clients       */
-  int invisi;   /* invisible clients   */
-  int max_loc;  /* MAX local clients   */
-  int max_tot;  /* MAX global clients  */
-  unsigned int totalrestartcount; /* Total client count ever */
+  int myserver; // my servers
+  int oper;     // opers
+  int local;    // local clients
+  int total;    // total clients
+  int invisi;   // invisible clients
+  int max_loc;  // MAX local clients
+  int max_tot;  // MAX global clients
+  unsigned int totalrestartcount; // total client count ever
 };
 
 /*
@@ -62,58 +62,69 @@ struct Counter
  */
 struct ServerStatistics
 {
-  unsigned int    is_cl;  /* number of client connections */
-  unsigned int    is_sv;  /* number of server connections */
-  unsigned int    is_ni;  /* connection but no idea who it was */
+  unsigned int    is_cl;  // number of client connections
+  unsigned int    is_sv;  // number of server connections
+  unsigned int    is_ni;  // connection but no idea who it was
 
-  uint64_t        is_cbs; /* bytes sent to clients */
-  uint64_t        is_cbr; /* bytes received from clients */
-  uint64_t        is_sbs; /* bytes sent to servers */
-  uint64_t        is_sbr; /* bytes received from servers */
-  time_t          is_cti; /* time spent connected by clients */
-  time_t          is_sti; /* time spent connected by servers */
-  unsigned int    is_ac;  /* connections accepted */
-  unsigned int    is_ref; /* accepts refused */
-  unsigned int    is_unco; /* unknown commands */
-  unsigned int    is_wrdi; /* command going in wrong direction */
-  unsigned int    is_unpf; /* unknown prefix */
-  unsigned int    is_empt; /* empty message */
-  unsigned int    is_num; /* numeric message */
-  unsigned int    is_kill; /* number of kills generated on collisions */
-  unsigned int    is_asuc; /* successful auth requests */
-  unsigned int    is_abad; /* bad auth requests */
+  uint64_t        is_cbs; // bytes sent to clients
+  uint64_t        is_cbr; // bytes received from clients
+  uint64_t        is_sbs; // bytes sent to servers
+  uint64_t        is_sbr; // bytes received from servers
+  time_t          is_cti; // time spent connected by clients
+  time_t          is_sti; // time spent connected by servers
+  unsigned int    is_ac;  // connections accepted
+  unsigned int    is_ref; // accepts refused
+  unsigned int    is_unco; // unknown commands
+  unsigned int    is_wrdi; // command going in wrong direction
+  unsigned int    is_unpf; // unknown prefix
+  unsigned int    is_empt; // empty message
+  unsigned int    is_num; // numeric message
+  unsigned int    is_kill; // number of kills generated on collisions
+  unsigned int    is_asuc; // successful auth requests
+  unsigned int    is_abad; // bad auth requests
 };
 
 EXTERN struct ServerStatistics ServerStats;
 
 struct ServerState_t
 {
+  char *configfile;
+  char *klinefile;
+  char *rklinefile;
+  char *dlinefile;
+  char *glinefile;
+  char *xlinefile;
+  char *rxlinefile;
+  char *cresvfile;
+  char *nresvfile;
+  char *logfile;
+  char *pidfile;
   int foreground;
+  int printversion;
+  int can_use_v6;
 };
 
-EXTERN struct SetOptions GlobalSetOptions; /* defined in ircd.c */
-EXTERN struct ServerState_t server_state;
+EXTERN struct SetOptions GlobalSetOptions; // defined in ircd.c
+EXTERN struct ServerState_t ServerState;
 EXTERN char **myargv;
 EXTERN char ircd_platform[];
 EXTERN const char *serno;
 EXTERN const char *ircd_version;
-EXTERN const char *logFileName;
-EXTERN const char *pidFileName;
 EXTERN int dorehash;
 EXTERN int doremotd;
 EXTERN struct Counter Count;
 EXTERN int default_server_capabs;
 #ifdef HAVE_LIBCRYPTO
 EXTERN int bio_spare_fd;
-#endif /* HAVE_LIBCRYPTO */
+#endif // HAVE_LIBCRYPTO
 
 EXTERN int splitmode;
 EXTERN int splitchecking;
 
-EXTERN dlink_list unknown_list;       /* unknown clients ON this server only        */
-EXTERN dlink_list local_client_list;  /* local clients only ON this server          */
-EXTERN dlink_list serv_list;          /* local servers to this server ONLY          */
-EXTERN dlink_list global_serv_list;   /* global servers on the network              */
-EXTERN dlink_list oper_list;          /* our opers, duplicated in local_client_list */
+EXTERN dlink_list unknown_list;       // unknown clients ON this server only
+EXTERN dlink_list local_client_list;  // local clients only ON this server
+EXTERN dlink_list serv_list;          // local servers to this server ONLY
+EXTERN dlink_list global_serv_list;   // global servers on the network
+EXTERN dlink_list oper_list;          // our opers, duplicated in local_client_list
 EXTERN int rehashed_klines;
 #endif

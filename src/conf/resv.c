@@ -25,6 +25,7 @@
 #include "stdinc.h"
 #include "conf/conf.h"
 #include "client.h"
+#include "numeric.h"
 #include "send.h"
 
 // TODO: Add callbacks for ?resv.conf support with default handlers
@@ -176,7 +177,8 @@ resv_nick(void *mask, void *unused)
     struct ResvConf *resv = MyMalloc(sizeof(struct ResvConf));
 
     DupString(resv->mask, collapse(mask));
-    DupString(resv->reason, tmpreason ? tmpreason : "No reason");
+    if (tmpreason)
+      DupString(resv->reason, tmpreason);
     dlinkAddTail(resv, &resv->node, &nresv_confs);
   }
 }
@@ -196,6 +198,35 @@ resv_channel(void *mask, void *unused)
 }
 
 /*
+ * report_resv()
+ *
+ * Sends a /STATS Q reply to the given client.
+ *
+ * inputs: client pointer
+ * output: none
+ */
+void
+report_resv(struct Client *source_p)
+{
+  dlink_node *ptr;
+  struct ResvConf *conf;
+
+  DLINK_FOREACH(ptr, cresv_confs.head)
+  {
+    conf = ptr->data;
+    sendto_one(source_p, form_str(RPL_STATSQLINE),
+               me.name, source_p->name, 'Q', conf->mask, conf->reason);
+  }
+
+  DLINK_FOREACH(ptr, nresv_confs.head)
+  {
+    conf = ptr->data;
+    sendto_one(source_p, form_str(RPL_STATSQLINE),
+               me.name, source_p->name, 'Q', conf->mask, conf->reason);
+  }
+}
+
+/*
  * init_resv()
  *
  * Defines the resv{} conf section.
@@ -209,7 +240,7 @@ init_resv(void)
   struct ConfSection *s = add_conf_section("resv", 2);
 
   hreset = install_hook(reset_conf, reset_resv);
-  hexpire = install_hook(cb_expire_confs, expire_resv);
+  hexpire = install_hook(expire_confs, expire_resv);
 
   s->before = s->after = before_resv;
 

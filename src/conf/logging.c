@@ -63,7 +63,7 @@ static void *
 verify_logging(va_list args)
 {
   if (Logging.use_logging)
-    reopen_log(logFileName);
+    reopen_log(ServerState.logfile);
 
   return pass_callback(hverify);
 }

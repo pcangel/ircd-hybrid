@@ -46,13 +46,12 @@ int MaxClientCount     = 1;
 int MaxConnectionCount = 1;
 struct Callback *entering_umode_cb = NULL;
 struct Callback *umode_cb = NULL;
-struct Callback *uid_get_cb = NULL;
+struct Callback *authorize_client = NULL;
+struct Callback *uid_get = NULL;
 
 static char umode_buffer[IRCD_BUFSIZE];
 
 static void user_welcome(struct Client *);
-static void report_and_set_user_flags(struct Client *, const struct AccessItem *);
-static int check_xline(struct Client *);
 static void introduce_client(struct Client *, struct Client *);
 
 /* Used for building up the isupport string,
@@ -168,7 +167,8 @@ show_lusers(struct Client *source_p)
 {
   const char *from, *to;
 
-  if (!MyConnect(source_p) && IsCapable(source_p->from, CAP_TS6) && HasID(source_p))
+  if (!MyConnect(source_p) && IsCapable(source_p->from, CAP_TS6) &&
+      HasID(source_p))
   {
     from = me.id;
     to = source_p->id;
@@ -179,7 +179,7 @@ show_lusers(struct Client *source_p)
     to = source_p->name;
   }
 
-  if (!ConfigServerHide.hide_servers || IsOper(source_p))
+  if (!ServerHide.hide_servers || IsOper(source_p))
     sendto_one(source_p, form_str(RPL_LUSERCLIENT),
                from, to, (Count.total-Count.invisi),
                Count.invisi, dlink_list_length(&global_serv_list));
@@ -199,7 +199,7 @@ show_lusers(struct Client *source_p)
     sendto_one(source_p, form_str(RPL_LUSERCHANNELS),
                from, to, dlink_list_length(&global_channel_list));
 
-  if (!ConfigServerHide.hide_servers || IsOper(source_p))
+  if (!ServerHide.hide_servers || IsOper(source_p))
   {
     sendto_one(source_p, form_str(RPL_LUSERME),
                from, to, Count.local, Count.myserver);
@@ -220,7 +220,7 @@ show_lusers(struct Client *source_p)
              from, to, Count.total, Count.max_tot,
              Count.total, Count.max_tot);
 
-  if (!ConfigServerHide.hide_servers || IsOper(source_p))
+  if (!ServerHide.hide_servers || IsOper(source_p))
     sendto_one(source_p, form_str(RPL_STATSCONN), from, to,
                MaxConnectionCount, MaxClientCount, Count.totalrestartcount);
 
@@ -231,52 +231,200 @@ show_lusers(struct Client *source_p)
     MaxConnectionCount = Count.local + Count.myserver; 
 }
 
-/* show_isupport()
+/*
+ * reject_user()
  *
- * inputs       - pointer to client
- * output       - NONE
- * side effects	- display to client what we support (for them)
+ * Performs a fast or delayed disconnect and updates statistics.
+ *
+ * inputs:
+ *   source_p  -  the client we're disconnecting
+ *   reason    -  exit reason
+ * output: always NULL
  */
-void
-show_isupport(struct Client *source_p) 
+void *
+reject_user(struct Client *source_p, const char *reason)
 {
-  send_message_file(source_p, isupportFile);
+  /* XXX It is problematical whether it is better to use the
+   * capture reject code here or rely on the connecting too fast code.
+   * - Dianora
+   */
+  if (REJECT_HOLD_TIME > 0)
+  {
+    source_p->localClient->reject_delay = CurrentTime + REJECT_HOLD_TIME;
+    SetCaptured(source_p);
+  }
+  else
+    exit_client(source_p, &me, reason);
+
+  ++ServerStats.is_ref;
+  return NULL;
 }
 
 /*
-** register_local_user
-**      This function is called when both NICK and USER messages
-**      have been accepted for the client, in whatever order. Only
-**      after this, is the USER message propagated.
-**
-**      NICK's must be propagated at once when received, although
-**      it would be better to delay them too until full info is
-**      available. Doing it is not so simple though, would have
-**      to implement the following:
-**
-**      (actually it has been implemented already for a while) -orabidoo
-**
-**      1) user telnets in and gives only "NICK foobar" and waits
-**      2) another user far away logs in normally with the nick
-**         "foobar" (quite legal, as this server didn't propagate
-**         it).
-**      3) now this server gets nick "foobar" from outside, but
-**         has alread the same defined locally. Current server
-**         would just issue "KILL foobar" to clean out dups. But,
-**         this is not fair. It should actually request another
-**         nick from local user or kill him/her...
-*/
-void
+ * do_authorize_client()
+ *
+ * Performs an access check on an incoming local user.
+ *
+ * inputs:
+ *   client_p  -  client pointer
+ *   username  -  new username
+ * output: class pointer if authorized, NULL if client has exited
+ */
+void *
+do_authorize_client(va_list args)
+{
+  struct Client *source_p = va_arg(args, struct Client *);
+  const char *username = va_arg(args, const char *);
+  char userbuf[USERLEN + 1];
+  struct AuthConf *conf;
+  char *type, *reason;
+
+  snprintf(userbuf, sizeof(userbuf), "%s%s",
+    IsGotId(source_p) ? "" : "~", username);
+  conf = find_iline(userbuf, source_p->host, &source_p->localClient->ip,
+    source_p->localClient->passwd);
+
+  if (conf && (conf->redirserv || conf->redirport))
+  {
+    sendto_one(source_p, form_str(RPL_REDIR), me.name, source_p->name,
+               conf->redirserv ? conf->redirserv : "*",
+               conf->redirport ? conf->redirport :
+               source_p->localClient->listener->port);
+    conf = NULL;
+  }
+
+  // auth check
+  if (!conf)
+  {
+    ilog(L_INFO, "Unauthorized client connection from %s on [%s/%u]",
+      get_client_name(source_p, SHOW_IP),
+      source_p->localClient->listener->name,
+      source_p->localClient->listener->port);
+    sendto_realops_flags(UMODE_UNAUTH, L_ALL,
+      "Unauthorized client connection from %s (%s) on [%s/%u]",
+      get_client_name(source_p, HIDE_IP), source_p->sockhost,
+      source_p->localClient->listener->name,
+      source_p->localClient->listener->port);
+    sendto_one(source_p,
+      ":%s NOTICE %s :You are not authorized to use this server",
+      me.name, source_p->name);
+    return reject_user(source_p, "Not authorized");
+  }
+
+  // setup client parameters as required by is_client_banned
+  strlcpy(source_p->username, (conf->flags & AUTH_FLAG_NO_TILDE) ?
+    username : userbuf, sizeof(source_p->username));
+  if ((conf->flags & AUTH_FLAG_EXCEED_LIMIT))
+    SetExemptLimits(source_p);
+  if ((conf->flags & AUTH_FLAG_KLINE_EXEMPT))
+    SetExemptKline(source_p);
+  if ((conf->flags & AUTH_FLAG_GLINE_EXEMPT))
+    SetExemptGline(source_p);
+  if ((conf->flags & AUTH_FLAG_RESV_EXEMPT))
+    SetExemptResv(source_p);
+  if ((conf->flags & AUTH_FLAG_EXCEED_LIMIT))
+    SetExemptLimits(source_p);
+  if ((conf->flags & AUTH_FLAG_CAN_IDLE))
+    SetIdlelined(source_p);
+  if ((conf->flags & AUTH_FLAG_CAN_FLOOD))
+    SetCanFlood(source_p);
+
+  // ban check
+  if (execute_callback(is_client_banned, source_p, &type, &reason))
+  {
+    ilog(L_INFO, "Access denied (%s): %s",
+         type, get_client_name(source_p, SHOW_IP));
+    sendto_realops_flags(UMODE_REJ, L_ALL,
+                         "%s Rejecting [%s], user %s (%s)",
+                         type, reason, get_client_name(source_p, HIDE_IP),
+                         source_p->sockhost);
+    sendto_one(source_p, ":%s NOTICE %s :*** %s: %s", me.name, type,
+               source_p->name, (reason && General.kline_with_reason) ?
+               reason : "No reason");
+    return reject_user(source_p, "Banned");
+  }
+
+  // password check
+  if (!EmptyString(conf->password))
+    if (!match_password(source_p->localClient->passwd, conf->password,
+                        conf->flags & AUTH_FLAG_ENCRYPTED))
+    {
+      ilog(L_INFO, "Bad password from %s", get_client_name(source_p, SHOW_IP));
+      sendto_realops_flags(UMODE_UNAUTH, L_ALL,
+                           "Bad password, rejecting %s (%s)",
+                           get_client_name(source_p, HIDE_IP),
+                           source_p->sockhost);
+      sendto_one(source_p, form_str(ERR_PASSWDMISMATCH),
+                 me.name, source_p->name);
+      return reject_user(source_p, "Bad Password");
+    }
+
+  // ident check
+  if (!IsGotId(source_p) && (conf->flags & AUTH_FLAG_NEED_IDENT))
+  {
+    ilog(L_INFO, "No ident, rejecting %s", get_client_name(source_p, SHOW_IP));
+    sendto_realops_flags(UMODE_REJ, L_ALL,
+                         "No ident, rejecting %s (%s)",
+                         get_client_name(source_p, HIDE_IP),
+                         source_p->sockhost);
+    sendto_one(source_p, ":%s NOTICE %s :*** Notice -- You need to install "
+               "identd to use this server", me.name, source_p->name);
+    return reject_user(source_p, "Install identd");
+  }
+
+  // spoof check
+  if (conf->spoof)
+  {
+    if ((conf->flags & AUTH_FLAG_SPOOF_NOTICE))
+      sendto_realops_flags(UMODE_ALL, L_ADMIN,
+                           "%s spoofing: %s as %s",
+                           source_p->host, conf->spoof);
+
+    SetIPSpoof(source_p);
+    strlcpy(source_p->host, conf->spoof, sizeof(source_p->host));
+  }
+
+  return conf->class_ptr;
+}
+
+/*
+ * register_local_user
+ *      This function is called when both NICK and USER messages
+ *      have been accepted for the client, in whatever order. Only
+ *      after this, is the USER message propagated.
+ *
+ *      NICK's must be propagated at once when received, although
+ *      it would be better to delay them too until full info is
+ *      available. Doing it is not so simple though, would have
+ *      to implement the following:
+ *
+ *      (actually it has been implemented already for a while) -orabidoo
+ *
+ *      1) user telnets in and gives only "NICK foobar" and waits
+ *      2) another user far away logs in normally with the nick
+ *         "foobar" (quite legal, as this server didn't propagate
+ *         it).
+ *      3) now this server gets nick "foobar" from outside, but
+ *         has alread the same defined locally. Current server
+ *         would just issue "KILL foobar" to clean out dups. But,
+ *         this is not fair. It should actually request another
+ *         nick from local user or kill him/her...
+ */
+void *
 register_local_user(struct Client *source_p, const char *username)
 {
-  struct AccessItem *aconf = NULL;
+  struct Class *cptr;
 
   assert(source_p != NULL);
   assert(MyConnect(source_p));
   assert(source_p->username != username);
   assert(!source_p->localClient->registration);
 
-  if (ConfigFileEntry.ping_cookie)
+  source_p->localClient->last = CurrentTime;
+  // Straight up the maximum rate of flooding...
+  source_p->localClient->allow_read = MAX_FLOOD_BURST;
+
+  if (General.ping_cookie)
   {
     if (!IsPingSent(source_p) && !source_p->localClient->random_ping)
     {
@@ -284,82 +432,28 @@ register_local_user(struct Client *source_p, const char *username)
       sendto_one(source_p, "PING :%u",
                  source_p->localClient->random_ping);
       SetPingSent(source_p);
-      return;
+      return source_p;
     }
 
     if (!HasPingCookie(source_p))
-      return;
+      return source_p;
   }
 
-  source_p->localClient->last = CurrentTime;
-  /* Straight up the maximum rate of flooding... */
-  source_p->localClient->allow_read = MAX_FLOOD_BURST;
+  if (!valid_username(username))
+    return reject_user(source_p, "Invalid username");
 
-  if (!execute_callback(client_check_cb, source_p, username, &aconf))
-    return;
-
-  attach_class(source_p, aconf->class_ptr);
-
-  if (valid_hostname(source_p->host) == 0)
+  if (!valid_hostname(source_p->host))
   {
     sendto_one(source_p, ":%s NOTICE %s :*** Notice -- You have an illegal "
                "character in your hostname", me.name, source_p->name);
-    strlcpy(source_p->host, source_p->sockhost,
-            sizeof(source_p->host));
+    strlcpy(source_p->host, source_p->sockhost, sizeof(source_p->host));
   }
 
-  if (!IsGotId(source_p))
-  {
-    const char *p = NULL;
-    unsigned int i = 0;
+  if (!(cptr = execute_callback(authorize_client, source_p, username)))
+    return NULL;
 
-    if (IsNeedIdentd(aconf))
-    {
-      ++ServerStats.is_ref;
-      sendto_one(source_p, ":%s NOTICE %s :*** Notice -- You need to install "
-                 "identd to use this server", me.name, source_p->name);
-      exit_client(source_p, &me, "Install identd");
-      return;
-    }
-
-    p = username;
-
-    if (!IsNoTilde(aconf))
-      source_p->username[i++] = '~';
-
-    while (*p && i < USERLEN)
-    {
-      if (*p != '[')
-        source_p->username[i++] = *p;
-      p++;
-    }
-
-    source_p->username[i] = '\0';
-  }
-
-  /* password check */
-  if (!EmptyString(aconf->passwd))
-  {
-    const char *pass = source_p->localClient->passwd;
-
-    if (!match_password(pass, aconf->passwd,
-                        aconf->flags & CONF_FLAGS_ENCRYPTED))
-    {
-      ++ServerStats.is_ref;
-      sendto_one(source_p, form_str(ERR_PASSWDMISMATCH),
-                 me.name, source_p->name);
-      exit_client(source_p, &me, "Bad Password");
-      return;
-    }
-  }
-
-  /* don't free source_p->localClient->passwd here - it can be required
-   * by masked /stats I if there are auth{} blocks with need_password = no;
-   * --adx
-   */
-
-  /* report if user has &^>= etc. and set flags as needed in source_p */
-  report_and_set_user_flags(source_p, aconf);
+  source_p->localClient->class = ref_class_by_ptr(cptr);
+  // TODO: limit checks
 
   /* Limit clients -
    * We want to be able to have servers and F-line clients
@@ -368,40 +462,25 @@ register_local_user(struct Client *source_p, const char *username)
    * probably be just a percentage of the MAXCLIENTS...
    *   -Taner
    */
-  /* Except "F:" clients */
+  // Except "F:" clients
   if ((Count.local >= ServerInfo.max_clients + MAX_BUFFER) ||
       (Count.local >= ServerInfo.max_clients && !IsExemptLimits(source_p)))
   {
+    ilog(L_INFO, "Server is full: %s",
+         get_client_name(source_p, SHOW_IP));
     sendto_realops_flags(UMODE_FULL, L_ALL,
-                         "Too many clients, rejecting %s[%s].",
-                         source_p->name, source_p->host);
-    ++ServerStats.is_ref;
-    exit_client(source_p, &me, "Sorry, server is full - try later");
-    return;
+                         "Too many clients, rejecting %s (%s)",
+                         get_client_name(source_p, HIDE_IP),
+                         source_p->sockhost);
+    return reject_user(source_p, "Sorry, server is full - try later");
   }
-
-  /* valid user name check */
-  if (!valid_username(source_p->username))
-  {
-    char tmpstr2[IRCD_BUFSIZE];
-
-    sendto_realops_flags(UMODE_REJ, L_ALL, "Invalid username: %s (%s@%s)",
-                         source_p->name, source_p->username, source_p->host);
-    ++ServerStats.is_ref;
-    ircsprintf(tmpstr2, "Invalid username [%s]", source_p->username);
-    exit_client(source_p, &me, tmpstr2);
-    return;
-  }
-
-  if (check_xline(source_p))
-    return;
 
   if (me.id[0] != '\0')
   {
-    const char *id = execute_callback(uid_get_cb, source_p);
+    const char *id = execute_callback(uid_get, source_p);
 
     while (hash_find_id(id) != NULL)
-      id = uid_get(NULL);
+      id = do_uid_get(NULL);
 
     strlcpy(source_p->id, id, sizeof(source_p->id));
     hash_add_id(source_p);
@@ -410,11 +489,11 @@ register_local_user(struct Client *source_p, const char *username)
   sendto_realops_flags(UMODE_CCONN, L_ALL,
                        "Client connecting: %s (%s@%s) [%s] {%s} [%s]",
                        source_p->name, source_p->username, source_p->host,
-                       ConfigFileEntry.hide_spoof_ips && IsIPSpoof(source_p) ?
-                       "255.255.255.255" : source_p->sockhost, get_client_className(source_p),
-                       source_p->info);
+                       General.hide_spoof_ips && IsIPSpoof(source_p) ?
+                       "255.255.255.255" : source_p->sockhost,
+                       cptr->name, source_p->info);
 
-  if (ConfigFileEntry.invisible_on_connect)
+  if (General.invisible_on_connect)
   {
     source_p->umodes |= UMODE_INVISIBLE;
     ++Count.invisi;
@@ -434,7 +513,7 @@ register_local_user(struct Client *source_p, const char *username)
   source_p->servptr = &me;
   dlinkAdd(source_p, &source_p->lnode, &source_p->servptr->serv->client_list);
 
-  /* Increment our total user count here */
+  // Increment our total user count here
   if (++Count.total > Count.max_tot)
     Count.max_tot = Count.total;
   ++Count.totalrestartcount;
@@ -451,6 +530,7 @@ register_local_user(struct Client *source_p, const char *username)
   SetUserHost(source_p);
 
   introduce_client(source_p, source_p);
+  return source_p;
 }
 
 /* register_remote_user()
@@ -636,11 +716,11 @@ valid_username(const char *username)
 
   while (*++p)
   {
-    if ((*p == '.') && ConfigFileEntry.dots_in_ident)
+    if ((*p == '.') && General.dots_in_ident)
     {
       dots++;
 
-      if (dots > ConfigFileEntry.dots_in_ident)
+      if (dots > General.dots_in_ident)
         return 0;
       if (!IsUserChar(p[1]))
         return 0;
@@ -650,78 +730,6 @@ valid_username(const char *username)
   }
 
   return 1;
-}
-
-/* report_and_set_user_flags()
- *
- * inputs       - pointer to source_p
- *              - pointer to aconf for this user
- * output       - NONE
- * side effects - Report to user any special flags
- *                they are getting, and set them.
- */
-static void
-report_and_set_user_flags(struct Client *source_p, const struct AccessItem *aconf)
-{
-  /* If this user is being spoofed, tell them so */
-  if (IsConfDoSpoofIp(aconf))
-  {
-    sendto_one(source_p,
-               ":%s NOTICE %s :*** Spoofing your IP. congrats.",
-               me.name, source_p->name);
-  }
-
-  /* If this user is in the exception class, Set it "E lined" */
-  if (IsConfExemptKline(aconf))
-  {
-    SetExemptKline(source_p);
-    sendto_one(source_p,
-               ":%s NOTICE %s :*** You are exempt from K/D/G lines. congrats.",
-               me.name, source_p->name);
-  }
-
-  /* The else here is to make sure that G line exempt users
-   * do not get noticed twice.
-   */
-  else if (IsConfExemptGline(aconf))
-  {
-    SetExemptGline(source_p);
-    sendto_one(source_p, ":%s NOTICE %s :*** You are exempt from G lines.",
-               me.name, source_p->name);
-  }
-
-  if (IsConfExemptResv(aconf))
-  {
-    SetExemptResv(source_p);
-    sendto_one(source_p, ":%s NOTICE %s :*** You are exempt from resvs.",
-               me.name, source_p->name);
-  }
-
-  /* If this user is exempt from user limits set it "F lined" */
-  if (IsConfExemptLimits(aconf))
-  {
-    SetExemptLimits(source_p);
-    sendto_one(source_p,
-               ":%s NOTICE %s :*** You are exempt from user limits. congrats.",
-               me.name,source_p->name);
-  }
-
-  /* If this user is exempt from idle time outs */
-  if (IsConfIdlelined(aconf))
-  {
-    SetIdlelined(source_p);
-    sendto_one(source_p,
-               ":%s NOTICE %s :*** You are exempt from idle limits. congrats.",
-               me.name, source_p->name);
-  }
-
-  if (IsConfCanFlood(aconf))
-  {
-    SetCanFlood(source_p);
-    sendto_one(source_p, ":%s NOTICE %s :*** You are exempt from flood "
-               "protection, aren't you fearsome.",
-               me.name, source_p->name);
-  }
 }
 
 /* change_simple_umode()
@@ -841,7 +849,7 @@ set_user_mode(struct Client *client_p, struct Client *source_p,
               break;
 
             ClearOper(source_p);
-            source_p->umodes &= ~ConfigFileEntry.oper_only_umodes;
+            source_p->umodes &= ~General.oper_only_umodes;
             Count.oper--;
 
             if (MyConnect(source_p))
@@ -870,7 +878,7 @@ set_user_mode(struct Client *client_p, struct Client *source_p,
           if ((flag = user_modes[(unsigned char)*m]))
           {
             if (MyConnect(source_p) && !IsOper(source_p) &&
-                (ConfigFileEntry.oper_only_umodes & flag))
+                (General.oper_only_umodes & flag))
             {
               badflag = 1;
             }
@@ -1025,6 +1033,41 @@ user_welcome(struct Client *source_p)
   static const char built_date[] = "unknown";
 #endif
 
+  if (IsIPSpoof(source_p))
+    sendto_one(source_p,
+               ":%s NOTICE %s :*** Spoofing your IP. congrats.",
+               me.name, source_p->name);
+
+  if (IsExemptKline(source_p))
+    sendto_one(source_p,
+               ":%s NOTICE %s :*** You are exempt from K/D/G lines. congrats.",
+               me.name, source_p->name);
+  /* The else here is to make sure that G line exempt users
+   * do not get noticed twice.
+   */
+  else if (IsExemptGline(source_p))
+    sendto_one(source_p, ":%s NOTICE %s :*** You are exempt from G lines.",
+               me.name, source_p->name);
+
+  if (IsExemptResv(source_p))
+    sendto_one(source_p, ":%s NOTICE %s :*** You are exempt from resvs.",
+               me.name, source_p->name);
+
+  if (IsExemptLimits(source_p))
+    sendto_one(source_p,
+               ":%s NOTICE %s :*** You are exempt from user limits. congrats.",
+               me.name,source_p->name);
+
+  if (IsIdlelined(source_p))
+    sendto_one(source_p,
+               ":%s NOTICE %s :*** You are exempt from idle limits. congrats.",
+               me.name, source_p->name);
+
+  if (IsCanFlood(source_p))
+    sendto_one(source_p, ":%s NOTICE %s :*** You are exempt from flood "
+               "protection, aren't you fearsome.",
+               me.name, source_p->name);
+
 #ifdef HAVE_LIBCRYPTO
   if (source_p->localClient->fd.ssl != NULL)
     sendto_one(source_p, ":%s NOTICE %s :*** Connected securely via %s",
@@ -1040,7 +1083,7 @@ user_welcome(struct Client *source_p)
              me.name, source_p->name, built_date);
   sendto_one(source_p, form_str(RPL_MYINFO),
              me.name, source_p->name, me.name, ircd_version, umode_buffer);
-  show_isupport(source_p);
+  send_message_file(source_p, isupportFile);
 
   if (source_p->id[0] != '\0')
     sendto_one(source_p, form_str(RPL_YOURID), me.name,
@@ -1048,10 +1091,10 @@ user_welcome(struct Client *source_p)
 
   show_lusers(source_p);
 
-  if (ConfigFileEntry.short_motd)
+  if (General.short_motd)
   {
     sendto_one(source_p, "NOTICE %s :*** Notice -- motd was last changed at %s",
-               source_p->name, ConfigFileEntry.motd.lastChangedDate);
+               source_p->name, motd.lastChangedDate);
     sendto_one(source_p,
                "NOTICE %s :*** Notice -- Please read the motd if you haven't "
                "read it", source_p->name);
@@ -1064,7 +1107,7 @@ user_welcome(struct Client *source_p)
                me.name, source_p->name);
   }
   else  
-    send_message_file(source_p, &ConfigFileEntry.motd);
+    send_message_file(source_p, &motd);
 }
 
 /*
@@ -1109,63 +1152,14 @@ oper_up(struct Client *source_p, struct OperatorConf *conf)
 
   sendto_one(source_p, ":%s NOTICE %s :*** Oper privs are %s",
              me.name, source_p->name, oper_privs_as_string(conf->flags));
-  send_message_file(source_p, &ConfigFileEntry.opermotd);
-}
-
-/* check_xline()
- *
- * inputs       - pointer to client to test
- * outupt       - 1 if exiting 0 if ok
- * side effects -
- */
-static int
-check_xline(struct Client *source_p)
-{
-  struct ConfItem *conf = NULL;
-  const char *reason = NULL;
-
-  if ((conf = find_matching_name_conf(XLINE_TYPE, source_p->info, NULL, NULL, 0)) ||
-      (conf = find_matching_name_conf(RXLINE_TYPE, source_p->info, NULL, NULL, 0)))
-  {
-    struct MatchItem *reg = &conf->conf.MatchItem;
-
-    ++reg->count;
-
-    if (reg->reason != NULL)
-      reason = reg->reason;
-    else
-      reason = "No Reason";
-
-    sendto_realops_flags(UMODE_REJ, L_ALL,
-                         "X-line Rejecting [%s] [%s], user %s [%s]",
-                         source_p->info, reason,
-                         get_client_name(source_p, HIDE_IP),
-                         source_p->sockhost);
-
-    ++ServerStats.is_ref;
-    if (REJECT_HOLD_TIME > 0)
-    {
-      sendto_one(source_p, ":%s NOTICE %s :Bad user info",
-                 me.name, source_p->name);
-      source_p->localClient->reject_delay = CurrentTime + REJECT_HOLD_TIME;
-      SetCaptured(source_p);
-    }
-    else
-      exit_client(source_p, &me, "Bad user info");
-    return 1;
-  }
-
-  return 0;
+  send_message_file(source_p, &opermotd);
 }
 
 /*
  * UID code for TS6 SID code on EFnet
- *
  */
 
 char new_uid[TOTALSIDUID + 1] = {0};
-
-static void add_one_to_uid(int i);
 
 /*
  * init_uid()
@@ -1182,12 +1176,8 @@ init_uid(void)
 {
   int i;
 
-  if (ServerInfo.sid != NULL)
-  {
-    memcpy(new_uid, ServerInfo.sid, IRC_MAXSID);
-    memcpy(&me.id, ServerInfo.sid, IRC_MAXSID);
-    hash_add_id(&me);
-  }
+  if (me.id[0])
+    strcpy(new_uid, me.id);
 
   for (i = 0; i < IRC_MAXSID; i++)
     if (new_uid[i] == '\0') 
@@ -1199,20 +1189,6 @@ init_uid(void)
    * -Dianora
    */
   memcpy(new_uid + IRC_MAXSID, "AAAAA@", IRC_MAXUID);
-}
-
-/*
- * uid_get
- *
- * inputs	- struct Client *
- * output	- new UID is returned to caller
- * side effects	- new_uid is incremented by one.
- */
-void *
-uid_get(va_list args)
-{
-  add_one_to_uid(TOTALSIDUID - 1);    /* index from 0 */
-  return new_uid;
 }
 
 /*
@@ -1245,6 +1221,20 @@ add_one_to_uid(int i)
     else
       new_uid[i] = new_uid[i] + 1;
   }
+}
+
+/*
+ * do_uid_get
+ *
+ * inputs	- struct Client *
+ * output	- new UID is returned to caller
+ * side effects	- new_uid is incremented by one.
+ */
+void *
+do_uid_get(va_list args)
+{
+  add_one_to_uid(TOTALSIDUID - 1);    /* index from 0 */
+  return new_uid;
 }
 
 /*

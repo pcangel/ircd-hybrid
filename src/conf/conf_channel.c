@@ -51,7 +51,8 @@ reset_channel(va_list args)
 
   old_use_splitcode = conf_cold ? NO : USE_SPLITCODE;
 
-  Channel.restrict_channels = Channel.disable_local_channels = NO;
+  Channel.restrict_channels = Channel.disable_local_channels =
+    Channel.disable_fake_channels = NO;
   Channel.use_invex = Channel.use_except = YES;
 
   Channel.use_knock = YES;
@@ -92,11 +93,11 @@ verify_channel(va_list args)
     }
     else
     {
+      eventAddIsh("check_splitmode", check_splitmode, NULL, 60);
       if (conf_cold)
         splitmode = YES;
       else
         check_splitmode(NULL);
-      eventAddIsh("check_splitmode", check_splitmode, NULL, 60);
     }
   }
 
@@ -141,6 +142,8 @@ init_channel(void)
     &Channel.restrict_channels);
   add_conf_field(s, "disable_local_channels", CT_BOOL, NULL,
     &Channel.disable_local_channels);
+  add_conf_field(s, "disable_fake_channels", CT_BOOL, NULL,
+    &Channel.disable_fake_channels);
   add_conf_field(s, "use_invex", CT_BOOL, NULL, &Channel.use_invex);
   add_conf_field(s, "use_except", CT_BOOL, NULL, &Channel.use_except);
 

@@ -24,16 +24,17 @@
 
 #include "stdinc.h"
 #include "conf/conf.h"
+#include "client.h"
 
 int enable_glines = NO;
 time_t gline_duration;
 int gline_logging;
+int acb_type_gline;
 
-static dlink_node *hreset;
+static dlink_node *hreset, *hbanned;
 static char *tmpdeny_server = NULL;
 static dlink_list tmpdeny_masks = {0};
 static dlink_list gdeny_confs = {0};
-static int acb_type_gline;
 
 /*
  * reset_glines()
@@ -297,6 +298,36 @@ find_gline(const char *user, const char *host, const struct irc_ssaddr *ip)
 }
 
 /*
+ * is_client_glined()
+ *
+ * Hook function for is_client_banned.
+ *
+ * inputs:
+ *   client  -  local client to check
+ *   type    -  we set it to ban type if there's a match
+ *   reason  -  we set it to ban reason (if any)
+ * output: not NULL if they're banned
+ */
+static void *
+is_client_glined(va_list args)
+{
+  struct Client *client = va_arg(args, struct Client *);
+  char **type = va_arg(args, char **);
+  char **reason = va_arg(args, char **);
+  struct GlineConf *conf = (IsExemptGline(client) || IsExemptKline(client)) ?
+    NULL : find_gline(client->username, client->host, &client->localClient->ip);
+
+  if (conf)
+  {
+    *type = "G-line";
+    *reason = conf->reason;
+    return conf;
+  }
+
+  return pass_callback(hbanned, client, type, reason);
+}
+
+/*
  * init_glines()
  *
  * Defines the glines{} conf section.
@@ -310,6 +341,7 @@ init_glines(void)
   struct ConfSection *s = add_conf_section("glines", 2);
 
   hreset = install_hook(reset_conf, reset_glines);
+  hbanned = install_hook(is_client_banned, is_client_glined);
 
   acb_type_gline = register_acb_type("G-line", (ACB_FREE_HANDLER *) free_gline);
 

@@ -50,7 +50,7 @@ parseargs(int *argc, char ***argv, struct lgetopt *opts)
   int i;
   char *progname = (*argv)[0];
 
-  /* loop through each argument */
+  // loop through each argument
   for (;;)
   {
     int found = 0;
@@ -61,62 +61,63 @@ parseargs(int *argc, char ***argv, struct lgetopt *opts)
     if (*argc < 1)
       return;
 
-    /* check if it *is* an arg.. */
+    // check if it *is* an arg..
     if ((*argv)[0][0] != OPTCHAR)
       return;
 
     (*argv)[0]++;
 
-      /* search through our argument list, and see if it matches */
-      for (i = 0; opts[i].opt; i++) 
-	{
-	  if (!strcmp(opts[i].opt, (*argv)[0]))
-	    {
-	      /* found our argument */
-	      found = 1;
+    // search through our argument list, and see if it matches
+    for (i = 0; opts[i].opt; i++) 
+    {
+      if (!strcmp(opts[i].opt, (*argv)[0]))
+      {
+        // found our argument
+        found = 1;
 
-	      switch (opts[i].argtype)
-		{
-		case YESNO:
-		  *((int *)opts[i].argloc) = 1;
-		  break;
-		case INTEGER:
-		  if (*argc < 2)
+        switch (opts[i].argtype)
+        {
+          case YESNO:
+            *((int *)opts[i].argloc) = 1;
+            break;
+          case INTEGER:
+            if (*argc < 2)
 		    {
 		      fprintf(stderr, "Error: option '%c%s' requires an argument\n",
 			      OPTCHAR, opts[i].opt);
 		      libio_getopt_usage(progname, opts);
 		    }
-		  
-		  *((int *)opts[i].argloc) = atoi((*argv)[1]);
-		  break;
-		case STRING:
-		  if (*argc < 2)
+
+            *((int *)opts[i].argloc) = atoi((*argv)[1]);
+            break;
+          case STRING:
+            if (*argc < 2)
 		    {
 		      fprintf(stderr, "error: option '%c%s' requires an argument\n",
 			      OPTCHAR, opts[i].opt);
 		      libio_getopt_usage(progname, opts);
 		    }
-		  
-		  *((char**)opts[i].argloc) = malloc(strlen((*argv)[1]) + 1);
-		  strcpy(*((char**)opts[i].argloc), (*argv)[1]);
-		  break;
 
-		case USAGE:
-		  libio_getopt_usage(progname, opts);
-		  /*NOTREACHED*/
+            // XXX this could leak memory, although it's harmless
+            *((char**)opts[i].argloc) = malloc(strlen((*argv)[1]) + 1);
+            strcpy(*((char**)opts[i].argloc), (*argv)[1]);
+            break;
 
-		default:
-		  fprintf(stderr, "Error: internal error in parseargs() at %s:%d\n",
-			  __FILE__, __LINE__);
-		  exit(EXIT_FAILURE);
-		}
-	    }
+          case USAGE:
+            libio_getopt_usage(progname, opts);
+            /*NOTREACHED*/
+
+          default:
+            fprintf(stderr, "Error: internal error in parseargs() at %s:%d\n",
+                    __FILE__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
+      }
 	}
 	if (!found)
-	  {
-	    fprintf(stderr, "error: unknown argument '%c%s'\n", OPTCHAR, (*argv)[0]);
-	    libio_getopt_usage(progname, opts);
-	  }
+    {
+      fprintf(stderr, "error: unknown argument '%c%s'\n", OPTCHAR, (*argv)[0]);
+      libio_getopt_usage(progname, opts);
     }
+  }
 }

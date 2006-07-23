@@ -28,7 +28,7 @@
 #include "send.h"
 
 struct AccessConf *atable[ATABLE_SIZE] = {0};
-struct Callback *cb_expire_confs = NULL;
+struct Callback *expire_confs = NULL;
 uint64_t curprec = ~0;
 
 static dlink_node *hreset;
@@ -388,10 +388,10 @@ find_access_conf(int type, const char *user, const char *host,
  * output: none
  */
 static void
-expire_confs(void *unused)
+do_expire_confs(void *unused)
 {
   enum_access_confs(is_acb_expired, NULL);
-  execute_callback(cb_expire_confs);
+  execute_callback(expire_confs);
 }
 
 /*
@@ -407,6 +407,6 @@ init_access(void)
 {
   hreset = install_hook(reset_conf, reset_access);
 
-  cb_expire_confs = register_callback(NULL, NULL);
-  eventAddIsh("expire_confs", expire_confs, NULL, EXPIRE_FREQUENCY);
+  expire_confs = register_callback("expire_confs", NULL);
+  eventAddIsh("expire_confs", do_expire_confs, NULL, EXPIRE_FREQUENCY);
 }

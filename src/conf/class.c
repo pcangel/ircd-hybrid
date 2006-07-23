@@ -62,7 +62,8 @@ ref_class_by_name(const char *name)
 struct Class *
 ref_class_by_ptr(struct Class *cl)
 {
-  cl->refcnt++;
+  if (cl != default_class)
+    cl->refcnt++;
   return cl;
 }
 
@@ -81,6 +82,9 @@ destroy_cidr_list(dlink_list *l)
 void
 unref_class(struct Class *cl)
 {
+  if (cl == default_class)
+    return;
+
   assert(cl->refcnt > 0);
 
   if (--cl->refcnt == 0)

@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "send.h"
 #include "channel.h"
 #include "client.h"
@@ -104,14 +105,15 @@ send_message(struct Client *to, char *buf, int len)
   assert(&me != to);
   assert(len <= IRCD_BUFSIZE);
 
-  if (dbuf_length(&to->localClient->buf_sendq) + len > get_sendq(to))
+  if (dbuf_length(&to->localClient->buf_sendq) + len >
+      to->localClient->class->sendq_size)
   {
     if (IsServer(to))
       sendto_realops_flags(UMODE_ALL, L_ALL,
-                           "Max SendQ limit exceeded for %s: %lu > %lu",
-                           get_client_name(to, HIDE_IP),
-                           (unsigned long)(dbuf_length(&to->localClient->buf_sendq) + len),
-                           get_sendq(to));
+              "Max SendQ limit exceeded for %s: %lu > %lu",
+              get_client_name(to, HIDE_IP),
+              (unsigned long)(dbuf_length(&to->localClient->buf_sendq) + len),
+              to->localClient->class->sendq_size);
     if (IsClient(to))
       SetSendQExceeded(to);
 

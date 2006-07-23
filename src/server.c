@@ -252,12 +252,9 @@ check_cipher(struct Client *client_p, struct AccessItem *aconf)
  * according to given config entry --Jto
  */
 const char *
-my_name_for_link(struct AccessItem *aconf)
+my_name_for_link(struct ConnectConf *conf)
 {
-  if (aconf->fakename != NULL)
-    return(aconf->fakename);
-  else
-    return(me.name);
+  return conf->fakename ? conf->fakename : me.name;
 }
 
 /*

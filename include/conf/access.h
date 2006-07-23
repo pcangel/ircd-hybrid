@@ -38,7 +38,8 @@ struct AccessConf
 #define MAX_ACB_TYPES       20
 
 EXTERN struct AccessConf *atable[];
-EXTERN struct Callback *cb_expire_confs;
+EXTERN struct Callback *expire_confs;
+EXTERN struct Callback *is_client_banned;
 EXTERN uint64_t curprec;
 
 typedef void ACB_FREE_HANDLER(struct AccessConf *);

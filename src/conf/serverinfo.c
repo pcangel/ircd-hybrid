@@ -30,7 +30,7 @@
 #include "s_serv.h"
 #include "s_user.h"
 
-struct ServerInfoConf ServerInfoX = {0};
+struct ServerInfoConf ServerInfo = {0};
 
 static dlink_node *hreset, *hverify;
 
@@ -45,12 +45,12 @@ static dlink_node *hreset, *hverify;
 static void *
 reset_serverinfo(va_list args)
 {
-  memset(&ServerInfoX.vhost, 0, sizeof(ServerInfoX.vhost));
+  memset(&ServerInfo.vhost, 0, sizeof(ServerInfo.vhost));
 #ifdef IPV6
-  memset(&ServerInfoX.vhost6, 0, sizeof(ServerInfoX.vhost6));
+  memset(&ServerInfo.vhost6, 0, sizeof(ServerInfo.vhost6));
 #endif
-  ServerInfoX.hub = NO;
-  ServerInfoX.max_clients = 512;
+  ServerInfo.hub = NO;
+  ServerInfo.max_clients = 512;
 
   return pass_callback(hreset);
 }
@@ -74,15 +74,15 @@ verify_serverinfo(va_list args)
   if (!me.info[0])
     parse_fatal("description= field missing in serverinfo{} section");
 
-  if (ServerInfoX.network_name == NULL)
+  if (ServerInfo.network_name == NULL)
     parse_fatal("network_name= field missing in serverinfo{} section");
-  add_isupport("NETWORK", ServerInfoX.network_name, -1);
+  add_isupport("NETWORK", ServerInfo.network_name, -1);
 
-  if ((p = strchr(ServerInfoX.network_name, ' ')) != NULL)
+  if ((p = strchr(ServerInfo.network_name, ' ')) != NULL)
     *p = 0;
 
-  if (ServerInfoX.network_desc == NULL)
-    DupString(ServerInfoX.network_desc, ServerInfoX.network_name);
+  if (ServerInfo.network_desc == NULL)
+    DupString(ServerInfo.network_desc, ServerInfo.network_name);
 
   if (conf_cold && me.id[0])
   {
@@ -92,19 +92,19 @@ verify_serverinfo(va_list args)
 
   recalc_fdlimit(NULL);
 
-  if (ServerInfoX.max_clients < MAXCLIENTS_MIN)
+  if (ServerInfo.max_clients < MAXCLIENTS_MIN)
   {
     parse_error("MAXCLIENTS=%d too low, setting to %d",
-      ServerInfoX.max_clients, MAXCLIENTS_MIN);
+      ServerInfo.max_clients, MAXCLIENTS_MIN);
 
-    ServerInfoX.max_clients = MAXCLIENTS_MIN;
+    ServerInfo.max_clients = MAXCLIENTS_MIN;
   }
-  else if (ServerInfoX.max_clients > MAXCLIENTS_MAX)
+  else if (ServerInfo.max_clients > MAXCLIENTS_MAX)
   {
     parse_error("MAXCLIENTS=%d too high, setting to %d",
-      ServerInfoX.max_clients, MAXCLIENTS_MAX);
+      ServerInfo.max_clients, MAXCLIENTS_MAX);
 
-    ServerInfoX.max_clients = MAXCLIENTS_MAX;
+    ServerInfo.max_clients = MAXCLIENTS_MAX;
   }
 
   return pass_callback(hverify);
@@ -161,7 +161,7 @@ si_set_vhost(void *value, void *where)
   memset(&hints, 0, sizeof(hints));
 
 #ifdef IPV6
-  hints.ai_family   = (where == ServerInfoX.vhost6 ? AF_INET6 : AF_INET);
+  hints.ai_family   = (where == ServerInfo.vhost6 ? AF_INET6 : AF_INET);
 #else
   hints.ai_family   = AF_INET;
 #endif
@@ -187,10 +187,13 @@ si_set_rsa_private_key(void *value, void *unused)
 #else
   BIO *file;
 
-  if (ServerInfoX.rsa_private_key)
+  MyFree(ServerInfo.rsa_private_key_file);
+  ServerInfo.rsa_private_key_file = NULL;
+
+  if (ServerInfo.rsa_private_key)
   {
-    RSA_free(ServerInfoX.rsa_private_key);
-    ServerInfoX.rsa_private_key = NULL;
+    RSA_free(ServerInfo.rsa_private_key);
+    ServerInfo.rsa_private_key = NULL;
   }
 
   if ((file = BIO_new_file(value, "r")) == NULL)
@@ -199,26 +202,28 @@ si_set_rsa_private_key(void *value, void *unused)
     return;
   }
 
-  ServerInfoX.rsa_private_key = (RSA *) PEM_read_bio_RSAPrivateKey(file, NULL,
+  ServerInfo.rsa_private_key = (RSA *) PEM_read_bio_RSAPrivateKey(file, NULL,
     0, NULL);
 
   BIO_set_close(file, BIO_CLOSE);
   BIO_free(file);
 
-  if (!ServerInfoX.rsa_private_key)
+  if (!ServerInfo.rsa_private_key)
     parse_error("key invalid; check key syntax");
-  else if (!RSA_check_key(ServerInfoX.rsa_private_key))
+  else if (!RSA_check_key(ServerInfo.rsa_private_key))
   {
-    RSA_free(ServerInfoX.rsa_private_key);
-    ServerInfoX.rsa_private_key = NULL;
+    RSA_free(ServerInfo.rsa_private_key);
+    ServerInfo.rsa_private_key = NULL;
     parse_error("invalid key, ignoring");
   }
-  else if (RSA_size(ServerInfoX.rsa_private_key) != 2048/8)
+  else if (RSA_size(ServerInfo.rsa_private_key) != 2048/8)
   {
-    RSA_free(ServerInfoX.rsa_private_key);
-    ServerInfoX.rsa_private_key = NULL;
+    RSA_free(ServerInfo.rsa_private_key);
+    ServerInfo.rsa_private_key = NULL;
     parse_error("not a 2048-bit key, ignoring");
   }
+  else
+    DupString(ServerInfo.rsa_private_key_file, value);
 #endif
 }
 
@@ -228,15 +233,15 @@ si_set_ssl_certificate(void *value, void *unused)
 #ifndef HAVE_LIBCRYPTO
   parse_error("no OpenSSL support");
 #else
-  if (!ServerInfoX.rsa_private_key)
+  if (!ServerInfo.rsa_private_key)
     parse_error("put a valid rsa_private_key_file before this line");
-  else if (SSL_CTX_use_certificate_file(ServerInfoX.ctx, value,
+  else if (SSL_CTX_use_certificate_file(ServerInfo.ctx, value,
     SSL_FILETYPE_PEM) <= 0)
     parse_error(ERR_lib_error_string(ERR_get_error()));
-  else if (SSL_CTX_use_PrivateKey_file(ServerInfoX.ctx,
-    ServerInfoX.rsa_private_key_file, SSL_FILETYPE_PEM) <= 0)
+  else if (SSL_CTX_use_PrivateKey_file(ServerInfo.ctx,
+    ServerInfo.rsa_private_key_file, SSL_FILETYPE_PEM) <= 0)
     parse_error(ERR_lib_error_string(ERR_get_error()));
-  else if (!SSL_CTX_check_private_key(ServerInfoX.ctx))
+  else if (!SSL_CTX_check_private_key(ServerInfo.ctx))
     parse_error("RSA private key does not match "
                 "the SSL certificate public key");
 #endif
@@ -261,14 +266,14 @@ init_serverinfo(void)
   add_conf_field(s, "name", CT_STRING, si_set_name, NULL);
   add_conf_field(s, "sid", CT_STRING, si_set_sid, NULL);
   add_conf_field(s, "description", CT_STRING, si_set_description, NULL);
-  add_conf_field(s, "network_name", CT_STRING, NULL, &ServerInfoX.network_name);
-  add_conf_field(s, "network_desc", CT_STRING, NULL, &ServerInfoX.network_desc);
-  add_conf_field(s, "hub", CT_BOOL, NULL, &ServerInfoX.hub);
-  add_conf_field(s, "vhost", CT_STRING, si_set_vhost, &ServerInfoX.vhost);
+  add_conf_field(s, "network_name", CT_STRING, NULL, &ServerInfo.network_name);
+  add_conf_field(s, "network_desc", CT_STRING, NULL, &ServerInfo.network_desc);
+  add_conf_field(s, "hub", CT_BOOL, NULL, &ServerInfo.hub);
+  add_conf_field(s, "vhost", CT_STRING, si_set_vhost, &ServerInfo.vhost);
 #ifdef IPV6
-  add_conf_field(s, "vhost6", CT_STRING, si_set_vhost, &ServerInfoX.vhost6);
+  add_conf_field(s, "vhost6", CT_STRING, si_set_vhost, &ServerInfo.vhost6);
 #endif
-  add_conf_field(s, "max_clients", CT_NUMBER, NULL, &ServerInfoX.max_clients);
+  add_conf_field(s, "max_clients", CT_NUMBER, NULL, &ServerInfo.max_clients);
 #ifdef HAVE_LIBCRYPTO
   add_conf_field(s, "rsa_private_key_file", CT_STRING, si_set_rsa_private_key,
     NULL);

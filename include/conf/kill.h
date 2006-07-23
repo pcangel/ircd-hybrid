@@ -32,9 +32,11 @@ struct KillConf
   char *reason;
 };
 
-struct KillConf *find_kline(const char *, const char *, const char *,
+EXTERN int acb_type_kline;
+
+EXTERN struct KillConf *find_kline(const char *, const char *, const char *,
   const struct irc_ssaddr *);
-void report_klines(struct Client *, int);
+EXTERN void report_klines(struct Client *, int);
 
 #ifdef IN_CONF_C
 void init_kill(void);

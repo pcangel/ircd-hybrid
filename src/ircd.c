@@ -24,6 +24,7 @@
 
 #ifdef IN_IRCD
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "s_user.h"
 #include "ircd.h"
 #include "channel.h"
@@ -45,7 +46,6 @@
 #include "s_serv.h"
 #include "send.h"
 #include "whowas.h"
-#include "conf/modules.h"
 #include "motd.h"
 #include "watch.h"
 #include "patchlevel.h"
@@ -55,20 +55,11 @@
 /* /quote set variables */
 struct SetOptions GlobalSetOptions;
 struct ServerStatistics ServerStats;
-/* configuration set from ircd.conf */
-struct config_file_entry ConfigFileEntry; 
-/* server info set from ircd.conf */
-struct server_info ServerInfo;
 /* admin info set from ircd.conf */
-struct admin_info AdminInfo = { NULL, NULL, NULL };
 struct Counter Count = { 0, 0, 0, 0, 0, 0, 0, 0 };
-struct ServerState_t server_state = { 0 };
-struct logging_entry ConfigLoggingEntry = { 1, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0} }; 
+struct ServerState_t ServerState = { 0 };
 struct Client me;             /* That's me */
 struct LocalUser meLocalUser; /* That's also part of me */
-
-const char *logFileName = LPATH;
-const char *pidFileName = PPATH;
 
 char **myargv;
 const char *ircd_version = PATCHLEVEL;
@@ -113,8 +104,8 @@ print_startup(int pid)
 {
   printf("ircd: version %s\n", ircd_version);
   printf("ircd: pid %d\n", pid);
-  printf("ircd: running in %s mode from %s\n", !server_state.foreground ? "background"
-         : "foreground", ConfigFileEntry.dpath);
+  printf("ircd: running in %s mode from %s\n",
+         ServerState.foreground ? "foreground" : "background", DPATH);
 }
 
 static void
@@ -137,24 +128,32 @@ make_daemon(void)
 }
 #endif
 
-static int printVersion = 0;
-
 static struct lgetopt myopts[] = {
-  {"dlinefile",  &ConfigFileEntry.dlinefile, 
-   STRING, "File to use for dline.conf"},
-  {"configfile", &ConfigFileEntry.configfile, 
+  {"configfile", &ServerState.configfile,
    STRING, "File to use for ircd.conf"},
-  {"klinefile",  &ConfigFileEntry.klinefile, 
+  {"klinefile",  &ServerState.klinefile,
    STRING, "File to use for kline.conf"},
-  {"xlinefile",  &ConfigFileEntry.xlinefile, 
+  {"rklinefile", &ServerState.rklinefile,
+   STRING, "File to use for rkline.conf"},
+  {"dlinefile",  &ServerState.dlinefile,
+   STRING, "File to use for dline.conf"},
+  {"glinefile",  &ServerState.glinefile,
+   STRING, "File to use for gline.conf"},
+  {"xlinefile",  &ServerState.xlinefile,
    STRING, "File to use for xline.conf"},
-  {"logfile",    &logFileName, 
+  {"rxlinefile", &ServerState.rxlinefile,
+   STRING, "File to use for rxline.conf"},
+  {"cresvfile",  &ServerState.cresvfile,
+   STRING, "File to use for cresv.conf"},
+  {"nresvfile",  &ServerState.nresvfile,
+   STRING, "File to use for nresv.conf"},
+  {"logfile",    &ServerState.logfile,
    STRING, "File to use for ircd.log"},
-  {"pidfile",    &pidFileName,
+  {"pidfile",    &ServerState.pidfile,
    STRING, "File to use for process ID"},
-  {"foreground", &server_state.foreground, 
+  {"foreground", &ServerState.foreground,
    YESNO, "Run in foreground (don't detach)"},
-  {"version",    &printVersion, 
+  {"version",    &ServerState.printversion,
    YESNO, "Print version and exit"},
   {"help", NULL, USAGE, "Print this text"},
   {NULL, NULL, STRING, NULL},
@@ -201,18 +200,20 @@ io_loop(void)
     free_exited_clients();
     send_queued_all();
 
-    /* Check to see whether we have to rehash the configuration .. */
+    // Check to see whether we have to rehash the configuration ..
     if (dorehash)
     {
-      rehash(1);
+      sendto_realops_flags(UMODE_ALL, L_ALL,
+        "Got signal SIGHUP, reloading ircd configuration");
+      read_conf_files(NO);
       dorehash = 0;
     }
 
     if (doremotd)
     {
-      read_message_file(&ConfigFileEntry.motd);
+      read_message_file(&motd);
       sendto_realops_flags(UMODE_ALL, L_ALL,
-                           "Got signal SIGUSR1, reloading ircd motd file");
+        "Got signal SIGUSR1, reloading ircd MOTD file");
       doremotd = 0;
     }
   }
@@ -234,49 +235,28 @@ initialize_global_set_options(void)
   GlobalSetOptions.spam_time = MIN_JOIN_LEAVE_TIME;
   GlobalSetOptions.spam_num  = MAX_JOIN_LEAVE_COUNT;
 
-  if (ConfigFileEntry.default_floodcount)
-    GlobalSetOptions.floodcount = ConfigFileEntry.default_floodcount;
+  if (General.default_floodcount)
+    GlobalSetOptions.floodcount = General.default_floodcount;
   else
     GlobalSetOptions.floodcount = 10;
 
-  /* XXX I have no idea what to try here - Dianora */
+  // XXX I have no idea what to try here - Dianora
   GlobalSetOptions.joinfloodcount = 16;
   GlobalSetOptions.joinfloodtime = 8;
 
-  GlobalSetOptions.split_servers = ConfigChannel.default_split_server_count;
-  GlobalSetOptions.split_users   = ConfigChannel.default_split_user_count;
+  GlobalSetOptions.split_servers = Channel.default_split_server_count;
+  GlobalSetOptions.split_users   = Channel.default_split_user_count;
 
-  if (GlobalSetOptions.split_users &&
-      GlobalSetOptions.split_servers && (ConfigChannel.no_create_on_split ||
-                                         ConfigChannel.no_join_on_split))
+  if (GlobalSetOptions.split_users && GlobalSetOptions.split_servers &&
+      (Channel.no_create_on_split || Channel.no_join_on_split))
   {
     splitmode     = 1;
     splitchecking = 1;
   }
 
   GlobalSetOptions.ident_timeout = IDENT_TIMEOUT;
-  GlobalSetOptions.idletime = ConfigFileEntry.idletime;
+  GlobalSetOptions.idletime = General.idletime;
   GlobalSetOptions.maxlisters = 10; /* XXX ya ya ya - db */
-}
-
-/* initialize_message_files()
- *
- * inputs       - none
- * output       - none
- * side effects - Set up all message files needed, motd etc.
- */
-static void
-initialize_message_files(void)
-{
-  init_message_file(USER_MOTD, MPATH, &ConfigFileEntry.motd);
-  init_message_file(OPER_MOTD, OPATH, &ConfigFileEntry.opermotd);
-  init_message_file(USER_LINKS, LIPATH, &ConfigFileEntry.linksfile);
-
-  read_message_file(&ConfigFileEntry.motd);
-  read_message_file(&ConfigFileEntry.opermotd);
-  read_message_file(&ConfigFileEntry.linksfile);
-
-  init_isupport();
 }
 
 /* write_pidfile()
@@ -324,7 +304,7 @@ check_pidfile(const char *filename)
   char buff[32];
   pid_t pidfromfile;
 
-  /* Don't do logging here, since we don't have log() initialised */
+  // Don't do logging here, since we don't have log() initialised
   if ((fb = fbopen(filename, "r")))
   {
     if (fbgets(buff, 20, fb) == NULL)
@@ -339,7 +319,7 @@ check_pidfile(const char *filename)
 
       if (!kill(pidfromfile, 0))
       {
-        /* log(L_ERROR, "Server is already running"); */
+        // log(L_ERROR, "Server is already running");
         printf("ircd: daemon is already running\n");
         exit(-1);
       }
@@ -349,7 +329,7 @@ check_pidfile(const char *filename)
   }
   else if (errno != ENOENT)
   {
-    /* log(L_ERROR, "Error opening pid file %s", filename); */
+    // log(L_ERROR, "Error opening pid file %s", filename);
   }
 #endif
 }
@@ -400,7 +380,8 @@ init_callbacks(void)
   iosend_cb = register_callback("iosend", iosend_default);
   iorecvctrl_cb = register_callback("iorecvctrl", NULL);
   iosendctrl_cb = register_callback("iosendctrl", NULL);
-  uid_get_cb = register_callback("uid_get", uid_get);
+  authorize_client = register_callback("authorize_client", do_authorize_client);
+  uid_get = register_callback("uid_get", do_uid_get);
   umode_cb = register_callback("changing_umode", change_simple_umode);
 }
 
@@ -444,35 +425,34 @@ main(int argc, char *argv[])
     return 1;
   }
 
-  /* Setup corefile size immediately after boot -kre */
+  // Setup corefile size immediately after boot -kre
   setup_corefile();
 #endif
 
   memset(&ServerInfo, 0, sizeof(ServerInfo));
   memset(&ServerStats, 0, sizeof(ServerStats));
 
-  ConfigFileEntry.dpath      = DPATH;
-  ConfigFileEntry.configfile = CPATH;  /* Server configuration file */
-  ConfigFileEntry.klinefile  = KPATH;  /* Server kline file         */
-  ConfigFileEntry.xlinefile  = XPATH;  /* Server xline file         */
-  ConfigFileEntry.rxlinefile = RXPATH; /* Server regex xline file   */
-  ConfigFileEntry.rklinefile = RKPATH; /* Server regex kline file   */
-  ConfigFileEntry.dlinefile  = DLPATH; /* dline file                */
-  ConfigFileEntry.glinefile  = GPATH;  /* gline log file            */
-  ConfigFileEntry.cresvfile  = CRESVPATH; /* channel resv file      */
-  ConfigFileEntry.nresvfile  = NRESVPATH; /* nick resv file         */
+  ServerState.configfile = CPATH;  // Server configuration file
+  ServerState.klinefile  = KPATH;  // Server kline file
+  ServerState.xlinefile  = XPATH;  // Server xline file
+  ServerState.rxlinefile = RXPATH; // Server regex xline file
+  ServerState.rklinefile = RKPATH; // Server regex kline file
+  ServerState.dlinefile  = DLPATH; // dline file
+  ServerState.glinefile  = GPATH;  // gline log file
+  ServerState.cresvfile  = CRESVPATH; // channel resv file
+  ServerState.nresvfile  = NRESVPATH; // nick resv file
   myargv = argv;
-  umask(077);                /* better safe than sorry --SRB */
+  umask(077);                // better safe than sorry --SRB
 
   parseargs(&argc, &argv, myopts);
 
-  if (printVersion)
+  if (ServerState.printversion)
   {
     printf("ircd: version %s\n", ircd_version);
     exit(EXIT_SUCCESS);
   }
 
-  if (chdir(ConfigFileEntry.dpath))
+  if (chdir(DPATH))
   {
     perror("chdir");
     exit(EXIT_FAILURE);
@@ -481,119 +461,73 @@ main(int argc, char *argv[])
   ssl_init();
 
 #ifndef _WIN32
-  if (!server_state.foreground)
+  if (!ServerState.foreground)
     make_daemon();
   else
     print_startup(getpid());
 #endif
 
-  libio_init(!server_state.foreground);
+  libio_init(!ServerState.foreground);
   outofmemory = ircd_outofmemory;
   fdlimit_hook = install_hook(fdlimit_cb, changing_fdlimit);
 
-  check_pidfile(pidFileName);
+  check_pidfile(ServerState.pidfile);
   setup_signals();
   libio_get_platform(ircd_platform, sizeof(ircd_platform));
-  init_log(logFileName);
-  ServerInfo.can_use_v6 = check_can_use_v6();
+  init_log(ServerState.logfile);
+  ServerState.can_use_v6 = check_can_use_v6();
 
-  /* make_dlink_node() cannot be called until after libio_init() */
   memset(&me, 0, sizeof(me));
   memset(&meLocalUser, 0, sizeof(meLocalUser));
-
   me.localClient = &meLocalUser;
   me.from = me.servptr = &me;
   me.lasttime = me.since = me.firsttime = CurrentTime;
-
   SetMe(&me);
   make_server(&me);
-
   dlinkAdd(&me, &me.node, &global_client_list);
   dlinkAdd(&me, make_dlink_node(), &global_serv_list);
 
   init_callbacks();
-  initialize_message_files();
+  init_motd();
+  init_isupport();
   hash_init();
-  init_ip_hash_table();      /* client host ip hash table */
+  init_ip_hash_table(); // client host ip hash table
   clear_tree_parse();
   init_client();
-  init_class();
   whowas_init();
   watch_init();
-
   init_auth();
   channel_init();
   init_channel_modes();
   server_init();
-
-  read_conf_files(1);   /* cold start init conf files */
-
-  if (ServerInfo.name == NULL)
-  {
-    ilog(L_CRIT, "ERROR: No server name specified in serverinfo block.");
-    exit(EXIT_FAILURE);
-  }
-
-  strlcpy(me.name, ServerInfo.name, sizeof(me.name));
-
-  /* serverinfo{} description must exist.  If not, error out.*/
-  if (ServerInfo.description == NULL)
-  {
-    ilog(L_CRIT,
-      "ERROR: No server description specified in serverinfo block.");
-    exit(EXIT_FAILURE);
-  }
-
-  strlcpy(me.info, ServerInfo.description, sizeof(me.info));
+  init_conf();
+  read_conf_files(YES); // cold start init conf files
 
   hash_add_client(&me);
+  if (me.id[0])
+    hash_add_id(&me);
 
-  init_uid();     /* XXX move this one up after inculcating new conf system */
-  initialize_global_set_options();   /* and this one is going to be deleted */
+  init_uid();
+  initialize_global_set_options();
 
-#ifndef STATIC_MODULES
-  if (chdir(MODPATH))
-  {
-    ilog (L_CRIT, "Could not load core modules. Terminating!");
-    exit(EXIT_FAILURE);
-  }
-
-  boot_modules(1);
-
-  /* Go back to DPATH after checking to see if we can chdir to MODPATH */
-  chdir(ConfigFileEntry.dpath);
-#else
-  load_all_modules(1);
-#endif
   /*
    * assemble_umode_buffer() has to be called after
    * reading conf/loading modules.
    */
   assemble_umode_buffer();
 
-  write_pidfile(pidFileName);
+  write_pidfile(ServerState.pidfile);
 
   ilog(L_NOTICE, "Server Ready");
 
-  eventAddIsh("cleanup_tklines", cleanup_tklines, NULL, CLEANUP_TKLINES_TIME);
-
-  /* We want try_connections to be called as soon as possible now! -- adrian */
-  /* No, 'cause after a restart it would cause all sorts of nick collides */
+  // We want try_connections to be called as soon as possible now! -- adrian
+  // No, 'cause after a restart it would cause all sorts of nick collides
   eventAddIsh("try_connections", try_connections, NULL, STARTUP_CONNECTIONS_TIME);
 
   eventAddIsh("collect_zipstats", collect_zipstats, NULL, ZIPSTATS_TIME);
 
-  /* Setup the timeout check. I'll shift it later :)  -- adrian */
+  // Setup the timeout check. I'll shift it later :)  -- adrian
   eventAddIsh("comm_checktimeouts", comm_checktimeouts, NULL, 1);
-
-  /* XXX to be removed with old s_conf.c [superseded] */
-  if (ConfigServerHide.links_delay > 0)
-    eventAddIsh("write_links_file", write_links_file, NULL, ConfigServerHide.links_delay);
-  else
-    ConfigServerHide.links_disabled = 1;
-
-  if (splitmode)   /* XXX */
-    eventAddIsh("check_splitmode", check_splitmode, NULL, 60);
 
   io_loop();
   return 0;

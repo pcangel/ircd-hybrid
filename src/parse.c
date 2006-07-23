@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "parse.h"
 #include "client.h"
 #include "channel.h"
@@ -70,7 +71,7 @@
  */
 
 #define MAXPTRLEN    32
-                                /* Must be a power of 2, and
+                /* Must be a power of 2, and
 				 * larger than 26 [a-z]|[A-Z]
 				 * its used to allocate the set
 				 * of pointers at each node of the tree
@@ -112,7 +113,7 @@ static void recurse_report_messages(struct Client *source_p, struct MessageTree 
 static void add_msg_element(struct MessageTree *mtree_p, struct Message *msg_p, const char *cmd);
 static void del_msg_element(struct MessageTree *mtree_p, const char *cmd);
 
-/* turn a string into a parc/parv pair */
+// turn a string into a parc/parv pair
 static inline int
 string_to_array(char *string, char *parv[])
 {
@@ -122,15 +123,15 @@ string_to_array(char *string, char *parv[])
 
   parv[x] = NULL;
 
-  while (*buf == ' ') /* skip leading spaces */
+  while (*buf == ' ') // skip leading spaces
     buf++;
 
-  if (*buf == '\0') /* ignore all-space args */
+  if (*buf == '\0')  // ignore all-space args
     return(x);
 
   do
   {
-    if (*buf == ':') /* Last parameter */
+    if (*buf == ':') // last parameter
     {
       buf++;
       parv[x++] = buf;
@@ -189,8 +190,8 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
   assert(client_p->localClient->fd.flags.open);
   assert((bufend - pbuffer) < 512);
 
-  for (ch = pbuffer; *ch == ' '; ch++) /* skip spaces */
-    /* null statement */ ;
+  for (ch = pbuffer; *ch == ' '; ch++) // skip spaces
+    ;   // null statement
 
   para[0] = from->name;
 
@@ -272,16 +273,16 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
    * code. -avalon
    */
 
-  /* EOB is 3 chars long but is not a numeric */
-  if (*(ch + 3) == ' ' && /* ok, lets see if its a possible numeric.. */
+  // EOB is 3 chars long but is not a numeric
+  if (*(ch + 3) == ' ' &&   // ok, lets see if its a possible numeric..
       IsDigit(*ch) && IsDigit(*(ch + 1)) && IsDigit(*(ch + 2)))
   {
     mptr = NULL;
     numeric = ch;
     paramcount = IRCD_MAXPARA;
     ++ServerStats.is_num;
-    s = ch + 3;  /* I know this is ' ' from above if            */
-    *s++ = '\0'; /* blow away the ' ', and point s to next part */
+    s = ch + 3;  // I know this is ' ' from above if
+    *s++ = '\0'; // blow away the ' ', and point s to next part
   }
   else
   { 
@@ -338,13 +339,13 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
 
 /* handle_command()
  *
- * inputs	- pointer to message block
- *		- pointer to client
- *		- pointer to client message is from
- *		- count of number of args
- *		- pointer to argv[] array
- * output	- -1 if error from server
- * side effects	-
+ * inputs   - pointer to message block
+ *          - pointer to client
+ *          - pointer to client message is from
+ *          - count of number of args
+ *          - pointer to argv[] array
+ * output   - -1 if error from server
+ * side effects -
  */
 static void
 handle_command(struct Message *mptr, struct Client *client_p,
@@ -371,7 +372,7 @@ handle_command(struct Message *mptr, struct Client *client_p,
 
   handler = mptr->handlers[client_p->handler];
 
-  /* check right amount of params is passed... --is */
+  // check right amount of params is passed... --is
   if (i < mptr->parameters)
   {
     if (!IsServer(client_p))
@@ -437,7 +438,7 @@ add_msg_element(struct MessageTree *mtree_p,
   if (*cmd == '\0')
   {
     mtree_p->msg = msg_p;
-    mtree_p->links++;    /* Have msg pointer, so up ref count */
+    mtree_p->links++;    // Have msg pointer, so up ref count
   }
   else
   {
@@ -452,7 +453,7 @@ add_msg_element(struct MessageTree *mtree_p,
       ntree_p = (struct MessageTree *)MyMalloc(sizeof(struct MessageTree));
       mtree_p->pointers[*cmd & (MAXPTRLEN-1)] = ntree_p;
 
-      mtree_p->links++;    /* Have new pointer, so up ref count */
+      mtree_p->links++;    // Have new pointer, so up ref count
     }
 
     add_msg_element(ntree_p, msg_p, cmd+1);
@@ -515,10 +516,10 @@ del_msg_element(struct MessageTree *mtree_p, const char *cmd)
 
 /* msg_tree_parse()
  *
- * inputs	- Pointer to command to find
- *		- Pointer to MessageTree root
- * output	- Find given command returning Message * if found NULL if not
- * side effects	- none
+ * inputs   - Pointer to command to find
+ *          - Pointer to MessageTree root
+ * output   - Find given command returning Message * if found NULL if not
+ * side effects - none
  */
 static struct Message *
 msg_tree_parse(const char *cmd, struct MessageTree *root)
@@ -549,10 +550,10 @@ mod_add_cmd(struct Message *msg)
   if (msg == NULL)
     return;
 
-  /* someone loaded a module with a bad messagetab */
+  // someone loaded a module with a bad messagetab
   assert(msg->cmd != NULL);
 
-  /* command already added? */
+  // command already added?
   if ((found_msg = msg_tree_parse(msg->cmd, &msg_tree)) != NULL)
     return;
 
@@ -562,8 +563,8 @@ mod_add_cmd(struct Message *msg)
 
 /* mod_del_cmd()
  *
- * inputs	- pointer to struct Message
- * output	- none
+ * inputs   - pointer to struct Message
+ * output   - none
  * side effects - unload this one command name
  */
 void
@@ -579,8 +580,8 @@ mod_del_cmd(struct Message *msg)
 
 /* find_command()
  *
- * inputs	- command name
- * output	- pointer to struct Message
+ * inputs   - command name
+ * output   - pointer to struct Message
  * side effects - none
  */
 struct Message *
@@ -591,9 +592,9 @@ find_command(const char *cmd)
 
 /* report_messages()
  *
- * inputs	- pointer to client to report to
- * output	- NONE
- * side effects	- client is shown list of commands
+ * inputs   - pointer to client to report to
+ * output   - NONE
+ * side effects - client is shown list of commands
  */
 void
 report_messages(struct Client *source_p)
@@ -630,9 +631,9 @@ recurse_report_messages(struct Client *source_p, struct MessageTree *mtree)
 
 /* cancel_clients()
  *
- * inputs	- 
- * output	- 
- * side effects	- 
+ * inputs   - 
+ * output   - 
+ * side effects - 
  */
 static int
 cancel_clients(struct Client *client_p, struct Client *source_p, char *cmd)
@@ -668,8 +669,8 @@ cancel_clients(struct Client *client_p, struct Client *source_p, char *cmd)
     sendto_realops_flags(UMODE_DEBUG, L_ALL,
                          "Not dropping server %s (%s) for Fake Direction",
                          client_p->name, source_p->name);
-    return(-1);
-    /* return exit_client(client_p, client_p, &me, "Fake Direction");*/
+    return -1;
+    // return exit_client(client_p, client_p, &me, "Fake Direction");
   }
 
   /* Ok, someone is trying to impose as a client and things are
@@ -690,14 +691,14 @@ cancel_clients(struct Client *client_p, struct Client *source_p, char *cmd)
                        source_p->name, source_p->username, source_p->host,
                        source_p->from->name, get_client_name(client_p, MASK_IP));
 
-  return(0);
+  return 0;
 }
 
 /* remove_unknown()
  *
- * inputs	- 
- * output	- 
- * side effects	- 
+ * inputs   - 
+ * output   - 
+ * side effects - 
  */
 static void
 remove_unknown(struct Client *client_p, char *lsender, char *lbuffer)
@@ -747,13 +748,13 @@ do_numeric(char numeric[], struct Client *client_p, struct Client *source_p,
 {
   struct Client *target_p;
   struct Channel *chptr;
-  char *t;    /* current position within the buffer */
-  int i, tl;  /* current length of presently being built string in t */
+  char *t;    // current position within the buffer
+  int i, tl;  // current length of presently being built string in t
 
   if (parc < 2 || !IsServer(source_p))
     return;
 
-  /* Remap low number numerics. */
+  // Remap low number numerics.
   if (numeric[0] == '0')
     numeric[0] = '1';
 
@@ -816,17 +817,16 @@ do_numeric(char numeric[], struct Client *client_p, struct Client *source_p,
       return;
     }
 
-    /* csircd will send out unknown umode flag for +a (admin), drop it here. */
+    // csircd will send out unknown umode flag for +a (admin), drop it here.
     if ((atoi(numeric) == ERR_UMODEUNKNOWNFLAG) && MyClient(target_p))
       return;
     
-    /* Fake it for server hiding, if its our client */
-    if (ConfigServerHide.hide_servers &&
-        MyClient(target_p) && !IsOper(target_p))
+    // Fake it for server hiding, if its our client
+    if (ServerHide.hide_servers && MyClient(target_p) && !IsOper(target_p))
       sendto_one(target_p, ":%s %s %s%s", me.name, numeric, target_p->name, buffer);
     else if (!MyClient(target_p) && IsCapable(target_p->from, CAP_TS6) && HasID(source_p))
       sendto_one(target_p, ":%s %s %s%s", source_p->id, numeric, target_p->id, buffer);
-    else /* either it is our client, or a client linked throuh a non-ts6 server. must use names! */
+    else // either it is our client, or a client linked through a non-ts6 server. must use names!
       sendto_one(target_p, ":%s %s %s%s", source_p->name, numeric, target_p->name, buffer);
     return;
   }
@@ -838,9 +838,9 @@ do_numeric(char numeric[], struct Client *client_p, struct Client *source_p,
 }
 
 /* m_not_oper()
- * inputs	- 
- * output	-
- * side effects	- just returns a nastyogram to given user
+ * inputs   - 
+ * output   -
+ * side effects - just returns a nastyogram to given user
  */
 void
 m_not_oper(struct Client *client_p, struct Client *source_p,

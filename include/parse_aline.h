@@ -24,16 +24,6 @@
 
 #ifndef INCLUDED_parse_aline_h
 #define INCLUDED_parse_aline_h
-#include "setup.h"
-
-EXTERN dlink_list rxconf_items;
-EXTERN dlink_list rkconf_items;
-EXTERN dlink_list temporary_klines;
-EXTERN dlink_list temporary_dlines;
-EXTERN dlink_list temporary_glines;
-EXTERN dlink_list temporary_xlines;
-EXTERN dlink_list temporary_rxlines;
-EXTERN dlink_list temporary_rklines;
 
 EXTERN void cluster_a_line(struct Client *,
 			   const char *, int, int, const char *,...);
@@ -49,10 +39,5 @@ EXTERN time_t valid_tkline(const char *, int);
 EXTERN int parse_aline(const char *, struct Client *, int, char **,
 		       int, char **, char **, time_t *, char **, char **);
 EXTERN int valid_comment(struct Client *, char *, int);
-EXTERN struct AccessItem *find_kill(struct Client *);
-EXTERN struct AccessItem *find_gline(struct Client *);
-EXTERN struct AccessItem *find_regexp_kline(const char *[]);
 
-EXTERN void cleanup_tklines(void *);
-EXTERN void add_temp_line(struct ConfItem *);
 #endif /* INCLUDED_parse_aline_h */
