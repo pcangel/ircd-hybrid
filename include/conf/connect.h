@@ -1,9 +1,8 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  conf.h: Includes all configuration headers.
+ *  connect.h: Defines connect{} conf section.
  *
- *  Copyright (C) 2003 by Piotr Nizynski, Advanced IRC Services Project
- *  Copyright (C) 2005 by the Hybrid Development Team.
+ *  Copyright (C) 2006 by the Hybrid Development Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,31 +19,42 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
  *
- *  $Id: conf.h 69 2005-10-04 16:09:51Z adx $
+ *  $Id$
  */
 
-#ifndef INCLUDED_CONF_H
-#define INCLUDED_CONF_H
+#define LINK_COMPRESSED 1
+#define LINK_CRYPTLINK  2
+#define LINK_CRYPTPWD   4
+#define LINK_AUTOCONN   8
+#define LINK_BURSTAWAY  16
+#define LINK_TOPICBURST 32
+#define LINK_STALE      64
 
-#include "conf/manager.h"
-#include "conf/access.h"
-#include "conf/admin.h"
-#include "conf/auth.h"
-#include "conf/channel.h"
-#include "conf/class.h"
-#include "conf/connect.h"
-#include "conf/deny.h"
-#include "conf/gecos.h"
-#include "conf/general.h"
-#include "conf/glines.h"
-#include "conf/kill.h"
-#include "conf/listen.h"
-#include "conf/logging.h"
-#include "conf/modules.h"
-#include "conf/operator.h"
-#include "conf/resv.h"
-#include "conf/serverhide.h"
-#include "conf/serverinfo.h"
-#include "conf/shared.h"
+struct ConnectConf
+{
+  char *name;
+  char *host;
+  int aftype;
+  int port;
+  char *allow_host;
+  struct irc_ssaddr vhost;
+  char *send_password;
+  char *accept_password;
+  char *fakename;
+  struct Class *class_ptr;
+  dlink_list hub_list;
+  dlink_list leaf_list;
+#ifdef HAVE_LIBCRYPTO
+  RSA *rsa_public_key;
+  struct EncCapability *cipher_preference;
+#endif
+  unsigned int flags;
+  dlink_node node;
+  int refcnt;
+};
 
+EXTERN void unref_link(struct ConnectConf *);
+
+#ifdef IN_CONF_C
+void init_connect(void);
 #endif
