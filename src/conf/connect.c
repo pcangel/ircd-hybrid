@@ -279,7 +279,7 @@ static void
 parse_rsa_pkfile(void *value, void *unused)
 {
 #ifndef HAVE_LIBCRYPTO
-  parse_error("Ignoring rsa_public_key_file -- no OpenSSL support.");
+  parse_error("no OpenSSL support");
 #else
   const char *str = value;
   BIO *file = NULL;
@@ -292,14 +292,13 @@ parse_rsa_pkfile(void *value, void *unused)
 
   if ((file = BIO_new_file(str, "r")) == NULL)
   {
-    parse_error("Ignoring rsa_public_key_file -- file doesn't exist.");
+    parse_error("file doesn't exist");
     return;
   }
 
   tmpconn.rsa_public_key = (RSA*) PEM_read_bio_RSA_PUBKEY(file, NULL, 0, NULL);
   if (tmpconn.rsa_public_key == NULL)
-    parse_error("Ignoring rsa_public_key_file -- "
-                "key invalid; check key syntax.");
+    parse_error("key invalid; check key syntax");
 
   BIO_set_close(file, BIO_CLOSE);
   BIO_free(file);
@@ -318,7 +317,7 @@ static void
 parse_cipherpref(void *value, void *unused)
 {
 #ifndef HAVE_LIBCRYPTO
-  parse_error("Ignoring cipher_preference -- no OpenSSL support.");
+  parse_error("no OpenSSL support");
 #else
   struct EncCapability *ecap;
 
@@ -332,7 +331,7 @@ parse_cipherpref(void *value, void *unused)
     }
 
   if (!tmpconn.cipher_preference)
-    parse_error("Invalid cipher");
+    parse_error("invalid cipher");
 #endif
 }
 

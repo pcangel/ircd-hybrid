@@ -181,11 +181,64 @@ si_set_vhost(void *value, void *where)
 static void
 si_set_rsa_private_key(void *value, void *unused)
 {
+#ifndef HAVE_LIBCRYPTO
+  parse_error("no OpenSSL support");
+#else
+  BIO *file;
+
+  if (ServerInfoX.rsa_private_key)
+  {
+    RSA_free(ServerInfoX.rsa_private_key);
+    ServerInfoX.rsa_private_key = NULL;
+  }
+
+  if ((file = BIO_new_file(value, "r")) == NULL)
+  {
+    parse_error("file doesn't exist");
+    return;
+  }
+
+  ServerInfoX.rsa_private_key = (RSA *) PEM_read_bio_RSAPrivateKey(file, NULL,
+    0, NULL);
+
+  BIO_set_close(file, BIO_CLOSE);
+  BIO_free(file);
+
+  if (!ServerInfoX.rsa_private_key)
+    parse_error("key invalid; check key syntax");
+  else if (!RSA_check_key(ServerInfoX.rsa_private_key)
+  {
+    RSA_free(ServerInfoX.rsa_private_key);
+    ServerInfoX.rsa_private_key = NULL;
+    parse_error("invalid key, ignoring");
+  }
+  else if (RSA_size(ServerInfoX.rsa_private_key) != 2048/8)
+  {
+    RSA_free(ServerInfoX.rsa_private_key);
+    ServerInfoX.rsa_private_key = NULL;
+    parse_error("not a 2048-bit key, ignoring");
+  }
+#endif
 }
 
 static void
 si_set_ssl_certificate(void *value, void *unused)
 {
+#ifndef HAVE_LIBCRYPTO
+  parse_error("no OpenSSL support");
+#else
+  if (!ServerInfoX.rsa_private_key)
+    parse_error("put a valid rsa_private_key_file before this line");
+  else if (SSL_CTX_use_certificate_file(ServerInfoX.ctx, value,
+    SSL_FILETYPE_PEM) <= 0)
+    parse_error(ERR_lib_error_string(ERR_get_error()));
+  else if (SSL_CTX_use_PrivateKey_file(ServerInfoX.ctx,
+    ServerInfoX.rsa_private_key_file, SSL_FILETYPE_PEM) <= 0)
+    parse_error(ERR_lib_error_string(ERR_get_error()));
+  else if (!SSL_CTX_check_private_key(ServerInfoX.ctx))
+    parse_error("RSA private key does not match "
+                "the SSL certificate public key");
+#endif
 }
 
 /*

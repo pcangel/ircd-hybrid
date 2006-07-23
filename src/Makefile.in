@@ -37,12 +37,6 @@ CPPFLAGS	= ${INCLUDES} -DIN_IRCD @CPPFLAGS@
 
 default:	all
 
-y.tab.o:	y.tab.c ircd_parser.y
-	${CC} ${CPPFLAGS} ${CFLAGS} -I. -c y.tab.c
-
-lex.yy.o:	y.tab.c lex.yy.c ircd_lexer.l
-	${CC} ${CPPFLAGS} ${CFLAGS} -I. -c lex.yy.c
-
 SSL_SRCS = rsa.c
 
 SRCS = \
