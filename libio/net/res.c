@@ -130,11 +130,11 @@ res_ourserver(const struct irc_ssaddr *inp)
      * but we'll air on the side of caution - stu
      *
      */
-    switch (srv->ss.ss_family)
+    switch (srv->ss.sin_family)
     {
 #ifdef IPV6
       case AF_INET6:
-        if (srv->ss.ss_family == inp->ss.ss_family)
+        if (srv->ss.sin_family == inp->ss.sin_family)
           if (v6->sin6_port == v6in->sin6_port)
             if ((memcmp(&v6->sin6_addr.s6_addr, &v6in->sin6_addr.s6_addr, 
                     sizeof(struct in6_addr)) == 0) || 
@@ -144,7 +144,7 @@ res_ourserver(const struct irc_ssaddr *inp)
         break;
 #endif
       case AF_INET:
-        if (srv->ss.ss_family == inp->ss.ss_family)
+        if (srv->ss.sin_family == inp->ss.sin_family)
           if (v4->sin_port == v4in->sin_port)
             if ((v4->sin_addr.s_addr == INADDR_ANY) || 
                 (v4->sin_addr.s_addr == v4in->sin_addr.s_addr))
@@ -221,7 +221,7 @@ start_resolver(void)
 
   if (!ResolverFileDescriptor.flags.open)
   {
-    if (comm_open(&ResolverFileDescriptor, irc_nsaddr_list[0].ss.ss_family,
+    if (comm_open(&ResolverFileDescriptor, irc_nsaddr_list[0].ss.sin_family,
                   SOCK_DGRAM, 0, "Resolver socket") == -1)
       return;
 
@@ -462,7 +462,7 @@ do_query_number(struct DNSQuery *query, const struct irc_ssaddr *addr,
 #ifdef IPV6
   const char *intarpa;
 #endif
-  if (addr->ss.ss_family == AF_INET)
+  if (addr->ss.sin_family == AF_INET)
   {
     struct sockaddr_in *v4 = (struct sockaddr_in *)addr;
     cp = (const unsigned char*)&v4->sin_addr.s_addr;
@@ -472,7 +472,7 @@ do_query_number(struct DNSQuery *query, const struct irc_ssaddr *addr,
                (unsigned int)(cp[1]), (unsigned int)(cp[0]));
   }
 #ifdef IPV6
-  else if (addr->ss.ss_family == AF_INET6)
+  else if (addr->ss.sin_family == AF_INET6)
   {
     struct sockaddr_in6 *v6 = (struct sockaddr_in6 *)addr;
     cp = (const unsigned char *)&v6->sin6_addr.s6_addr;
@@ -808,7 +808,7 @@ res_readreply(fde_t *fd, void *data)
         resend_query(request);
       }
       else if (request->type == T_PTR && request->state != REQ_INT &&
-               request->addr.ss.ss_family == AF_INET6)
+               request->addr.ss.sin_family == AF_INET6)
       {
         request->state = REQ_INT;
         request->timeout += 4;
@@ -865,7 +865,7 @@ res_readreply(fde_t *fd, void *data)
        *
        */
 #ifdef IPV6
-      if (request->addr.ss.ss_family == AF_INET6)
+      if (request->addr.ss.sin_family == AF_INET6)
         gethost_byname_type(request->name, request->query, T_AAAA);
       else
 #endif

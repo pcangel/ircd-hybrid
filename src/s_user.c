@@ -1273,6 +1273,7 @@ init_isupport(void)
   add_isupport("STATUSMSG", "@+", -1);
 #endif
   add_isupport("TOPICLEN", NULL, TOPICLEN);
+  add_isupport("CHANNELLEN", NULL, LOCAL_CHANNELLEN);
 }
 
 /*

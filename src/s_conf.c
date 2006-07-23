@@ -45,8 +45,6 @@ struct Callback *client_check_cb = NULL;
 
 /* internally defined functions */
 static void lookup_confhost(struct ConfItem *);
-static void set_default_conf(void);
-static void validate_conf(void);
 static void garbage_collect_ip_entries(void);
 static int hash_ip(const struct irc_ssaddr *);
 static int verify_access(struct Client *, const char *, struct AccessItem **);
@@ -54,7 +52,6 @@ static struct ip_entry *find_or_add_ip(const struct irc_ssaddr *);
 static int check_class_limits(struct Client *, int, struct ClassItem *);
 static void free_aconf_items(struct ConfItem *, dlink_list *);
 static void free_match_items(struct ConfItem *, dlink_list *);
-static void delete_link(struct ConfItem *, dlink_list *);
 
 /*
  * bit_len
@@ -132,6 +129,57 @@ conf_dns_lookup(struct AccessItem *aconf)
     aconf->dns_query->callback = conf_dns_callback;
     gethost_byname(aconf->host, aconf->dns_query);
   }
+}
+
+/* lookup_confhost()
+ *
+ * inputs	- pointer to ConfItem
+ * output	- NONE
+ * side effects	- start DNS lookups of all hostnames in the conf
+ * line and convert an IP addresses in a.b.c.d number for to IP#s.
+ */
+static void
+lookup_confhost(struct ConfItem *conf)
+{
+  struct AccessItem *aconf;
+  struct addrinfo hints, *res;
+
+  aconf = &conf->conf.AccessItem;
+
+  if (EmptyString(aconf->host) || EmptyString(aconf->user))
+  {
+    ilog(L_ERROR, "Host/server name error: (%s) (%s)",
+         aconf->host, conf->name);
+    return;
+  }
+
+  if (has_wildcards(aconf->host))
+    return;
+
+  /*
+   * Do name lookup now on hostnames given and store the
+   * ip numbers in conf structure.
+   */
+  memset(&hints, 0, sizeof(hints));
+
+  hints.ai_family   = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+
+  /* Get us ready for a bind() and don't bother doing dns lookup */
+  hints.ai_flags = AI_PASSIVE | AI_NUMERICHOST;
+
+  if (irc_getaddrinfo(aconf->host, NULL, &hints, &res))
+  {
+    conf_dns_lookup(aconf);
+    return;
+  }
+
+  assert(res != NULL);
+
+  memcpy(&aconf->ipnum, res->ai_addr, res->ai_addrlen);
+  aconf->ipnum.ss_len = res->ai_addrlen;
+  aconf->ipnum.ss.sin_family = res->ai_family;
+  irc_freeaddrinfo(res);
 }
 
 static const unsigned int shared_bit_table[] =
@@ -280,35 +328,6 @@ report_confitem_types(struct Client *source_p, ConfType type, int temp)
                    conf->name, "0",
 		   aconf->class_ptr ? aconf->class_ptr->name : "<default>");
     }
-#ifdef NOTYET
-  /*
-   * This is an example about how to deal with multiple user@host masks
-   * in a single AccessItem struct
-   */
-    DLINK_FOREACH(ptr, oconf_items.head)
-    {
-      dlink_node *ptr_mask = NULL;
-      conf = ptr->data;
-      aconf = &conf->conf.AccessItem;
-
-      DLINK_FOREACH(ptr_mask, conf->mask_list.head)
-      {
-        struct split_nuh_item *nuh = ptr_mask->data;
-        /* Don't allow non opers to see oper privs */
-        if (IsOper(source_p))
-          sendto_one(source_p, form_str(RPL_STATSOLINE),
-                     me.name, source_p->name, 'O', nuh->userptr, nuh->hostptr,
-                     conf->name, oper_privs_as_string(aconf->port),
-                     aconf->class_ptr ? aconf->class_ptr->name : "<default>");
-        else
-          sendto_one(source_p, form_str(RPL_STATSOLINE),
-                     me.name, source_p->name, 'O', nuh->userptr, nuh->hostptr,
-                     conf->name, "0",
-                     aconf->class_ptr ? aconf->class_ptr->name : "<default>");
-      }
-    }
-    break;
-#endif
 
   case CLASS_TYPE:
     DLINK_FOREACH(ptr, class_items.head)
@@ -411,6 +430,12 @@ report_confitem_types(struct Client *source_p, ConfType type, int temp)
  *                Look for conf lines which have the same
  *                status as the flags passed.
  */
+void
+_init_class(void)
+{
+  client_check_cb = register_callback("check_client", check_client);
+}
+
 static void *
 check_client(va_list args)
 {
@@ -884,57 +909,6 @@ garbage_collect_ip_entries(void)
   }
 }
 
-/* lookup_confhost()
- *
- * inputs	- pointer to ConfItem
- * output	- NONE
- * side effects	- start DNS lookups of all hostnames in the conf
- * line and convert an IP addresses in a.b.c.d number for to IP#s.
- */
-static void
-lookup_confhost(struct ConfItem *conf)
-{
-  struct AccessItem *aconf;
-  struct addrinfo hints, *res;
-
-  aconf = &conf->conf.AccessItem;
-
-  if (EmptyString(aconf->host) || EmptyString(aconf->user))
-  {
-    ilog(L_ERROR, "Host/server name error: (%s) (%s)",
-         aconf->host, conf->name);
-    return;
-  }
-
-  if (has_wildcards(aconf->host))
-    return;
-
-  /*
-   * Do name lookup now on hostnames given and store the
-   * ip numbers in conf structure.
-   */
-  memset(&hints, 0, sizeof(hints));
-
-  hints.ai_family   = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-
-  /* Get us ready for a bind() and don't bother doing dns lookup */
-  hints.ai_flags = AI_PASSIVE | AI_NUMERICHOST;
-
-  if (irc_getaddrinfo(aconf->host, NULL, &hints, &res))
-  {
-    conf_dns_lookup(aconf);
-    return;
-  }
-
-  assert(res != NULL);
-
-  memcpy(&aconf->ipnum, res->ai_addr, res->ai_addrlen);
-  aconf->ipnum.ss_len = res->ai_addrlen;
-  aconf->ipnum.ss.sin_family = res->ai_family;
-  irc_freeaddrinfo(res);
-}
-
 /* conf_connect_allowed()
  *
  * inputs	- pointer to inaddr
@@ -989,51 +963,6 @@ get_oper_name(const struct Client *client_p)
 	       client_p->username, client_p->host,
                client_p->servptr->name);
   return buffer;
-}
-
-/* read_conf_files()
- *
- * inputs       - cold start YES or NO
- * output       - none
- * side effects - read all conf files needed, ircd.conf kline.conf etc.
- */
-void
-read_conf_files(int cold)
-{
-  // CUT-- OVERRIDDEN BY NEWCONF
-
-  add_isupport("NETWORK", ServerInfo.network_name, -1);
-  ircsprintf(chanmodes, "b%s%s:%d", ConfigChannel.use_except ? "e" : "",
-             ConfigChannel.use_invex ? "I" : "", ConfigChannel.max_bans);
-  add_isupport("MAXLIST", chanmodes, -1);
-  add_isupport("MAXTARGETS", NULL, ConfigFileEntry.max_targets);
-  if (ConfigChannel.disable_local_channels)
-    add_isupport("CHANTYPES", "#", -1);
-  else
-    add_isupport("CHANTYPES", "#&", -1);
-  ircsprintf(chanlimit, "%s:%d", ConfigChannel.disable_local_channels ? "#" : "#&",
-	     ConfigChannel.max_chans_per_user);
-  add_isupport("CHANLIMIT", chanlimit, -1);
-  ircsprintf(chanmodes, "%s%s%s", ConfigChannel.use_except ? "e" : "",
-	     ConfigChannel.use_invex ? "I" : "", "b,k,l,imnpst");
-  add_isupport("CHANNELLEN", NULL, LOCAL_CHANNELLEN);
-  if (ConfigChannel.use_except)
-    add_isupport("EXCEPTS", "e", -1);
-  if (ConfigChannel.use_invex)
-    add_isupport("INVEX", "I", -1);
-  add_isupport("CHANMODES", chanmodes, -1);
-
-  /*
-   * message_locale may have changed.  rebuild isupport since it relies
-   * on strlen(form_str(RPL_ISUPPORT))
-   */
-  rebuild_isupport_message_line();
-}
-
-void
-_init_class(void)
-{
-  client_check_cb = register_callback("check_client", check_client);
 }
 
 /*

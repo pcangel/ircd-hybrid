@@ -26,6 +26,7 @@
 #include "conf/conf.h"
 #include "channel.h"
 #include "ircd.h"
+#include "s_user.h"
 
 struct ChannelConf Channel;
 
@@ -43,6 +44,11 @@ static int old_use_splitcode;
 static void *
 reset_channel(va_list args)
 {
+  if (Channel.use_except)
+    delete_isupport("EXCEPTS");
+  if (Channel.use_invex)
+    delete_isupport("INVEX");
+
   old_use_splitcode = conf_cold ? NO : USE_SPLITCODE;
 
   Channel.restrict_channels = Channel.disable_local_channels = NO;
@@ -75,6 +81,7 @@ static void *
 verify_channel(va_list args)
 {
   int new_use_splitcode = USE_SPLITCODE;
+  char buf[IRCD_BUFSIZE];
 
   if (new_use_splitcode != old_use_splitcode)
   {
@@ -92,6 +99,24 @@ verify_channel(va_list args)
       eventAddIsh("check_splitmode", check_splitmode, NULL, 60);
     }
   }
+
+  strcpy(buf, Channel.disable_local_channels ? "#" : "#&");
+  add_isupport("CHANTYPES", buf, -1);
+  ircsprintf(buf + strlen(buf), ":%d", Channel.max_chans_per_user);
+  add_isupport("CHANLIMIT", buf, -1);
+
+  ircsprintf(buf, "b%s%s,k,l,imnpst",
+    Channel.use_except ? "e" : "", Channel.use_invex ? "I" : "");
+  add_isupport("CHANMODES", buf, -1);
+
+  ircsprintf(buf + 1 + !!Channel.use_except + !!Channel.use_invex,
+    ":%d", Channel.max_bans);
+  add_isupport("MAXLIST", buf, -1);
+
+  if (Channel.use_except)
+    add_isupport("EXCEPTS", "e", -1);
+  if (Channel.use_invex)
+    add_isupport("INVEX", "I", -1);
 
   return pass_callback(hverify);
 }

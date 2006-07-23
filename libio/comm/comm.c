@@ -271,7 +271,7 @@ comm_connect_tcp(fde_t *fd, const char *host, unsigned short port,
   fd->connect.callback = callback;
   fd->connect.data = data;
 
-  fd->connect.hostaddr.ss.ss_family = aftype;
+  fd->connect.hostaddr.ss.sin_family = aftype;
   fd->connect.hostaddr.ss_port = htons(port);
 
   /* Note that we're using a passed sockaddr here. This is because
@@ -316,7 +316,7 @@ comm_connect_tcp(fde_t *fd, const char *host, unsigned short port,
     memcpy(&fd->connect.hostaddr, res->ai_addr, res->ai_addrlen);
 
     fd->connect.hostaddr.ss_len = res->ai_addrlen;
-    fd->connect.hostaddr.ss.ss_family = res->ai_family;
+    fd->connect.hostaddr.ss.sin_family = res->ai_family;
 
     irc_freeaddrinfo(res);
     comm_settimeout(fd, timeout*1000, comm_connect_timeout, NULL);

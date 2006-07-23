@@ -27,6 +27,7 @@
 #include "client.h"
 #include "numeric.h"
 #include "s_serv.h"
+#include "s_user.h"
 
 struct GeneralConf General;
 
@@ -123,11 +124,13 @@ reset_general(va_list args)
 static void *
 verify_general(va_list args)
 {
-  General.ts_warn_delta = IRCD_MAX(General.ts_warn_delta, TS_WARN_DELTA_MIN);
-  General.ts_max_delta = IRCD_MAX(General.ts_max_delta, TS_MAX_DELTA_MIN);
-  General.client_flood = IRCD_MAX(General.client_flood, CLIENT_FLOOD_MIN);
-  General.client_flood = IRCD_MIN(General.client_flood, CLIENT_FLOOD_MAX);
-  General.max_watch = IRCD_MAX(General.max_watch, WATCHSIZE_MIN);
+  General.ts_warn_delta = LIBIO_MAX(General.ts_warn_delta, TS_WARN_DELTA_MIN);
+  General.ts_max_delta = LIBIO_MAX(General.ts_max_delta, TS_MAX_DELTA_MIN);
+  General.client_flood = LIBIO_MAX(General.client_flood, CLIENT_FLOOD_MIN);
+  General.client_flood = LIBIO_MIN(General.client_flood, CLIENT_FLOOD_MAX);
+  General.max_watch = LIBIO_MAX(General.max_watch, WATCHSIZE_MIN);
+
+  add_isupport("MAXTARGETS", NULL, General.max_targets);
 
   return pass_callback(hverify);
 }

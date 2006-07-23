@@ -76,6 +76,7 @@ verify_serverinfo(va_list args)
 
   if (ServerInfoX.network_name == NULL)
     parse_fatal("network_name= field missing in serverinfo{} section");
+  add_isupport("NETWORK", ServerInfoX.network_name, -1);
 
   if ((p = strchr(ServerInfoX.network_name, ' ')) != NULL)
     *p = 0;
@@ -206,7 +207,7 @@ si_set_rsa_private_key(void *value, void *unused)
 
   if (!ServerInfoX.rsa_private_key)
     parse_error("key invalid; check key syntax");
-  else if (!RSA_check_key(ServerInfoX.rsa_private_key)
+  else if (!RSA_check_key(ServerInfoX.rsa_private_key))
   {
     RSA_free(ServerInfoX.rsa_private_key);
     ServerInfoX.rsa_private_key = NULL;
