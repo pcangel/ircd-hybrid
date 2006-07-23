@@ -31,7 +31,6 @@
 #include "handlers.h"
 #include "numeric.h"
 #include "s_serv.h"
-#include "s_conf.h"
 #include "packet.h"
 
 #define LOG_BUFSIZE 2048

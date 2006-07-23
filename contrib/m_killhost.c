@@ -31,7 +31,6 @@
 #include "ircd.h"
 #include "numeric.h"
 #include "s_serv.h"
-#include "s_conf.h"
 #include "send.h"
 #include "whowas.h"
 #include "msg.h"

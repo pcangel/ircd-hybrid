@@ -25,12 +25,10 @@
 #include "stdinc.h"
 #include "ircd.h"
 #include "handlers.h"
-#include "s_conf.h"
 #include "s_user.h"
 #include "client.h"
 #include "hash.h"       /* for find_client() */
 #include "numeric.h"
-#include "s_conf.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"

@@ -35,7 +35,6 @@
 #include "msg.h"
 #include "parse.h"
 #include "conf/modules.h"
-#include "s_conf.h"
 #include "common.h"
 
 static void mo_clearchan(struct Client *, struct Client *, int, char *[]);

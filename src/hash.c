@@ -23,7 +23,6 @@
  */
 
 #include "stdinc.h"
-#include "s_conf.h"
 #include "channel.h"
 #include "channel_mode.h"
 #include "client.h"

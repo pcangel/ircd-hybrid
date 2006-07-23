@@ -31,7 +31,6 @@
 #include "resv.h"
 #include "hash.h"
 #include "ircd_defs.h"
-#include "s_conf.h"
 
 dlink_list resv_channel_list = { NULL, NULL, 0 };
 

@@ -33,7 +33,6 @@
 #include <openssl/err.h>
 
 #include "rsa.h"
-#include "s_conf.h"
 #include "client.h" /* CIPHERKEYLEN .. eww */
 #include "ircd.h" /* bio_spare_fd */
 

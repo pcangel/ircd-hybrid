@@ -36,7 +36,6 @@
 #include "s_user.h"
 #include "send.h"
 #include "whowas.h"
-#include "s_conf.h"             /* ConfigFileEntry, ConfigChannel */
 #include "msg.h"
 
 /* 10 is a magic number in hybrid 6 NFI where it comes from -db */

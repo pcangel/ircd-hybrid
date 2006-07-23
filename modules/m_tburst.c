@@ -39,7 +39,6 @@
 #include "conf/modules.h"
 #include "hash.h"
 #include "s_serv.h"
-#include "s_conf.h"
 #include "channel.h"
 
 static void ms_tb(struct Client *, struct Client *, int, char *[]);

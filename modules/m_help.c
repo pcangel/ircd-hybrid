@@ -30,7 +30,6 @@
 #include "msg.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_conf.h"
 #include "parse.h"
 #include "conf/modules.h"
 

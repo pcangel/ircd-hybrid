@@ -29,7 +29,6 @@
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_conf.h"
 /* -lcrypto is implicit for building this module! */
 #include "rsa.h"
 #include "msg.h"

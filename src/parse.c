@@ -34,7 +34,6 @@
 #include "send.h"
 #include "ircd_handler.h"
 #include "msg.h"
-#include "s_conf.h"
 #include "s_user.h"
 #include "s_serv.h"
 

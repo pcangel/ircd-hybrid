@@ -32,7 +32,6 @@
 #include "parse.h"
 #include "conf/modules.h"
 #include "hash.h"
-#include "s_conf.h"
 #include "s_serv.h"
 
 static void m_ping(struct Client *, struct Client *, int, char *[]);

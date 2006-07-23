@@ -36,7 +36,6 @@
 #include "msg.h"
 #include "parse.h"
 #include "conf/modules.h"
-#include "s_conf.h"
 #include "packet.h"
 
 static void m_part(struct Client *, struct Client *, int, char *[]);

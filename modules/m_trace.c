@@ -34,7 +34,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "s_conf.h"
 
 static void m_trace(struct Client *, struct Client *, int, char *[]);
 static void ms_trace(struct Client *, struct Client *, int, char *[]);

@@ -26,7 +26,6 @@
 #include "handlers.h"
 #include "client.h"
 #include "s_serv.h"
-#include "s_conf.h"
 #include "msg.h"
 #include "parse.h"
 #include "conf/modules.h"

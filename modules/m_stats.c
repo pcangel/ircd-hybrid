@@ -34,7 +34,6 @@
 #include "hostmask.h"
 #include "numeric.h"     /* ERR_xxx */
 #include "send.h"        /* sendto_one */
-#include "s_conf.h"      /* AccessItem, report_configured_links */
 #include "s_serv.h"      /* hunt_server */
 #include "s_user.h"      /* show_opers */
 #include "parse.h"

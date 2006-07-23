@@ -37,7 +37,6 @@
 #include "ircd_defs.h"
 #include "numeric.h"
 #include "packet.h"
-#include "s_conf.h"
 #include "s_serv.h"
 #include "s_user.h"
 #include "send.h"

@@ -58,6 +58,8 @@ reset_glines(va_list args)
     MyFree(conf);
   }
 
+  gline_duration = 12*3600;
+
   return pass_callback(hreset);
 }
 

@@ -33,7 +33,6 @@
 #include "send.h"
 #include "common.h"   /* for NO */
 #include "channel.h"
-#include "s_conf.h"
 #include "msg.h"
 #include "parse.h"
 #include "conf/modules.h"

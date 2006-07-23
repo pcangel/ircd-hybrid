@@ -30,7 +30,6 @@
 #include "handlers.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_conf.h"
 #include "ircd.h"
 
 static void m_map(struct Client *, struct Client *, int, char *[]);

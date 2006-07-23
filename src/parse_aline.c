@@ -25,7 +25,6 @@
 #include "stdinc.h"
 #include "conf/conf.h"
 #include "ircd_defs.h"
-#include "s_conf.h"
 #include "parse_aline.h"
 #include "s_serv.h"
 #include "resv.h"

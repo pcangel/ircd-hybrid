@@ -32,7 +32,6 @@
 #include "msg.h"
 #include "parse.h"
 #include "conf/modules.h"
-#include "s_conf.h"
 
 static void m_omotd(struct Client *, struct Client *, int, char *[]);
 

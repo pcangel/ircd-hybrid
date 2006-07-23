@@ -27,7 +27,6 @@
 #include "listener.h"
 #include "client.h"
 #include "ircd.h"
-#include "s_conf.h"
 #include "send.h"
 #ifdef HAVE_LIBCRYPTO
 #include <openssl/bio.h>

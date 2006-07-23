@@ -28,6 +28,22 @@
 
 static char *listen_host = NULL;
 static int flags = 0;
+static dlink_node *hreset;
+
+/*
+ * reset_listen()
+ *
+ * Marks all listeners as closed.
+ *
+ * inputs: none
+ * output: none
+ */
+static void *
+reset_listen(va_list args)
+{
+  close_listeners();
+  return pass_callback(hreset);
+}
 
 /*
  * set_listen_flags()
@@ -113,6 +129,8 @@ void
 init_listen(void)
 {
   struct ConfSection *s = add_conf_section("listen", 2);
+
+  hreset = install_hook(reset_conf, reset_listen);
 
   add_conf_field(s, "flags", CT_LIST, set_listen_flags, NULL);
   add_conf_field(s, "host", CT_STRING, NULL, &listen_host);

@@ -36,7 +36,6 @@
 #include "parse.h"
 #include "conf/modules.h"
 #include "common.h"
-#include "s_conf.h"
 
 static void mo_jupe(struct Client *, struct Client *, int, char *[]);
 

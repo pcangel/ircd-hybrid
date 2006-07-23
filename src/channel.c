@@ -36,7 +36,6 @@
 #include "s_serv.h"             /* captab */
 #include "s_user.h"
 #include "send.h"
-#include "s_conf.h"             /* ConfigFileEntry, ConfigChannel */
 
 struct config_channel_entry ConfigChannel;
 dlink_list global_channel_list = { NULL, NULL, 0 };

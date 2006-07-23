@@ -53,7 +53,6 @@
 #include "hash.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "s_conf.h"
 #include "s_user.h"
 #include "whowas.h"
 #include "s_serv.h"

@@ -31,7 +31,6 @@
 #include "msg.h"
 #include "parse.h"
 #include "conf/modules.h"
-#include "s_conf.h" /* ConfigFileEntry */
 
 static void do_ison(struct Client *, struct Client *, int, char *[]);
 static void m_ison(struct Client *, struct Client *, int, char *[]);

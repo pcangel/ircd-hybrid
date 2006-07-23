@@ -60,7 +60,6 @@
 #include "s_serv.h"
 #include "s_user.h"
 #include "send.h"
-#include "s_conf.h"
 #include "conf/modules.h"
 
 static unsigned int umode_vhost = 0;

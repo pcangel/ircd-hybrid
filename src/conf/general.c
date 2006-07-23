@@ -30,7 +30,7 @@
 
 struct GeneralConf General;
 
-static dlink_node *hreset;
+static dlink_node *hreset, *hverify;
 
 /*
  * reset_general()
@@ -93,7 +93,15 @@ reset_general(va_list args)
     MyFree(General.servlink_path);
   DupString(General.servlink_path, SLPATH);
 #ifdef HAVE_LIBCRYPTO
-  General.default_cipher_preference = NULL;
+  /* jdc -- This is our default value for a cipher.  According to the
+   *        CRYPTLINK document (doc/cryptlink.txt), BF/128 must be supported
+   *        under all circumstances if cryptlinks are enabled.  So,
+   *        this will be our default.
+   *
+   *        NOTE: I apologise for the hard-coded value of "1" (BF/128).
+   *              This should be moved into a find_cipher() routine.
+   */
+  General.default_cipher_preference = &CipherTable[1];
 #endif
   General.use_egd = NO;
   if (!conf_cold)
@@ -102,6 +110,26 @@ reset_general(va_list args)
   General.compression_level = 0;
 
   return pass_callback(hreset);
+}
+
+/*
+ * verify_general()
+ *
+ * Verifies settings after a rehash.
+ *
+ * inputs: none
+ * output: none
+ */
+static void *
+verify_general(va_list args)
+{
+  General.ts_warn_delta = IRCD_MAX(General.ts_warn_delta, TS_WARN_DELTA_MIN);
+  General.ts_max_delta = IRCD_MAX(General.ts_max_delta, TS_MAX_DELTA_MIN);
+  General.client_flood = IRCD_MAX(General.client_flood, CLIENT_FLOOD_MIN);
+  General.client_flood = IRCD_MIN(General.client_flood, CLIENT_FLOOD_MAX);
+  General.max_watch = IRCD_MAX(General.max_watch, WATCHSIZE_MIN);
+
+  return pass_callback(hverify);
 }
 
 /*
@@ -224,7 +252,7 @@ static void
 set_default_cipher(void *value, void *param)
 {
 #ifndef HAVE_LIBCRYPTO
-  parse_error("Ignoring default_cipher_preference (no OpenSSL support)");
+  parse_error("no OpenSSL support");
 #else
   struct EncCapability *ecap;
   char *cipher_name;
@@ -239,7 +267,7 @@ set_default_cipher(void *value, void *param)
       return;
     }
 
-  parse_error("Invalid cipher");
+  parse_error("invalid cipher");
 #endif
 }
 
@@ -322,6 +350,7 @@ init_general(void)
   struct ConfSection *s = add_conf_section("general", 2);
 
   hreset = install_hook(reset_conf, reset_general);
+  hverify = install_hook(verify_conf, verify_general);
 
   /* Local connection initialization */
   add_conf_field(s, "disable_auth", CT_BOOL, NULL, &General.disable_auth);

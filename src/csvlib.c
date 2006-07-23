@@ -10,7 +10,6 @@
  */
 
 #include "stdinc.h"
-#include "s_conf.h"
 #include "hostmask.h"
 #include "client.h"
 #include "send.h"

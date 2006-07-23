@@ -29,7 +29,6 @@
 #include "ircd.h"
 #include "hostmask.h"
 #include "numeric.h"
-#include "s_conf.h"
 #include "parse_aline.h"
 #include "send.h"
 #include "hash.h"

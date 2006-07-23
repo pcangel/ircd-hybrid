@@ -31,7 +31,6 @@
 #include "msg.h"
 #include "parse.h"
 #include "conf/modules.h"
-#include "s_conf.h"
 #include "s_serv.h"
 #include "packet.h"
 #include "s_user.h"

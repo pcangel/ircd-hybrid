@@ -36,7 +36,6 @@
 #include "parse.h"
 #include "conf/modules.h"
 #include "s_serv.h"
-#include "s_conf.h"
 
 static void ms_sjoin(struct Client *, struct Client *, int, char *[]);
 

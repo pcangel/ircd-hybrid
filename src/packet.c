@@ -22,7 +22,6 @@
  *  $Id$
  */
 #include "stdinc.h"
-#include "s_conf.h"
 #include "s_serv.h"
 #include "client.h"
 #include "common.h"

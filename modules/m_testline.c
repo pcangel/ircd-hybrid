@@ -30,7 +30,6 @@
 #include "ircd_defs.h"
 #include "ircd.h"
 #include "restart.h"
-#include "s_conf.h"
 #include "send.h"
 #include "msg.h"
 #include "hostmask.h"
