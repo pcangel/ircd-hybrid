@@ -26,9 +26,10 @@
 #include "conf/conf.h"
 #include "s_serv.h"
 
+dlink_list connect_confs = {0};
+
 static dlink_node *hreset;
 static struct ConnectConf tmpconn = {0};
-static dlink_list connect_confs = {0};
 
 // TODO: These should be modularised like acb_types
 static const struct FlagMapping {
@@ -93,6 +94,22 @@ clear_temp(void)
 {
   free_interior(&tmpconn);
   memset(&tmpconn, 0, sizeof(tmpconn));
+  tmpconn.aftype = AF_INET6;
+}
+
+/*
+ * ref_link_by_ptr()
+ *
+ * Increments the reference counter of a connect conf.
+ *
+ * inputs: pointer to ConnectConf
+ * output: the same pointer
+ */
+struct ConnectConf *
+ref_link_by_ptr(struct ConnectConf *conf)
+{
+  conf->refcnt++;
+  return conf;
 }
 
 /*

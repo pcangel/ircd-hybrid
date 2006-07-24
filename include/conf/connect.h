@@ -48,11 +48,15 @@ struct ConnectConf
   RSA *rsa_public_key;
   struct EncCapability *cipher_preference;
 #endif
+  time_t hold;
   unsigned int flags;
   dlink_node node;
   int refcnt;
 };
 
+EXTERN dlink_list connect_confs;
+
+EXTERN struct ConnectConf *ref_link_by_ptr(struct ConnectConf *);
 EXTERN void unref_link(struct ConnectConf *);
 
 #ifdef IN_CONF_C

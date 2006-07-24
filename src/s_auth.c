@@ -418,20 +418,20 @@ timeout_auth_queries_event(void *notused)
 
       if (IsDNSPending(auth))
       {
-	struct Client *client_p = auth->client;
+        struct Client *client_p = auth->client;
 
-	dlinkDelete(&auth->dns_node, &auth_doing_dns_list);
-	if (client_p->localClient->dns_query != NULL)
+        dlinkDelete(&auth->dns_node, &auth_doing_dns_list);
+        if (client_p->localClient->dns_query != NULL)
         {
-	  delete_resolver_queries(client_p->localClient->dns_query);
+          delete_resolver_queries(client_p->localClient->dns_query);
           MyFree(client_p->localClient->dns_query);
+          client_p->localClient->dns_query = NULL;
         }
-	auth->client->localClient->dns_query = NULL;
-	sendheader(client_p, REPORT_FAIL_DNS);
+        sendheader(client_p, REPORT_FAIL_DNS);
       }
 
       ilog(L_INFO, "DNS/AUTH timeout %s",
-	   get_client_name(auth->client, SHOW_IP));
+           get_client_name(auth->client, SHOW_IP));
 
       dlinkDelete(&auth->ident_node, &auth_doing_ident_list);
       release_auth_client(auth->client);
@@ -622,17 +622,16 @@ delete_auth(struct Client *target_p)
 
   if (target_p->localClient->dns_query != NULL)
   {
+    delete_resolver_queries(target_p->localClient->dns_query);
+    MyFree(target_p->localClient->dns_query);
+    target_p->localClient->dns_query = NULL;
+
     DLINK_FOREACH_SAFE(ptr, next_ptr, auth_doing_dns_list.head)
     {
       auth = ptr->data;
 
       if (auth->client == target_p)
       {
-        delete_resolver_queries(target_p->localClient->dns_query);
-
-        MyFree(target_p->localClient->dns_query);
-        target_p->localClient->dns_query = NULL;
-
         dlinkDelete(&auth->dns_node, &auth_doing_dns_list);
 
         if (!IsDoingAuth(auth))

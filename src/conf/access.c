@@ -27,6 +27,7 @@
 #include "client.h"
 #include "send.h"
 
+struct Callback *is_client_banned = NULL;
 struct AccessConf *atable[ATABLE_SIZE] = {0};
 struct Callback *expire_confs = NULL;
 uint64_t curprec = ~0;

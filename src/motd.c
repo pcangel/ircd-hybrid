@@ -30,6 +30,8 @@
 #include "client.h"
 #include "s_serv.h"
 
+MessageFile motd, opermotd, linksfile;
+
 /*
  * init_message_file()
  */

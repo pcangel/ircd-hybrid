@@ -383,6 +383,7 @@ struct LocalUser
 #define IsAuthFinished(x)       ((x)->flags & FLAGS_FINISHED_AUTH)
 #define IsDead(x)               ((x)->flags & FLAGS_DEADSOCKET)
 #define SetDead(x)              ((x)->flags |= FLAGS_DEADSOCKET)
+#define ClearDead(x)            ((x)->flags &= ~FLAGS_DEADSOCKET)
 #define IsClosing(x)		((x)->flags & FLAGS_CLOSING)
 #define SetClosing(x)		((x)->flags |= FLAGS_CLOSING)
 #define IsKilled(x)		((x)->flags & FLAGS_KILLED)
