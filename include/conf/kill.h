@@ -33,9 +33,13 @@ struct KillConf
 };
 
 EXTERN int acb_type_kline;
+EXTERN dlink_list rkline_confs;
 
+EXTERN void free_kline(struct KillConf *);
 EXTERN struct KillConf *find_kline(const char *, const char *, const char *,
   const struct irc_ssaddr *);
+EXTERN struct KillConf *find_exact_kline(const char *, const char *);
+EXTERN struct KillConf *find_exact_rkline(const char *, const char *);
 EXTERN void report_klines(struct Client *, int);
 
 #ifdef IN_CONF_C

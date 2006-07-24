@@ -10,10 +10,8 @@
  */
 
 #include "stdinc.h"
-#include "hostmask.h"
 #include "client.h"
 #include "send.h"
-#include "resv.h"
 #include "s_serv.h"
 
 /* Fix "statement not reached" warnings on Sun WorkShop C */

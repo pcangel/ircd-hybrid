@@ -34,7 +34,6 @@
 #include "s_serv.h"
 #include "send.h"
 #include "channel.h"
-#include "resv.h"
 #include "msg.h"
 #include "parse.h"
 #include "common.h"

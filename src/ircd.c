@@ -36,7 +36,6 @@
 #include "motd.h"
 #include "ircd_handler.h"
 #include "msg.h"         /* msgtab */
-#include "hostmask.h"
 #include "numeric.h"
 #include "packet.h"
 #include "parse.h"

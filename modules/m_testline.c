@@ -32,10 +32,8 @@
 #include "restart.h"
 #include "send.h"
 #include "msg.h"
-#include "hostmask.h"
 #include "numeric.h"
 #include "parse.h"
-#include "resv.h"
 #include "hash.h"
 
 static void mo_testline(struct Client *, struct Client *, int, char *[]);
@@ -80,18 +78,19 @@ static void
 mo_testline(struct Client *client_p, struct Client *source_p,
             int parc, char *parv[])
 {
+  int matches = 0;
   char *orig_parv1 = NULL;
-  /* IRCD_BUFSIZE to allow things like *u*s*e*r*n*a*m*e* etc. */
+  // IRCD_BUFSIZE to allow things like *u*s*e*r*n*a*m*e* etc.
   char given_name[IRCD_BUFSIZE];
   char given_host[IRCD_BUFSIZE];
-  struct ConfItem *conf;
-  struct AccessItem *aconf;
-  struct irc_ssaddr ip;
-  int host_mask;
-  int t;
-  int matches = 0;
-  char userhost[HOSTLEN + USERLEN + 2];
   struct split_nuh_item nuh;
+  struct ResvConf *resv;
+  struct DenyConf *dline;
+  struct AccessConf *exempt;
+  struct KillConf *kline;
+  struct AuthConf *iline;
+  struct irc_ssaddr ip;
+  char userhost[USERLEN + 1 + HOSTLEN + 1];
 
   if (EmptyString(parv[1]))
   {
@@ -100,20 +99,14 @@ mo_testline(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if (IsChanPrefix(*parv[1]))	/* Might be channel resv */
+  resv = (IsChanPrefix(*parv[1]) ? find_channel_resv : find_nick_resv)(parv[1]);
+  if (resv != NULL)
   {
-    struct ResvChannel *chptr;
-    
-    chptr = match_find_resv(parv[1]);
-    if (chptr != NULL)
-    {
-      sendto_one(source_p,
-		 form_str(RPL_TESTLINE),
-		 me.name, source_p->name,
-		 'Q', 0, chptr->name, 
-		 chptr->reason ? chptr->reason : "No reason", "" );
-      return;
-    }
+    sendto_one(source_p, form_str(RPL_TESTLINE), me.name,
+               source_p->name, resv->expires ? 'q' : 'Q', resv->expires ?
+               (resv->expires - CurrentTime) / 60 : 0L, resv->mask,
+               resv->reason ? resv->reason : "No reason", "");
+    return;
   }
 
   DupString(orig_parv1, parv[1]);
@@ -129,112 +122,56 @@ mo_testline(struct Client *client_p, struct Client *source_p,
 
   split_nuh(&nuh);
 
-  t = parse_netmask(given_host, &ip, &host_mask);
-
-  if (t != HM_HOST)
+  if (parse_netmask(given_host, &ip, NULL) != HM_HOST)
   {
-    aconf = find_dline_conf(&ip, 
-#ifdef IPV6 
-			    (t == HM_IPV6) ? AF_INET6 : AF_INET
-#else
-			    AF_INET
-#endif
-			    );
-    if (aconf != NULL)
+    if ((dline = find_dline(&ip)))
     {
-      conf = aconf->conf_ptr;
-
-      if (aconf->status & CONF_EXEMPTDLINE)
-      {
-	sendto_one(source_p,
-		   ":%s NOTICE %s :Exempt D-line host [%s] reason [%s]",
-		   me.name, source_p->name, aconf->host, aconf->reason);
-	++matches;
-      }
-      else
-      {
-	sendto_one(source_p,
-		   form_str(RPL_TESTLINE),
-		   me.name, source_p->name,
-		   IsConfTemporary(aconf) ? 'd' : 'D',
-		   IsConfTemporary(aconf) ? ((aconf->hold - CurrentTime) / 60)
-		   : 0L,
-		   aconf->host, aconf->reason, aconf->oper_reason);
-	++matches;
-      }
-    }
-  }
-
-  aconf = find_kline_conf(given_host, given_name, &ip, t);
-  if ((aconf != NULL) && (aconf->status & CONF_KILL))
-  {
-    snprintf(userhost, sizeof(userhost), "%s@%s", aconf->user, aconf->host);
-    sendto_one(source_p, form_str(RPL_TESTLINE),
-	       me.name, source_p->name,
-	       IsConfTemporary(aconf) ? 'k' : 'K',
-	       IsConfTemporary(aconf) ? ((aconf->hold - CurrentTime) / 60)
-	       : 0L,
-	       userhost, 
-	       aconf->passwd ? aconf->passwd : "No reason",
-	       aconf->oper_reason ? aconf->oper_reason : "");
-    ++matches;
-  }
-
-
-  if (t != HM_HOST)
-    aconf = find_address_conf(given_host, given_name, &ip, 
-#ifdef IPV6
-                              (t == HM_IPV6) ? AF_INET6 : AF_INET,
-#else
-                              AF_INET,
-#endif
-                              parv[2]);
-  else
-    aconf = find_address_conf(given_host, given_name, NULL, 0, parv[2]);
-                 
-  if (aconf != NULL)
-  {
-    conf = aconf->conf_ptr;
-
-    snprintf(userhost, sizeof(userhost), "%s@%s", aconf->user, aconf->host);
-
-    if (aconf->status & CONF_CLIENT)
-    {
-      sendto_one(source_p, form_str(RPL_TESTLINE),
-		 me.name, source_p->name,
-		 'I', 0L, userhost,
-		 aconf->class_ptr ? aconf->class_ptr->name : "<default>", "");
+      sendto_one(source_p, form_str(RPL_TESTLINE), me.name,
+                 source_p->name, dline->access.expires ? 'd' : 'D',
+                 dline->access.expires ?
+                 (dline->access.expires - CurrentTime) / 60 : 0,
+                 dline->access.host, dline->reason ? dline->reason :
+                 "No reason", dline->oper_reason ? dline->oper_reason : "");
       ++matches;
     }
-    else if (aconf->status & CONF_KILL)
+
+    if ((exempt = find_exempt(&ip)))
     {
-      sendto_one(source_p, form_str(RPL_TESTLINE),
-		 me.name, source_p->name,
-		 IsConfTemporary(aconf) ? 'k' : 'K',
-		 IsConfTemporary(aconf) ? ((aconf->hold - CurrentTime) / 60)
-		 : 0L,
-		 userhost, aconf->passwd ? aconf->passwd : "No reason",
-		 aconf->oper_reason ? aconf->oper_reason : "");
+      sendto_one(source_p,
+                 ":%s NOTICE %s :Exempt D-line host [%s]",
+                 me.name, source_p->name, exempt->host);
       ++matches;
     }
   }
 
-  conf = find_matching_name_conf(NRESV_TYPE, given_name, NULL, NULL, 0);
-
-  if (conf != NULL)
+  if ((kline = find_kline(given_name, given_host, NULL, &ip)))
   {
-    struct MatchItem *mconf = &conf->conf.MatchItem;
+    snprintf(userhost, sizeof(userhost), "%s@%s",
+             kline->access.user, kline->access.host);
 
-    sendto_one(source_p, form_str(RPL_TESTLINE),
-               me.name, source_p->name,
-               'Q', 0L,
-               conf->name, 
-               mconf->reason ? mconf->reason : "No reason",
-               mconf->oper_reason ? mconf->oper_reason : "");
+    sendto_one(source_p, form_str(RPL_TESTLINE), me.name,
+               source_p->name, kline->access.expires ? 'k' : 'K',
+               kline->access.expires ?
+               (kline->access.expires - CurrentTime) / 60 : 0L,
+               userhost, kline->reason ? kline->reason : "No reason",
+               kline->oper_reason ? kline->oper_reason : "");
     ++matches;
   }
 
-  if (matches == 0)
+  if ((iline = find_iline(given_name, given_host, &ip, NULL)))
+  {
+    snprintf(userhost, sizeof(userhost), "%s@%s",
+             iline->access.user, iline->access.host);
+
+    sendto_one(source_p, form_str(RPL_TESTLINE), me.name,
+               source_p->name, iline->access.expires ? 'i' : 'I',
+               iline->access.expires ?
+               ((iline->access.expires - CurrentTime) / 60) : 0L,
+               userhost, iline->class_ptr->name, "");
+    ++matches;
+  }
+
+  if (!matches)
     sendto_one(source_p, form_str(RPL_NOTESTLINE),
                me.name, source_p->name, orig_parv1);
 
@@ -258,8 +195,7 @@ static void
 mo_testgecos(struct Client *client_p, struct Client *source_p,
             int parc, char *parv[])
 {
-  struct ConfItem *conf = NULL;
-  struct MatchItem *xconf = NULL;
+  struct GecosConf *conf;
 
   if (EmptyString(parv[1]))
   {
@@ -268,15 +204,11 @@ mo_testgecos(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if ((conf = find_matching_name_conf(XLINE_TYPE, parv[1],
-                                      NULL, NULL, 0)) != NULL)
-  {
-    xconf = &conf->conf.MatchItem;
+  if ((conf = find_gecos_ban(parv[1])))
     sendto_one(source_p, form_str(RPL_TESTLINE),
-               me.name, source_p->name, 'X', 0L,
-               conf->name, xconf->reason ? xconf->reason : "X-lined",
-               xconf->oper_reason ? xconf->oper_reason : "");
-  }
+               me.name, source_p->name, conf->expires ? 'x' : 'X',
+               conf->expires ? (conf->expires - CurrentTime) / 60 : 0L,
+               conf->mask, conf->reason ? conf->reason : "No reason", "");
   else
     sendto_one(source_p, form_str(RPL_NOTESTLINE),
                me.name, source_p->name, parv[1]);

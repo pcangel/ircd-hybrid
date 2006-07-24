@@ -28,7 +28,6 @@
 #include "client.h"
 #include "common.h"
 #include "ircd.h"
-#include "hostmask.h"
 #include "numeric.h"
 #include "parse_aline.h"
 #include "send.h"
@@ -37,7 +36,7 @@
 #include "s_serv.h"
 #include "msg.h"
 #include "parse.h"
-#include "resv.h"
+#include "s_user.h"
 
 static void mo_rxline(struct Client *, struct Client *, int, char *[]);
 static void ms_rxline(struct Client *, struct Client *, int, char *[]);
@@ -47,7 +46,6 @@ static void ms_unrxline(struct Client *, struct Client *, int, char *[]);
 static int valid_xline(struct Client *, char *, char *, int);
 static void write_rxline(struct Client *, const char *, char *, time_t);
 static void remove_xline(struct Client *, char *);
-static int remove_txline(const char *);
 
 struct Message rxline_msgtab = {
   "RXLINE", 0, 0, 2, 0, MFLG_SLOW, 0,
@@ -74,20 +72,13 @@ CLEANUP_MODULE
 static int
 already_placed_rxline(struct Client *source_p, const char *gecos)
 {
-  const dlink_node *ptr = NULL;
+  const struct GecosConf *xline = find_exact_xline(gecos, YES);
 
-  DLINK_FOREACH(ptr, rxconf_items.head)
+  if (xline)
   {
-    const struct ConfItem *aptr = ptr->data;
-    const struct MatchItem *match_item = &aptr->conf.MatchItem;
-
-    if (!strcmp(gecos, aptr->name))
-    {
-      sendto_one(source_p, ":%s NOTICE %s :[%s] already RX-Lined by [%s] - %s",
-                 me.name, source_p->name, gecos,
-                 aptr->name, match_item->reason);
-      return 1;
-    }
+    sendto_one(source_p, ":%s NOTICE %s :[%s] already RX-Lined [%s]",
+               me.name, source_p->name, xline->mask, xline->reason);
+    return 1;
   }
 
   return 0;
@@ -129,7 +120,7 @@ mo_rxline(struct Client *client_p, struct Client *source_p,
                        "RXLINE %s %s %d :%s",
                        target_server, gecos, (int)tkline_time, reason);
 
-    /* Allow ON to apply local rxline as well if it matches */
+    // Allow ON to apply local rxline as well if it matches
     if (!match(target_server, me.name))
       return;
   }
@@ -170,7 +161,7 @@ ms_rxline(struct Client *client_p, struct Client *source_p,
     return;
 
   t_sec = atoi(parv[3]);
-  /* XXX kludge! */
+  // XXX kludge!
   if (t_sec < 3)
     t_sec = 0;
 
@@ -181,9 +172,8 @@ ms_rxline(struct Client *client_p, struct Client *source_p,
   if (!match(parv[1], me.name))
     return;
 
-  if (find_matching_name_conf(ULINE_TYPE, source_p->servptr->name,
-                              source_p->username, source_p->host,
-                              SHARED_XLINE))
+  if (find_shared(source_p->servptr->name, source_p->username, source_p->host,
+                  source_p->sockhost, SHARED_XLINE))
     if (!already_placed_rxline(source_p, parv[2]))
       write_rxline(source_p, parv[2], parv[4], t_sec);
 }
@@ -208,11 +198,10 @@ mo_unrxline(struct Client *client_p, struct Client *source_p,
 
   if (target_server != NULL)
   {
-
     sendto_match_servs(source_p, target_server, CAP_CLUSTER,
                        "UNRXLINE %s %s", target_server, gecos);
 
-    /* Allow ON to apply local unrxline as well if it matches */
+    // Allow ON to apply local unrxline as well if it matches
     if (!match(target_server, me.name))
       return;
   }
@@ -245,9 +234,8 @@ ms_unrxline(struct Client *client_p, struct Client *source_p,
   if (!IsClient(source_p) || !match(parv[1], me.name))
     return;
 
-  if (find_matching_name_conf(ULINE_TYPE, source_p->servptr->name,
-                              source_p->username, source_p->host,
-                              SHARED_UNXLINE))
+  if (find_shared(source_p->servptr->name, source_p->username, source_p->host,
+                  source_p->sockhost, SHARED_UNXLINE))
     remove_xline(source_p, parv[2]);
 }
 
@@ -278,8 +266,9 @@ valid_xline(struct Client *source_p, char *gecos, char *reason, int warn)
   if (!valid_wild_card_simple(gecos))
   {
     if (warn)
-      sendto_one(source_p, ":%s NOTICE %s :Please include at least %d non-wildcard characters with the rxline",
-                 me.name, source_p->name, ConfigFileEntry.min_nonwildcard_simple);
+      sendto_one(source_p, ":%s NOTICE %s :Please include at least %d "
+                 "non-wildcard characters with the rxline",
+                 me.name, source_p->name, General.min_nonwildcard_simple);
 
     return 0;
   }
@@ -297,8 +286,7 @@ static void
 write_rxline(struct Client *source_p, const char *gecos, char *reason,
              time_t tkline_time)
 {
-  struct ConfItem *conf = NULL;
-  struct MatchItem *match_item = NULL;
+  struct GecosConf *conf;
   const char *current_date = NULL;
   time_t cur_time = 0;
   pcre *exp_gecos = NULL;
@@ -311,14 +299,11 @@ write_rxline(struct Client *source_p, const char *gecos, char *reason,
     return;
   }
 
-  conf = make_conf_item(RXLINE_TYPE);
-  conf->regexpname = exp_gecos;
-
-  match_item = &conf->conf.MatchItem;
-
-  DupString(conf->name, gecos);
-  DupString(match_item->reason, reason);
-  DupString(match_item->oper_reason, "");	/* XXX */
+  conf = MyMalloc(sizeof(*conf));
+  DupString(conf->mask, gecos);
+  DupString(conf->reason, reason);
+  conf->regex = exp_gecos;
+  dlinkAdd(conf, &conf->node, &gecos_confs);
 
   cur_time = CurrentTime;
   current_date = smalldate(cur_time);
@@ -328,15 +313,14 @@ write_rxline(struct Client *source_p, const char *gecos, char *reason,
     sendto_realops_flags(UMODE_ALL, L_ALL,
                          "%s added temporary %d min. RX-Line for [%s] [%s]",
                          get_oper_name(source_p), (int)tkline_time/60,
-                         conf->name, match_item->reason);
+                         conf->mask, conf->reason);
     sendto_one(source_p, ":%s NOTICE %s :Added temporary %d min. RX-Line [%s]",
                MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
-               source_p->name, (int)tkline_time/60, conf->name);
+               source_p->name, (int)tkline_time/60, conf->mask);
     ilog(L_TRACE, "%s added temporary %d min. RX-Line for [%s] [%s]",
          get_oper_name(source_p), (int)tkline_time/60,
-         conf->name, match_item->reason);
-    match_item->hold = CurrentTime + tkline_time;
-    add_temp_line(conf);
+         conf->mask, conf->reason);
+    conf->expires = CurrentTime + tkline_time;
   }
   else
   {
@@ -344,14 +328,14 @@ write_rxline(struct Client *source_p, const char *gecos, char *reason,
 
     sendto_realops_flags(UMODE_ALL, L_ALL,
                          "%s added RX-Line for [%s] [%s]",
-                         get_oper_name(source_p), conf->name,
-                         match_item->reason);
+                         get_oper_name(source_p), conf->mask,
+                         conf->reason);
     sendto_one(source_p,
                ":%s NOTICE %s :Added RX-Line [%s] [%s] to %s",
-               me.name, source_p->name, conf->name,
-               match_item->reason, ConfigFileEntry.rxlinefile);
+               me.name, source_p->name, conf->mask,
+               conf->reason, ServerState.rxlinefile);
     ilog(L_TRACE, "%s added X-Line for [%s] [%s]",
-         get_oper_name(source_p), conf->name, match_item->reason);
+         get_oper_name(source_p), conf->mask, conf->reason);
   }
 
   rehashed_klines = 1;
@@ -360,8 +344,16 @@ write_rxline(struct Client *source_p, const char *gecos, char *reason,
 static void
 remove_xline(struct Client *source_p, char *gecos)
 {
-  /* XXX use common temporary un function later */
-  if (remove_txline(gecos))
+  struct GecosConf *conf = find_exact_xline(gecos, YES);
+
+  if (!conf)
+  {
+    sendto_one(source_p, ":%s NOTICE %s :No RX-Line for %s",
+               me.name, source_p->name, gecos);
+    return;
+  }
+
+  if (conf->expires)
   {
     sendto_one(source_p,
                ":%s NOTICE %s :Un-rxlined [%s] from temporary RX-Lines",
@@ -371,10 +363,8 @@ remove_xline(struct Client *source_p, char *gecos)
                          get_oper_name(source_p), gecos);
     ilog(L_NOTICE, "%s removed temporary RX-Line for [%s]",
          get_oper_name(source_p), gecos);
-    return;
   }
-
-  if (remove_conf_line(RXLINE_TYPE, source_p, gecos, NULL) > 0)
+  else
   {
     sendto_one(source_p, ":%s NOTICE %s :RX-Line for [%s] is removed",
                me.name, source_p->name, gecos);
@@ -383,36 +373,13 @@ remove_xline(struct Client *source_p, char *gecos)
                          get_oper_name(source_p), gecos);
     ilog(L_NOTICE, "%s removed RX-Line for [%s]",
          get_oper_name(source_p), gecos);
-    return;
+
+    remove_conf_line(source_p, 123, gecos, NULL);
   }
 
-  sendto_one(source_p, ":%s NOTICE %s :No RX-Line for %s",
-             me.name, source_p->name, gecos);
-}
-
-/* static int remove_tkline_match(const char *host, const char *user)
- *
- * Inputs:	gecos
- * Output:	returns YES on success, NO if no tkline removed.
- * Side effects: Any matching tklines are removed.
- */
-static int
-remove_txline(const char *const gecos)
-{
-  dlink_node *ptr = NULL;
-
-  DLINK_FOREACH(ptr, temporary_rxlines.head)
-  {
-    struct ConfItem *conf = ptr->data;
-
-    if (!strcmp(gecos, conf->name))
-    {
-      dlinkDelete(ptr, &temporary_rxlines);
-      free_dlink_node(ptr);
-      delete_conf_item(conf);
-      return 1;
-    }
-  }
-
-  return 0;
+  dlinkDelete(&conf->node, &gecos_confs);
+  MyFree(conf->mask);
+  MyFree(conf->reason);
+  MyFree(conf->regex);
+  MyFree(conf);
 }

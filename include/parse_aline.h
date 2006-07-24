@@ -28,6 +28,7 @@
 EXTERN void cluster_a_line(struct Client *,
   const char *, int, int, const char *,...);
 EXTERN int valid_wild_card(struct Client *, int, int, ...);
+EXTERN int valid_wild_card_simple(const char *);
 
 #define CLEANUP_TKLINES_TIME 60
 #define TK_SECONDS 0

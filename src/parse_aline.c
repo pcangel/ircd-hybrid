@@ -27,20 +27,36 @@
 #include "ircd_defs.h"
 #include "parse_aline.h"
 #include "s_serv.h"
-#include "resv.h"
 #include "channel.h"
 #include "client.h"
 #include "common.h"
 #include "hash.h"
 #include "ircd.h"
 #include "listener.h"
-#include "hostmask.h"
 #include "numeric.h"
 #include "send.h"
 #include "userhost.h"
 #include "s_user.h"
 
 static int find_user_host(struct Client *, char *, char *, char *, unsigned int);
+
+int
+valid_wild_card_simple(const char *data)
+{
+  const unsigned char *p = (const unsigned char *)data;
+  int nonwild = 0;
+
+  while (*p != '\0')
+  {
+    if ((*p == '\\' && *++p) || (*p && !IsMWildChar(*p)))
+      if (++nonwild == General.min_nonwildcard_simple)
+        return 1;
+    if (*p != '\0')
+      ++p;
+  }
+
+  return 0;
+}
 
 /* parse_aline
  *

@@ -99,7 +99,7 @@ m_version(struct Client *client_p, struct Client *source_p,
   sendto_one(source_p, form_str(RPL_VERSION),
              me.name, source_p->name, ircd_version, serno,
              me.name, confopts(source_p), serveropts);
-  send_message_file(source_p, &isupportFile);
+  send_message_file(source_p, isupportFile);
 }
 
 /*
@@ -119,7 +119,7 @@ mo_version(struct Client *client_p, struct Client *source_p,
   sendto_one(source_p, form_str(RPL_VERSION), me.name, parv[0], ircd_version, 
   	     serno, me.name, confopts(source_p), serveropts);
 
-  send_message_file(source_p, &isupportFile);
+  send_message_file(source_p, isupportFile);
 }
 
 /*
@@ -140,7 +140,7 @@ ms_version(struct Client *client_p, struct Client *source_p,
              ID_or_name(source_p, client_p),
              ircd_version, serno,
              me.name, confopts(source_p), serveropts);
-  send_message_file(source_p, &isupportFile);
+  send_message_file(source_p, isupportFile);
 }
 
 /* confopts()

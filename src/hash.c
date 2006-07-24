@@ -30,7 +30,6 @@
 #include "handlers.h"
 #include "conf/modules.h"
 #include "hash.h"
-#include "resv.h"
 #include "userhost.h"
 #include "ircd.h"
 #include "numeric.h"

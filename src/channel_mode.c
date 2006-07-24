@@ -29,7 +29,6 @@
 #include "client.h"
 #include "common.h"
 #include "hash.h"
-#include "hostmask.h"
 #include "ircd.h"
 #include "numeric.h"
 #include "s_serv.h"             /* captab */

@@ -30,6 +30,11 @@ struct ResvConf
   dlink_node node;
 };
 
+EXTERN dlink_list cresv_confs;
+EXTERN dlink_list nresv_confs;
+
+EXTERN struct ResvConf *do_find_resv(dlink_list *, const char *,
+  int (*) (const char *, const char *));
 EXTERN struct ResvConf *find_nick_resv(const char *);
 EXTERN struct ResvConf *find_channel_resv(const char *);
 

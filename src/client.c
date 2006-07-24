@@ -38,7 +38,6 @@
 #include "send.h"
 #include "whowas.h"
 #include "s_user.h"
-#include "hostmask.h"
 #include "listener.h"
 #include "userhost.h"
 #include "watch.h"

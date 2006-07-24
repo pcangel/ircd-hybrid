@@ -241,16 +241,36 @@ after_cluster(void)
  *   serv  -  server that is trying to feed us
  *   user  -  username of the oper
  *   host  -  hostname of the oper
- *   ip    -  IP address of the oper
+ *   addr  -  IP address of the oper
  *   type  -  operation type, e.g. SHARED_KLINE
  * output: pointer to a shared conf or NULL
  */
 struct SharedConf *
 find_shared(const char *serv, const char *user, const char *host,
-            const struct irc_ssaddr *ip, int type)
+            const char *addr, int type)
 {
   dlink_node *ptr;
   struct SharedConf *conf;
+  struct irc_ssaddr ip;
+
+  ip.ss.sin_family = AF_UNSPEC;
+
+  if (!EmptyString(addr))
+  {
+    struct addrinfo hints = {0}, *res;
+
+    hints.ai_family   = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags    = AI_NUMERICHOST;
+
+    if (!irc_getaddrinfo(addr, NULL, &hints, &res))
+    {
+      memcpy(&ip, res->ai_addr, res->ai_addrlen);
+      ip.ss.sin_family = res->ai_family;
+      ip.ss_len = res->ai_addrlen;
+      irc_freeaddrinfo(res);
+    }
+  }
 
   DLINK_FOREACH(ptr, shared_confs.head)
   {
@@ -259,11 +279,12 @@ find_shared(const char *serv, const char *user, const char *host,
         (user && !match(conf->user, user)))
       continue;
 
-    if (ip && conf->ip.ss.sin_family != AF_UNSPEC && (
+    if (ip.ss.sin_family != AF_UNSPEC &&
+        conf->ip.ss.sin_family != AF_UNSPEC && (
 #ifdef IPV6
         (conf->ip.ss.sin_family == AF_INET6) ? match_ipv6 :
 #endif
-        match_ipv4)(ip, &conf->ip, conf->ip.ss_port))
+        match_ipv4)(&ip, &conf->ip, conf->ip.ss_port))
       return conf;
     if (host && match(conf->host, host))
       return conf;

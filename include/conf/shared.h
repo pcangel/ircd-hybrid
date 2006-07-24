@@ -54,7 +54,7 @@ EXTERN dlink_list cluster_confs;
 EXTERN dlink_list shared_confs;
 
 EXTERN struct SharedConf *find_shared(const char *, const char *, const char *,
-  const struct irc_ssaddr *, int);
+  const char *, int);
 
 #ifdef IN_CONF_C
 void init_shared(void);

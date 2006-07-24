@@ -47,11 +47,12 @@ static void report_kline(struct KillConf *, struct Client *);
  * inputs: pointer to KillConf
  * output: none
  */
-static void
+void
 free_kline(struct KillConf *conf)
 {
   MyFree(conf->regexuser);
   MyFree(conf->regexhost);
+  MyFree(conf->oper_reason);
   MyFree(conf->reason);
   acb_generic_free(&conf->access);
 }
@@ -265,6 +266,41 @@ find_kline(const char *user, const char *host, const char *sockhost,
   }
 
   return best;
+}
+
+static int
+verify_kline_exact(struct AccessConf *conf, void *ptr)
+{
+  struct split_nuh_item *uh = ptr;
+  return !irccmp(conf->host, uh->hostptr) &&
+         !irccmp(conf->user, uh->userptr);
+}
+
+struct KillConf *
+find_exact_kline(const char *user, const char *host)
+{
+  struct split_nuh_item uh;
+
+  uh.userptr = (char*) user;
+  uh.hostptr = (char*) host;
+
+  return (struct KillConf *) find_access_conf(acb_type_kline, user, host, NULL,
+    verify_kline_exact, &uh);
+}
+
+struct KillConf *
+find_exact_rkline(const char *user, const char *host)
+{
+  dlink_node *ptr;
+
+  DLINK_FOREACH(ptr, rkline_confs.head)
+  {
+    struct KillConf *conf = ptr->data;
+    if (!irccmp(conf->access.host, host) && !irccmp(conf->access.user, user))
+      return conf;
+  }
+
+  return NULL;
 }
 
 /*

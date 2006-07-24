@@ -31,6 +31,9 @@ struct GecosConf
   dlink_node node;
 };
 
+EXTERN dlink_list gecos_confs;
+
+EXTERN struct GecosConf *find_exact_xline(const char *, int);
 EXTERN struct GecosConf *find_gecos_ban(const char *);
 
 #ifdef IN_CONF_C

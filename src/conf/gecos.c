@@ -29,8 +29,9 @@
 
 // TODO: Add callbacks for (r)xline.conf support with default handlers
 
+dlink_list gecos_confs = {0};
+
 static dlink_node *hreset, *hexpire, *hbanned;
-static dlink_list gecos_confs = {0};
 static struct GecosConf tmpgecos = {0};
 static char regex_flag = NO;
 
@@ -116,6 +117,24 @@ find_gecos_ban(const char *what)
     conf = ptr->data;
     if (conf->regex ? !ircd_pcre_exec(conf->regex, what) :
         match(conf->mask, what))
+      return conf;
+  }
+
+  return NULL;
+}
+
+struct GecosConf *
+find_exact_xline(const char *what, int regex)
+{
+  dlink_node *ptr;
+  struct GecosConf *conf;
+
+  DLINK_FOREACH(ptr, gecos_confs.head)
+  {
+    conf = ptr->data;
+    if (!!conf->regex != regex)
+      continue;
+    if (!irccmp(conf->mask, what))
       return conf;
   }
 

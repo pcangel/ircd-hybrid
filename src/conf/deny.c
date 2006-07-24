@@ -46,6 +46,7 @@ static void
 free_dline(struct DenyConf *dline)
 {
   MyFree(dline->reason);
+  MyFree(dline->oper_reason);
   acb_generic_free(&dline->access);
 }
 
@@ -61,6 +62,7 @@ static void
 before_deny(void)
 {
   MyFree(tmpdeny.reason);
+  MyFree(tmpdeny.oper_reason);
   MyFree(tmpdeny.access.host);
   memset(&tmpdeny, 0, sizeof(tmpdeny));
   tmpdeny.access.type = acb_type_deny;

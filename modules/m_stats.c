@@ -31,13 +31,11 @@
 #include "listener.h"    /* show_ports */
 #include "ircd_handler.h"
 #include "msg.h"         /* Message */
-#include "hostmask.h"
 #include "numeric.h"     /* ERR_xxx */
 #include "send.h"        /* sendto_one */
 #include "s_serv.h"      /* hunt_server */
 #include "s_user.h"      /* show_opers */
 #include "parse.h"
-#include "resv.h"  /* report_resv */
 #include "whowas.h"
 #include "watch.h"
 #include "channel.h"

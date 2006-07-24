@@ -26,6 +26,7 @@ struct DenyConf
 {
   struct AccessConf access;
   char *reason;
+  char *oper_reason;
 };
 
 EXTERN int acb_type_deny;

@@ -30,9 +30,10 @@
 
 // TODO: Add callbacks for ?resv.conf support with default handlers
 
+dlink_list nresv_confs = {0};
+dlink_list cresv_confs = {0};
+
 static dlink_node *hreset, *hexpire;
-static dlink_list nresv_confs = {0};
-static dlink_list cresv_confs = {0};
 static char *tmpreason = NULL;
 
 /*
@@ -115,7 +116,7 @@ expire_resv(va_list args)
  *   func  -  compare function
  * output: pointer to matching ResvConf or NULL
  */
-static struct ResvConf *
+struct ResvConf *
 do_find_resv(dlink_list *list, const char *what,
              int (* func) (const char *, const char *))
 {

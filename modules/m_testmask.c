@@ -41,7 +41,6 @@
 #include "restart.h"
 #include "send.h"
 #include "msg.h"
-#include "hostmask.h"
 #include "numeric.h"
 #include "parse.h"
 #include "conf/modules.h"
@@ -100,12 +99,12 @@ mo_testmask(struct Client *client_p, struct Client *source_p,
       continue;
 
     if (match(given_user, target_p->username) &&
-	match(given_host, target_p->host))
+        match(given_host, target_p->host))
     {
       if (MyConnect(target_p))
-	local_count++;
+        local_count++;
       else
-	remote_count++;
+        remote_count++;
     }
   }
 
