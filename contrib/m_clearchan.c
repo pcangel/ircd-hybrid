@@ -36,6 +36,7 @@
 #include "parse.h"
 #include "conf/modules.h"
 #include "common.h"
+#include "s_user.h"
 
 static void mo_clearchan(struct Client *, struct Client *, int, char *[]);
 static void kick_list(struct Client *, struct Channel *);

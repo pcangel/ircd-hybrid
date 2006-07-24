@@ -55,6 +55,7 @@ typedef struct MessageFile MessageFile;
 EXTERN MessageFile motd;
 EXTERN MessageFile opermotd;
 EXTERN MessageFile linksfile;
+EXTERN MessageFile *isupportFile;
 
 struct Client;
 

@@ -48,6 +48,7 @@
 /* END OF MODULE CONFIGURATION */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "hash.h"
@@ -61,7 +62,6 @@
 #include "resv.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "common.h"
 #include "packet.h"
 

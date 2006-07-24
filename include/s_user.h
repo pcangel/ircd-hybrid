@@ -65,5 +65,6 @@ EXTERN int valid_username(const char *);
 EXTERN void add_isupport(const char *, const char *, int);
 EXTERN void delete_isupport(const char *);
 EXTERN void rebuild_isupport_message_line(void);
+EXTERN char *get_oper_name(const struct Client *);
 
 #endif

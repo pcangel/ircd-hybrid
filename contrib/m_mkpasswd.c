@@ -10,14 +10,15 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
+#include "client.h"
 #include "ircd.h"
 #include "numeric.h"
 #include "s_serv.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 static void m_mkpasswd(struct Client *, struct Client *, int, char *[]);
 static const char *m_mkpasswd_des(void);
@@ -55,7 +56,7 @@ m_mkpasswd(struct Client *client_p, struct Client *source_p,
 
   if (!IsOper(source_p))
   {
-    if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+    if ((last_used + General.pace_wait) > CurrentTime)
     {
       sendto_one(source_p, form_str(RPL_LOAD2HI),
                  me.name, source_p->name);

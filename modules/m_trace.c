@@ -170,8 +170,7 @@ do_actual_trace(va_list args)
   int parc = va_arg(args, int);
   char **parv = va_arg(args, char **);
   struct Client *target_p = NULL;
-  struct ConfItem *conf;
-  struct ClassItem *cltmp;
+  struct Class *conf;
   int doall = 0;
   int wilds, dow;
   dlink_node *ptr;
@@ -215,7 +214,7 @@ do_actual_trace(va_list args)
     if (target_p && IsClient(target_p)) 
     {
       name = get_client_name(target_p, HIDE_IP);
-      class_name = get_client_className(target_p);
+      class_name = target_p->localClient->class->name;
 
       if (IsOper(target_p))
       {
@@ -229,7 +228,7 @@ do_actual_trace(va_list args)
       {
         sendto_one(source_p,form_str(RPL_TRACEUSER),
                    from, to, class_name, name, 
-		   IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost,
+                   IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost,
                    CurrentTime - target_p->lasttime,
                    CurrentTime - target_p->localClient->last);
       }
@@ -282,13 +281,12 @@ do_actual_trace(va_list args)
     report_this_status(source_p, target_p, dow);
   }
 
-  DLINK_FOREACH(ptr, class_items.head)
+  DLINK_FOREACH(ptr, class_list.head)
   {
     conf = ptr->data;
-    cltmp = &conf->conf.ClassItem;
-    if (CurrUserCount(cltmp) > 0)
+    if (conf->cur_clients > 0)
       sendto_one(source_p, form_str(RPL_TRACECLASS),
-		 from, to, conf->name, CurrUserCount(cltmp));
+		 from, to, conf->name, conf->cur_clients);
   }
 
   sendto_one(source_p, form_str(RPL_ENDOFTRACE), from, to, tname);
@@ -337,14 +335,14 @@ report_this_status(struct Client *source_p, struct Client *target_p, int dow)
   }
 
   name = get_client_name(target_p, HIDE_IP);
-  class_name = get_client_className(target_p);
+  class_name = target_p->localClient->class->name;
 
   switch (target_p->status)
   {
     case STAT_CONNECTING:
       sendto_one(source_p, form_str(RPL_TRACECONNECTING),
                  from, to, class_name, 
-		 IsOperAdmin(source_p) ? name : target_p->name);
+                 IsOperAdmin(source_p) ? name : target_p->name);
       break;
     case STAT_HANDSHAKE:
       sendto_one(source_p, form_str(RPL_TRACEHANDSHAKE),
@@ -367,7 +365,7 @@ report_this_status(struct Client *source_p, struct Client *target_p, int dow)
 	   (MyClient(source_p) || !(dow && IsInvisible(target_p))))
 	  || !dow || IsOper(target_p))
 	{
-          if (IsAdmin(target_p) && !ConfigFileEntry.hide_spoof_ips)
+          if (IsAdmin(target_p) && !General.hide_spoof_ips)
 	    sendto_one(source_p, form_str(RPL_TRACEOPERATOR),
                        from, to, class_name, name,
                        IsOperAdmin(source_p) ? target_p->sockhost : "255.255.255.255",
@@ -376,7 +374,7 @@ report_this_status(struct Client *source_p, struct Client *target_p, int dow)
 		       
 	  else if (IsOper(target_p))
           {
-	    if (ConfigFileEntry.hide_spoof_ips)
+	    if (General.hide_spoof_ips)
 	      sendto_one(source_p, form_str(RPL_TRACEOPERATOR),
 		         from, to, class_name, name, 
 		         IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost,
@@ -398,7 +396,7 @@ report_this_status(struct Client *source_p, struct Client *target_p, int dow)
 	    else
 	      format_str = form_str(RPL_TRACEUSER);
 
-            if (ConfigFileEntry.hide_spoof_ips)
+            if (General.hide_spoof_ips)
 	      sendto_one(source_p, format_str,
 		         from, to, class_name, name,
                          IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost,

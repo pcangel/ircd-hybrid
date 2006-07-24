@@ -29,6 +29,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "common.h"
@@ -36,7 +37,6 @@
 #include "send.h"
 #include "parse.h"
 #include "msg.h"
-#include "conf/modules.h"
 #include "hash.h"
 #include "s_serv.h"
 #include "channel.h"
@@ -160,10 +160,10 @@ set_topic(struct Client *source_p, struct Channel *chptr, time_t topicts,
 
   set_channel_topic(chptr, topic, topicwho, topicts);
 
-  /* Only send TOPIC to channel if it's different */
+  // Only send TOPIC to channel if it's different
   if (new_topic)
     sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s TOPIC %s :%s",
-                         ConfigServerHide.hide_servers ? me.name : source_p->name,
+                         ServerHide.hide_servers ? me.name : source_p->name,
                          chptr->chname, chptr->topic == NULL ? "" : chptr->topic);
 
   sendto_server(source_p, NULL, chptr, CAP_TBURST, NOCAPS,

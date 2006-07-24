@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -32,7 +33,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "channel.h"
 #include "channel_mode.h"
 #include "hash.h"
@@ -269,12 +269,12 @@ build_target_list(int p_or_n, const char *command, struct Client *client_p,
 
     got_target = YES;
 
-    if (ntargets >= ConfigFileEntry.max_targets)
+    if (ntargets >= General.max_targets)
     {
       sendto_one(source_p, form_str(ERR_TOOMANYTARGETS),
                  ID_or_name(&me, client_p),
                  ID_or_name(source_p, client_p), nick,
-                 ConfigFileEntry.max_targets);
+                 General.max_targets);
       return 1;
     }
 
@@ -590,7 +590,7 @@ msg_client(int p_or_n, const char *command, struct Client *source_p,
     {
       // Here is the anti-flood bot/spambot code -db
       if (accept_message(source_p, target_p) ||
-          (IsOper(source_p) && ConfigFileEntry.opers_bypass_callerid))
+          (IsOper(source_p) && General.opers_bypass_callerid))
       {
         sendto_one(target_p, ":%s!%s@%s %s %s :%s",
                    source_p->name, source_p->username,
@@ -605,7 +605,7 @@ msg_client(int p_or_n, const char *command, struct Client *source_p,
 		     ID_or_name(source_p, source_p->from), target_p->name);
 
         if ((target_p->localClient->last_caller_id_time +
-             ConfigFileEntry.caller_id_wait) < CurrentTime)
+             General.caller_id_wait) < CurrentTime)
         {
           if (p_or_n != NOTICE)
             sendto_one(source_p, form_str(RPL_TARGNOTIFY),
@@ -662,7 +662,7 @@ flood_attack_client(int p_or_n, struct Client *source_p,
   int delta;
 
   if (GlobalSetOptions.floodcount && MyConnect(target_p) &&
-      IsClient(source_p) && !IsConfCanFlood(source_p))
+      IsClient(source_p) && !IsCanFlood(source_p))
   {
     if ((target_p->localClient->first_received_message_time + 1) < CurrentTime)
     {
@@ -720,7 +720,7 @@ flood_attack_channel(int p_or_n, struct Client *source_p,
 {
   int delta;
 
-  if (GlobalSetOptions.floodcount && !IsConfCanFlood(source_p))
+  if (GlobalSetOptions.floodcount && !IsCanFlood(source_p))
   {
     if ((chptr->first_received_message_time + 1) < CurrentTime)
     {

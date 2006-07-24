@@ -44,6 +44,7 @@ struct Class
 typedef void (* ENUMCLASSFUNC) (struct Class *);
 
 EXTERN struct Class *default_class;
+EXTERN dlink_list class_list;
 
 EXTERN struct Class *ref_class_by_name(const char *);
 EXTERN struct Class *ref_class_by_ptr(struct Class *);

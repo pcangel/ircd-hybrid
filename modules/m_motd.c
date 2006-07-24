@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "client.h"
 #include "motd.h"
 #include "ircd.h"
@@ -32,7 +33,6 @@
 #include "msg.h"
 #include "s_serv.h"     /* hunt_server */
 #include "parse.h"
-#include "conf/modules.h"
 
 static void mr_motd(struct Client *, struct Client *, int, char **);
 static void m_motd(struct Client*, struct Client*, int, char**);
@@ -57,7 +57,7 @@ do_motd(va_list args)
 {
   struct Client *source_p = va_arg(args, struct Client *);
 
-  send_message_file(source_p, &ConfigFileEntry.motd);
+  send_message_file(source_p, &motd);
   return NULL;
 }
 
@@ -82,7 +82,7 @@ mr_motd(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
 {
   /* allow unregistered clients to see the motd, but exit them */
-  send_message_file(source_p, &ConfigFileEntry.motd);
+  send_message_file(source_p, &motd);
   exit_client(source_p, source_p, "Client Exit after MOTD");
 }
 
@@ -97,7 +97,7 @@ m_motd(struct Client *client_p, struct Client *source_p,
 {
   static time_t last_used = 0;
 
-  if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+  if ((last_used + General.pace_wait) > CurrentTime)
   {
     /* safe enough to give this on a local connect only */
     sendto_one(source_p, form_str(RPL_LOAD2HI),
@@ -108,7 +108,7 @@ m_motd(struct Client *client_p, struct Client *source_p,
   last_used = CurrentTime;
 
   /* This is safe enough to use during non hidden server mode */
-  if (!ConfigFileEntry.disable_remote && !ConfigServerHide.hide_servers)
+  if (!General.disable_remote_commands && !ServerHide.hide_servers)
     if (hunt_server(source_p, ":%s MOTD :%s",
                     1, parc, parv) != HUNTED_ISME)
       return;

@@ -22,6 +22,7 @@
  *  $Id$
  */
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "common.h"     /* TRUE bleah */
@@ -30,7 +31,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 static void ms_svinfo(struct Client*, struct Client*, int, char**);
 
@@ -97,7 +97,7 @@ ms_svinfo(struct Client *client_p, struct Client *source_p,
   theirtime = atol(parv[4]);
   deltat = abs(theirtime - CurrentTime);
 
-  if (deltat > ConfigFileEntry.ts_max_delta)
+  if (deltat > General.ts_max_delta)
     {
       sendto_realops_flags(UMODE_ALL, L_ADMIN,
           "Link %s dropped, excessive TS delta (my TS=%lu, their TS=%lu, delta=%d)",
@@ -121,7 +121,7 @@ ms_svinfo(struct Client *client_p, struct Client *source_p,
       return;
     }
 
-  if (deltat > ConfigFileEntry.ts_warn_delta)
+  if (deltat > General.ts_warn_delta)
     { 
       sendto_realops_flags(UMODE_ALL, L_ALL,
                 "Link %s notable TS delta (my TS=%lu, their TS=%lu, delta=%d)",

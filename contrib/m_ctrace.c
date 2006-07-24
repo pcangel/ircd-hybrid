@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "hash.h"
@@ -33,7 +34,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "parse_aline.h"
 
 static void *do_ctrace(va_list);
@@ -101,7 +101,7 @@ do_ctrace(va_list args)
   {
     target_p = ptr->data;
 
-    class_name = get_client_className(target_p);
+    class_name = target_p->localClient->class->name;
     if ((class_name != NULL) && match(class_looking_for, class_name))
       report_this_status(source_p, target_p);
   }
@@ -126,7 +126,7 @@ report_this_status(struct Client *source_p, struct Client *target_p)
   const char *class_name = NULL;
 
   name = get_client_name(target_p, HIDE_IP);
-  class_name  = get_client_className(target_p);
+  class_name = target_p->localClient->class->name;
 
   switch (target_p->status)
   {
@@ -134,7 +134,7 @@ report_this_status(struct Client *source_p, struct Client *target_p)
       if ((IsOper(source_p) && (MyClient(source_p) || !IsInvisible(target_p)))
           || IsOper(target_p))
       {
-        if (IsAdmin(target_p) && !ConfigFileEntry.hide_spoof_ips)
+        if (IsAdmin(target_p) && !General.hide_spoof_ips)
           sendto_one(source_p, form_str(RPL_TRACEOPERATOR),
                        me.name, source_p->name, class_name, name,
                        IsAdmin(source_p) ? target_p->sockhost : "255.255.255.255",
@@ -142,7 +142,7 @@ report_this_status(struct Client *source_p, struct Client *target_p)
                        CurrentTime - target_p->localClient->last);
           else if (IsOper(target_p))
           {
-            if (ConfigFileEntry.hide_spoof_ips)
+            if (General.hide_spoof_ips)
 	      sendto_one(source_p, form_str(RPL_TRACEOPERATOR),
 		         me.name, source_p->name, class_name, name, 
 		         IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost,
@@ -157,7 +157,7 @@ report_this_status(struct Client *source_p, struct Client *target_p)
           }
 	  else
           {
-            if (ConfigFileEntry.hide_spoof_ips)
+            if (General.hide_spoof_ips)
 	      sendto_one(source_p, form_str(RPL_TRACEUSER),
 		         me.name, source_p->name, class_name, name,
                          IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost,

@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -30,7 +31,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "hash.h"
 #include "s_serv.h"
 
@@ -74,7 +74,7 @@ m_ping(struct Client *client_p, struct Client *source_p,
   origin = parv[1];
   destination = parv[2]; /* Will get NULL or pointer (parc >= 2!!) */
 
-  if (ConfigFileEntry.disable_remote && !IsOper(source_p))
+  if (General.disable_remote_commands && !IsOper(source_p))
   {
     sendto_one(source_p,":%s PONG %s :%s", me.name,
               (destination) ? destination : me.name, origin);

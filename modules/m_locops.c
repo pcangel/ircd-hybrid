@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -34,7 +35,6 @@
 #include "hash.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 static void m_locops(struct Client *, struct Client *, int, char *[]);
 static void ms_locops(struct Client *, struct Client *, int, char *[]);
@@ -92,7 +92,6 @@ ms_locops(struct Client *client_p, struct Client *source_p,
   if (!IsClient(source_p) || !match(parv[1], me.name))
     return;
 
-  if (find_matching_name_conf(ULINE_TYPE, source_p->servptr->name,
-                              "*", "*", SHARED_LOCOPS))
+  if (find_shared(source_p->servptr->name, NULL, NULL, NULL, SHARED_LOCOPS))
     sendto_wallops_flags(UMODE_LOCOPS, source_p, "SLOCOPS - %s", parv[2]);
 }

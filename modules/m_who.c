@@ -22,6 +22,7 @@
  *  $Id$
  */
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "common.h"   
 #include "handlers.h"
 #include "client.h"
@@ -34,7 +35,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 static time_t last_used = 0;
 
@@ -200,7 +200,7 @@ who_common_channel(struct Client *source_p, struct Channel *chptr,
     if ((mask == NULL) ||
       match(mask, target_p->name) || match(mask, target_p->username) ||
       match(mask, target_p->host) || 
-      ((!ConfigServerHide.hide_servers || IsOper(source_p)) &&
+      ((!ServerHide.hide_servers || IsOper(source_p)) &&
        match(mask, target_p->servptr->name)) ||
       match(mask, target_p->info))
     {
@@ -237,7 +237,7 @@ who_global(struct Client *source_p, char *mask, int server_oper)
 
   if (!IsOper(source_p))
   {
-    if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+    if ((last_used + General.pace_wait) > CurrentTime)
     {
       /* safe enough to give this on a local connect only */
       sendto_one(source_p, form_str(RPL_LOAD2HI),
@@ -358,7 +358,7 @@ do_who(struct Client *source_p, struct Client *target_p,
     ircsprintf(status, "%c%s%s", target_p->away ? 'G' : 'H',
 	       IsOper(target_p) ? "*" : "", op_flags);
 
-  if (ConfigServerHide.hide_servers)
+  if (ServerHide.hide_servers)
   {
     sendto_one(source_p, form_str(RPL_WHOREPLY), from, to,
 	       (chname) ? (chname) : "*",

@@ -98,6 +98,47 @@ clear_temp(void)
 }
 
 /*
+ * ref_link_by_name()
+ * ref_link_by_host()
+ *
+ * Finds and references a connect conf.
+ *
+ * inputs: link name
+ * output: pointer to ConnectConf
+ */
+struct ConnectConf *
+ref_link_by_name(const char *name)
+{
+  dlink_node *ptr;
+  struct ConnectConf *conf;
+
+  DLINK_FOREACH(ptr, connect_confs.head)
+  {
+    conf = ptr->data;
+    if (match(conf->name, name))
+      return ref_link_by_ptr(conf);
+  }
+
+  return NULL;
+}
+
+struct ConnectConf *
+ref_link_by_host(const char *name)
+{
+  dlink_node *ptr;
+  struct ConnectConf *conf;
+
+  DLINK_FOREACH(ptr, connect_confs.head)
+  {
+    conf = ptr->data;
+    if (!irccmp(conf->host, name))
+      return ref_link_by_ptr(conf);
+  }
+
+  return NULL;
+}
+
+/*
  * ref_link_by_ptr()
  *
  * Increments the reference counter of a connect conf.

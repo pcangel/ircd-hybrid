@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "ircd_defs.h"
 #include "whowas.h"
 #include "handlers.h"
@@ -35,8 +36,6 @@
 #include "send.h"
 #include "parse.h"
 #include "msg.h"
-#include "conf/modules.h"
-
 
 static void m_whowas(struct Client *, struct Client *, int, char *[]);
 static void whowas_do(struct Client *, int, char *[]);
@@ -87,7 +86,7 @@ m_whowas(struct Client *client_p, struct Client *source_p,
 
   if (MyConnect(source_p) && !IsOper(source_p))
   {
-    if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+    if ((last_used + General.pace_wait) > CurrentTime)
     {
       sendto_one(source_p,form_str(RPL_LOAD2HI),
                  me.name, source_p->name);
@@ -134,7 +133,7 @@ whowas_do(struct Client *source_p, int parc, char *parv[])
                  temp->username, temp->hostname,
                  temp->realname);
 
-      if (ConfigServerHide.hide_servers && !IsOper(source_p))
+      if (ServerHide.hide_servers && !IsOper(source_p))
         sendto_one(source_p, form_str(RPL_WHOISSERVER),
                    me.name, source_p->name, temp->name,
                    ServerInfo.network_name, myctime(temp->logoff));

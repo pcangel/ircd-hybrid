@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -30,7 +31,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 static void m_quit(struct Client *, struct Client *, int, char *[]);
 static void ms_quit(struct Client *, struct Client *, int, char *[]);
@@ -63,7 +63,7 @@ m_quit(struct Client *client_p, struct Client *source_p,
   char reason[KICKLEN + 1] = "Quit: ";
 
   if (comment[0] && (IsOper(source_p) ||
-      (source_p->firsttime + ConfigFileEntry.anti_spam_exit_message_time)
+      (source_p->firsttime + General.anti_spam_exit_message_time)
       < CurrentTime))
     strlcpy(reason+6, comment, sizeof(reason)-6);
   else

@@ -24,6 +24,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "common.h"
@@ -36,7 +37,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "watch.h"
 
 static void m_watch(struct Client *, struct Client *, int, char *[]);
@@ -49,7 +49,7 @@ struct Message watch_msgtab = {
 INIT_MODULE(m_watch, "$Revision: $")
 {
   mod_add_cmd(&watch_msgtab);
-  add_isupport("WATCH", NULL, ConfigFileEntry.max_watch);
+  add_isupport("WATCH", NULL, General.max_watch);
 }
 
 CLEANUP_MODULE
@@ -115,10 +115,10 @@ m_watch(struct Client *client_p, struct Client *source_p, int parc, char *parv[]
       if (*(s + 1) != '\0')
       {
         if (dlink_list_length(&source_p->localClient->watches) >=
-            ConfigFileEntry.max_watch)
+            General.max_watch)
         {
           sendto_one(source_p, form_str(ERR_TOOMANYWATCH), me.name,
-                     source_p->name, s + 1, ConfigFileEntry.max_watch);
+                     source_p->name, s + 1, General.max_watch);
           continue;
         }
 

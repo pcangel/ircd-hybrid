@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "channel.h"
 #include "channel_mode.h"
@@ -34,7 +35,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "s_user.h"
 
 static void m_list(struct Client *, struct Client *, int, char *[]);
@@ -193,7 +193,7 @@ m_list(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if (((last_used + ConfigFileEntry.pace_wait) > CurrentTime))
+  if (((last_used + General.pace_wait) > CurrentTime))
   {
     sendto_one(source_p,form_str(RPL_LOAD2HI),me.name,parv[0]);
     return;

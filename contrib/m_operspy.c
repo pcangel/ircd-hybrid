@@ -43,6 +43,7 @@
 #include "parse.h"
 #include "conf/modules.h"
 #include "hash.h"
+#include "s_user.h"
 
 /* enable logging of OPERSPY functions */
 #define OPERSPY_LOG

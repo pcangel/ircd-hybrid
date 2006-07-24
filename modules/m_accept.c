@@ -113,7 +113,7 @@ m_accept(struct Client *client_p, struct Client *source_p,
     else if (*mask != '\0')
     {
       if (dlink_list_length(&source_p->localClient->acceptlist) >=
-          ConfigFileEntry.max_accept)
+          General.max_accept)
       {
         sendto_one(source_p, form_str(ERR_ACCEPTFULL),
                    me.name, source_p->name);

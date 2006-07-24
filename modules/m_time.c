@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -31,7 +32,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "packet.h"
 
 static void m_time(struct Client*, struct Client*, int, char**);
@@ -66,7 +66,7 @@ m_time(struct Client *client_p, struct Client *source_p,
     flood_endgrace(source_p);
 
   /* This is safe enough to use during non hidden server mode */
-  if (!ConfigFileEntry.disable_remote)
+  if (!General.disable_remote_commands)
     if (hunt_server(source_p, ":%s TIME :%s",
                     1, parc, parv) != HUNTED_ISME)
       return;

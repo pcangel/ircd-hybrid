@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "channel.h"
 #include "channel_mode.h"
@@ -35,7 +36,6 @@
 #include "s_serv.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "packet.h"
 
 static void m_part(struct Client *, struct Client *, int, char *[]);
@@ -93,7 +93,7 @@ part_one_client(struct Client *client_p, struct Client *source_p,
    */
   if (reason[0] && (!MyConnect(source_p) ||
       ((can_send(chptr, source_p, ms) &&
-       (source_p->firsttime + ConfigFileEntry.anti_spam_exit_message_time)
+       (source_p->firsttime + General.anti_spam_exit_message_time)
         < CurrentTime))))
   {
     sendto_server(client_p, NULL, chptr, CAP_TS6, NOCAPS,

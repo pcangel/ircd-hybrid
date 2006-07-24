@@ -25,6 +25,7 @@
 /* rewritten by jdc */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -35,7 +36,6 @@
 #include "channel.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "s_user.h"
 
 static void mo_set(struct Client *, struct Client *, int, char *[]);
@@ -158,19 +158,17 @@ list_quote_commands(struct Client *source_p)
 static void
 quote_autoconn(struct Client *source_p, const char *arg, int newval)
 {
-  struct ConfItem *conf = NULL;
-  struct AccessItem *aconf = NULL;
+  struct ConnectConf *conf;
 
   if (arg != NULL)
   {
-    conf = find_exact_name_conf(SERVER_TYPE, arg, NULL, NULL);
+    conf = ref_link_by_name(arg);
     if (conf != NULL)
     {
-      aconf = &conf->conf.AccessItem;
       if (newval)
-        SetConfAllowAutoConn(aconf);
+        conf->flags |= LINK_AUTOCONN;
       else
-        ClearConfAllowAutoConn(aconf);
+        conf->flags &= ~LINK_AUTOCONN;
 
       sendto_realops_flags(UMODE_ALL, L_ALL,
                            "%s has changed AUTOCONN for %s to %i",

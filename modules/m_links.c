@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -32,7 +33,6 @@
 #include "msg.h"
 #include "motd.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 static void *do_links(va_list);
 static void m_links(struct Client*, struct Client*, int, char**);
@@ -65,7 +65,7 @@ do_links(va_list args)
   int parc = va_arg(args, int);
   char **parv = va_arg(args, char **);
 
-  if (IsOper(source_p) || !ConfigServerHide.flatten_links)
+  if (IsOper(source_p) || !ServerHide.flatten_links)
   {
     char *mask = (parc > 2 ? parv[2] : parv[1]);
     const char *me_name, *nick, *p;
@@ -121,7 +121,7 @@ do_links(va_list args)
                ID_or_name(&me, source_p->from),
                ID_or_name(source_p, source_p->from),
                me.name, me.name, 0, me.info);
-    send_message_file(source_p, &ConfigFileEntry.linksfile);
+    send_message_file(source_p, &linksfile);
     sendto_one(source_p, form_str(RPL_ENDOFLINKS),
                ID_or_name(&me, source_p->from),
                ID_or_name(source_p, source_p->from), "*");
@@ -145,7 +145,7 @@ m_links(struct Client *client_p, struct Client *source_p,
 {
   static time_t last_used = 0;
 
-  if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+  if ((last_used + General.pace_wait) > CurrentTime)
   {
     sendto_one(source_p, form_str(RPL_LOAD2HI),
                me.name, source_p->name);
@@ -154,7 +154,7 @@ m_links(struct Client *client_p, struct Client *source_p,
 
   last_used = CurrentTime;
 
-  if (!ConfigServerHide.flatten_links)
+  if (!ServerHide.flatten_links)
   {
     mo_links(client_p, source_p, parc, parv);
     return;
@@ -168,7 +168,7 @@ mo_links(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
   if (parc > 2) 
-    if (!ConfigFileEntry.disable_remote || IsOper(source_p))
+    if (!General.disable_remote_commands || IsOper(source_p))
       if (hunt_server(source_p, ":%s LINKS %s :%s",
                       1, parc, parv) != HUNTED_ISME)
         return;

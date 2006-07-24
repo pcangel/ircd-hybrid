@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "channel.h"
 #include "channel_mode.h"
@@ -34,7 +35,6 @@
 #include "common.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "s_serv.h"
 
 static void ms_sjoin(struct Client *, struct Client *, int, char *[]);
@@ -109,7 +109,7 @@ ms_sjoin(struct Client *client_p, struct Client *source_p,
   char           *nick_ptr, *uid_ptr;      /* pointers used for making the two mode/prefix buffers */
   char           *p; /* pointer used making sjbuf */
   dlink_node     *m;
-  const char *servername = (ConfigServerHide.hide_servers || IsHidden(source_p)) ?
+  const char *servername = (ServerHide.hide_servers || IsHidden(source_p)) ?
 			    me.name : source_p->name;  
 
   if (IsClient(source_p) || parc < 5)
@@ -185,7 +185,7 @@ ms_sjoin(struct Client *client_p, struct Client *source_p,
   oldts   = chptr->channelts;
   oldmode = &chptr->mode;
 
-  if (ConfigFileEntry.ignore_bogus_ts)
+  if (General.ignore_bogus_ts)
   {
     if (newts < 800000000)
     {
@@ -748,7 +748,7 @@ remove_a_mode(struct Channel *chptr, struct Client *source_p,
       sendto_channel_local(ALL_MEMBERS, NO, chptr,
                            ":%s MODE %s %s%s",
 			   (IsHidden(source_p) ||
-			   ConfigServerHide.hide_servers) ?
+			   ServerHide.hide_servers) ?
 			   me.name : source_p->name,
 			   chptr->chname, lmodebuf, sendbuf);
       mbuf = lmodebuf;
@@ -769,7 +769,7 @@ remove_a_mode(struct Channel *chptr, struct Client *source_p,
     }
     sendto_channel_local(ALL_MEMBERS, NO, chptr,
 			 ":%s MODE %s %s%s",
-			 (IsHidden(source_p) || ConfigServerHide.hide_servers) ?
+			 (IsHidden(source_p) || ServerHide.hide_servers) ?
 			 me.name : source_p->name,
 			 chptr->chname, lmodebuf, sendbuf);
   }

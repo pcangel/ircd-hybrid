@@ -92,7 +92,7 @@ m_whois(struct Client *client_p, struct Client *source_p,
   if (parc > 2 && !EmptyString(parv[2]))
   {
     /* seeing as this is going across servers, we should limit it */
-    if ((last_used + ConfigFileEntry.pace_wait_simple) > CurrentTime)
+    if ((last_used + General.pace_wait_simple) > CurrentTime)
     {
       sendto_one(source_p, form_str(RPL_LOAD2HI),
                  me.name, source_p->name);
@@ -105,7 +105,7 @@ m_whois(struct Client *client_p, struct Client *source_p,
      * server, or our server.. I dont see why they would need to ask
      * anything else for info about the client.. --fl_
      */
-    if (ConfigFileEntry.disable_remote)
+    if (General.disable_remote_commands)
       parv[1] = parv[2];
 
     if (hunt_server(source_p, ":%s WHOIS %s :%s", 1,
@@ -198,7 +198,7 @@ do_whois(va_list args)
   {
     if (!IsOper(source_p))
     {
-      if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+      if ((last_used + General.pace_wait) > CurrentTime)
       {
         sendto_one(source_p, form_str(RPL_LOAD2HI),
                    me.name, source_p->name);
@@ -368,14 +368,14 @@ whois_person(struct Client *source_p, struct Client *target_p)
     sendto_one(source_p, "%s", buf);
   }
 
-  if (IsOper(source_p) || !ConfigServerHide.hide_servers || target_p == source_p)
+  if (IsOper(source_p) || !ServerHide.hide_servers || target_p == source_p)
     sendto_one(source_p, form_str(RPL_WHOISSERVER),
                me.name, source_p->name, target_p->name,
                server_p->name, server_p->info);
   else
     sendto_one(source_p, form_str(RPL_WHOISSERVER),
                me.name, source_p->name, target_p->name,
-               ConfigServerHide.hidden_name,
+               ServerHide.hidden_name,
                ServerInfo.network_desc);
 
   if (target_p->away != NULL)
@@ -396,7 +396,7 @@ whois_person(struct Client *source_p, struct Client *target_p)
     sendto_one(source_p, form_str(RPL_ISCAPTURED),
                me.name, source_p->name, target_p->name);
 
-  if (ConfigFileEntry.use_whois_actually)
+  if (General.use_whois_actually)
   {
     int show_ip = 0;
 
@@ -405,7 +405,7 @@ whois_person(struct Client *source_p, struct Client *target_p)
       if ((IsAdmin(source_p) || source_p == target_p))
 	show_ip = 1;
       else if (IsIPSpoof(target_p))
-	show_ip = (IsOper(source_p) && !ConfigFileEntry.hide_spoof_ips);
+	show_ip = (IsOper(source_p) && !General.hide_spoof_ips);
       else
 	show_ip = 1;
 

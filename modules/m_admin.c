@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -31,7 +32,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 static void m_admin(struct Client *, struct Client *, int, char *[]);
 static void mr_admin(struct Client *, struct Client *, int, char *[]);
@@ -76,7 +76,7 @@ mr_admin(struct Client *client_p, struct Client *source_p,
 {
   static time_t last_used = 0;
 
-  if ((last_used + ConfigFileEntry.pace_wait_simple) > CurrentTime)
+  if ((last_used + General.pace_wait_simple) > CurrentTime)
   {
     sendto_one(source_p, form_str(RPL_LOAD2HI),
                me.name, EmptyString(parv[0]) ? "*" : parv[0]);
@@ -108,7 +108,7 @@ m_admin(struct Client *client_p, struct Client *source_p,
 {
   static time_t last_used = 0;
 
-  if ((last_used + ConfigFileEntry.pace_wait_simple) > CurrentTime)
+  if ((last_used + General.pace_wait_simple) > CurrentTime)
   {
     sendto_one(source_p,form_str(RPL_LOAD2HI),
                me.name, source_p->name);
@@ -117,7 +117,7 @@ m_admin(struct Client *client_p, struct Client *source_p,
 
   last_used = CurrentTime;
 
-  if (!ConfigFileEntry.disable_remote)
+  if (!General.disable_remote_commands)
     if (hunt_server(source_p, ":%s ADMIN :%s", 1,
                     parc, parv) != HUNTED_ISME)
       return;
@@ -169,15 +169,15 @@ do_admin(va_list args)
 
   sendto_one(source_p, form_str(RPL_ADMINME),
              me_name, nick, me.name);
-  if (AdminInfo.name != NULL)
+  if (Admin.name != NULL)
     sendto_one(source_p, form_str(RPL_ADMINLOC1),
-               me_name, nick, AdminInfo.name);
-  if (AdminInfo.description != NULL)
+               me_name, nick, Admin.name);
+  if (Admin.description != NULL)
     sendto_one(source_p, form_str(RPL_ADMINLOC2),
-               me_name, nick, AdminInfo.description);
-  if (AdminInfo.email != NULL)
+               me_name, nick, Admin.description);
+  if (Admin.email != NULL)
     sendto_one(source_p, form_str(RPL_ADMINEMAIL),
-               me_name, nick, AdminInfo.email);
+               me_name, nick, Admin.email);
 
   return NULL;
 }

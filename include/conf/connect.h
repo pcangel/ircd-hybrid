@@ -56,6 +56,8 @@ struct ConnectConf
 
 EXTERN dlink_list connect_confs;
 
+EXTERN struct ConnectConf *ref_link_by_name(const char *);
+EXTERN struct ConnectConf *ref_link_by_host(const char *);
 EXTERN struct ConnectConf *ref_link_by_ptr(struct ConnectConf *);
 EXTERN void unref_link(struct ConnectConf *);
 

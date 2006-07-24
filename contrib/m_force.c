@@ -29,6 +29,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -38,7 +39,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "channel.h"
 #include "channel_mode.h"
 
@@ -235,7 +235,7 @@ mo_forcejoin(struct Client *client_p, struct Client *source_p,
      * local channels... but...
      * I don't want to break anything - scuzzy
      */
-    if (ConfigChannel.disable_local_channels && (*newch == '&'))
+    if (Channel.disable_local_channels && (*newch == '&'))
     {
       sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL),
                  me.name, source_p->name, newch);

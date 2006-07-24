@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/modules.h"
 #include "handlers.h"
 #include "channel.h"
 #include "channel_mode.h"
@@ -35,8 +36,6 @@
 #include "s_serv.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
-
 
 static void names_all_visible_channels(struct Client *);
 static void names_non_public_non_secret(struct Client *);
@@ -63,10 +62,10 @@ CLEANUP_MODULE
  ************************************************************************/
 
 /*
-** m_names
-**      parv[0] = sender prefix
-**      parv[1] = channel
-*/
+ * m_names
+ *      parv[0] = sender prefix
+ *      parv[1] = channel
+ */
 static void
 m_names(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])

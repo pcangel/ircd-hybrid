@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -32,13 +33,12 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
+#include "motd.h"
 
 static char *confopts(struct Client *);
 static void m_version(struct Client *, struct Client *, int, char *[]);
 static void ms_version(struct Client *, struct Client *, int, char *[]);
 static void mo_version(struct Client *, struct Client *, int, char *[]);
-
 
 /* Option string. */
 static const char serveropts[] = {
@@ -81,7 +81,7 @@ m_version(struct Client *client_p, struct Client *source_p,
 {
   static time_t last_used = 0;
 
-  if ((last_used + ConfigFileEntry.pace_wait_simple) > CurrentTime)
+  if ((last_used + General.pace_wait_simple) > CurrentTime)
   {
     /* safe enough to give this on a local connect only */
     sendto_one(source_p, form_str(RPL_LOAD2HI),
@@ -91,7 +91,7 @@ m_version(struct Client *client_p, struct Client *source_p,
 
   last_used = CurrentTime;
 
-  if (!ConfigFileEntry.disable_remote)
+  if (!General.disable_remote_commands)
     if (hunt_server(source_p, ":%s VERSION :%s",
                     1, parc, parv) != HUNTED_ISME)
       return;
@@ -99,7 +99,7 @@ m_version(struct Client *client_p, struct Client *source_p,
   sendto_one(source_p, form_str(RPL_VERSION),
              me.name, source_p->name, ircd_version, serno,
              me.name, confopts(source_p), serveropts);
-  show_isupport(source_p);
+  send_message_file(source_p, &isupportFile);
 }
 
 /*
@@ -119,7 +119,7 @@ mo_version(struct Client *client_p, struct Client *source_p,
   sendto_one(source_p, form_str(RPL_VERSION), me.name, parv[0], ircd_version, 
   	     serno, me.name, confopts(source_p), serveropts);
 
-  show_isupport(source_p);
+  send_message_file(source_p, &isupportFile);
 }
 
 /*
@@ -140,7 +140,7 @@ ms_version(struct Client *client_p, struct Client *source_p,
              ID_or_name(source_p, client_p),
              ircd_version, serno,
              me.name, confopts(source_p), serveropts);
-  show_isupport(source_p);
+  send_message_file(source_p, &isupportFile);
 }
 
 /* confopts()
@@ -155,26 +155,26 @@ confopts(struct Client *source_p)
   static char result[12];
   char *p = result;
 
-  if (ConfigChannel.use_except)
+  if (Channel.use_except)
     *p++ = 'e';
-  if (ConfigFileEntry.glines)
+  if (enable_glines)
     *p++ = 'G';
   *p++ = 'g';
 
   /* might wanna hide this :P */
   if (ServerInfo.hub && 
-      (!ConfigFileEntry.disable_remote || IsOper(source_p)))
+      (!General.disable_remote_commands || IsOper(source_p)))
   {
     *p++ = 'H';
   }
 
-  if (ConfigChannel.use_invex)
+  if (Channel.use_invex)
     *p++ = 'I';
-  if (ConfigChannel.use_knock)
+  if (Channel.use_knock)
     *p++ = 'K';
   *p++ = 'M';
 
-  if (ConfigFileEntry.ignore_bogus_ts)
+  if (General.ignore_bogus_ts)
     *p++ = 'T';
 #ifdef USE_SYSLOG
   *p++ = 'Y';

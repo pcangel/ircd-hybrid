@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -31,7 +32,6 @@
 #include "numeric.h"
 #include "send.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 #define HPATH  IRCD_PREFIX "/help/opers"
 #define UHPATH IRCD_PREFIX "/help/users"
@@ -76,7 +76,7 @@ m_help(struct Client *client_p, struct Client *source_p,
   static time_t last_used = 0;
 
   /* HELP is always local */
-  if ((last_used + ConfigFileEntry.pace_wait_simple) > CurrentTime)
+  if ((last_used + General.pace_wait_simple) > CurrentTime)
   {
     /* safe enough to give this on a local connect only */
     sendto_one(source_p,form_str(RPL_LOAD2HI),

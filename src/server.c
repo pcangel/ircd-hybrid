@@ -701,16 +701,13 @@ delete_capability(const char *capab_name)
     cap = ptr->data;
 
     if (cap->cap != 0)
-    {
       if (!irccmp(cap->name, capab_name))
       {
-	default_server_capabs &= ~(cap->cap);
-	dlinkDelete(ptr, &cap_list);
-	MyFree(cap->name);
-	cap->name = NULL;
-	MyFree(cap);
+        default_server_capabs &= ~(cap->cap);
+        dlinkDelete(ptr, &cap_list);
+        MyFree(cap->name);
+        MyFree(cap);
       }
-    }
   }
 
   return 0;

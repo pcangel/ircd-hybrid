@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "common.h"
 #include "channel.h"
@@ -35,7 +36,6 @@
 #include "s_serv.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "packet.h"
 
 static void m_invite(struct Client *, struct Client *, int, char *[]);
@@ -104,7 +104,7 @@ m_invite(struct Client *client_p, struct Client *source_p,
    */
   if ((*parv[2] == '&') && !MyConnect(target_p))
   {
-    if (!ConfigServerHide.hide_servers)
+    if (!ServerHide.hide_servers)
       sendto_one(source_p, form_str(ERR_USERNOTONSERV),
                  me.name, source_p->name, target_p->name);
     return;

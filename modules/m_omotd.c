@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/modules.h"
 #include "client.h"
 #include "motd.h"
 #include "ircd.h"
@@ -31,7 +32,6 @@
 #include "handlers.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 static void m_omotd(struct Client *, struct Client *, int, char *[]);
 
@@ -58,5 +58,5 @@ static void
 m_omotd(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
 {
-  send_message_file(source_p, &ConfigFileEntry.opermotd);
+  send_message_file(source_p, &opermotd);
 }

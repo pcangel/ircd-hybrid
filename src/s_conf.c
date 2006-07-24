@@ -44,7 +44,6 @@
 struct Callback *client_check_cb = NULL;
 
 /* internally defined functions */
-static void lookup_confhost(struct ConfItem *);
 static void garbage_collect_ip_entries(void);
 static int hash_ip(const struct irc_ssaddr *);
 static int verify_access(struct Client *, const char *, struct AccessItem **);
@@ -79,108 +78,6 @@ struct ip_entry
 static struct ip_entry *ip_hash_table[IP_HASH_SIZE];
 static BlockHeap *ip_entry_heap = NULL;
 static int ip_entries_count = 0;
-
-/* conf_dns_callback()
- *
- * inputs	- pointer to struct AccessItem
- *		- pointer to DNSReply reply
- * output	- none
- * side effects	- called when resolver query finishes
- * if the query resulted in a successful search, hp will contain
- * a non-null pointer, otherwise hp will be null.
- * if successful save hp in the conf item it was called with
- */
-static void
-conf_dns_callback(void *vptr, struct DNSReply *reply)
-{
-  struct AccessItem *aconf = (struct AccessItem *)vptr;
-  struct ConfItem *conf;
-
-  MyFree(aconf->dns_query);
-  aconf->dns_query = NULL;
-
-  if (reply != NULL)
-    memcpy(&aconf->ipnum, &reply->addr, sizeof(reply->addr));
-  else
-  {
-    ilog(L_NOTICE, "Host not found: %s, ignoring connect{} block",
-         aconf->host);
-    conf = aconf->conf_ptr;
-    sendto_realops_flags(UMODE_ALL, L_ALL,
-                         "Ignoring connect{} block for %s - host not found",
-			 conf->name);
-    delete_conf_item(conf);
-  }
-}
-
-/* conf_dns_lookup()
- *
- * do a nameserver lookup of the conf host
- * if the conf entry is currently doing a ns lookup do nothing, otherwise
- * allocate a dns_query and start ns lookup.
- */
-static void
-conf_dns_lookup(struct AccessItem *aconf)
-{
-  if (aconf->dns_query == NULL)
-  {
-    aconf->dns_query = MyMalloc(sizeof(struct DNSQuery));
-    aconf->dns_query->ptr = aconf;
-    aconf->dns_query->callback = conf_dns_callback;
-    gethost_byname(aconf->host, aconf->dns_query);
-  }
-}
-
-/* lookup_confhost()
- *
- * inputs	- pointer to ConfItem
- * output	- NONE
- * side effects	- start DNS lookups of all hostnames in the conf
- * line and convert an IP addresses in a.b.c.d number for to IP#s.
- */
-static void
-lookup_confhost(struct ConfItem *conf)
-{
-  struct AccessItem *aconf;
-  struct addrinfo hints, *res;
-
-  aconf = &conf->conf.AccessItem;
-
-  if (EmptyString(aconf->host) || EmptyString(aconf->user))
-  {
-    ilog(L_ERROR, "Host/server name error: (%s) (%s)",
-         aconf->host, conf->name);
-    return;
-  }
-
-  if (has_wildcards(aconf->host))
-    return;
-
-  /*
-   * Do name lookup now on hostnames given and store the
-   * ip numbers in conf structure.
-   */
-  memset(&hints, 0, sizeof(hints));
-
-  hints.ai_family   = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-
-  /* Get us ready for a bind() and don't bother doing dns lookup */
-  hints.ai_flags = AI_PASSIVE | AI_NUMERICHOST;
-
-  if (irc_getaddrinfo(aconf->host, NULL, &hints, &res))
-  {
-    conf_dns_lookup(aconf);
-    return;
-  }
-
-  assert(res != NULL);
-
-  memcpy(&aconf->ipnum, res->ai_addr, res->ai_addrlen);
-  aconf->ipnum.ss_len = res->ai_addrlen;
-  aconf->ipnum.ss.sin_family = res->ai_family;
-  irc_freeaddrinfo(res);
-}
 
 static const unsigned int shared_bit_table[] =
   { 'K', 'k', 'U', 'X', 'x', 'Y', 'Q', 'q', 'R', 'L', 0};
@@ -735,29 +632,6 @@ conf_connect_allowed(const struct irc_ssaddr *addr)
 
   ip_found->last_attempt = CurrentTime;
   return 0;
-}
-
-/*
- * Input: A client to find the active oper{} name for.
- * Output: The nick!user@host{oper} of the oper.
- *         "oper" is server name for remote opers
- * Side effects: None.
- */
-char *
-get_oper_name(const struct Client *client_p)
-{
-  /* +5 for !,@,{,} and null */
-  static char buffer[NICKLEN+USERLEN+HOSTLEN+HOSTLEN+5];
-
-  if (MyConnect(client_p) && IsOper(client_p))
-    ircsprintf(buffer, "%s!%s@%s{%s}", client_p->name,
-	       client_p->username, client_p->host,
-	       client_p->localClient->auth_oper);
-  else
-    ircsprintf(buffer, "%s!%s@%s{%s}", client_p->name,
-	       client_p->username, client_p->host,
-               client_p->servptr->name);
-  return buffer;
 }
 
 /*

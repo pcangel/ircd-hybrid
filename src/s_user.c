@@ -57,7 +57,6 @@ static void introduce_client(struct Client *, struct Client *);
 /* Used for building up the isupport string,
  * used with init_isupport, add_isupport, delete_isupport
  */
-
 struct Isupport 
 {
   dlink_node node;
@@ -1397,4 +1396,27 @@ rebuild_isupport_message_line(void)
       *p = '\0';
     addto_MessageLine(isupportFile, isupportbuffer);
   }
+}
+
+/*
+ * Input: A client to find the active oper{} name for.
+ * Output: The nick!user@host{oper} of the oper.
+ *         "oper" is server name for remote opers
+ * Side effects: None.
+ */
+char *
+get_oper_name(const struct Client *client_p)
+{
+  /* +5 for !,@,{,} and null */
+  static char buffer[NICKLEN+USERLEN+HOSTLEN+HOSTLEN+5];
+
+  if (MyConnect(client_p) && IsOper(client_p))
+    ircsprintf(buffer, "%s!%s@%s{%s}", client_p->name,
+           client_p->username, client_p->host,
+           client_p->localClient->auth_oper);
+  else
+    ircsprintf(buffer, "%s!%s@%s{%s}", client_p->name,
+           client_p->username, client_p->host,
+               client_p->servptr->name);
+  return buffer;
 }

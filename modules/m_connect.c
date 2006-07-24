@@ -33,6 +33,7 @@
 #include "msg.h"
 #include "parse.h"
 #include "hash.h"
+#include "s_user.h"
 
 static void mo_connect(struct Client *, struct Client *, int, char *[]);
 static void ms_connect(struct Client *, struct Client *, int, char *[]);
@@ -72,11 +73,10 @@ mo_connect(struct Client *client_p, struct Client *source_p,
            int parc, char *parv[])
 {
   int port = 0;
-  struct ConfItem *conf = NULL;
-  struct AccessItem *aconf = NULL;
+  struct ConnectConf *conf = NULL;
   struct Client *target_p = NULL;
 
-  /* always privileged with handlers */
+  // always privileged with handlers
   if (MyConnect(source_p) && !IsOperRemote(source_p) && parc > 3)
   {
     sendto_one(source_p, form_str(ERR_NOPRIVS),
@@ -106,32 +106,27 @@ mo_connect(struct Client *client_p, struct Client *source_p,
   /*
    * Try to find the name, then host, if both fail notify ops and bail
    */
-  if ((conf = find_matching_name_conf(SERVER_TYPE,
-                                      parv[1], NULL, NULL, 0)) != NULL)
-    aconf = &conf->conf.AccessItem;
-  else if ((conf = find_matching_name_conf(SERVER_TYPE,
-                                           NULL, NULL, parv[1], 0)) != NULL)
-    aconf = &conf->conf.AccessItem;
-  
-  if (conf == NULL)
-  {
-    sendto_one(source_p,
-               ":%s NOTICE %s :Connect: Host %s not listed in ircd.conf",
-               me.name, source_p->name, parv[1]);
-    return;
-  }
+  if ((conf = ref_link_by_name(parv[1])) == NULL)
+    if ((conf = ref_link_by_host(parv[1])) == NULL)
+    {
+      sendto_one(source_p,
+                 ":%s NOTICE %s :Connect: Host %s not listed in ircd.conf",
+                 me.name, source_p->name, parv[1]);
+      return;
+    }
 
   /*
    * Get port number from user, if given.  If not specified,
    * use the default from configuration structure.
    */
-  port = aconf->port;
+  port = conf->port;
 
   if (parc > 2 && !EmptyString(parv[2]))
     port = atoi(parv[2]);
 
   if (port <= 0 || port > 0xFFFF)
   {
+    unref_link(conf);
     sendto_one(source_p, ":%s NOTICE %s :Connect: Illegal or missing port number",
                me.name, source_p->name);
     return;
@@ -139,6 +134,7 @@ mo_connect(struct Client *client_p, struct Client *source_p,
 
   if (find_servconn_in_progress(conf->name))
   {
+    unref_link(conf);
     sendto_one(source_p, ":%s NOTICE %s :Connect: a connection to %s "
                "is already in progress.", me.name, source_p->name, conf->name);
     return;
@@ -154,11 +150,11 @@ mo_connect(struct Client *client_p, struct Client *source_p,
    * At this point we should be calling connect_server with a valid
    * connect{} and a valid port in the connect{}
    */
-  if (serv_connect(aconf, source_p, port))
+  if (serv_connect(conf, source_p, port))
   {
-    if (!ConfigServerHide.hide_server_ips && IsAdmin(source_p))
+    if (!ServerHide.hide_server_ips && IsAdmin(source_p))
       sendto_one(source_p, ":%s NOTICE %s :*** Connecting to %s[%s].%d",
-                 me.name, source_p->name, aconf->host,
+                 me.name, source_p->name, conf->host,
                  conf->name, port);
     else
       sendto_one(source_p, ":%s NOTICE %s :*** Connecting to %s.%d",
@@ -171,6 +167,7 @@ mo_connect(struct Client *client_p, struct Client *source_p,
    * Client is either connecting with all the data it needs or has been
    * destroyed
    */
+  unref_link(conf);
 }
 
 /*! \brief CONNECT command handler (called for remote clients only)
@@ -193,8 +190,7 @@ ms_connect(struct Client *client_p, struct Client *source_p,
            int parc, char *parv[])
 {
   int port = 0;
-  struct ConfItem *conf = NULL;
-  struct AccessItem *aconf = NULL;
+  struct ConnectConf *conf;
   struct Client *target_p = NULL;
 
   if (hunt_server(source_p, ":%s CONNECT %s %s :%s", 3,
@@ -219,40 +215,33 @@ ms_connect(struct Client *client_p, struct Client *source_p,
   /*
    * Try to find the name, then host, if both fail notify ops and bail
    */
-  if ((conf = find_matching_name_conf(SERVER_TYPE,
-                                      parv[1], NULL, NULL, 0)) != NULL)
-    aconf = &conf->conf.AccessItem;
-  else if ((conf = find_matching_name_conf(SERVER_TYPE,
-                                           NULL, NULL, parv[1], 0)) != NULL)
-    aconf = &conf->conf.AccessItem;
-
-  if (aconf == NULL)
-  {
-    sendto_one(source_p,
-               ":%s NOTICE %s :Connect: Host %s not listed in ircd.conf",
-               me.name, source_p->name, parv[1]);
-    return;
-  }
-
-  assert(aconf != NULL);
+  if ((conf = ref_link_by_name(parv[1])) == NULL)
+    if ((conf = ref_link_by_host(parv[1])) == NULL)
+    {
+      sendto_one(source_p,
+                 ":%s NOTICE %s :Connect: Host %s not listed in ircd.conf",
+                 me.name, source_p->name, parv[1]);
+      return;
+    }
 
   /*
    * Get port number from user, if given. If not specified,
    * use the default from configuration structure.
    */
-  port = aconf->port;
+  port = conf->port;
 
   if (parc > 2 && !EmptyString(parv[2]))
   {
     port = atoi(parv[2]);
 
-    /* if someone sends port 0, use the config port instead */
+    // if someone sends port 0, use the config port instead
     if (port == 0)
-      port = aconf->port;
+      port = conf->port;
   }
 
   if (port <= 0 || port > 0xFFFF)
   {
+    unref_link(conf);
     sendto_one(source_p, ":%s NOTICE %s :Connect: Illegal or missing port number",
                me.name, source_p->name);
     return;
@@ -260,6 +249,7 @@ ms_connect(struct Client *client_p, struct Client *source_p,
 
   if (find_servconn_in_progress(conf->name))
   {
+    unref_link(conf);
     sendto_one(source_p, ":%s NOTICE %s :Connect: a connection to %s "
                "is already in progress.", me.name, source_p->name, conf->name);
     return;
@@ -281,7 +271,7 @@ ms_connect(struct Client *client_p, struct Client *source_p,
    * At this point we should be calling connect_server with a valid
    * connect{} and a valid port in the connect{}
    */
-  if (serv_connect(aconf, source_p, port))
+  if (serv_connect(conf, source_p, port))
     sendto_one(source_p, ":%s NOTICE %s :*** Connecting to %s.%d",
                me.name, source_p->name, conf->name, port);
   else
@@ -292,4 +282,5 @@ ms_connect(struct Client *client_p, struct Client *source_p,
    * Client is either connecting with all the data it needs or has been
    * destroyed
    */
+  unref_link(conf);
 }

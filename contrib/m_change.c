@@ -24,6 +24,7 @@
 
 /* List of ircd includes from ../include/ */
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "common.h"     /* FALSE bleah */
@@ -33,7 +34,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "s_user.h"
 #include "hash.h"
 

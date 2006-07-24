@@ -33,8 +33,8 @@ struct CidrItem
 };
 
 struct Class *default_class = NULL;
+dlink_list class_list = {NULL, NULL, 0};
 
-static dlink_list class_list = {NULL, NULL, 0};
 static dlink_node *enum_node = NULL;
 static dlink_node *hreset, *hverify;
 static struct Class tmpclass;

@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -30,7 +31,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "s_serv.h"
 #include "packet.h"
 #include "s_user.h"
@@ -101,7 +101,7 @@ m_away(struct Client *client_p, struct Client *source_p,
   }
 
   /* Marking as away */
-  if ((CurrentTime - source_p->localClient->last_away) < ConfigFileEntry.pace_wait)
+  if ((CurrentTime - source_p->localClient->last_away) < General.pace_wait)
   {
     sendto_one(source_p, form_str(RPL_LOAD2HI),
                me.name, source_p->name);

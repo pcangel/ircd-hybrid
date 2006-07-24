@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"    /* m_server prototype */
 #include "client.h"      /* client struct */
 #include "common.h"      /* TRUE bleah */
@@ -34,8 +35,6 @@
 #include "motd.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
-
 
 static void mr_server(struct Client *, struct Client *, int, char *[]);
 static void ms_server(struct Client *, struct Client *, int, char *[]);
@@ -116,7 +115,7 @@ mr_server(struct Client *client_p, struct Client *source_p,
   switch (check_server(name, client_p, CHECK_SERVER_NOCRYPTLINK))
   {
     case -1:
-      if (ConfigFileEntry.warn_no_nline)
+      if (General.warn_no_nline)
       {
         sendto_realops_flags(UMODE_ALL, L_ADMIN,
            "Unauthorized server connection attempt from %s: No entry for "
@@ -232,8 +231,7 @@ ms_server(struct Client *client_p, struct Client *source_p,
   char *name;
   struct Client *target_p;
   struct Client *bclient_p;
-  struct ConfItem *conf;
-  struct MatchItem *match_item;
+  struct ConnectConf *conf;
   int hop;
   int hlined = 0;
   int llined = 0;
@@ -313,30 +311,19 @@ ms_server(struct Client *client_p, struct Client *source_p,
   /* See if the newly found server is behind a guaranteed
    * leaf. If so, close the link.
    */
-  DLINK_FOREACH(ptr, leaf_items.head)
-  {
-    conf = ptr->data;
-
-    if (match(conf->name, client_p->name))
+  DLINK_FOREACH(ptr, client_p->serv->sconf->leaf_list.head)
+    if (match(ptr->data, name))
     {
-      match_item = &conf->conf.MatchItem;
-      if (match(match_item->host, name))
-	llined++;
+      llined++;
+      break;
     }
-  }
 
-  DLINK_FOREACH(ptr, hub_items.head)
-  {
-    conf = ptr->data;
-
-    if (match(conf->name, client_p->name))
+  DLINK_FOREACH(ptr, client_p->serv->sconf->hub_list.head)
+    if (match(ptr->data, name))
     {
-      match_item = &conf->conf.MatchItem;
-
-      if (match(match_item->host, name))
-	hlined++;
+      hlined++;
+      break;
     }
-  }
 
   /* Ok, this way this works is
    *
@@ -436,7 +423,7 @@ ms_server(struct Client *client_p, struct Client *source_p,
       continue;
     }
 
-    if (match(my_name_for_link(&conf->conf.AccessItem), target_p->name))
+    if (match(my_name_for_link(conf), target_p->name))
       continue;
 
     sendto_one(bclient_p, ":%s SERVER %s %d :%s%s",
@@ -464,8 +451,7 @@ ms_sid(struct Client *client_p, struct Client *source_p,
   char info[REALLEN + 1];
   struct Client *target_p;
   struct Client *bclient_p;
-  struct ConfItem *conf;
-  struct MatchItem *match_item;
+  struct ConnectConf *conf;
   int hlined = 0;
   int llined = 0;
   dlink_node *ptr, *ptr_next;
@@ -554,30 +540,19 @@ ms_sid(struct Client *client_p, struct Client *source_p,
   /* See if the newly found server is behind a guaranteed
    * leaf. If so, close the link.
    */
-  DLINK_FOREACH(ptr, leaf_items.head)
-  {
-    conf = ptr->data;
-
-    if (match(conf->name, client_p->name))
+  DLINK_FOREACH(ptr, client_p->serv->sconf->leaf_list.head)
+    if (match(ptr->data, SID_NAME))
     {
-      match_item = &conf->conf.MatchItem;
-      if (match(match_item->host, SID_NAME))
-	llined++;
+      llined++;
+      break;
     }
-  }
 
-  DLINK_FOREACH(ptr, hub_items.head)
-  {
-    conf = ptr->data;
-
-    if (match(conf->name, client_p->name))
+  DLINK_FOREACH(ptr, client_p->serv->sconf->hub_list.head)
+    if (match(ptr->data, SID_NAME))
     {
-      match_item = &conf->conf.MatchItem;
-
-      if (match(match_item->host, SID_NAME))
-	hlined++;
+      hlined++;
+      break;
     }
-  }
 
   /* Ok, this way this works is
    *
@@ -667,7 +642,7 @@ ms_sid(struct Client *client_p, struct Client *source_p,
       continue;
     }
 
-    if (match(my_name_for_link(&conf->conf.AccessItem), target_p->name))
+    if (match(my_name_for_link(conf), target_p->name))
       continue;
     
     if (IsCapable(bclient_p, CAP_TS6))

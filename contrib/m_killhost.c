@@ -24,6 +24,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "common.h"
@@ -35,8 +36,8 @@
 #include "whowas.h"
 #include "msg.h"
 #include "parse.h"
+#include "channel.h"
 #include "channel_mode.h"    /* needed only for split_nuh() */
-#include "conf/modules.h"
 #include "parse_aline.h"
 
 static void mo_killhost(struct Client *, struct Client *, int, char *[]);

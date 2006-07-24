@@ -23,10 +23,10 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "client.h"
 #include "parse.h"
 #include "msg.h"
-#include "conf/modules.h"
 #include "handlers.h"
 #include "numeric.h"
 #include "send.h"
@@ -62,11 +62,11 @@ m_map(struct Client *client_p, struct Client *source_p,
 {
   static time_t last_used = 0;
 
-  if (!ConfigServerHide.flatten_links)
+  if (!ServerHide.flatten_links)
   {
     if (!IsOper(source_p))
     {
-      if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+      if ((last_used + General.pace_wait) > CurrentTime)
       {
         /* safe enough to give this on a local connect only */
         sendto_one(source_p, form_str(RPL_LOAD2HI),

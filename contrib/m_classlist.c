@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "channel.h"
 #include "channel_mode.h"
@@ -35,7 +36,6 @@
 #include "s_serv.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 static void mo_classlist(struct Client *, struct Client *, int, char *[]);
 
@@ -73,16 +73,15 @@ mo_classlist(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  DLINK_FOREACH(ptr, class_items.head)
+  DLINK_FOREACH(ptr, class_list.head)
   {
-    struct ConfItem *conf = ptr->data;
+    struct Class *conf = ptr->data;
 
     if (match(parv[1], conf->name))
     {
-      const struct ClassItem *aclass = &conf->conf.ClassItem;
       sendto_one(source_p, ":%s NOTICE %s :%s %d",
                  me.name, source_p->name, conf->name,
-                 CurrUserCount(aclass));
+                 conf->cur_clients);
       found_class = 1;
     }
   }

@@ -37,6 +37,7 @@
 #include "parse.h"
 #include "conf/modules.h"
 #include "common.h"
+#include "s_user.h"
 
 // Change to #define to allow /OPME use on any channel, even if it's not opless
 #undef NO_OPLESS_CHECK

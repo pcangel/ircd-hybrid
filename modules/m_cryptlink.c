@@ -30,10 +30,10 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"      /* client struct */
 #include "ircd.h"        /* me */
-#include "conf/modules.h"
 #include "numeric.h"     /* ERR_xxx */
 #include "send.h"        /* sendto_one */
 #include <openssl/rsa.h> /* rsa.h is implicit when building this */
@@ -127,8 +127,7 @@ cryptlink_auth(struct Client *client_p, struct Client *source_p,
                int parc, char *parv[])
 {
   struct EncCapability *ecap;
-  struct ConfItem *conf;
-  struct AccessItem *aconf;
+  struct ConnectConf *conf;
   int   enc_len;
   int   len;
   unsigned char *enc;
@@ -217,10 +216,9 @@ cryptlink_auth(struct Client *client_p, struct Client *source_p,
                     "Lost connect block");
     return;
   }
-  aconf = &conf->conf.AccessItem;
 
   if (!(client_p->localClient->out_cipher ||
-      (client_p->localClient->out_cipher = check_cipher(client_p, aconf))))
+      (client_p->localClient->out_cipher = check_cipher(client_p, conf))))
   {
     cryptlink_error(client_p, "AUTH",
                     "Couldn't find compatible cipher",
@@ -253,8 +251,7 @@ cryptlink_serv(struct Client *client_p, struct Client *source_p,
   struct Client *target_p;
   char *key = client_p->localClient->out_key;
   unsigned char *b64_key;
-  struct ConfItem *conf;
-  struct AccessItem *aconf;
+  struct ConnectConf *conf;
   char *encrypted;
   const char *p;
   int enc_len;
@@ -292,7 +289,7 @@ cryptlink_serv(struct Client *client_p, struct Client *source_p,
   switch (check_server(name, client_p, CHECK_SERVER_CRYPTLINK))
   {
     case -1:
-      if (ConfigFileEntry.warn_no_nline)
+      if (General.warn_no_nline)
       {
         cryptlink_error(client_p, "SERV",
           "Unauthorized server connection attempt: No entry for server",
@@ -345,8 +342,6 @@ cryptlink_serv(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  aconf = &conf->conf.AccessItem;
-
   /*
    * if we are connecting (Handshake), we already have the name from the
    * connect {} block in client_p->name
@@ -373,7 +368,7 @@ cryptlink_serv(struct Client *client_p, struct Client *source_p,
   client_p->hopcount = 0;
 
   if (!(client_p->localClient->out_cipher ||
-      (client_p->localClient->out_cipher = check_cipher(client_p, aconf))))
+      (client_p->localClient->out_cipher = check_cipher(client_p, conf))))
   {
     cryptlink_error(client_p, "AUTH",
                     "Couldn't find compatible cipher",
@@ -385,7 +380,7 @@ cryptlink_serv(struct Client *client_p, struct Client *source_p,
   enc_len   = RSA_public_encrypt(client_p->localClient->out_cipher->keylen,
                                (unsigned char *)key,
                                (unsigned char *)encrypted,
-                               aconf->rsa_public_key,
+                               conf->rsa_public_key,
                                RSA_PKCS1_PADDING);
 
   if (enc_len <= 0)
@@ -403,9 +398,7 @@ cryptlink_serv(struct Client *client_p, struct Client *source_p,
   MyFree(encrypted);
 
   if (!IsWaitAuth(client_p))
-  {
-    cryptlink_init(client_p, aconf, NULL);
-  }
+    cryptlink_init(client_p, conf, NULL);
 
   sendto_one(client_p, "CRYPTLINK AUTH %s %s",
              client_p->localClient->out_cipher->name,

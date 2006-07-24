@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "hash.h"
@@ -33,7 +34,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 #define FORM_STR_RPL_ETRACE	":%s 709 %s %s %s %s %s %s :%s"
 
@@ -109,7 +109,7 @@ do_etrace(va_list args)
     if (wilds)
     {
       if (match(tname, target_p->name) || match(target_p->name, tname))
-	report_this_status(source_p, target_p);
+        report_this_status(source_p, target_p);
     }
     else
       report_this_status(source_p, target_p);
@@ -133,25 +133,19 @@ mo_etrace(struct Client *client_p, struct Client *source_p,
 
 /* report_this_status()
  *
- * inputs	- pointer to client to report to
- * 		- pointer to client to report about
- * output	- NONE
+ * inputs   - pointer to client to report to
+ * 	        - pointer to client to report about
+ * output   - NONE
  * side effects - NONE
  */
 static void
 report_this_status(struct Client *source_p, struct Client *target_p)
 {
-  const char *name;
-  const char *class_name;
-
-  name = get_client_name(target_p, HIDE_IP);
-  class_name = get_client_className(target_p);
-
-  set_time();
+  const char *class_name = target_p->localClient->class->name;
 
   if (target_p->status == STAT_CLIENT)
   {
-    if (ConfigFileEntry.hide_spoof_ips)
+    if (General.hide_spoof_ips)
       sendto_one(source_p, FORM_STR_RPL_ETRACE,
 		 me.name, source_p->name,
 		 IsOper(target_p) ? "Oper" : "User",

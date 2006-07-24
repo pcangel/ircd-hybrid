@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "channel.h"
 #include "channel_mode.h"
@@ -35,8 +36,6 @@
 #include "s_serv.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
-
 
 static void m_join(struct Client *, struct Client *, int, char *[]);
 static void ms_join(struct Client *, struct Client *, int, char *[]);
@@ -81,7 +80,7 @@ can_join(struct Client *source_p, struct Channel *chptr, const char *key)
 
   if (chptr->mode.mode & MODE_INVITEONLY)
     if (!dlinkFind(&source_p->localClient->invited, chptr))
-      if (!ConfigChannel.use_invex || !find_bmask(source_p, &chptr->invexlist))
+      if (!Channel.use_invex || !find_bmask(source_p, &chptr->invexlist))
         return ERR_INVITEONLYCHAN;
 
   if (chptr->mode.key[0] && (!key || irccmp(chptr->mode.key, key)))
@@ -176,7 +175,7 @@ m_join(struct Client *client_p, struct Client *source_p,
       continue;
     }
 
-    if (ConfigChannel.disable_local_channels && (*chan == '&'))
+    if (Channel.disable_local_channels && (*chan == '&'))
     {
       sendto_one(source_p, form_str(ERR_NOSUCHCHANNEL),
                  me.name, source_p->name, chan);
@@ -184,8 +183,8 @@ m_join(struct Client *client_p, struct Client *source_p,
     }
 
     if (!IsExemptResv(source_p) &&
-        !(IsOper(source_p) && ConfigFileEntry.oper_pass_resv) &&
-        (!hash_find_resv(chan) == ConfigChannel.restrict_channels))
+        !(IsOper(source_p) && General.oper_pass_resv) &&
+        (!hash_find_resv(chan) == Channel.restrict_channels))
     {
       sendto_one(source_p, form_str(ERR_BADCHANNAME),
                  me.name, source_p->name, chan);
@@ -195,9 +194,9 @@ m_join(struct Client *client_p, struct Client *source_p,
       continue;
     }
 
-    if ((dlink_list_length(&source_p->channel) >= ConfigChannel.max_chans_per_user) &&
+    if ((dlink_list_length(&source_p->channel) >= Channel.max_chans_per_user) &&
         (!IsOper(source_p) || (dlink_list_length(&source_p->channel) >=
-                               ConfigChannel.max_chans_per_user * 3)))
+                               Channel.max_chans_per_user * 3)))
     {
       sendto_one(source_p, form_str(ERR_TOOMANYCHANNELS),
                  me.name, source_p->name, chan);
@@ -210,7 +209,7 @@ m_join(struct Client *client_p, struct Client *source_p,
         continue;
 
       if (splitmode && !IsOper(source_p) && (*chan != '&') &&
-          ConfigChannel.no_join_on_split)
+          Channel.no_join_on_split)
       {
         sendto_one(source_p, form_str(ERR_UNAVAILRESOURCE),
                    me.name, source_p->name, chan);
@@ -229,7 +228,7 @@ m_join(struct Client *client_p, struct Client *source_p,
     else
     {
       if (splitmode && !IsOper(source_p) && (*chan != '&') &&
-          (ConfigChannel.no_create_on_split || ConfigChannel.no_join_on_split))
+          (Channel.no_create_on_split || Channel.no_join_on_split))
       {
         sendto_one(source_p, form_str(ERR_UNAVAILRESOURCE),
                    me.name, source_p->name, chan);
@@ -413,7 +412,7 @@ ms_join(struct Client *client_p, struct Client *source_p,
   oldts   = chptr->channelts;
   oldmode = &chptr->mode;
 
-  if (ConfigFileEntry.ignore_bogus_ts)
+  if (General.ignore_bogus_ts)
   {
     if (newts < 800000000)
     {
@@ -478,7 +477,7 @@ ms_join(struct Client *client_p, struct Client *source_p,
    
   if (*modebuf != '\0')
   {
-    servername = (ConfigServerHide.hide_servers || IsHidden(source_p)) ?
+    servername = (ServerHide.hide_servers || IsHidden(source_p)) ?
                   me.name : source_p->name;
 
     /* This _SHOULD_ be to ALL_MEMBERS
@@ -713,7 +712,7 @@ remove_a_mode(struct Channel *chptr, struct Client *source_p,
       sendto_channel_local(ALL_MEMBERS, NO, chptr,
                            ":%s MODE %s %s%s",
                            (IsHidden(source_p) ||
-                           ConfigServerHide.hide_servers) ?
+                           ServerHide.hide_servers) ?
                            me.name : source_p->name,
                            chptr->chname, lmodebuf, sendbuf);
       mbuf = lmodebuf;
@@ -736,7 +735,7 @@ remove_a_mode(struct Channel *chptr, struct Client *source_p,
     }
     sendto_channel_local(ALL_MEMBERS, NO, chptr,
                          ":%s MODE %s %s%s",
-                         (IsHidden(source_p) || ConfigServerHide.hide_servers) ?
+                         (IsHidden(source_p) || ServerHide.hide_servers) ?
                          me.name : source_p->name,
                          chptr->chname, lmodebuf, sendbuf);
   }

@@ -29,6 +29,7 @@
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
+#include "motd.h"
 /* -lcrypto is implicit for building this module! */
 #include "rsa.h"
 #include "msg.h"
@@ -83,7 +84,7 @@ m_challenge(struct Client *client_p, struct Client *source_p,
   if (IsOper(source_p))
   {
     sendto_one(source_p, form_str(RPL_YOUREOPER), me.name, source_p->name);
-    send_message_file(source_p, &ConfigFileEntry.opermotd);
+    send_message_file(source_p, &opermotd);
     return;
   }
 
@@ -177,7 +178,7 @@ static void
 failed_challenge_notice(struct Client *source_p, const char *name,
 			const char *reason)
 {
-  if (ConfigFileEntry.failed_oper_notice)
+  if (General.failed_oper_notice)
     sendto_realops_flags(UMODE_ALL, L_ALL, "Failed CHALLENGE attempt as %s "
                          "by %s (%s@%s) - %s", name, source_p->name,
                          source_p->username, source_p->host, reason);

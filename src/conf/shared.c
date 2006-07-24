@@ -255,17 +255,17 @@ find_shared(const char *serv, const char *user, const char *host,
   DLINK_FOREACH(ptr, shared_confs.head)
   {
     conf = ptr->data;
-    if (!(conf->type & type) || !match(conf->server, serv) ||
-        !match(conf->user, user))
+    if (!(conf->type & type) || (serv && !match(conf->server, serv)) ||
+        (user && !match(conf->user, user)))
       continue;
 
-    if (conf->ip.ss.sin_family != AF_UNSPEC && (
+    if (ip && conf->ip.ss.sin_family != AF_UNSPEC && (
 #ifdef IPV6
         (conf->ip.ss.sin_family == AF_INET6) ? match_ipv6 :
 #endif
         match_ipv4)(ip, &conf->ip, conf->ip.ss_port))
       return conf;
-    if (match(conf->host, host))
+    if (host && match(conf->host, host))
       return conf;
   }
 

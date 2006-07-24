@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "hash.h"
@@ -36,7 +37,6 @@
 #include "resv.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "common.h"
 #include "packet.h"
 #include "watch.h"
@@ -122,8 +122,7 @@ mr_nick(struct Client *client_p, struct Client *source_p,
   }
 
   /* check if the nick is resv'd */
-  if (find_matching_name_conf(NRESV_TYPE, nick, NULL, NULL, 0) &&
-      !IsExemptResv(source_p))
+  if (!IsExemptResv(source_p) && find_nick_resv(nick))
   {
     sendto_one(source_p, form_str(ERR_ERRONEUSNICKNAME),
                me.name, EmptyString(parv[0]) ? "*" : parv[0], nick);
@@ -174,9 +173,9 @@ m_nick(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if (find_matching_name_conf(NRESV_TYPE, nick,
-			     NULL, NULL, 0) && !IsExemptResv(source_p) &&
-     !(IsOper(source_p) && ConfigFileEntry.oper_pass_resv))
+  if (!IsExemptResv(source_p) &&
+      !(IsOper(source_p) && General.oper_pass_resv) &&
+      find_nick_resv(nick))
   {
     sendto_one(source_p, form_str(ERR_ERRONEUSNICKNAME),
                me.name, parv[0], nick);
@@ -188,7 +187,6 @@ m_nick(struct Client *client_p, struct Client *source_p,
     /* If(target_p == source_p) the client is changing nicks between
      * equivalent nicknames ie: [nick] -> {nick}
      */
-
     if (target_p == source_p)
     {
       /* check the nick isnt exactly the same */

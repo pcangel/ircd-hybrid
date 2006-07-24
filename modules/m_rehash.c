@@ -32,6 +32,8 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
+#include "s_user.h"
+#include "motd.h"
 
 static void mo_rehash(struct Client *, struct Client *, int, char *[]);
 
@@ -95,7 +97,7 @@ mo_rehash(struct Client *client_p, struct Client *source_p,
       sendto_realops_flags(UMODE_ALL, L_ALL,
                            "%s is forcing re-reading of MOTD file",
                            get_oper_name(source_p));
-      read_message_file(&ConfigFileEntry.motd);
+      read_message_file(&motd);
       found = 1;
     }
     else if (irccmp(parv[1], "OMOTD") == 0)
@@ -103,7 +105,7 @@ mo_rehash(struct Client *client_p, struct Client *source_p,
       sendto_realops_flags(UMODE_ALL, L_ALL,
                            "%s is forcing re-reading of OPER MOTD file",
                            get_oper_name(source_p));
-      read_message_file(&ConfigFileEntry.opermotd);
+      read_message_file(&opermotd);
       found = 1;
     }
 
@@ -128,13 +130,13 @@ mo_rehash(struct Client *client_p, struct Client *source_p,
   else
   {
     sendto_one(source_p, form_str(RPL_REHASHING),
-               me.name, source_p->name, ConfigFileEntry.configfile);
+               me.name, source_p->name, ServerState.configfile);
     sendto_realops_flags(UMODE_ALL, L_ALL,
                          "%s is rehashing server config file",
                          get_oper_name(source_p));
     ilog(L_NOTICE, "REHASH From %s[%s]",
          get_oper_name(source_p), source_p->sockhost);
-    rehash(0);
+    read_conf_files(NO);
   }
 }
 

@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "channel.h"
 #include "client.h"
@@ -34,8 +35,8 @@
 #include "hash.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 #include "common.h"
+#include "s_user.h"
 
 static void mo_jupe(struct Client *, struct Client *, int, char *[]);
 

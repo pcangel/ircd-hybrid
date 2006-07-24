@@ -72,6 +72,7 @@
 
 /* List of ircd includes from ../include/ */
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "common.h"     /* FALSE bleah */
@@ -83,7 +84,6 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
 
 static void mo_spoof(struct Client *, struct Client *, int, char *[]);
 static void mo_delspoof(struct Client *, struct Client *, int, char *[]);
