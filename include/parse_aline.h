@@ -26,7 +26,7 @@
 #define INCLUDED_parse_aline_h
 
 EXTERN void cluster_a_line(struct Client *,
-			   const char *, int, int, const char *,...);
+  const char *, int, int, const char *,...);
 EXTERN int valid_wild_card(struct Client *, int, int, ...);
 
 #define CLEANUP_TKLINES_TIME 60
@@ -34,7 +34,7 @@ EXTERN int valid_wild_card(struct Client *, int, int, ...);
 #define TK_MINUTES 1
 EXTERN time_t valid_tkline(const char *, int);
 
-#define AWILD 0x1		/* check wild cards */
+#define AWILD 0x1        /* check wild cards */
 #define NOUSERLOOKUP 0x2 /* Don't lookup the user@host on /rkline nick */
 EXTERN int parse_aline(const char *, struct Client *, int, char **,
 		       int, char **, char **, time_t *, char **, char **);

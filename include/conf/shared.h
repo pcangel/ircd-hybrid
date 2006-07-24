@@ -50,9 +50,11 @@ struct ClusterConf
   dlink_node node;
 };
 
+EXTERN dlink_list cluster_confs;
+EXTERN dlink_list shared_confs;
+
 EXTERN struct SharedConf *find_shared(const char *, const char *, const char *,
   const struct irc_ssaddr *, int);
-EXTERN struct ClusterConf *find_cluster(const char *, int);
 
 #ifdef IN_CONF_C
 void init_shared(void);

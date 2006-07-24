@@ -40,17 +40,7 @@
 #include "userhost.h"
 #include "s_user.h"
 
-static void expire_tklines(dlink_list *);
 static int find_user_host(struct Client *, char *, char *, char *, unsigned int);
-
-
-dlink_list temporary_klines  = { NULL, NULL, 0 };
-dlink_list temporary_dlines  = { NULL, NULL, 0 };
-dlink_list temporary_xlines  = { NULL, NULL, 0 };
-dlink_list temporary_rklines = { NULL, NULL, 0 };
-dlink_list temporary_glines  = { NULL, NULL, 0 };
-dlink_list temporary_rxlines = { NULL, NULL, 0 };
-dlink_list temporary_resv    = { NULL, NULL, 0 };
 
 /* parse_aline
  *
@@ -58,8 +48,8 @@ dlink_list temporary_resv    = { NULL, NULL, 0 };
  *              - pointer to client using cmd
  *              - parc parameter count
  *              - parv[] list of parameters to parse
- *		- parse_flags bit map of things to test
- *		- pointer to user or string to parse into
+ *              - parse_flags bit map of things to test
+ *              - pointer to user or string to parse into
  *              - pointer to host or NULL to parse into if non NULL
  *              - pointer to optional tkline time or NULL 
  *              - pointer to target_server to parse into if non NULL
@@ -142,9 +132,9 @@ parse_aline(const char *cmd, struct Client *source_p,
 
       if (target_server == NULL)
       {
-	sendto_one(source_p, ":%s NOTICE %s :ON server not supported by %s",
+        sendto_one(source_p, ":%s NOTICE %s :ON server not supported by %s",
 		   me.name, source_p->name, cmd);
-	return -1;
+        return -1;
       }
 
       if (!IsOperRemoteBan(source_p))
@@ -156,9 +146,9 @@ parse_aline(const char *cmd, struct Client *source_p,
 
       if (parc == 0 || EmptyString(*parv))
       {
-	sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
-		   me.name, source_p->name, cmd);
-	return -1;
+        sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
+          me.name, source_p->name, cmd);
+        return -1;
       }
 
       *target_server = *parv;
@@ -171,7 +161,7 @@ parse_aline(const char *cmd, struct Client *source_p,
        * caller probably NULL'd it first, but no harm to do it again -db
        */
       if (target_server != NULL)
-	*target_server = NULL;
+        *target_server = NULL;
     }
   }
 
@@ -197,7 +187,7 @@ parse_aline(const char *cmd, struct Client *source_p,
     {
       *reason = *parv;
       if (!valid_comment(source_p, *reason, YES))
-	return -1;
+        return -1;
     }
     else
       *reason = def_reason;
@@ -230,19 +220,19 @@ cluster_a_line(struct Client *source_p, const char *command,
   vsnprintf(buffer, sizeof(buffer), pattern, args);
   va_end(args);
 
-  DLINK_FOREACH(ptr, cluster_items.head)
+  DLINK_FOREACH(ptr, cluster_confs.head)
   {
-    const struct ConfItem *conf = ptr->data;
+    const struct ClusterConf *conf = ptr->data;
 
-    if (conf->conf.MatchItem.action & cluster_type)
-      sendto_match_servs(source_p, conf->name, CAP_CLUSTER|capab,
-			 "%s %s %s", command, conf->name, buffer);
+    if ((conf->type & cluster_type))
+      sendto_match_servs(source_p, conf->server, CAP_CLUSTER|capab,
+                         "%s %s %s", command, conf->server, buffer);
   }
 }
 
 /* valid_comment()
  *
- * inputs	- pointer to client
+ * inputs       - pointer to client
  *              - pointer to comment
  * output       - 0 if no valid comment,
  *              - 1 if valid
@@ -302,7 +292,7 @@ find_user_host(struct Client *source_p, char *user_host_or_nick,
   {
     const struct Client *target_p = NULL;
 
-    /* Try to find user@host mask from nick */
+    // Try to find user@host mask from nick
     if ((target_p = find_chasing(source_p, lnick, NULL)) == NULL)
       return 0;
 
@@ -408,7 +398,6 @@ valid_wild_card(struct Client *source_p, int warn, int count, ...)
    * be disallowed.
    * -wnder
    */
-
   va_start(args, count);
 
   while (count--)
@@ -425,276 +414,15 @@ valid_wild_card(struct Client *source_p, int warn, int count, ...)
          * If we find enough non-wild characters, we can
          * break - no point in searching further.
          */
-        if (++nonwild >= ConfigFileEntry.min_nonwildcard)
+        if (++nonwild >= General.min_nonwildcard)
           return 1;
       }
     }
   }
 
   if (warn)
-    sendto_one(source_p, ":%s NOTICE %s :Please include at least %d non-wildcard characters with the mask",
-               me.name, source_p->name, ConfigFileEntry.min_nonwildcard);
+    sendto_one(source_p, ":%s NOTICE %s :Please include at least %d "
+               "non-wildcard characters with the mask",
+               me.name, source_p->name, General.min_nonwildcard);
   return 0;
-}
-
-/* find_kill()
- *
- * inputs	- pointer to client structure
- * output	- pointer to struct AccessItem if found
- * side effects	- See if this user is klined already,
- *		  and if so, return struct AccessItem pointer
- */
-struct AccessItem *
-find_kill(struct Client *client_p)
-{
-  struct AccessItem *aconf = NULL;
-  const char *uhi[3];
-
-  uhi[0] = client_p->username;
-  uhi[1] = client_p->host;
-  uhi[2] = client_p->sockhost;
-
-  assert(client_p != NULL);
-
-  aconf = find_kline_conf(client_p->host, client_p->username,
-			  &client_p->localClient->ip,
-			  client_p->localClient->aftype);
-  if (aconf == NULL)
-    aconf = find_regexp_kline(uhi);
-
-  if (aconf && (aconf->status & CONF_KLINE))
-    return aconf;
-
-  return NULL;
-}
-
-struct AccessItem *
-find_gline(struct Client *client_p)
-{
-  struct AccessItem *aconf;
-
-  assert(client_p != NULL);
-
-  aconf = find_gline_conf(client_p->host, client_p->username,
-                          &client_p->localClient->ip,
-                          client_p->localClient->aftype);
-
-  if (aconf && (aconf->status & CONF_GLINE))
-    return aconf;
-
-  return NULL;
-}
-
-/* add_temp_line()
- *
- * inputs        - pointer to struct ConfItem
- * output        - none
- * Side effects  - links in given struct ConfItem into 
- *                 temporary *line link list
- */
-void
-add_temp_line(struct ConfItem *conf)
-{
-  struct AccessItem *aconf;
-
-  if (conf->type == DLINE_TYPE)
-  {
-    aconf = &conf->conf.AccessItem;
-    SetConfTemporary(aconf);
-    dlinkAdd(conf, &conf->node, &temporary_dlines);
-    MyFree(aconf->user);
-    aconf->user = NULL;
-    add_conf_by_address(CONF_DLINE, aconf);
-  }
-  else if (conf->type == KLINE_TYPE)
-  {
-    aconf = &conf->conf.AccessItem;
-    SetConfTemporary(aconf);
-    dlinkAdd(conf, &conf->node, &temporary_klines);
-    add_conf_by_address(CONF_KILL, aconf);
-  }
-  else if (conf->type == GLINE_TYPE)
-  {
-    aconf = &conf->conf.AccessItem;
-    SetConfTemporary(aconf);
-    dlinkAdd(conf, &conf->node, &temporary_glines);
-    add_conf_by_address(CONF_GLINE, aconf);
-  }
-  else if (conf->type == XLINE_TYPE)
-  {
-    conf->flags |= CONF_FLAGS_TEMPORARY;
-    dlinkAdd(conf, make_dlink_node(), &temporary_xlines);
-  }
-  else if (conf->type == RXLINE_TYPE)
-  {
-    conf->flags |= CONF_FLAGS_TEMPORARY;
-    dlinkAdd(conf, make_dlink_node(), &temporary_rxlines);
-  }
-  else if (conf->type == RKLINE_TYPE)
-  {
-    conf->flags |= CONF_FLAGS_TEMPORARY;
-    dlinkAdd(conf, make_dlink_node(), &temporary_rklines);
-  }
-  else if ((conf->type == NRESV_TYPE) || (conf->type == CRESV_TYPE))
-  {
-    conf->flags |= CONF_FLAGS_TEMPORARY;
-    dlinkAdd(conf, make_dlink_node(), &temporary_resv);
-  }
-}
-
-/* cleanup_tklines()
- *
- * inputs       - NONE
- * output       - NONE
- * side effects - call function to expire temporary k/d lines
- *                This is an event started off in ircd.c
- */
-void
-cleanup_tklines(void *notused)
-{
-  expire_tklines(&temporary_glines);
-  expire_tklines(&temporary_klines);
-  expire_tklines(&temporary_dlines);
-  expire_tklines(&temporary_xlines);
-  expire_tklines(&temporary_rxlines);
-  expire_tklines(&temporary_rklines);
-  expire_tklines(&temporary_resv);
-}
-
-/* expire_tklines()
- *
- * inputs       - tkline list pointer
- * output       - NONE
- * side effects - expire tklines
- */
-static void
-expire_tklines(dlink_list *tklist)
-{
-  dlink_node *ptr;
-  dlink_node *next_ptr;
-  struct ConfItem *conf;
-  struct MatchItem *xconf;
-  struct MatchItem *nconf;
-  struct AccessItem *aconf;
-  struct ResvChannel *cconf;
-
-  DLINK_FOREACH_SAFE(ptr, next_ptr, tklist->head)
-  {
-    conf = ptr->data;
-    if (conf->type == GLINE_TYPE ||
-        conf->type == KLINE_TYPE ||
-        conf->type == DLINE_TYPE)
-    {
-      aconf = &conf->conf.AccessItem;
-      if (aconf->hold <= CurrentTime)
-      {
-        /* XXX - Do we want GLINE expiry notices?? */
-	/* Alert opers that a TKline expired - Hwy */
-        if (ConfigFileEntry.tkline_expire_notices)
-        {
-	  if (aconf->status & CONF_KILL)
-	  {
-	    sendto_realops_flags(UMODE_ALL, L_ALL,
-				 "Temporary K-line for [%s@%s] expired",
-				 (aconf->user) ? aconf->user : "*",
-				 (aconf->host) ? aconf->host : "*");
-	  }
-	  else if (conf->type == DLINE_TYPE)
-	  {
-	    sendto_realops_flags(UMODE_ALL, L_ALL,
-				 "Temporary D-line for [%s] expired",
-				 (aconf->host) ? aconf->host : "*");
-	  }
-        }
-
-	delete_one_address_conf(aconf->host, aconf);
-	dlinkDelete(ptr, tklist);
-      }
-    }
-    else if (conf->type == XLINE_TYPE ||
-	     conf->type == RXLINE_TYPE)
-    {
-      xconf = &conf->conf.MatchItem;
-      if (xconf->hold <= CurrentTime)
-      {
-        if (ConfigFileEntry.tkline_expire_notices)
-	  sendto_realops_flags(UMODE_ALL, L_ALL,
-                               "Temporary X-line for [%s] %sexpired", conf->name,
-                               conf->type == RXLINE_TYPE ? "(REGEX) " : "");
-	dlinkDelete(ptr, tklist);
-        free_dlink_node(ptr);
-	delete_conf_item(conf);
-      }
-    }
-    else if (conf->type == RKLINE_TYPE)
-    {
-      aconf = &conf->conf.AccessItem;
-      if (aconf->hold <= CurrentTime)
-      {
-        if (ConfigFileEntry.tkline_expire_notices)
-           sendto_realops_flags(UMODE_ALL, L_ALL,
-                                "Temporary K-line for [%s@%s] (REGEX) expired",
-                                (aconf->user) ? aconf->user : "*",
-                                (aconf->host) ? aconf->host : "*");
-        dlinkDelete(ptr, tklist);
-        free_dlink_node(ptr);
-        delete_conf_item(conf);
-      }
-    }
-    else if (conf->type == NRESV_TYPE)
-    {
-      nconf = &conf->conf.MatchItem;
-      if (nconf->hold <= CurrentTime)
-      {
-        if (ConfigFileEntry.tkline_expire_notices)
-	  sendto_realops_flags(UMODE_ALL, L_ALL,
-                               "Temporary RESV for [%s] expired", conf->name);
-	dlinkDelete(ptr, tklist);
-        free_dlink_node(ptr);
-	delete_conf_item(conf);
-      }
-    }
-    else if (conf->type == CRESV_TYPE)
-    {
-      cconf = &conf->conf.ResvChannel;
-      if (cconf->hold <= CurrentTime)
-      {
-        if (ConfigFileEntry.tkline_expire_notices)
-	  sendto_realops_flags(UMODE_ALL, L_ALL,
-                               "Temporary RESV for [%s] expired", cconf->name);
-	dlinkDelete(ptr, tklist);
-        free_dlink_node(ptr);
-	delete_conf_item(conf);
-      }
-    }
-  }
-}
-
-/*
- * find_regexp_kline
- *
- * inputs	- 
- * output	- return a pointer to an AccessItem if present
- *		  NULL if not
- * side effects	- none
- */
-struct AccessItem *
-find_regexp_kline(const char *uhi[])
-{
-  const dlink_node *ptr = NULL;
-
-  DLINK_FOREACH(ptr, rkconf_items.head)
-  {
-    struct AccessItem *aptr = &((struct ConfItem *)ptr->data)->conf.AccessItem;
-
-    assert(aptr->regexuser);
-    assert(aptr->regexhost);
-
-    if (!ircd_pcre_exec(aptr->regexuser, uhi[0]) &&
-        (!ircd_pcre_exec(aptr->regexhost, uhi[1]) ||
-         !ircd_pcre_exec(aptr->regexhost, uhi[2])))
-      return aptr;
-  }
-
-  return NULL;
 }

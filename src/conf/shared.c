@@ -25,14 +25,14 @@
 #include "stdinc.h"
 #include "conf/conf.h"
 
+dlink_list cluster_confs = {0};
+dlink_list shared_confs = {0};
+
 static dlink_node *hreset;
 static char *tmpserver = NULL;
 static char tmpuser[USERLEN + 1];
 static char tmphost[HOSTLEN + 1];
 static int tmpflags;
-static dlink_list shared_confs = {0};
-static dlink_list cluster_confs = {0};
-
 // TODO: These should be modularised like acb_types
 static const struct FlagMapping {
   const char *name;
@@ -266,32 +266,6 @@ find_shared(const char *serv, const char *user, const char *host,
         match_ipv4)(ip, &conf->ip, conf->ip.ss_port))
       return conf;
     if (match(conf->host, host))
-      return conf;
-  }
-
-  return NULL;
-}
-
-/*
- * find_cluster()
- *
- * Looks for a cluster{} entry.
- *
- * inputs:
- *   serv  -  server we're considering sending to
- *   type  -  type of operation
- * output: pointer to a cluster conf or NULL
- */
-struct ClusterConf *
-find_cluster(const char *serv, int type)
-{
-  dlink_node *ptr;
-  struct ClusterConf *conf;
-
-  DLINK_FOREACH(ptr, cluster_confs.head)
-  {
-    conf = ptr->data;
-    if ((conf->type & type) && match(conf->server, serv))
       return conf;
   }
 
