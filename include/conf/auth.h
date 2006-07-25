@@ -45,6 +45,8 @@ struct AuthConf
   int redirport;
 };
 
+EXTERN int acb_type_auth;
+
 struct Client;
 
 EXTERN struct AuthConf *find_iline(const char *, const char *,

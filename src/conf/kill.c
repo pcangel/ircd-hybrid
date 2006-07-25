@@ -27,6 +27,7 @@
 #include "client.h"
 #include "numeric.h"
 #include "send.h"
+#include "s_serv.h"
 
 // TODO: Add callbacks for (r)kline.conf support with default handlers
 
@@ -35,9 +36,9 @@ int acb_type_kline;
 
 static struct KillConf tmpkill = {{0}, 0};
 static dlink_node *hreset, *hexpire, *hbanned;
-static char *report_letter;
 
-static void report_kline(struct KillConf *, struct Client *);
+static void do_report_kline(struct KillConf *, struct Client *);
+static void do_report_tkline(struct KillConf *, struct Client *);
 
 /*
  * free_kline()
@@ -268,26 +269,6 @@ find_kline(const char *user, const char *host, const char *sockhost,
   return best;
 }
 
-static int
-verify_kline_exact(struct AccessConf *conf, void *ptr)
-{
-  struct split_nuh_item *uh = ptr;
-  return !irccmp(conf->host, uh->hostptr) &&
-         !irccmp(conf->user, uh->userptr);
-}
-
-struct KillConf *
-find_exact_kline(const char *user, const char *host)
-{
-  struct split_nuh_item uh;
-
-  uh.userptr = (char*) user;
-  uh.hostptr = (char*) host;
-
-  return (struct KillConf *) find_access_conf(acb_type_kline, user, host, NULL,
-    verify_kline_exact, &uh);
-}
-
 struct KillConf *
 find_exact_rkline(const char *user, const char *host)
 {
@@ -313,21 +294,60 @@ find_exact_rkline(const char *user, const char *host)
  *   tkline    -  YES if we should list temporary klines, NO if permanent ones
  * output: none
  */
-void
-report_klines(struct Client *client_p, int tkline)
+static void
+do_report_klines(struct Client *client_p, int tkline)
 {
-  report_letter = tkline ? "k" : "K";
-  enum_access_confs((ACB_EXAMINE_HANDLER *) report_kline, client_p);
+  void (* func)(struct KillConf *, struct Client *) = tkline ?
+    do_report_tkline : do_report_kline;
+  struct KillConf *conf;
+  dlink_node *ptr;
+
+  if (General.stats_k_oper_only == 2 && !IsOper(client_p))
+    sendto_one(client_p, form_str(ERR_NOPRIVILEGES),
+               ID_or_name(&me, client_p->from),
+               ID_or_name(client_p, client_p->from));
+  else if (General.stats_k_oper_only == 1 && !IsOper(client_p))
+  {
+    if ((conf = find_kline(client_p->username, client_p->host,
+      client_p->sockhost, MyConnect(client_p) ?
+      &client_p->localClient->ip : NULL)))
+      func(conf, client_p);
+  }
+  else
+  {
+    enum_access_confs((ACB_EXAMINE_HANDLER*) func, client_p);
+    DLINK_FOREACH(ptr, rkline_confs.head)
+      func(ptr->data, client_p);
+  }
+}
+
+void report_klines(struct Client *client_p) { do_report_klines(client_p, NO); }
+void report_tklines(struct Client *client_p) { do_report_klines(client_p, YES); }
+
+static void
+do_report_kline(struct KillConf *conf, struct Client *client_p)
+{
+  if ((conf->access.type == acb_type_kline || conf->access.type == -1) &&
+      !conf->access.expires)
+    sendto_one(client_p, form_str(RPL_STATSKLINE),
+               ID_or_name(&me, client_p->from),
+               ID_or_name(client_p, client_p->from),
+               (conf->access.type < 0) ? "RK" : "K",
+               conf->access.host, conf->access.user, conf->reason,
+               (IsOper(client_p) && conf->oper_reason) ?
+               conf->oper_reason : "");
 }
 
 static void
-report_kline(struct KillConf *conf, struct Client *client_p)
+do_report_tkline(struct KillConf *conf, struct Client *client_p)
 {
-  if (conf->access.type == acb_type_kline &&
-      (report_letter[0] == 'K') == (conf->access.expires == 0))
-    sendto_one(client_p, form_str(RPL_STATSKLINE), me.name,
-               client_p->name, report_letter, conf->access.host,
-               conf->access.user, conf->reason,
+  if ((conf->access.type == acb_type_kline || conf->access.type == -1) &&
+      conf->access.expires)
+    sendto_one(client_p, form_str(RPL_STATSKLINE),
+               ID_or_name(&me, client_p->from),
+               ID_or_name(client_p, client_p->from),
+               (conf->access.type < 0) ? "Rk" : "k",
+               conf->access.host, conf->access.user, conf->reason,
                (IsOper(client_p) && conf->oper_reason) ?
                conf->oper_reason : "");
 }

@@ -53,8 +53,11 @@ struct ClusterConf
 EXTERN dlink_list cluster_confs;
 EXTERN dlink_list shared_confs;
 
+struct Client;
+
 EXTERN struct SharedConf *find_shared(const char *, const char *, const char *,
   const char *, int);
+EXTERN void report_shared(struct Client *);
 
 #ifdef IN_CONF_C
 void init_shared(void);

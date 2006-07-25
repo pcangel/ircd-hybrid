@@ -32,8 +32,13 @@ struct DenyConf
 EXTERN int acb_type_deny;
 EXTERN int acb_type_exempt;
 
+struct Client;
+
 EXTERN struct DenyConf *find_dline(const struct irc_ssaddr *);
 EXTERN struct AccessConf *find_exempt(const struct irc_ssaddr *);
+EXTERN void report_deny(struct Client *);
+EXTERN void report_tdeny(struct Client *);
+EXTERN void report_exempt(struct Client *);
 
 #ifdef IN_CONF_C
 void init_deny(void);

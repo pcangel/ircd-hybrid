@@ -24,6 +24,10 @@
 
 #include "stdinc.h"
 #include "conf/conf.h"
+#include "client.h"
+#include "numeric.h"
+#include "send.h"
+#include "s_serv.h"
 
 dlink_list cluster_confs = {0};
 dlink_list shared_confs = {0};
@@ -35,21 +39,44 @@ static char tmphost[HOSTLEN + 1];
 static int tmpflags;
 // TODO: These should be modularised like acb_types
 static const struct FlagMapping {
+  char letter;
   const char *name;
   unsigned int flag;
 } flag_mappings[] = {
-  {"kline", SHARED_KLINE},
-  {"tkline", SHARED_TKLINE},
-  {"unkline", SHARED_UNKLINE},
-  {"xline", SHARED_XLINE},
-  {"txline", SHARED_TXLINE},
-  {"unxline", SHARED_UNXLINE},
-  {"resv", SHARED_RESV},
-  {"tresv", SHARED_TRESV},
-  {"unresv", SHARED_UNRESV},
-  {"locops", SHARED_LOCOPS},
-  {NULL, 0}
+  {'K', "kline", SHARED_KLINE},
+  {'k', "tkline", SHARED_TKLINE},
+  {'U', "unkline", SHARED_UNKLINE},
+  {'X', "xline", SHARED_XLINE},
+  {'x', "txline", SHARED_TXLINE},
+  {'Y', "unxline", SHARED_UNXLINE},
+  {'Q', "resv", SHARED_RESV},
+  {'q', "tresv", SHARED_TRESV},
+  {'R', "unresv", SHARED_UNRESV},
+  {'L', "locops", SHARED_LOCOPS},
+  {0, NULL, 0}
 };
+
+/*
+ * shared_type_as_string()
+ *
+ * Translates an integer type value to a string representation.
+ *
+ * inputs:
+ *   type  -  bitfield
+ *   str   -  where to put the result
+ * output: none
+ */
+static void
+shared_type_as_string(int type, char *str)
+{
+  const struct FlagMapping *m;
+
+  for (m = flag_mappings; m->letter; m++)
+    if ((type & m->flag) != 0)
+      *str++ = m->letter;
+
+  *str = 0;
+}
 
 /*
  * reset_shared()
@@ -251,25 +278,23 @@ find_shared(const char *serv, const char *user, const char *host,
 {
   dlink_node *ptr;
   struct SharedConf *conf;
+  struct addrinfo hints = {0}, *res;
   struct irc_ssaddr ip;
 
   ip.ss.sin_family = AF_UNSPEC;
+  if (EmptyString(addr))
+    addr = host;
 
-  if (!EmptyString(addr))
+  hints.ai_family   = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags    = AI_NUMERICHOST;
+
+  if (!irc_getaddrinfo(addr, NULL, &hints, &res))
   {
-    struct addrinfo hints = {0}, *res;
-
-    hints.ai_family   = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags    = AI_NUMERICHOST;
-
-    if (!irc_getaddrinfo(addr, NULL, &hints, &res))
-    {
-      memcpy(&ip, res->ai_addr, res->ai_addrlen);
-      ip.ss.sin_family = res->ai_family;
-      ip.ss_len = res->ai_addrlen;
-      irc_freeaddrinfo(res);
-    }
+    memcpy(&ip, res->ai_addr, res->ai_addrlen);
+    ip.ss.sin_family = res->ai_family;
+    ip.ss_len = res->ai_addrlen;
+    irc_freeaddrinfo(res);
   }
 
   DLINK_FOREACH(ptr, shared_confs.head)
@@ -291,6 +316,44 @@ find_shared(const char *serv, const char *user, const char *host,
   }
 
   return NULL;
+}
+
+/*
+ * report_shared()
+ *
+ * Sends a /stats U reply to the given client.
+ *
+ * inputs: client pointer
+ * output: none
+ */
+void
+report_shared(struct Client *to)
+{
+  dlink_node *ptr;
+  struct SharedConf *conf;
+  struct ClusterConf *conf2;
+  char buffer[32];
+
+  DLINK_FOREACH(ptr, shared_confs.head)
+  {
+    conf = ptr->data;
+    buffer[0] = 'c';
+    shared_type_as_string(conf->type, buffer + 1);
+    sendto_one(to, form_str(RPL_STATSULINE), ID_or_name(&me, to->from),
+               ID_or_name(to, to->from), conf->server ? conf->server : "*",
+               conf->user ? conf->user : "*", conf->host ? conf->host : "*",
+               buffer);
+  }
+
+  DLINK_FOREACH(ptr, cluster_confs.head)
+  {
+    conf2 = ptr->data;
+    buffer[0] = 'C';
+    shared_type_as_string(conf->type, buffer + 1);
+    sendto_one(to, form_str(RPL_STATSULINE), ID_or_name(&me, to->from),
+               ID_or_name(to, to->from), conf->server ? conf->server : "*",
+               "*", "*", buffer);
+  }
 }
 
 /*

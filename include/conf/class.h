@@ -41,17 +41,20 @@ struct Class
   dlink_node node;
 };
 
-typedef void (* ENUMCLASSFUNC) (struct Class *);
+typedef void (* ENUMCLASSFUNC) (struct Class *, void *);
 
 EXTERN struct Class *default_class;
 EXTERN dlink_list class_list;
+
+struct Client;
 
 EXTERN struct Class *ref_class_by_name(const char *);
 EXTERN struct Class *ref_class_by_ptr(struct Class *);
 EXTERN void unref_class(struct Class *);
 EXTERN struct Class *make_class(const char *);
 EXTERN void delete_class(struct Class *);
-EXTERN void enum_classes(ENUMCLASSFUNC);
+EXTERN void enum_classes(ENUMCLASSFUNC, void *);
+EXTERN void report_class(struct Client *);
 
 #ifdef IN_CONF_C
 void init_class(void);

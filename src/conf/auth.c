@@ -27,8 +27,10 @@
 #include "client.h"
 #include "numeric.h"
 #include "send.h"
+#include "s_serv.h"
 
-static int acb_type_auth = -1;
+int acb_type_auth = -1;
+
 static struct AuthConf tmpauth = {{0}, 0};
 static dlink_list tmpuh = {0};
 
@@ -296,7 +298,20 @@ check_auth_passwd(struct AuthConf *conf, const char *pwd)
 void
 report_auth(struct Client *source_p)
 {
-  enum_access_confs((ACB_EXAMINE_HANDLER *) do_report_auth, source_p);
+  if (General.stats_i_oper_only == 2 && !IsOper(source_p))
+    sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
+               ID_or_name(&me, source_p->from),
+               ID_or_name(source_p, source_p->from));
+  else if (General.stats_i_oper_only == 1 && !IsOper(source_p))
+  {
+    struct AuthConf *conf = find_iline(source_p->username, source_p->host,
+      MyConnect(source_p) ? &source_p->localClient->ip : NULL,
+      MyConnect(source_p) ? source_p->localClient->passwd : NULL);
+    if (conf)
+      do_report_auth(conf, source_p);
+  }
+  else
+    enum_access_confs((ACB_EXAMINE_HANDLER *) do_report_auth, source_p);
 }
 
 static int
@@ -315,8 +330,10 @@ do_report_auth(struct AuthConf *conf, struct Client *source_p)
       *p++ = m->letter;
   *p = 0;
 
-  sendto_one(source_p, form_str(RPL_STATSILINE), me.name, source_p->name,
-             'I', conf->spoof ? conf->spoof : "*", prefix, conf->access.user,
+  sendto_one(source_p, form_str(RPL_STATSILINE),
+             ID_or_name(&me, source_p->from),
+             ID_or_name(source_p, source_p->from), 'I', conf->spoof ?
+             conf->spoof : "*", prefix, conf->access.user,
              (General.hide_spoof_ips && conf->spoof) ? "255.255.255.255" :
              conf->access.host, conf->redirport, conf->class_ptr->name);
   return 0;

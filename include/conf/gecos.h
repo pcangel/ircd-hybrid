@@ -27,14 +27,18 @@ struct GecosConf
   char *mask;
   char *reason;
   pcre *regex;
+  int count;
   time_t expires;
   dlink_node node;
 };
 
 EXTERN dlink_list gecos_confs;
 
+struct Client;
+
 EXTERN struct GecosConf *find_exact_xline(const char *, int);
 EXTERN struct GecosConf *find_gecos_ban(const char *);
+EXTERN void report_gecos(struct Client *);
 
 #ifdef IN_CONF_C
 void init_gecos(void);

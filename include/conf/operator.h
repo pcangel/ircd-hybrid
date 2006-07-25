@@ -73,6 +73,7 @@ struct Client;
 EXTERN char *oper_privs_as_string(int);
 EXTERN struct OperatorConf *find_operconf(const char *, const char *,
   const char *, const struct irc_ssaddr *);
+EXTERN void report_oper(struct Client *);
 
 #ifdef IN_CONF_C
 void init_operator(void);

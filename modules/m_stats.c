@@ -68,30 +68,13 @@ static void stats_L(struct Client *, char *, int, int, char);
 static void stats_L_list(struct Client *s, char *, int, int, dlink_list *, char);
 
 static void stats_dns_servers(struct Client *);
-static void stats_connect(struct Client *);
-static void stats_deny(struct Client *);
-static void stats_tdeny(struct Client *);
-static void stats_exempt(struct Client *);
 static void stats_events(struct Client *);
-static void stats_pending_glines(struct Client *);
-static void stats_glines(struct Client *);
-static void stats_gdeny(struct Client *);
-static void stats_hubleaf(struct Client *);
-static void stats_auth(struct Client *);
-static void stats_tklines(struct Client *);
-static void stats_klines(struct Client *);
-static void stats_messages(struct Client *);
-static void stats_oper(struct Client *);
 static void stats_operedup(struct Client *);
 static void stats_ports(struct Client *);
-static void stats_resv(struct Client *);
 static void stats_usage(struct Client *);
 static void stats_tstats(struct Client *);
 static void stats_uptime(struct Client *);
-static void stats_shared(struct Client *);
 static void stats_servers(struct Client *);
-static void stats_gecos(struct Client *);
-static void stats_class(struct Client *);
 static void stats_memory(struct Client *);
 static void stats_servlinks(struct Client *);
 static void stats_ltrace(struct Client *, int, char **);
@@ -109,51 +92,51 @@ static const struct StatsStruct
   const unsigned int need_oper;
   const unsigned int need_admin;
 } stats_cmd_table[] = {
-  /* letter     function            need_oper need_admin */
-  { 'a',	stats_dns_servers,	1,	1,	},
-  { 'A',	stats_dns_servers,	1,	1,	},
-  { 'c',	stats_connect,		1,	0,	},
-  { 'C',	stats_connect,		1,	0,	},
-  { 'd',	stats_tdeny,		1,	0,	},
-  { 'D',	stats_deny,		1,	0,	},
-  { 'e', 	stats_exempt,		1,	0,	},
-  { 'E',	stats_events,		1,	1,	},
-  { 'f',	fd_dump,		1,	1,	},
-  { 'F',	fd_dump,		1,	1,	},
-  { 'g',	stats_pending_glines,	1,	0,	},
-  { 'G',	stats_glines,		1,	0,	},
-  { 'h',	stats_hooks,		1,	1,	},
-  { 'H',	stats_hubleaf,		1,	0,	},
-  { 'i',	stats_auth,		0,	0,	},
-  { 'I',	stats_auth,		0,	0,	},
-  { 'k',	stats_tklines,		0,	0,	},
-  { 'K',	stats_klines,		0,	0,	},
-  { 'l',	stats_ltrace,		1,	0,	},
-  { 'L',	stats_ltrace,		1,	0,	},
-  { 'm',	stats_messages,		0,	0,	},
-  { 'M',	stats_messages,		0,	0,	},
-  { 'o',	stats_oper,		0,	0,	},
-  { 'O',	stats_oper,		0,	0,	},
-  { 'p',	stats_operedup,		0,	0,	},
-  { 'P',	stats_ports,		0,	0,	},
-  { 'q',	stats_resv,		1,	0,	},
-  { 'Q',	stats_resv,		1,	0,	},
-  { 'r',	stats_usage,		1,	0,	},
-  { 'R',	stats_usage,		1,	0,	},
-  { 't',	stats_tstats,		1,	0,	},
-  { 'T',	stats_tstats,		1,	0,	},
-  { 'u',	stats_uptime,		0,	0,	},
-  { 'U',	stats_shared,		1,	0,	},
-  { 'v',	stats_servers,		1,	0,	},
-  { 'V',	stats_gdeny,		1,	0,	},
-  { 'x',	stats_gecos,		1,	0,	},
-  { 'X',	stats_gecos,		1,	0,	},
-  { 'y',	stats_class,		1,	0,	},
-  { 'Y',	stats_class,		1,	0,	},
-  { 'z',	stats_memory,		1,	0,	},
-  { 'Z',	stats_ziplinks,		1,	0,	},
-  { '?',	stats_servlinks,	0,	0,	},
-  { '\0',       (void(*)())0,           0,	0,	}
+  // letter     function            need_oper need_admin
+  { 'a',	stats_dns_servers,      1,	1,	},
+  { 'A',	stats_dns_servers,      1,	1,	},
+  { 'c',	report_connect,         1,	0,	},
+  { 'C',	report_connect,         1,	0,	},
+  { 'd',	report_tdeny,           1,	0,	},
+  { 'D',	report_deny,            1,	0,	},
+  { 'e', 	report_exempt,          1,	0,	},
+  { 'E',	stats_events,           1,	1,	},
+  { 'f',	fd_dump,                1,	1,	},
+  { 'F',	fd_dump,                1,	1,	},
+  { 'g',	report_pending_glines,	1,	0,	},
+  { 'G',	report_glines,          1,	0,	},
+  { 'h',	stats_hooks,            1,	1,	},
+  { 'H',	report_hubleaf,         1,	0,	},
+  { 'i',	report_auth,            0,	0,	},
+  { 'I',	report_auth,            0,	0,	},
+  { 'k',	report_tklines,     	0,	0,	},
+  { 'K',	report_klines,          0,	0,	},
+  { 'l',	stats_ltrace,           1,	0,	},
+  { 'L',	stats_ltrace,           1,	0,	},
+  { 'm',	report_messages,        0,	0,	},
+  { 'M',	report_messages,        0,	0,	},
+  { 'o',	report_oper,            0,	0,	},
+  { 'O',	report_oper,            0,	0,	},
+  { 'p',	stats_operedup,         0,	0,	},
+  { 'P',	stats_ports,            0,	0,	},
+  { 'q',	report_resv,            1,	0,	},
+  { 'Q',	report_resv,            1,	0,	},
+  { 'r',	stats_usage,            1,	0,	},
+  { 'R',	stats_usage,            1,	0,	},
+  { 't',	stats_tstats,           1,	0,	},
+  { 'T',	stats_tstats,           1,	0,	},
+  { 'u',	stats_uptime,           0,	0,	},
+  { 'U',	report_shared,          1,	0,	},
+  { 'v',	stats_servers,          1,	0,	},
+  { 'V',	report_gline_deny,      1,	0,	},
+  { 'x',	report_gecos,           1,	0,	},
+  { 'X',	report_gecos,           1,	0,	},
+  { 'y',	report_class,           1,	0,	},
+  { 'Y',	report_class,           1,	0,	},
+  { 'z',	stats_memory,           1,	0,	},
+  { 'Z',	stats_ziplinks,         1,	0,	},
+  { '?',	stats_servlinks,        0,	0,	},
+  { 0, NULL, 0, 0, }
 };
 
 const char *from, *to;
@@ -218,7 +201,7 @@ m_stats(struct Client *client_p, struct Client *source_p,
   static time_t last_used = 0;
 
   /* Is the stats meant for us? */
-  if (!ConfigFileEntry.disable_remote)
+  if (!General.disable_remote_commands)
     if (hunt_server(source_p, ":%s STATS %s :%s", 2,
                     parc, parv) != HUNTED_ISME)
       return;
@@ -235,7 +218,7 @@ m_stats(struct Client *client_p, struct Client *source_p,
   }
 
   /* Check the user is actually allowed to do /stats, and isnt flooding */
-  if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
+  if ((last_used + General.pace_wait) > CurrentTime)
   {
     sendto_one(source_p,form_str(RPL_LOAD2HI),
                from, to);
@@ -289,7 +272,7 @@ mo_stats(struct Client *client_p, struct Client *source_p,
  * -avalon
  */
 static void
-send_usage(struct Client *source_p)
+stats_usage(struct Client *source_p)
 {
 #ifndef _WIN32
   struct rusage rus;
@@ -347,7 +330,7 @@ send_usage(struct Client *source_p)
 }
 
 static void
-count_memory(struct Client *source_p)
+stats_memory(struct Client *source_p)
 {
   const dlink_node *gptr = NULL;
   const dlink_node *dlink = NULL;
@@ -492,7 +475,7 @@ count_memory(struct Client *source_p)
              wle * sizeof(dlink_node));
 
   /* count up all classes */
-  class_count = dlink_list_length(&class_items);
+  class_count = dlink_list_length(&class_list);
 
   sendto_one(source_p, ":%s %d %s z :Clients %u(%lu)",
              me.name, RPL_STATSDEBUG, source_p->name, users_counted,
@@ -502,16 +485,17 @@ count_memory(struct Client *source_p)
              me.name, RPL_STATSDEBUG, source_p->name,
              aways_counted, away_memory);
 
-  sendto_one(source_p, ":%s %d %s z :Resv channels %lu(%lu) nicks %lu(%lu)",
+  sendto_one(source_p, ":%s %d %s z :Resv channels %u(%u) nicks %u(%u) hash %u(%u)",
              me.name, RPL_STATSDEBUG, source_p->name,
-             dlink_list_length(&resv_channel_list),
-             dlink_list_length(&resv_channel_list) * sizeof(struct ResvChannel),
-             dlink_list_length(&nresv_items),
-             dlink_list_length(&nresv_items) * sizeof(struct MatchItem));
+             dlink_list_length(&cresv_confs),
+             dlink_list_length(&cresv_confs) * sizeof(struct ResvConf),
+             dlink_list_length(&nresv_confs),
+             dlink_list_length(&nresv_confs) * sizeof(struct ResvConf),
+             num_hashed_resvs, num_hashed_resvs * sizeof(struct ResvConf));
 
   sendto_one(source_p, ":%s %d %s z :Classes %u(%lu)",
              me.name, RPL_STATSDEBUG, source_p->name,
-             class_count, (unsigned long)(class_count * sizeof(struct ClassItem)));
+             class_count, (unsigned long)(class_count * sizeof(struct Class)));
 
   sendto_one(source_p, ":%s %d %s z :Channels %lu(%u) Topics %u(%d)",
              me.name, RPL_STATSDEBUG, source_p->name,
@@ -551,7 +535,7 @@ count_memory(struct Client *source_p)
              number_ips_stored, mem_ips_stored);
 
   total_memory = total_channel_memory + class_count *
-                 sizeof(struct ClassItem);
+                 sizeof(struct Class);
 
   sendto_one(source_p, ":%s %d %s z :Total: channel %u",
              me.name, RPL_STATSDEBUG, source_p->name,
@@ -586,383 +570,6 @@ count_memory(struct Client *source_p)
   sendto_one(source_p, ":%s %d %s z :TOTAL: %u",
              me.name, RPL_STATSDEBUG, source_p->name,
              total_memory);
-}
-
-static void
-stats_connect(struct Client *source_p)
-{
-  report_confitem_types(source_p, SERVER_TYPE, 0);
-}
-
-/* stats_deny()
- *
- * input	- client to report to
- * output	- none
- * side effects - client is given dline list.
- */
-static void
-stats_deny(struct Client *source_p)
-{
-  struct AddressRec *arec;
-  struct ConfItem *conf;
-  struct AccessItem *aconf;
-  int i;
-
-  for (i = 0; i < ATABLE_SIZE; ++i)
-  {
-    for (arec = atable[i]; arec; arec=arec->next)
-    {
-      if (arec->type == CONF_DLINE)
-      {
-        aconf = arec->aconf;
-
-        /* dont report a tdline as a dline */
-        if (aconf->flags & CONF_FLAGS_TEMPORARY)
-          continue;
-
-	conf = aconf->conf_ptr;
-
-        sendto_one(source_p, form_str(RPL_STATSDLINE),
-                   from, to, 'D', aconf->host, aconf->reason,
-                   aconf->oper_reason);
-      }
-    }
-  }
-}
-
-/* stats_tdeny()
- *
- * input        - client to report to
- * output       - none
- * side effects - client is given dline list.
- */
-static void
-stats_tdeny(struct Client *source_p)
-{
-  struct AddressRec *arec;
-  struct ConfItem *conf;
-  struct AccessItem *aconf;
-  int i;
-
-  for (i = 0; i < ATABLE_SIZE; ++i)
-  {
-    for (arec = atable[i]; arec; arec=arec->next)
-    {
-      if (arec->type == CONF_DLINE)
-      {
-        aconf = arec->aconf;
-
-        /* dont report a permanent dline as a tdline */
-        if (!(aconf->flags & CONF_FLAGS_TEMPORARY))
-          continue;
-
-        conf = aconf->conf_ptr;
-
-        sendto_one(source_p, form_str(RPL_STATSDLINE),
-                   from, to, 'd', aconf->host, aconf->reason,
-                   aconf->oper_reason);
-      }
-    }
-  }
-}
-
-/* stats_exempt()
- *
- * input        - client to report to
- * output       - none
- * side effects - client is given list of exempt blocks
- */
-static void
-stats_exempt(struct Client *source_p)
-{
-  struct AddressRec *arec;
-  struct ConfItem *conf;
-  struct AccessItem *aconf;
-  int i;
-
-  for (i = 0; i < ATABLE_SIZE; ++i)
-  {
-    for (arec = atable[i]; arec; arec=arec->next)
-    {
-      if (arec->type == CONF_EXEMPTDLINE)
-      {
-        aconf = arec->aconf;
-
-        conf = aconf->conf_ptr;
-
-        sendto_one(source_p, form_str(RPL_STATSDLINE),
-                   from, to, 'e', aconf->host, 
-                   aconf->reason, aconf->oper_reason);
-      }
-    }
-  }
-}
-
-/* stats_pending_glines()
- *
- * input        - client pointer
- * output       - none
- * side effects - client is shown list of pending glines
- */
-static void
-stats_pending_glines(struct Client *source_p)
-{
-#ifdef GLINE_VOTING
-  dlink_node *pending_node = NULL;
-  char timebuffer[MAX_DATE_STRING];
-
-  if (!ConfigFileEntry.glines)
-  {
-    sendto_one(source_p, ":%s NOTICE %s :This server does not support G-Lines",
-               from, to); 
-    return;
-  }
-
-  if (dlink_list_length(&pending_glines) > 0)
-    sendto_one(source_p, ":%s NOTICE %s :Pending G-lines",
-               from, to);
-
-  DLINK_FOREACH(pending_node, pending_glines.head)
-  {
-    struct gline_pending *glp_ptr = pending_node->data;
-    struct tm *tmptr = localtime(&glp_ptr->request1.time_request);
-
-    strftime(timebuffer, sizeof(timebuffer), "%Y/%m/%d %H:%M:%S", tmptr);
-
-    sendto_one(source_p,
-       ":%s NOTICE %s :1) %s!%s@%s on %s requested gline at %s for %s@%s [%s]",
-               from, to, glp_ptr->request1.nick,
-               glp_ptr->request1.user, glp_ptr->request1.host,
-               glp_ptr->request1.server, timebuffer,
-               glp_ptr->user, glp_ptr->host, glp_ptr->request1.reason);
-
-    if (glp_ptr->request2.nick[0] != '\0')
-    {
-      tmptr = localtime(&glp_ptr->request2.time_request);
-      strftime(timebuffer, sizeof(timebuffer), "%Y/%m/%d %H:%M:%S", tmptr);
-
-      sendto_one(source_p,
-       ":%s NOTICE %s :2) %s!%s@%s on %s requested gline at %s for %s@%s [%s]",
-                 from, to, glp_ptr->request2.nick,
-                 glp_ptr->request2.user, glp_ptr->request2.host,
-                 glp_ptr->request2.server, timebuffer,
-                 glp_ptr->user, glp_ptr->host, glp_ptr->request2.reason);
-    }
-  }
-
-  sendto_one(source_p, ":%s NOTICE %s :End of Pending G-lines",
-             from, to);
-#else
-  sendto_one(source_p, ":%s NOTICE %s :This server does not support G-Line voting",
-             from, to);
-#endif /* GLINE VOTING */
-}
-
-/* stats_glines()
- *
- * input        - client pointer
- * output       - none
- * side effects - client is shown list of glines
- */
-static void
-stats_glines(struct Client *source_p)
-{
-  struct AddressRec *arec = NULL;
-  int i = 0;
-
-  if (!ConfigFileEntry.glines)
-  {
-    sendto_one(source_p, ":%s NOTICE %s :This server does not support G-Lines",
-               from, to);
-    return;
-  }
-
-  for (; i < ATABLE_SIZE; ++i)
-  {
-    for (arec = atable[i]; arec; arec=arec->next)
-    {
-      if (arec->type == CONF_GLINE)
-      {
-        const struct AccessItem *aconf = arec->aconf;
-
-        sendto_one(source_p, form_str(RPL_STATSKLINE),
-                   from, to, "G",
-                   aconf->host ? aconf->host : "*",
-                   aconf->user ? aconf->user : "*",
-                   aconf->reason ? aconf->reason : "No reason", "" );
-      }
-    }
-  }
-}
-
-/* stats_gdeny()
- *
- * input        - client pointer
- * outputs      - none
- * side effects - client is shown gline ACL
- */
-static void
-stats_gdeny(struct Client *source_p)
-{
-  if (!ConfigFileEntry.glines)
-  {
-    sendto_one(source_p, ":%s NOTICE %s :This server does not support G-Lines",
-               from, to);
-    return;
-  }
-
-  report_confitem_types(source_p, GDENY_TYPE, 0);
-}
-
-static void
-stats_hubleaf(struct Client *source_p)
-{
-  report_confitem_types(source_p, HUB_TYPE, 0);
-  report_confitem_types(source_p, LEAF_TYPE, 0);
-}
-
-static void
-stats_auth(struct Client *source_p)
-{
-  /* Oper only, if unopered, return ERR_NOPRIVILEGES */
-  if ((ConfigFileEntry.stats_i_oper_only == 2) && !IsOper(source_p))
-    sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
-               from, to);
-
-  /* If unopered, Only return matching auth blocks */
-  else if ((ConfigFileEntry.stats_i_oper_only == 1) && !IsOper(source_p))
-  {
-    struct ConfItem *conf;
-    struct AccessItem *aconf;
-
-    if (MyConnect(source_p))
-      aconf = find_conf_by_address(source_p->host,
-                                   &source_p->localClient->ip,
-				   CONF_CLIENT,
-				   source_p->localClient->aftype,
-				   source_p->username,
-                                   source_p->localClient->passwd);
-    else
-      aconf = find_conf_by_address(source_p->host, NULL, CONF_CLIENT,
-                                   0, source_p->username, NULL);
-
-    if (aconf == NULL)
-      return;
-
-    conf = aconf->conf_ptr;
-
-    sendto_one(source_p, form_str(RPL_STATSILINE), from,
-               to, 'I', "*",
-               make_iline_prefix(source_p, aconf), aconf->user, 
-	       aconf->host, aconf->port,
-	       aconf->class_ptr ? aconf->class_ptr->name : "<default>");
-  }
-  /* They are opered, or allowed to see all auth blocks */
-  else
-    report_auth(source_p);
-}
-
-static void
-stats_tklines(struct Client *source_p)
-{
-  struct ConfItem *conf = NULL;
-  /* Oper only, if unopered, return ERR_NOPRIVILEGES */
-  if ((ConfigFileEntry.stats_k_oper_only == 2) && !IsOper(source_p))
-    sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
-               from, to);
-
-  /* If unopered, Only return matching klines */
-  else if ((ConfigFileEntry.stats_k_oper_only == 1) && !IsOper(source_p))
-  {
-    struct AccessItem *aconf;
-
-    if (MyConnect(source_p))
-      aconf = find_conf_by_address(source_p->host,
-                                   &source_p->localClient->ip,
-				   CONF_KILL,
-				   source_p->localClient->aftype,
-				   source_p->username, NULL);
-    else
-      aconf = find_conf_by_address(source_p->host, NULL, CONF_KILL,
-                                   0, source_p->username, NULL);
-
-    if (aconf == NULL)
-      return;
-
-    /* dont report a permanent kline as a tkline */
-    if (!(aconf->flags & CONF_FLAGS_TEMPORARY))
-      return;
-
-    conf = aconf->conf_ptr;
-
-    sendto_one(source_p, form_str(RPL_STATSKLINE), from,
-               to, "k", aconf->host, aconf->user, aconf->reason, "");
-  }
-  /* Theyre opered, or allowed to see all klines */
-  else
-  {
-    report_Klines(source_p, 1);
-    report_confitem_types(source_p, RKLINE_TYPE, 1);
-  }
-}
-
-static void
-stats_klines(struct Client *source_p)
-{
-  /* Oper only, if unopered, return ERR_NOPRIVILEGES */
-  if ((ConfigFileEntry.stats_k_oper_only == 2) && !IsOper(source_p))
-    sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
-               from, to);
-
-  /* If unopered, Only return matching klines */
-  else if ((ConfigFileEntry.stats_k_oper_only == 1) && !IsOper(source_p))
-  {
-    struct AccessItem *aconf;
-
-    /* search for a kline */
-    if (MyConnect(source_p))
-      aconf = find_conf_by_address(source_p->host,
-                                   &source_p->localClient->ip,
-				   CONF_KILL,
-				   source_p->localClient->aftype,
-				   source_p->username, NULL);
-    else
-      aconf = find_conf_by_address(source_p->host, NULL, CONF_KILL,
-                                   0, source_p->username, NULL);
-
-    if (aconf == NULL)
-      return;
-
-    /* dont report a tkline as a kline */
-    if (aconf->flags & CONF_FLAGS_TEMPORARY)
-      return;
-      
-    sendto_one(source_p, form_str(RPL_STATSKLINE), from,
-               to, "K", aconf->host, aconf->user, aconf->reason,
-	       aconf->oper_reason);
-  }
-  /* Theyre opered, or allowed to see all klines */
-  else
-  {
-    report_Klines(source_p, 0);
-    report_confitem_types(source_p, RKLINE_TYPE, 0);
-  }
-}
-
-static void
-stats_messages(struct Client *source_p)
-{
-  report_messages(source_p);
-}
-
-static void
-stats_oper(struct Client *source_p)
-{
-  if (!IsOper(source_p) && ConfigFileEntry.stats_o_oper_only)
-    sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
-               from, to);
-  else
-    report_confitem_types(source_p, OPER_TYPE, 0);
 }
 
 /* stats_operedup()
@@ -1042,23 +649,11 @@ show_ports(struct Client *source_p)
 static void
 stats_ports(struct Client *source_p)
 {
-  if (!IsOper(source_p) && ConfigFileEntry.stats_P_oper_only)
+  if (!IsOper(source_p) && General.stats_P_oper_only)
     sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
                from, to);
   else
     show_ports(source_p);
-}
-
-static void
-stats_resv(struct Client *source_p)
-{
-  report_resv(source_p);
-}
-
-static void
-stats_usage(struct Client *source_p)
-{
-  send_usage(source_p);
 }
 
 static void
@@ -1136,15 +731,9 @@ stats_uptime(struct Client *source_p)
   time_t now = CurrentTime - me.since;
   sendto_one(source_p, form_str(RPL_STATSUPTIME), from, to,
              now/86400, (now/3600)%24, (now/60)%60, now%60);
-  if (!ConfigFileEntry.disable_remote || IsOper(source_p))
+  if (!General.disable_remote_commands || IsOper(source_p))
      sendto_one(source_p, form_str(RPL_STATSCONN), from, to,
                 MaxConnectionCount, MaxClientCount, Count.totalrestartcount);
-}
-
-static void
-stats_shared(struct Client *source_p)
-{
-  report_confitem_types(source_p, ULINE_TYPE, 0);
 }
 
 /* stats_servers()
@@ -1172,25 +761,6 @@ stats_servers(struct Client *source_p)
   sendto_one(source_p, ":%s %d %s v :%lu Server(s)",
              from, RPL_STATSDEBUG, to,
              dlink_list_length(&serv_list));
-}
-
-static void
-stats_gecos(struct Client *source_p)
-{
-  report_confitem_types(source_p, XLINE_TYPE, 0);
-  report_confitem_types(source_p, RXLINE_TYPE, 0);
-}
-
-static void
-stats_class(struct Client *source_p)
-{
-  report_confitem_types(source_p, CLASS_TYPE, 0);
-}
-
-static void
-stats_memory(struct Client *source_p)
-{
-  count_memory(source_p);
 }
 
 static void
@@ -1235,7 +805,7 @@ stats_servlinks(struct Client *source_p)
   time_t uptime = 0;
   dlink_node *ptr = NULL;
 
-  if (ConfigServerHide.flatten_links && !IsOper(source_p))
+  if (ServerHide.flatten_links && !IsOper(source_p))
   {
     sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
                from, to);

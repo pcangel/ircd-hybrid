@@ -25,7 +25,9 @@
 #include "stdinc.h"
 #include "conf/conf.h"
 #include "client.h"
+#include "numeric.h"
 #include "send.h"
+#include "s_serv.h"
 
 // TODO: Add callbacks for (r)xline.conf support with default handlers
 
@@ -246,10 +248,41 @@ is_client_xlined(va_list args)
   {
     *type = "X-line";
     *reason = conf->reason;
+    conf->count++;
     return conf;
   }
 
   return pass_callback(hbanned, client, type, reason);
+}
+
+/*
+ * report_gecos()
+ *
+ * Sends a /stats X reply to the given client.
+ *
+ * inputs: client pointer
+ * output: none
+ */
+void
+report_gecos(struct Client *source_p)
+{
+  dlink_node *ptr;
+  struct GecosConf *conf;
+  char buf[3];
+
+  DLINK_FOREACH(ptr, gecos_confs.head)
+  {
+    conf = ptr->data;
+
+    strcpy(buf, conf->regex ? "R" : "");
+    strcat(buf, conf->expires ? "x" : "X");
+
+    sendto_one(source_p, form_str(RPL_STATSXLINE),
+               ID_or_name(&me, source_p->from),
+               ID_or_name(source_p, source_p->from), buf,
+               conf->count, conf->mask, conf->reason ?
+               conf->reason : "No reason");
+  }
 }
 
 /*

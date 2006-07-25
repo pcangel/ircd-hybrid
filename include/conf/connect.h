@@ -56,10 +56,14 @@ struct ConnectConf
 
 EXTERN dlink_list connect_confs;
 
+struct Client;
+
 EXTERN struct ConnectConf *ref_link_by_name(const char *);
 EXTERN struct ConnectConf *ref_link_by_host(const char *);
 EXTERN struct ConnectConf *ref_link_by_ptr(struct ConnectConf *);
 EXTERN void unref_link(struct ConnectConf *);
+EXTERN void report_connect(struct Client *);
+EXTERN void report_hubleaf(struct Client *);
 
 #ifdef IN_CONF_C
 void init_connect(void);

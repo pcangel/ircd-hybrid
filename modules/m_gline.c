@@ -35,7 +35,7 @@
 #include "s_serv.h"
 #include "hash.h"
 #include "parse.h"
-
+#include "s_user.h"
 
 #define GLINE_NOT_PLACED     0
 #define GLINE_ALREADY_VOTED -1
@@ -45,13 +45,10 @@
  * how long a pending G line can be around
  * 10 minutes should be plenty
  */
-#define GLINE_PENDING_EXPIRE 600
+#define GlinePending_EXPIRE 600
 #define CLEANUP_GLINES_TIME  300
 
-EXTERN dlink_list gdeny_items; /* XXX */
-
-
-/* internal functions */
+// internal functions
 static void expire_pending_glines(void *);
 static void set_local_gline(const struct Client *,
                             const char *, const char *, const char *);
@@ -92,7 +89,6 @@ INIT_MODULE(m_gline, "$Revision$")
   mod_add_cmd(&ungline_msgtab);
   add_capability("GLN", CAP_GLN, 1);
 
-  expire_pending_glines(NULL);
   eventAddIsh("expire_pending_glines",
                expire_pending_glines, NULL, CLEANUP_GLINES_TIME);
 }
@@ -103,33 +99,17 @@ CLEANUP_MODULE
   mod_del_cmd(&ungline_msgtab);
   mod_del_cmd(&gline_msgtab);
 
-  expire_pending_glines(NULL);
   eventDelete(expire_pending_glines, NULL);
+  expire_pending_glines(NULL);
 }
 
-static struct AccessItem *
+static struct GlineConf *
 find_is_glined(const char *host, const char *user)
 {
-  struct irc_ssaddr iphost, *piphost;
-  int t;
+  struct irc_ssaddr iphost;
 
-  if ((t = parse_netmask(host, &iphost, &t)) != HM_HOST)
-  {
-#ifdef IPV6
-    if (t == HM_IPV6)
-      t = AF_INET6;
-    else
-#endif
-      t = AF_INET;
-    piphost = &iphost;
-  }
-  else
-  {
-    t = 0;
-    piphost = NULL;
-  }
-
-  return find_conf_by_address(host, piphost, CONF_GLINE, t, user, NULL);
+  return find_gline(user, host, parse_netmask(host, &iphost, NULL) != HM_HOST ?
+                    &iphost : NULL);
 }
 
 /* expire_pending_glines()
@@ -146,13 +126,13 @@ expire_pending_glines(void *unused)
 {
   dlink_node *ptr;
   dlink_node *next_ptr;
-  struct gline_pending *glp_ptr;
+  struct GlinePending *glp_ptr;
 
   DLINK_FOREACH_SAFE(ptr, next_ptr, pending_glines.head)
   {
     glp_ptr = ptr->data;
 
-    if (((glp_ptr->last_gline_time + GLINE_PENDING_EXPIRE) <= CurrentTime) ||
+    if (((glp_ptr->last_gline_time + GlinePending_EXPIRE) <= CurrentTime) ||
         find_is_glined(glp_ptr->host, glp_ptr->user))
     {
       dlinkDelete(&glp_ptr->node, &pending_glines);
@@ -182,11 +162,11 @@ mo_gline(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
   char *user = NULL;
-  char *host = NULL;         /* user and host of GLINE "victim" */
-  char *reason = NULL;       /* reason for "victims" demise     */
+  char *host = NULL;         // user and host of GLINE "victim"
+  char *reason = NULL;       // reason for "victims" demise
   char *p = NULL;
 
-  if (!ConfigFileEntry.glines)
+  if (!enable_glines)
   {
     sendto_one(source_p, ":%s NOTICE %s :GLINE disabled",
                me.name, source_p->name);
@@ -207,8 +187,8 @@ mo_gline(struct Client *client_p, struct Client *source_p,
   if ((p = strchr(host, '/')) != NULL)
   {
     int bitlen = strtol(++p, NULL, 10);
-    int min_bitlen = strchr(host, ':') ? ConfigFileEntry.gline_min_cidr6 :
-                                         ConfigFileEntry.gline_min_cidr;
+    int min_bitlen = strchr(host, ':') ? General.gline_min_cidr6 :
+                                         General.gline_min_cidr;
     if (bitlen < min_bitlen)
     {
       sendto_one(source_p, ":%s NOTICE %s :Cannot set G-Lines with CIDR length < %d",
@@ -218,31 +198,19 @@ mo_gline(struct Client *client_p, struct Client *source_p,
   }
   
 #ifdef GLINE_VOTING
-  /* If at least 3 opers agree this user should be G lined then do it */
+  // If at least 3 opers agree this user should be G lined then do it
   if (check_majority_gline(source_p, user, host, reason) ==
       GLINE_ALREADY_VOTED)
   {
-    sendto_one(source_p,
-               ":%s NOTICE %s :This server or oper has already voted",
+    sendto_one(source_p, ":%s NOTICE %s :This server or oper has already voted",
                me.name, source_p->name);
     return;
   }
-
-  /*
-   * call these two functions first so the 'requesting' notice always comes
-   * before the 'has triggered' notice.  -bill
-   */
-  sendto_realops_flags(UMODE_ALL, L_ALL,
-                       "%s requesting G-Line for [%s@%s] [%s]",
-                       get_oper_name(source_p),
-                       user, host, reason);
-  ilog(L_TRACE, "#gline for %s@%s [%s] requested by %s",
-       user, host, reason, get_oper_name(source_p));
 #else
   set_local_gline(source_p, user, host, reason);
 #endif /* GLINE_VOTING */
   
-  /* 4 param version for hyb-7 servers */
+  // 4 param version for hyb-7 servers
   sendto_server(NULL, source_p, NULL, CAP_GLN|CAP_TS6, NOCAPS,
                 ":%s GLINE %s %s :%s",
                 ID(source_p), user, host, reason);
@@ -250,7 +218,7 @@ mo_gline(struct Client *client_p, struct Client *source_p,
                 ":%s GLINE %s %s :%s",
                 source_p->name, user, host, reason);
 
-  /* 8 param for hyb-6 */
+  // 8 param for hyb-6
   sendto_server(NULL, NULL, NULL, CAP_TS6, CAP_GLN,
                 ":%s GLINE %s %s %s %s %s %s :%s",
                 ID(&me),
@@ -298,18 +266,15 @@ static void
 do_sgline(struct Client *client_p, struct Client *source_p,
           int parc, char *parv[], int prop)
 {
-  const char *reason = NULL;      /* reason for "victims" demise       */
+  const char *reason = NULL;      // reason for "victims" demise
   char *user = NULL;
-  char *host = NULL;              /* user and host of GLINE "victim"   */
+  char *host = NULL;              // user and host of GLINE "victim"
   int var_offset, logged = 0;
-  dlink_node *ptr;
-  struct ConfItem *conf;
-  struct AccessItem *aconf;
 
-  /* hyb-7 style gline (post beta3) */
+  // hyb-7 style gline (post beta3)
   if (parc == 4 && IsClient(source_p))
     var_offset = 0;
-  /* or it's a hyb-6 style */
+  // or it's a hyb-6 style
   else if (parc == 8 && IsServer(source_p))
   {
     var_offset = 4;
@@ -334,7 +299,7 @@ do_sgline(struct Client *client_p, struct Client *source_p,
       return;
     }
   }
-  /* none of the above */
+  // none of the above
   else
     return;
 
@@ -344,28 +309,15 @@ do_sgline(struct Client *client_p, struct Client *source_p,
   host = parv[++var_offset];
   reason = parv[++var_offset];
 
-  var_offset = 0;
-
-  DLINK_FOREACH(ptr, gdeny_items.head)
-  {
-    conf = ptr->data;
-    aconf = &conf->conf.AccessItem;
-
-    if (match(conf->name, source_p->servptr->name) &&
-        match(aconf->user, source_p->username) &&
-        match(aconf->host, source_p->host))
-    {
-      var_offset = aconf->flags;
-      break;
-    }
-  }
+  var_offset = is_gline_allowed(source_p->servptr->name, source_p->username,
+                                source_p->host, source_p->sockhost);
 
   if (prop && !(var_offset & GDENY_BLOCK))
   {
     sendto_server(client_p, source_p->servptr, NULL, CAP_GLN, NOCAPS,
                   ":%s GLINE %s %s :%s",
                   source_p->name, user, host, reason);
-    /* hyb-6 version to the rest */
+    // hyb-6 version to the rest
     sendto_server(client_p, NULL, NULL, NOCAPS, CAP_GLN, NOFLAGS,
                   ":%s GLINE %s %s %s %s %s %s :%s",
                   source_p->servptr->name,
@@ -373,7 +325,7 @@ do_sgline(struct Client *client_p, struct Client *source_p,
                   source_p->servptr->name,
                   user, host, reason);
   }
-  else if (ConfigFileEntry.gline_logging & GDENY_BLOCK && ServerInfo.hub)
+  else if ((gline_logging & GDENY_BLOCK) && ServerInfo.hub)
   {
     sendto_realops_flags(UMODE_ALL, L_ALL, "Blocked G-Line %s requested on [%s@%s] [%s]",
                          get_oper_name(source_p), user, host, reason);
@@ -385,7 +337,7 @@ do_sgline(struct Client *client_p, struct Client *source_p,
 
   if (var_offset & GDENY_REJECT)
   {
-    if (ConfigFileEntry.gline_logging & GDENY_REJECT && !logged)
+    if ((gline_logging & GDENY_REJECT) && !logged)
     {
       sendto_realops_flags(UMODE_ALL, L_ALL, "Rejected G-Line %s requested on [%s@%s] [%s]",
                            get_oper_name(source_p), user, host, reason);
@@ -396,7 +348,7 @@ do_sgline(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if (ConfigFileEntry.glines)
+  if (enable_glines)
   {
     if (!valid_wild_card(source_p, YES, 2, user, host))
       return;
@@ -408,8 +360,8 @@ do_sgline(struct Client *client_p, struct Client *source_p,
       if ((p = strchr(host, '/')))
       {
         int bitlen = strtol(++p, NULL, 10);
-        int min_bitlen = strchr(host, ':') ? ConfigFileEntry.gline_min_cidr6 :
-                                             ConfigFileEntry.gline_min_cidr;
+        int min_bitlen = strchr(host, ':') ? General.gline_min_cidr6 :
+                                             General.gline_min_cidr;
 
         if (bitlen < min_bitlen)
         {
@@ -423,20 +375,16 @@ do_sgline(struct Client *client_p, struct Client *source_p,
     }
 
 #ifdef GLINE_VOTING
-    /* If at least 3 opers agree this user should be G lined then do it */
+    // If at least 3 opers agree this user should be G lined then do it
     if (check_majority_gline(source_p, user, host, reason) ==
         GLINE_ALREADY_VOTED)
     {
-      sendto_realops_flags(UMODE_ALL, L_ALL, "oper or server has already voted");
+      sendto_realops_flags(UMODE_ALL, L_ALL, "Oper [%s!%s@%s] or server [%s] "
+                           "is trying to vote for G-line %s@%s more than once",
+                           source_p->name, source_p->username, source_p->host,
+                           source_p->servptr->name, user, host);
       return;
     }
-
-    sendto_realops_flags(UMODE_ALL, L_ALL,
-                         "%s requesting G-Line for [%s@%s] [%s]",
-                         get_oper_name(source_p),
-                         user, host, reason);
-    ilog(L_TRACE, "#gline for %s@%s [%s] requested by %s",
-         user, host, reason, get_oper_name(source_p));
 #else 
     set_local_gline(source_p, user, host, reason);
 #endif /* GLINE_VOTING */
@@ -457,8 +405,7 @@ set_local_gline(const struct Client *source_p, const char *user,
                 const char *host, const char *reason)
 {
   char buffer[IRCD_BUFSIZE];
-  struct ConfItem *conf;
-  struct AccessItem *aconf;
+  struct GlineConf *conf;
   const char *current_date;
   time_t cur_time;
 
@@ -466,26 +413,29 @@ set_local_gline(const struct Client *source_p, const char *user,
   cur_time = CurrentTime;
 
   current_date = smalldate(cur_time);
-  conf = make_conf_item(GLINE_TYPE);
-  aconf = &conf->conf.AccessItem;
+
+  conf = MyMalloc(sizeof(*conf));
+  conf->access.type = acb_type_gline;
+
+  DupString(conf->access.user, user);
+  DupString(conf->access.host, host);
+  conf->access.expires = CurrentTime + gline_duration;
 
   ircsprintf(buffer, "%s (%s)", reason, current_date);
-  DupString(aconf->reason, buffer);
-  DupString(aconf->user, user);
-  DupString(aconf->host, host);
+  DupString(conf->reason, buffer);
 
-  aconf->hold = CurrentTime + ConfigFileEntry.gline_time;
-  add_temp_line(conf);
+  add_access_conf(&conf->access);
 
   sendto_realops_flags(UMODE_ALL, L_ALL,
                        "%s added G-Line for [%s@%s] [%s]",
                        get_oper_name(source_p),
-                       aconf->user, aconf->host, aconf->reason);
+                       conf->access.user, conf->access.host, conf->reason);
   ilog(L_TRACE, "%s added G-Line for [%s@%s] [%s]",
-       get_oper_name(source_p), aconf->user, aconf->host, aconf->reason);
+       get_oper_name(source_p), conf->access.user, conf->access.host,
+       conf->reason);
   log_oper_action(LOG_GLINE_TYPE, source_p, "[%s@%s] [%s]\n",
-                  aconf->user, aconf->host, aconf->reason);
-  /* Now, activate gline against current online clients */
+                  conf->access.user, conf->access.host, conf->reason);
+  // Now, activate gline against current online clients
   rehashed_klines = 1;
 }
 
@@ -509,7 +459,7 @@ static void
 add_new_majority_gline(const struct Client *source_p,
                        const char *user, const char *host, const char *reason)
 {
-  struct gline_pending *pending = MyMalloc(sizeof(struct gline_pending));
+  struct GlinePending *pending = MyMalloc(sizeof(struct GlinePending));
 
   strlcpy(pending->request1.nick, source_p->name,
           sizeof(pending->request1.nick));
@@ -551,13 +501,20 @@ check_majority_gline(const struct Client *source_p,
 {
   dlink_node *pending_node = NULL;
 
-  /* if its already glined, why bother? :) -- fl_ */
+  // if its already glined, why bother? :) -- fl_
   if (find_is_glined(host, user))
-    return GLINE_NOT_PLACED; /* XXX */
+    return GLINE_NOT_PLACED;    // XXX
+
+  sendto_realops_flags(UMODE_ALL, L_ALL,
+                       "%s requesting G-Line for [%s@%s] [%s]",
+                       get_oper_name(source_p),
+                       user, host, reason);
+  ilog(L_TRACE, "#gline for %s@%s [%s] requested by %s",
+       user, host, reason, get_oper_name(source_p));
 
   DLINK_FOREACH(pending_node, pending_glines.head)
   {
-    struct gline_pending *pending = pending_node->data;
+    struct GlinePending *pending = pending_node->data;
 
     if (!irccmp(pending->user, user) &&
         !irccmp(pending->host, host))
@@ -569,13 +526,13 @@ check_majority_gline(const struct Client *source_p,
 
       if (pending->request2.user[0] != '\0')
       {
-        /* if two other opers on two different servers have voted yes */
+        // if two other opers on two different servers have voted yes
         if (!irccmp(pending->request2.user, source_p->username) ||
             !irccmp(pending->request2.host, source_p->host) ||
             !irccmp(pending->request2.server, source_p->servptr->name))
           return GLINE_ALREADY_VOTED;
 
-        /* trigger the gline using the original reason --fl */
+        // trigger the gline using the original reason --fl
         set_local_gline(source_p, user, host, pending->request1.reason);
         expire_pending_glines(NULL);
         return GLINE_PLACED;
@@ -610,52 +567,30 @@ check_majority_gline(const struct Client *source_p,
 static int
 remove_gline_match(const char *user, const char *host)
 {
-  struct AccessItem *aconf;
-  dlink_node *ptr = NULL;
-  struct irc_ssaddr addr, caddr;
-  int nm_t, cnm_t, bits, cbits;
+  struct GlineConf *conf = (struct GlineConf *)
+    find_exact_access_conf(acb_type_gline, user, host);
 
-  nm_t = parse_netmask(host, &addr, &bits);
+  if (conf)
+    destroy_access_conf(&conf->access);
 
-  DLINK_FOREACH(ptr, temporary_glines.head)
-  {
-    aconf = &((struct ConfItem *)(ptr->data))->conf.AccessItem;
-    cnm_t = parse_netmask(aconf->host, &caddr, &cbits);
-
-    if (cnm_t != nm_t || irccmp(user, aconf->user))
-      continue;
-
-    if ((nm_t == HM_HOST && !irccmp(aconf->host, host)) ||
-        (nm_t == HM_IPV4 && bits == cbits && match_ipv4(&addr, &caddr, bits))
-#ifdef IPV6
-     || (nm_t == HM_IPV6 && bits == cbits && match_ipv6(&addr, &caddr, bits))
-#endif
-    )
-    {
-      dlinkDelete(ptr, &temporary_glines);
-      delete_one_address_conf(aconf->host, aconf);
-      return 1;
-    }
-  }
-
-  return 0;
+  return !!conf;
 }
 
 /*
-** m_ungline
-** added May 29th 2000 by Toby Verrall <toot@melnet.co.uk>
-** added to hybrid-7 7/11/2000 --is
-**
-**      parv[0] = sender nick
-**      parv[1] = gline to remove
-*/
+ * m_ungline
+ * added May 29th 2000 by Toby Verrall <toot@melnet.co.uk>
+ * added to hybrid-7 7/11/2000 --is
+ *
+ *      parv[0] = sender nick
+ *      parv[1] = gline to remove
+ */
 static void
 mo_ungline(struct Client *client_p, struct Client *source_p,
            int parc, char *parv[])
 {
   char *user = NULL, *host = NULL;
 
-  if (!ConfigFileEntry.glines)
+  if (!enable_glines)
   {
     sendto_one(source_p, ":%s NOTICE %s :UNGLINE disabled",
                me.name, source_p->name);

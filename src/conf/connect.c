@@ -24,6 +24,9 @@
 
 #include "stdinc.h"
 #include "conf/conf.h"
+#include "client.h"
+#include "numeric.h"
+#include "send.h"
 #include "s_serv.h"
 
 dlink_list connect_confs = {0};
@@ -477,6 +480,77 @@ after_connect(void)
   memcpy(conf, &tmpconn, sizeof(*conf));
   memset(&tmpconn, 0, sizeof(tmpconn));
   dlinkAdd(conf, &conf->node, &connect_confs);
+}
+
+/*
+ * report_connect()
+ *
+ * Sends a /stats C reply to the given client.
+ *
+ * inputs: client pointer
+ * output: none
+ */
+void
+report_connect(struct Client *source_p)
+{
+  dlink_node *ptr;
+
+  DLINK_FOREACH(ptr, connect_confs.head)
+  {
+    char buf[12] = "*", *p = buf;
+    struct ConnectConf *conf = ptr->data;
+
+    if ((conf->flags & LINK_AUTOCONN))
+      *p++ = 'A';
+    if ((conf->flags & LINK_CRYPTLINK))
+      *p++ = 'C';
+    if (conf->fakename)
+      *p++ = 'M';
+    if ((conf->flags & LINK_TOPICBURST))
+      *p++ = 'T';
+    if ((conf->flags & LINK_COMPRESSED))
+      *p++ = 'Z';
+    if (p > buf)
+      *p = 0;
+
+    sendto_one(source_p, form_str(RPL_STATSCLINE),
+               ID_or_name(&me, source_p->from),
+               ID_or_name(source_p, source_p->from), 'C',
+               (!ServerHide.hide_server_ips && IsAdmin(source_p)) ?
+               conf->host : "255.255.255.255", buf, conf->name, conf->port,
+               conf->class_ptr->name);
+  }
+}
+
+/*
+ * report_hubleaf()
+ *
+ * Sends a /stats H reply to the given client.
+ *
+ * inputs: client pointer
+ * output: none
+ */
+void
+report_hubleaf(struct Client *to)
+{
+  dlink_node *ptr, *ptr2;
+  struct ConnectConf *conf;
+
+  DLINK_FOREACH(ptr, connect_confs.head)
+  {
+    conf = ptr->data;
+    DLINK_FOREACH(ptr2, conf->hub_list.head)
+      sendto_one(to, form_str(RPL_STATSHLINE), ID_or_name(&me, to->from),
+                 ID_or_name(to, to->from), 'H', ptr2->data, conf->name, 0, "*");
+  }
+
+  DLINK_FOREACH(ptr, connect_confs.head)
+  {
+    conf = ptr->data;
+    DLINK_FOREACH(ptr2, conf->leaf_list.head)
+      sendto_one(to, form_str(RPL_STATSLLINE), ID_or_name(&me, to->from),
+                 ID_or_name(to, to->from), 'L', ptr2->data, conf->name, 0, "*");
+  }
 }
 
 /*

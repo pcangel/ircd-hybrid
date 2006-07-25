@@ -32,11 +32,15 @@ struct ResvConf
 
 EXTERN dlink_list cresv_confs;
 EXTERN dlink_list nresv_confs;
+EXTERN int num_hashed_resvs;
+
+struct Client;
 
 EXTERN struct ResvConf *do_find_resv(dlink_list *, const char *,
   int (*) (const char *, const char *));
 EXTERN struct ResvConf *find_nick_resv(const char *);
 EXTERN struct ResvConf *find_channel_resv(const char *);
+EXTERN void report_resv(struct Client *);
 
 #ifdef IN_CONF_C
 void init_resv(void);

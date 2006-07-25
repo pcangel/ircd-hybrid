@@ -25,11 +25,15 @@
 #include "stdinc.h"
 #include "conf/conf.h"
 #include "client.h"
+#include "numeric.h"
+#include "send.h"
+#include "s_serv.h"
 
 int enable_glines = NO;
 time_t gline_duration;
 int gline_logging;
 int acb_type_gline;
+dlink_list pending_glines = {0};
 
 static dlink_node *hreset, *hbanned;
 static char *tmpdeny_server = NULL;
@@ -210,15 +214,33 @@ parse_action(void *list, void *unused)
  *   server  -  server feeding the gline to us
  *   user    -  username of the oper issuing the gline
  *   host    -  hostname of the oper
- *   ip      -  IP address of the oper
+ *   addr    -  IP address of the oper
  * output: GDENY_* flags (or 0 if no restrictions)
  */
 int
 is_gline_allowed(const char *server, const char *user, const char *host,
-                 const struct irc_ssaddr *ip)
+                 const char *addr)
 {
   dlink_node *ptr;
   struct GlineDenyConf *conf;
+  struct irc_ssaddr ip;
+  struct addrinfo hints = {0}, *res;
+
+  ip.ss.sin_family = AF_UNSPEC;
+  if (EmptyString(addr))
+    addr = host;
+
+  hints.ai_family   = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags    = AI_NUMERICHOST;
+
+  if (!irc_getaddrinfo(addr, NULL, &hints, &res))
+  {
+    memcpy(&ip, res->ai_addr, res->ai_addrlen);
+    ip.ss.sin_family = res->ai_family;
+    ip.ss_len = res->ai_addrlen;
+    irc_freeaddrinfo(res);
+  }
 
   DLINK_FOREACH(ptr, gdeny_confs.head)
   {
@@ -226,11 +248,12 @@ is_gline_allowed(const char *server, const char *user, const char *host,
     if (!match(user, conf->user) || !match(server, conf->server))
       continue;
 
-    if (conf->ip.ss.sin_family != AF_UNSPEC && (
+    if (ip.ss.sin_family != AF_UNSPEC &&
+        conf->ip.ss.sin_family != AF_UNSPEC && (
 #ifdef IPV6
         (conf->ip.ss.sin_family == AF_INET6) ? match_ipv6 :
 #endif
-        match_ipv4)(ip, &conf->ip, conf->ip.ss_port))
+        match_ipv4)(&ip, &conf->ip, conf->ip.ss_port))
       return conf->action;
     if (match(conf->host, host))
       return conf->action;
@@ -294,7 +317,8 @@ place_gline(const char *user, const char *host, const char *reason)
 struct GlineConf *
 find_gline(const char *user, const char *host, const struct irc_ssaddr *ip)
 {
-  return (struct GlineConf *) find_access_conf(acb_type_gline, user, host, ip, NULL, NULL);
+  return (struct GlineConf *) find_access_conf(acb_type_gline, user, host, ip,
+    NULL, NULL);
 }
 
 /*
@@ -325,6 +349,108 @@ is_client_glined(va_list args)
   }
 
   return pass_callback(hbanned, client, type, reason);
+}
+
+/*
+ * report_glines()
+ *
+ * Sends a /stats G reply to the given client.
+ *
+ * inputs: client pointer
+ * output: none
+ */
+static int
+do_report_glines(struct GlineConf *conf, struct Client *source_p)
+{
+  if (conf->access.type == acb_type_gline)
+    sendto_one(source_p, form_str(RPL_STATSKLINE),
+               ID_or_name(&me, source_p->from),
+               ID_or_name(source_p, source_p->from), "G",
+               conf->access.host, conf->access.user,
+               conf->reason ? conf->reason : "No reason", "");
+  return NO;
+}
+
+void
+report_glines(struct Client *to)
+{
+  if (enable_glines)
+    enum_access_confs((ACB_EXAMINE_HANDLER *) do_report_glines, to);
+  else
+    sendto_one(to, ":%s NOTICE %s :This server does not support G-lines",
+               ID_or_name(&me, to->from), ID_or_name(to, to->from));
+}
+
+void
+report_pending_glines(struct Client *to)
+{
+  if (enable_glines)
+  {
+#ifdef GLINE_VOTING
+    dlink_node *ptr;
+
+    if (dlink_list_length(&pending_glines) > 0)
+      sendto_one(to, ":%s NOTICE %s :Pending G-lines",
+                 ID_or_name(&me, to->from), ID_or_name(to, to->from));
+
+    DLINK_FOREACH(ptr, pending_glines.head)
+    {
+      char timebuffer[MAX_DATE_STRING];
+      struct GlinePending *p = ptr->data;
+      struct tm *tmptr = localtime(&p->request1.time_request);
+
+      strftime(timebuffer, sizeof(timebuffer), "%Y/%m/%d %H:%M:%S", tmptr);
+      sendto_one(to, ":%s NOTICE %s :1) %s!%s@%s on %s requested gline at %s "
+                 "for %s@%s [%s]", ID_or_name(&me, to->from),
+                 ID_or_name(to, to->from), p->request1.nick, p->request1.user,
+                 p->request1.host, p->request1.server, timebuffer, p->user,
+                 p->host, p->request1.reason);
+
+      if (p->request2.nick[0])
+      {
+        tmptr = localtime(&p->request2.time_request);
+        strftime(timebuffer, sizeof(timebuffer), "%Y/%m/%d %H:%M:%S", tmptr);
+        sendto_one(to, ":%s NOTICE %s :2) %s!%s@%s on %s requested gline at %s "
+                   "for %s@%s [%s]", ID_or_name(&me, to->from),
+                   ID_or_name(to, to->from), p->request2.nick, p->request2.user,
+                   p->request2.host, p->request2.server, timebuffer, p->user,
+                   p->host, p->request2.reason);
+      }
+    }
+
+    if (dlink_list_length(&pending_glines) > 0)
+      sendto_one(to, ":%s NOTICE %s :End of Pending G-lines",
+                 ID_or_name(&me, to->from), ID_or_name(to, to->from));
+#else
+    sendto_one(to, ":%s NOTICE %s :This server does not support G-line voting",
+               ID_or_name(&me, to->from), ID_or_name(to, to->from));
+#endif
+  }
+  else
+    sendto_one(to, ":%s NOTICE %s :This server does not support G-lines",
+               ID_or_name(&me, to->from), ID_or_name(to, to->from));
+}
+
+void
+report_gline_deny(struct Client *to)
+{
+  dlink_node *ptr;
+  struct GlineDenyConf *conf;
+  char buf[3] = {0};
+
+  if (enable_glines)
+    DLINK_FOREACH(ptr, gdeny_confs.head)
+    {
+      conf = ptr->data;
+      buf[0] = (conf->action & GDENY_BLOCK) ? 'B' : 'b';
+      buf[1] = (conf->action & GDENY_REJECT) ? 'R' : 'r';
+      sendto_one(to, ":%s %d %s V %s@%s %s %s", ID_or_name(&me, to->from),
+                 RPL_STATSDEBUG, ID_or_name(to, to->from), conf->user,
+                 conf->host, conf->server, buf);
+    }
+  else
+    sendto_one(to, ":%s NOTICE %s :This server does not support G-lines",
+               ID_or_name(&me, to->from), ID_or_name(to, to->from));
 }
 
 /*

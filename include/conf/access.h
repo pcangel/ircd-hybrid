@@ -53,6 +53,8 @@ EXTERN int register_acb_type(const char *, void *);
 EXTERN void unregister_acb_type(int);
 EXTERN struct AccessConf *find_access_conf(int, const char *, const char *,
   const struct irc_ssaddr *, ACB_EXAMINE_HANDLER *, void *);
+EXTERN struct AccessConf *find_exact_access_conf(int, const char *,
+  const char *);
 
 #ifdef IN_CONF_C
 void init_access(void);

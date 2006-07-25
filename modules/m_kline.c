@@ -491,7 +491,7 @@ mo_dline(struct Client *client_p, struct Client *source_p,
   cur_time = CurrentTime;
   current_date = smalldate(cur_time);
 
-  /* Look for an oper reason */
+  // Look for an oper reason
   if ((oper_reason = strchr(reason, '|')) != NULL)
     *oper_reason++ = '\0';
 
@@ -593,15 +593,14 @@ already_placed_kline(struct Client *source_p, const char *luser,
 }
 
 /*
-** mo_unkline
-** Added Aug 31, 1997 
-** common (Keith Fralick) fralick@gate.net
-**
-**      parv[0] = sender
-**      parv[1] = address to remove
-*
-*
-*/
+ * mo_unkline
+ * Added Aug 31, 1997 
+ * common (Keith Fralick) fralick@gate.net
+ *
+ *      parv[0] = sender
+ *      parv[1] = address to remove
+ *
+ */
 static void
 mo_unkline(struct Client *client_p,struct Client *source_p,
            int parc, char *parv[])
@@ -635,7 +634,7 @@ mo_unkline(struct Client *client_p,struct Client *source_p,
                         "UNKLINE %s %s %s",
                         target_server, user, host);
 
-    /* Allow ON to apply local unkline as well if it matches */
+    // Allow ON to apply local unkline as well if it matches
     if (!match(target_server, me.name))
       return;
   }
@@ -643,7 +642,7 @@ mo_unkline(struct Client *client_p,struct Client *source_p,
     cluster_a_line(source_p, "UNKLINE", CAP_UNKLN, SHARED_UNKLINE,
                    "%s %s", user, host);
 
-  conf = find_exact_kline(user, host);
+  conf = (struct KillConf *) find_exact_access_conf(acb_type_kline, user, host);
   if (!conf)
   {
     sendto_one(source_p, ":%s NOTICE %s :No K-Line for [%s@%s] found", 
@@ -709,7 +708,8 @@ me_unkline(struct Client *client_p, struct Client *source_p,
                    source_p->sockhost, SHARED_UNKLINE))
     return;
 
-  conf = find_exact_kline(kuser, khost);
+  conf = (struct KillConf *) find_exact_access_conf(acb_type_kline,
+    kuser, khost);
   if (!conf)
   {
     sendto_one(source_p, ":%s NOTICE %s :No K-Line for [%s@%s] found",

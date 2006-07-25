@@ -28,6 +28,7 @@
 #include "client.h"
 #include "numeric.h"
 #include "send.h"
+#include "s_serv.h"
 
 dlink_list oper_confs = {NULL, NULL, 0};
 
@@ -440,6 +441,39 @@ parse_flag_list(void *list, void *where)
 
   if (errors)
     parse_error("Invalid oper flags encountered, check your syntax");
+}
+
+/*
+ * report_oper()
+ *
+ * Sends a /stats O reply to the given client.
+ *
+ * inputs: client pointer
+ * output: none
+ */
+void
+report_oper(struct Client *to)
+{
+  dlink_node *ptr, *ptr2;
+  struct OperatorConf *conf;
+  struct split_nuh_item *uh;
+
+  if (General.stats_o_oper_only && !IsOper(to))
+    sendto_one(to, form_str(ERR_NOPRIVILEGES), ID_or_name(&me, to->from),
+               ID_or_name(to, to->from));
+  else
+    DLINK_FOREACH(ptr, oper_confs.head)
+    {
+      conf = ptr->data;
+      DLINK_FOREACH(ptr2, conf->masks.head)
+      {
+        uh = ptr2->data;
+        sendto_one(to, form_str(RPL_STATSOLINE), ID_or_name(&me, to->from),
+                   ID_or_name(to, to->from), 'O', uh->userptr, uh->hostptr,
+                   conf->name, IsOper(to) ? oper_privs_as_string(conf->flags) :
+                   "0", conf->class_ptr->name);
+      }
+    }
 }
 
 /*

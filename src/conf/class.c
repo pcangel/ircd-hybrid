@@ -24,6 +24,10 @@
 
 #include "stdinc.h"
 #include "conf/conf.h"
+#include "client.h"
+#include "numeric.h"
+#include "send.h"
+#include "s_serv.h"
 
 struct CidrItem
 {
@@ -119,12 +123,12 @@ delete_class(struct Class *cl)
 }
 
 void
-enum_classes(ENUMCLASSFUNC ef)
+enum_classes(ENUMCLASSFUNC ef, void *param)
 {
   dlink_node *ptr;
 
   DLINK_FOREACH_SAFE(ptr, enum_node, class_list.head)
-    ef(ptr->data);
+    ef(ptr->data, param);
 }
 
 //
@@ -135,13 +139,13 @@ enum_classes(ENUMCLASSFUNC ef)
 // Configuration manager interface.
 //
 
-static void do_reset_class(struct Class *cl)
+static void do_reset_class(struct Class *cl, void *unused)
 {
   if (cl != default_class)
     cl->stale = YES;
 }
 
-static void do_verify_class(struct Class *cl)
+static void do_verify_class(struct Class *cl, void *unused)
 {
   if (cl->stale)
     delete_class(cl);
@@ -155,14 +159,14 @@ reset_classes(va_list args)
   default_class->max_number = MAXIMUM_LINKS_DEFAULT;
   default_class->sendq_size = DEFAULT_SENDQ;
 
-  enum_classes(do_reset_class);
+  enum_classes(do_reset_class, NULL);
   return pass_callback(hreset);
 }
 
 static void *
 verify_classes(va_list args)
 {
-  enum_classes(do_verify_class);
+  enum_classes(do_verify_class, NULL);
   return pass_callback(hverify);
 }
 
@@ -236,6 +240,21 @@ local_or_global_limit(void *value, void *where)
 
     *(((int *) where) + type) = atoi(s);
   }
+}
+
+static void
+do_report_class(struct Class *c, struct Client *source_p)
+{
+  sendto_one(source_p, form_str(RPL_STATSYLINE),
+             ID_or_name(&me, source_p->from),
+             ID_or_name(source_p, source_p->from), 'Y', c->name, c->ping_time,
+             c->connectfreq, c->max_number, c->sendq_size, c->cur_clients);
+}
+
+void
+report_class(struct Client *source_p)
+{
+  enum_classes((ENUMCLASSFUNC) do_report_class, source_p);
 }
 
 void

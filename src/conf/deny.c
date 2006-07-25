@@ -25,6 +25,9 @@
 #include "stdinc.h"
 #include "conf/conf.h"
 #include "client.h"
+#include "numeric.h"
+#include "send.h"
+#include "s_serv.h"
 
 // TODO: Add callbacks for dline.conf support with default handlers
 
@@ -33,6 +36,10 @@ int acb_type_deny, acb_type_exempt;
 static struct DenyConf tmpdeny = {{0}};
 static struct AccessConf tmpexempt = {0};
 static dlink_node *hbanned;
+
+static int do_report_deny(struct AccessConf *, void *);
+static int do_report_tdeny(struct AccessConf *, void *);
+static int do_report_exempt(struct AccessConf *, void *);
 
 /*
  * free_dline()
@@ -224,6 +231,60 @@ is_client_dlined(va_list args)
   }
 
   return pass_callback(hbanned, client, type, reason);
+}
+
+/*
+ * report_deny()
+ *
+ * Send a /stats D reply to the given client.
+ *
+ * inputs: client pointer
+ * output: none
+ */
+void report_deny(struct Client *source_p) { enum_access_confs(do_report_deny, source_p); }
+void report_tdeny(struct Client *source_p) { enum_access_confs(do_report_tdeny, source_p); }
+void report_exempt(struct Client *source_p) { enum_access_confs(do_report_exempt, source_p); }
+
+static int
+do_report_deny(struct AccessConf *conf, void *source_p)
+{
+  if (conf->type == acb_type_deny && !conf->expires)
+  {
+    struct Client *cptr = source_p;
+    struct DenyConf *deny = (struct DenyConf *) conf;
+    sendto_one(source_p, form_str(RPL_STATSDLINE), ID_or_name(&me, cptr->from),
+               ID_or_name(cptr, cptr->from), 'D', conf->host,
+               deny->reason ? deny->reason : "No reason",
+               deny->oper_reason ? deny->oper_reason : "");
+  }
+  return NO;
+}
+
+static int
+do_report_tdeny(struct AccessConf *conf, void *source_p)
+{
+  if (conf->type == acb_type_deny && conf->expires)
+  {
+    struct Client *cptr = source_p;
+    struct DenyConf *deny = (struct DenyConf *) conf;
+    sendto_one(source_p, form_str(RPL_STATSDLINE), ID_or_name(&me, cptr->from),
+               ID_or_name(cptr, cptr->from), 'd', conf->host,
+               deny->reason ? deny->reason : "No reason",
+               deny->oper_reason ? deny->oper_reason : "");
+  }
+  return NO;
+}
+
+static int
+do_report_exempt(struct AccessConf *conf, void *source_p)
+{
+  if (conf->type == acb_type_exempt)
+  {
+    struct Client *cptr = source_p;
+    sendto_one(source_p, form_str(RPL_STATSDLINE), ID_or_name(&me, cptr->from),
+               ID_or_name(cptr, cptr->from), 'e', conf->host, "", "");
+  }
+  return NO;
 }
 
 /*

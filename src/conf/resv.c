@@ -32,6 +32,7 @@
 
 dlink_list nresv_confs = {0};
 dlink_list cresv_confs = {0};
+int num_hashed_resvs = 0;
 
 static dlink_node *hreset, *hexpire;
 static char *tmpreason = NULL;
@@ -216,14 +217,16 @@ report_resv(struct Client *source_p)
   {
     conf = ptr->data;
     sendto_one(source_p, form_str(RPL_STATSQLINE),
-               me.name, source_p->name, 'Q', conf->mask, conf->reason);
+               me.name, source_p->name, 'Q', conf->mask, conf->reason ?
+               conf->reason : "No reason");
   }
 
   DLINK_FOREACH(ptr, nresv_confs.head)
   {
     conf = ptr->data;
     sendto_one(source_p, form_str(RPL_STATSQLINE),
-               me.name, source_p->name, 'Q', conf->mask, conf->reason);
+               me.name, source_p->name, 'Q', conf->mask, conf->reason ?
+               conf->reason : "No reason");
   }
 }
 

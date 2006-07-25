@@ -342,8 +342,9 @@ find_access_conf(int type, const char *user, const char *host,
       for (bits = 32; bits >= 0; bits -= 8)
         for (conf = atable[hash_ipv4(ip, bits)]; conf; conf = conf->hnext)
           if ((best == NULL || conf->precedence > best->precedence) &&
-              conf->type == type && match_ipv4(ip, &conf->ip, conf->ip.ss_port)
-              && (EmptyString(user) || match(conf->user, user)) &&
+              conf->type == type && conf->ip.ss.sin_family == AF_INET &&
+              match_ipv4(ip, &conf->ip, conf->ip.ss_port) &&
+              (EmptyString(user) || match(conf->user, user)) &&
               (!func || func(conf, param)))
             best = conf;
 #ifdef IPV6
@@ -351,8 +352,9 @@ find_access_conf(int type, const char *user, const char *host,
       for (bits = 128; bits >= 0; bits -= 16)
         for (conf = atable[hash_ipv6(ip, bits)]; conf; conf = conf->hnext)
           if ((best == NULL || conf->precedence > best->precedence) &&
-              conf->type == type && match_ipv6(ip, &conf->ip, conf->ip.ss_port)
-              && (EmptyString(user) || match(conf->user, user)) &&
+              conf->type == type && conf->ip.ss.sin_family == AF_INET6 &&
+              match_ipv6(ip, &conf->ip, conf->ip.ss_port) &&
+              (EmptyString(user) || match(conf->user, user)) &&
               (!func || func(conf, param)))
             best = conf;
 #endif
@@ -378,6 +380,26 @@ find_access_conf(int type, const char *user, const char *host,
     }
 
   return best;
+}
+
+struct AccessConf *
+find_exact_access_conf(int type, const char *user, const char *host)
+{
+  /* kludge, irc_ssaddr contains bytes which we not always use
+   * (for example they might be reserved for IPv6); here we assume
+   * they are zeros, and they actually are zeroed by MyMalloc()
+   * before calling add_access_conf.  --adx
+   */
+  struct irc_ssaddr ip = {{{0}}};
+  struct AccessConf *conf;
+
+  for (conf = atable[hash_hostmask(host, &ip)]; conf; conf = conf->hnext)
+    if (conf->ip.ss.sin_family == ip.ss.sin_family &&
+        !(ip.ss.sin_family == AF_UNSPEC ? irccmp(conf->host, host) :
+          memcmp(&conf->ip, &ip, sizeof(ip))))
+      return conf;
+
+  return NULL;
 }
 
 /*

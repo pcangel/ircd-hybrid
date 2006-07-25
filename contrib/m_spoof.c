@@ -35,13 +35,13 @@
  * If you decide to enable this, remember to load m_spoof on all servers
  * I am connected to, or you'll get plenty of "Unknown command" errors...
  */
-#undef PROPAGATE_SPOOF
+#define PROPAGATE_SPOOF
 
 /*
  * this server is allowed to receive spoofs/delspoofs from other servers.
  * Use in conjunction with PROPAGATE_SPOOF (on target servers).
  */
-#undef RECEIVE_SPOOF
+#define RECEIVE_SPOOF
 
 /* where to put dynamic auth's -- this must be included from ircd.conf!
  * Ideally put .include "spoof.conf" before all other auths.
@@ -144,7 +144,6 @@ mo_spoof(struct Client *client_p, struct Client *source_p,
   int class_opers;
   FBFILE *f;
   char buffer[1024];
-  struct AddressRec *arec;
 #endif
 
   if (MyConnect(source_p) && !IsOperAdmin(source_p))
@@ -168,9 +167,9 @@ mo_spoof(struct Client *client_p, struct Client *source_p,
 
   for (tmp = parv[1]; *tmp; tmp++)
     if (!IsKWildChar(*tmp))
-      if (++i >= ConfigFileEntry.min_nonwildcard)
+      if (++i >= General.min_nonwildcard)
         break;
-  if (i < ConfigFileEntry.min_nonwildcard)
+  if (i < General.min_nonwildcard)
   {
     if (MyConnect(source_p))
       sendto_one(source_p, ":%s NOTICE %s :Not enough non-wildcard characters "
@@ -226,26 +225,23 @@ mo_spoof(struct Client *client_p, struct Client *source_p,
 #ifdef SPOOF_FILE
   /* Walk through auth {} items and check if we have another auth block
    * for this hostname */
-  for (i = 0; i < ATABLE_SIZE; i++)
-    for (arec = atable[i]; arec; arec = arec->next)
-      if (arec->type == CONF_CLIENT && !irccmp(arec->aconf->host, host) &&
-        !irccmp(arec->aconf->user, user))
-      {
-        /* auth entry already exists */
-        if (MyConnect(source_p))
-          sendto_one(source_p,
-                     ":%s NOTICE %s :auth for %s@%s already exists, you need "
-                     "to use /DELSPOOF first", me.name, source_p->name, user, host);
+  if (find_exact_access_conf(acb_type_auth, user, host))
+  {
+    // auth entry already exists
+    if (MyConnect(source_p))
+      sendto_one(source_p,
+                 ":%s NOTICE %s :auth for %s@%s already exists, you need "
+                 "to use /DELSPOOF first", me.name, source_p->name, user, host);
 #ifdef LOG_SPOOF
-        sendto_realops_flags(UMODE_ALL, L_ALL,
-                             "%s attemped to re-add auth for %s@%s "
-                             "[spoof: %s, flags: %s]", source_p->name, user, host,
-                             spoof, flags);
+    sendto_realops_flags(UMODE_ALL, L_ALL,
+                         "%s attemped to re-add auth for %s@%s "
+                         "[spoof: %s, flags: %s]", source_p->name, user, host,
+                         spoof, flags);
 #endif
-        return;
-      }
+    return;
+  }
 
-  /* Add the spoof to the the spoof file */
+  // Add the spoof to the the spoof file
   if ((f = fbopen(SPOOF_FILE, "a")) == NULL)
   {
     sendto_realops_flags(UMODE_ALL, L_ALL,
@@ -275,33 +271,33 @@ mo_spoof(struct Client *client_p, struct Client *source_p,
   for (tmp = flags; *tmp; ++tmp)
     switch (*tmp)
     {
-      case 't': i |= CONF_FLAGS_NO_TILDE;      /* no_tilde = yes; */
+      case 't': i |= AUTH_FLAG_NO_TILDE;      /* no_tilde = yes; */
                 break;
-      case 'i': i |= CONF_FLAGS_NEED_IDENTD;   /* need_ident = yes; */
+      case 'i': i |= AUTH_FLAG_NEED_IDENT;    /* need_ident = yes; */
                 break;
-      case 'k': i |= CONF_FLAGS_EXEMPTKLINE;   /* kline_exempt = yes; */
+      case 'k': i |= AUTH_FLAG_KLINE_EXEMPT;  /* kline_exempt = yes; */
                 break;
-      case 'g': i |= CONF_FLAGS_EXEMPTGLINE;   /* gline_exempt = yes; */
+      case 'g': i |= AUTH_FLAG_GLINE_EXEMPT;  /* gline_exempt = yes; */
                 break;
-      case 'l': i |= CONF_FLAGS_NOLIMIT;       /* exceed_limit = yes; */
+      case 'l': i |= AUTH_FLAG_EXCEED_LIMIT;  /* exceed_limit = yes; */
                 break;
       case 'o': class_opers = 1;               /* class = "opers"; */
                 break;
-      case 'f': i |= CONF_FLAGS_CAN_FLOOD;     /* can_flood = yes; */
+      case 'f': i |= AUTH_FLAG_CAN_FLOOD;     /* can_flood = yes; */
                 break;
-      case 'p': i|= CONF_FLAGS_NEED_PASSWORD;  /* need_password = yes; */
+      case 'p': i|= AUTH_FLAG_NEED_PASSWORD;  /* need_password = yes; */
     }
 
   if (i)
   {
     fbputs("\tflags = ", f, 9);
-    try_flag(f, &i, CONF_FLAGS_NO_TILDE, "no_tilde");
-    try_flag(f, &i, CONF_FLAGS_NEED_IDENTD, "need_ident");
-    try_flag(f, &i, CONF_FLAGS_EXEMPTKLINE, "kline_exempt");
-    try_flag(f, &i, CONF_FLAGS_EXEMPTGLINE, "gline_exempt");
-    try_flag(f, &i, CONF_FLAGS_NOLIMIT, "exceed_limit");
-    try_flag(f, &i, CONF_FLAGS_CAN_FLOOD, "can_flood");
-    try_flag(f, &i, CONF_FLAGS_NEED_PASSWORD, "need_password");
+    try_flag(f, &i, AUTH_FLAG_NO_TILDE, "no_tilde");
+    try_flag(f, &i, AUTH_FLAG_NEED_IDENT, "need_ident");
+    try_flag(f, &i, AUTH_FLAG_KLINE_EXEMPT, "kline_exempt");
+    try_flag(f, &i, AUTH_FLAG_GLINE_EXEMPT, "gline_exempt");
+    try_flag(f, &i, AUTH_FLAG_EXCEED_LIMIT, "exceed_limit");
+    try_flag(f, &i, AUTH_FLAG_CAN_FLOOD, "can_flood");
+    try_flag(f, &i, AUTH_FLAG_NEED_PASSWORD, "need_password");
   }
 
   if (class_opers)
@@ -312,7 +308,7 @@ mo_spoof(struct Client *client_p, struct Client *source_p,
   fbputs("};\n\n", f, 4);
   fbclose(f);
 
-  rehash(0);
+  read_conf_files(NO);
 #endif
 
 #ifdef LOG_SPOOF
@@ -483,7 +479,7 @@ mo_delspoof(struct Client *client_p, struct Client *source_p,
 
   unlink(SPOOF_FILE);
   rename(SPOOF_FILE ".new", SPOOF_FILE);
-  rehash(0);
+  read_conf_files(NO);
 #endif
 
 #ifdef LOG_SPOOF

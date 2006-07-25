@@ -159,15 +159,6 @@ hash_add_channel(struct Channel *chptr)
 }
 
 void
-hash_add_resv(struct ResvChannel *chptr)
-{
-  unsigned int hashv = strhash(chptr->name);
-
-  chptr->hnext = resvchannelTable[hashv];
-  resvchannelTable[hashv] = chptr;
-}
-
-void
 hash_add_userhost(struct UserHost *userhost)
 {
   unsigned int hashv = strhash(userhost->host);
@@ -314,33 +305,6 @@ hash_del_channel(struct Channel *chptr)
 
       tmp->hnextch = tmp->hnextch->hnextch;
       chptr->hnextch = chptr;
-    }
-  }
-}
-
-void
-hash_del_resv(struct ResvChannel *chptr)
-{
-  unsigned int hashv = strhash(chptr->name);
-  struct ResvChannel *tmp = resvchannelTable[hashv];
-
-  if (tmp != NULL)
-  {
-    if (tmp == chptr)
-    {
-      resvchannelTable[hashv] = chptr->hnext;
-      chptr->hnext = chptr;
-    }
-    else
-    {
-      while (tmp->hnext != chptr)
-      {
-        if ((tmp = tmp->hnext) == NULL)
-          return;
-      }
-
-      tmp->hnext = tmp->hnext->hnext;
-      chptr->hnext = chptr;
     }
   }
 }
@@ -558,42 +522,6 @@ hash_get_bucket(int type, unsigned int hashv)
   }
 
   return NULL;
-}
-
-/* hash_find_resv()
- *
- * inputs       - pointer to name
- * output       - NONE
- * side effects - New semantics: finds a reserved channel whose name is 'name',
- *                if can't find one returns NULL, if can find it moves
- *                it to the top of the list and returns it.
- */
-struct ResvChannel *
-hash_find_resv(const char *name)
-{
-  unsigned int hashv = strhash(name);
-  struct ResvChannel *chptr;
-
-  if ((chptr = resvchannelTable[hashv]) != NULL)
-  {
-    if (irccmp(name, chptr->name))
-    {
-      struct ResvChannel *prev;
-
-      while (prev = chptr, (chptr = chptr->hnext) != NULL)
-      {
-        if (!irccmp(name, chptr->name))
-        {
-          prev->hnext = chptr->hnext;
-          chptr->hnext = resvchannelTable[hashv];
-          resvchannelTable[hashv] = chptr;
-          break;
-        }
-      }
-    }
-  }
-
-  return chptr;
 }
 
 struct UserHost *
