@@ -38,7 +38,7 @@ LIBIO_EXTERN int match_esc(const char *, const char *);
 LIBIO_EXTERN int match_chan(const char *, const char *);
 LIBIO_EXTERN int match_cidr(const char *, const char *);
 
-LIBIO_EXTERN int has_wildcards(const char *);
+LIBIO_EXTERN int has_wildcards(const char *, int);
 
 /*
  * collapse - collapse a string in place, converts multiple adjacent *'s 

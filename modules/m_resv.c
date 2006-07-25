@@ -243,6 +243,13 @@ parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
 {
   struct ResvConf *conf;
 
+  if (!IsAdmin(source_p) && has_wildcards(name, IsChanPrefix(*name)))
+  {
+    sendto_one(source_p, ":%s NOTICE %s :You must be an admin to perform a "
+               "wildcard RESV", me.name, source_p->name);
+    return;
+  }
+
   if (IsChanPrefix(*name))
   {
     if (find_channel_resv(name))
@@ -256,7 +263,15 @@ parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
     conf = MyMalloc(sizeof(*conf));
     DupString(conf->mask, name);
     DupString(conf->reason, reason);
-    dlinkAdd(conf, &conf->node, &cresv_confs);
+    if (has_wildcards(name, YES))
+    {
+      unsigned int hashv = hash_text(name, RHSIZE);
+      conf->hnext = cresv_hash[hashv];
+      cresv_hash[hashv] = conf;
+      num_hashed_resvs++;
+    }
+    else
+      dlinkAdd(conf, &conf->node, &cresv_confs);
 
     if (tkline_time != 0)
     {
@@ -296,13 +311,6 @@ parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
       return;
     }
 
-    if (!IsAdmin(source_p) && has_wildcards(name))
-    {
-      sendto_one(source_p, ":%s NOTICE %s :You must be an admin to perform a "
-                 "wildcard RESV", me.name, source_p->name);
-      return;
-    }
-
     if (find_nick_resv(name))
     {
       sendto_one(source_p,
@@ -314,7 +322,15 @@ parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
     conf = MyMalloc(sizeof(*conf));
     DupString(conf->mask, name);
     DupString(conf->reason, reason);
-    dlinkAdd(conf, &conf->node, &nresv_confs);
+    if (has_wildcards(name, NO))
+    {
+      unsigned int hashv = hash_text(name, RHSIZE);
+      conf->hnext = nresv_hash[hashv];
+      nresv_hash[hashv] = conf;
+      num_hashed_resvs++;
+    }
+    else
+      dlinkAdd(conf, &conf->node, &nresv_confs);
 
     if (tkline_time != 0)
     {
@@ -352,11 +368,11 @@ parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
 static void
 remove_resv(struct Client *source_p, const char *name)
 {
-  struct ResvConf *conf;
+  struct ResvConf *conf, *prev;
 
   if (IsChanPrefix(*name))
   {
-    if (!(conf = do_find_resv(&cresv_confs, name, irccmp)))
+    if (!(conf = do_find_resv(&cresv_confs, cresv_hash, name, irccmp)))
     {
       sendto_one(source_p,
                  ":%s NOTICE %s :A RESV does not exist for channel: %s",
@@ -364,12 +380,29 @@ remove_resv(struct Client *source_p, const char *name)
       return;
     }
 
-    dlinkDelete(&conf->node, &cresv_confs);
+    if (has_wildcards(conf->mask, YES))
+    {
+      unsigned int hashv = hash_text(conf->mask, RHSIZE);
+      if (cresv_hash[hashv] == conf)
+        cresv_hash[hashv] = conf->hnext;
+      else
+      {
+        // make it core if not found
+        for (prev = cresv_hash[hashv]; prev->hnext != conf; prev = prev->hnext)
+          ;
+        prev->hnext = conf->hnext;
+      }
+      num_hashed_resvs--;
+    }
+    else
+      dlinkDelete(&conf->node, &cresv_confs);
+
+    if (!conf->expires)
+      remove_conf_line(123, source_p, name, NULL);
+
     MyFree(conf->mask);
     MyFree(conf->reason);
     MyFree(conf);
-
-    remove_conf_line(123, source_p, name, NULL);
 
     sendto_one(source_p,
                ":%s NOTICE %s :The RESV has been removed on channel: %s",
@@ -380,19 +413,36 @@ remove_resv(struct Client *source_p, const char *name)
   }
   else
   {
-    if (!(conf = do_find_resv(&nresv_confs, name, irccmp)))
+    if (!(conf = do_find_resv(&nresv_confs, nresv_hash, name, irccmp)))
     {
       sendto_one(source_p, ":%s NOTICE %s :A RESV does not exist for nick: %s",
                  me.name, source_p->name, name);
       return;
     }
 
-    dlinkDelete(&conf->node, &nresv_confs);
+    if (has_wildcards(conf->mask, NO))
+    {
+      unsigned int hashv = hash_text(conf->mask, RHSIZE);
+      if (nresv_hash[hashv] == conf)
+        nresv_hash[hashv] = conf->hnext;
+      else
+      {
+        // make it core if not found
+        for (prev = nresv_hash[hashv]; prev->hnext != conf; prev = prev->hnext)
+          ;
+        prev->hnext = conf->hnext;
+      }
+      num_hashed_resvs--;
+    }
+    else
+      dlinkDelete(&conf->node, &nresv_confs);
+
+    if (!conf->expires)
+      remove_conf_line(456, source_p, name, NULL);
+
     MyFree(conf->mask);
     MyFree(conf->reason);
     MyFree(conf);
-
-    remove_conf_line(456, source_p, name, NULL);
 
     sendto_one(source_p, ":%s NOTICE %s :The RESV has been removed on nick: %s",
                me.name, source_p->name, name);

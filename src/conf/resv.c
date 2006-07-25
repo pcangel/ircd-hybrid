@@ -27,15 +27,20 @@
 #include "client.h"
 #include "numeric.h"
 #include "send.h"
+#include "s_serv.h"
 
 // TODO: Add callbacks for ?resv.conf support with default handlers
 
 dlink_list nresv_confs = {0};
 dlink_list cresv_confs = {0};
+struct ResvConf *nresv_hash[RHSIZE] = {0};
+struct ResvConf *cresv_hash[RHSIZE] = {0};
 int num_hashed_resvs = 0;
 
 static dlink_node *hreset, *hexpire;
 static char *tmpreason = NULL;
+
+static void do_report_resv(struct Client *, dlink_list *, struct ResvConf **);
 
 /*
  * free_resvs()
@@ -44,15 +49,38 @@ static char *tmpreason = NULL;
  *
  * inputs:
  *   list      -  &nresv_confs or &cresv_confs
+ *   hash      -  &nresv_hash or &cresv_hash, likewise
  *   type      -  "nick" or "channel"
  *   expiring  -  whether we free expired (YES) or all permanent (NO) resvs
  * output: none
  */
 static void
-free_resvs(dlink_list *list, const char *type, int expiring)
+free_resvs(dlink_list *list, struct ResvConf **hash, const char *type,
+           int expiring)
 {
   dlink_node *ptr, *ptr_next;
-  struct ResvConf *resv;
+  struct ResvConf *prev, *resv;
+  int i;
+
+  for (i = 0; i < RHSIZE; i++)
+    for (prev = NULL, resv = hash[i]; resv != NULL;
+         resv = (prev != NULL ? prev->hnext : hash[i]))
+      if (expiring ? (resv->expires && resv->expires <= CurrentTime) :
+          (resv->expires == 0))
+      {
+        if (expiring)
+          sendto_realops_flags(UMODE_ALL, L_ALL,
+            "Temporary %s resv for [%s] expired", type, resv->mask);
+
+        if (prev != NULL)
+          prev->hnext = resv->hnext;
+        else
+          hash[i] = resv->hnext;
+
+        MyFree(resv->mask);
+        MyFree(resv->reason);
+        MyFree(resv);
+      }
 
   DLINK_FOREACH_SAFE(ptr, ptr_next, list->head)
   {
@@ -64,7 +92,8 @@ free_resvs(dlink_list *list, const char *type, int expiring)
         sendto_realops_flags(UMODE_ALL, L_ALL,
           "Temporary %s resv for [%s] expired", type, resv->mask);
 
-      dlinkDelete(ptr->data, list);
+      dlinkDelete(&resv->node, list);
+
       MyFree(resv->mask);
       MyFree(resv->reason);
       MyFree(resv);
@@ -83,8 +112,8 @@ free_resvs(dlink_list *list, const char *type, int expiring)
 static void *
 reset_resv(va_list args)
 {
-  free_resvs(&nresv_confs, "nick", NO);
-  free_resvs(&cresv_confs, "channel", NO);
+  free_resvs(&nresv_confs, nresv_hash, "nick", NO);
+  free_resvs(&cresv_confs, cresv_hash, "channel", NO);
 
   return pass_callback(hreset);
 }
@@ -100,8 +129,8 @@ reset_resv(va_list args)
 static void *
 expire_resv(va_list args)
 {
-  free_resvs(&nresv_confs, "nick", YES);
-  free_resvs(&cresv_confs, "channel", YES);
+  free_resvs(&nresv_confs, nresv_hash, "nick", YES);
+  free_resvs(&cresv_confs, cresv_hash, "channel", YES);
 
   return pass_callback(hexpire);
 }
@@ -113,22 +142,26 @@ expire_resv(va_list args)
  *
  * inputs:
  *   list  -  &nresv_confs or &cresv_confs
+ *   hash  -  &nresv_hash or &cresv_hash, likewise
  *   what  -  nick/channel to look for
  *   func  -  compare function
  * output: pointer to matching ResvConf or NULL
  */
 struct ResvConf *
-do_find_resv(dlink_list *list, const char *what,
+do_find_resv(dlink_list *list, struct ResvConf **hash, const char *what,
              int (* func) (const char *, const char *))
 {
   dlink_node *ptr;
+  struct ResvConf *resv;
+
+  for (resv = hash[hash_text(what, RHSIZE)]; resv; resv = resv->hnext)
+    if (!func(resv->mask, what) ^ (func != irccmp))
+      return resv;
 
   DLINK_FOREACH(ptr, list->head)
   {
-    struct ResvConf *resv = ptr->data;
-    int matches = !func(resv->mask, what) ^ (func != irccmp);
-
-    if (matches)
+    resv = ptr->data;
+    if (!func(resv->mask, what) ^ (func != irccmp))
       return resv;
   }
 
@@ -138,13 +171,13 @@ do_find_resv(dlink_list *list, const char *what,
 struct ResvConf *
 find_nick_resv(const char *nick)
 {
-  return do_find_resv(&nresv_confs, nick, match);
+  return do_find_resv(&nresv_confs, nresv_hash, nick, match);
 }
 
 struct ResvConf *
 find_channel_resv(const char *chname)
 {
-  return do_find_resv(&cresv_confs, chname, match_chan);
+  return do_find_resv(&cresv_confs, cresv_hash, chname, match_chan);
 }
 
 /*
@@ -174,14 +207,23 @@ before_resv(void)
 static void
 resv_nick(void *mask, void *unused)
 {
-  if (!do_find_resv(&nresv_confs, mask, irccmp))
+  if (!IsChanPrefix(((char *) mask)[0]) &&
+      !do_find_resv(&nresv_confs, nresv_hash, mask, irccmp))
   {
     struct ResvConf *resv = MyMalloc(sizeof(struct ResvConf));
 
     DupString(resv->mask, collapse(mask));
     if (tmpreason)
       DupString(resv->reason, tmpreason);
-    dlinkAddTail(resv, &resv->node, &nresv_confs);
+
+    if (has_wildcards(mask, NO))
+    {
+      unsigned int hashv = hash_text(mask, RHSIZE);
+      resv->hnext = nresv_hash[hashv];
+      nresv_hash[hashv] = resv;
+    }
+    else
+      dlinkAddTail(resv, &resv->node, &nresv_confs);
   }
 }
 
@@ -189,20 +231,29 @@ static void
 resv_channel(void *mask, void *unused)
 {
   if (IsChanPrefix(((char *) mask)[0]) &&
-      !do_find_resv(&cresv_confs, mask, irccmp))
+      !do_find_resv(&cresv_confs, cresv_hash, mask, irccmp))
   {
     struct ResvConf *resv = MyMalloc(sizeof(struct ResvConf));
 
     DupString(resv->mask, collapse_esc(mask));
-    DupString(resv->reason, tmpreason ? tmpreason : "No reason");
-    dlinkAddTail(resv, &resv->node, &cresv_confs);
+    if (tmpreason)
+      DupString(resv->reason, tmpreason);
+
+    if (has_wildcards(mask, YES))
+    {
+      unsigned int hashv = hash_text(mask, RHSIZE);
+      resv->hnext = cresv_hash[hashv];
+      cresv_hash[hashv] = resv;
+    }
+    else
+      dlinkAddTail(resv, &resv->node, &cresv_confs);
   }
 }
 
 /*
  * report_resv()
  *
- * Sends a /STATS Q reply to the given client.
+ * Sends a /stats Q reply to the given client.
  *
  * inputs: client pointer
  * output: none
@@ -210,23 +261,32 @@ resv_channel(void *mask, void *unused)
 void
 report_resv(struct Client *source_p)
 {
+  do_report_resv(source_p, &nresv_confs, nresv_hash);
+  do_report_resv(source_p, &cresv_confs, cresv_hash);
+}
+
+static void
+do_report_resv(struct Client *source_p, dlink_list *list,
+               struct ResvConf **hash)
+{
   dlink_node *ptr;
   struct ResvConf *conf;
+  int i;
 
-  DLINK_FOREACH(ptr, cresv_confs.head)
+  for (i = 0; i < RHSIZE; i++)
+    for (conf = hash[i]; conf; conf = conf->hnext)
+      sendto_one(source_p, form_str(RPL_STATSQLINE),
+                 ID_or_name(&me, source_p->from),
+                 ID_or_name(source_p, source_p->from), 'Q', conf->mask,
+                 conf->reason ? conf->reason : "No reason");
+
+  DLINK_FOREACH(ptr, list->head)
   {
     conf = ptr->data;
     sendto_one(source_p, form_str(RPL_STATSQLINE),
-               me.name, source_p->name, 'Q', conf->mask, conf->reason ?
-               conf->reason : "No reason");
-  }
-
-  DLINK_FOREACH(ptr, nresv_confs.head)
-  {
-    conf = ptr->data;
-    sendto_one(source_p, form_str(RPL_STATSQLINE),
-               me.name, source_p->name, 'Q', conf->mask, conf->reason ?
-               conf->reason : "No reason");
+               ID_or_name(&me, source_p->from),
+               ID_or_name(source_p, source_p->from), 'Q', conf->mask,
+               conf->reason ? conf->reason : "No reason");
   }
 }
 

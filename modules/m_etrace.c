@@ -80,7 +80,7 @@ do_etrace(va_list args)
   {
     tname = parv[1];
     if (tname != NULL)
-      wilds = has_wildcards(tname);
+      wilds = has_wildcards(tname, NO);
     else
       tname = "*";
   }

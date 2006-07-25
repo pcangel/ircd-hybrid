@@ -186,7 +186,7 @@ do_whois(va_list args)
 
   collapse(nick);
 
-  if (!has_wildcards(nick))
+  if (!has_wildcards(nick, NO))
   {
     if ((target_p = find_client(nick)) && IsClient(target_p))
     {

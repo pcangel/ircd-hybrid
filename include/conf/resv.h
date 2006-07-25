@@ -28,16 +28,21 @@ struct ResvConf
   char *reason;
   time_t expires;
   dlink_node node;
+  struct ResvConf *hnext;
 };
+
+#define RHSIZE  512
 
 EXTERN dlink_list cresv_confs;
 EXTERN dlink_list nresv_confs;
+EXTERN struct ResvConf *cresv_hash[];
+EXTERN struct ResvConf *nresv_hash[];
 EXTERN int num_hashed_resvs;
 
 struct Client;
 
-EXTERN struct ResvConf *do_find_resv(dlink_list *, const char *,
-  int (*) (const char *, const char *));
+EXTERN struct ResvConf *do_find_resv(dlink_list *, struct ResvConf **,
+  const char *, int (*) (const char *, const char *));
 EXTERN struct ResvConf *find_nick_resv(const char *);
 EXTERN struct ResvConf *find_channel_resv(const char *);
 EXTERN void report_resv(struct Client *);

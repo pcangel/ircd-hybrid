@@ -144,7 +144,7 @@ do_list(struct Client *source_p, int parc, char *parv[])
                  }
                  else list = &lt->show_mask;
 
-                 if (has_wildcards(opt + !!IsChanPrefix(*opt)))
+                 if (has_wildcards(opt + !!IsChanPrefix(*opt), YES))
                  {
                    if (list == &lt->show_mask)
                      no_masked_channels = 0;

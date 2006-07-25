@@ -200,7 +200,7 @@ do_actual_trace(va_list args)
     tname = me.name;
   }
 
-  wilds = !parv[1] || has_wildcards(tname);
+  wilds = !parv[1] || has_wildcards(tname, NO);
   dow = wilds || doall;
 
   if (!IsOper(source_p) || !dow) /* non-oper traces must be full nicks */

@@ -1061,7 +1061,7 @@ parse_stats_args(int parc, char *parv[], int *doall, int *wilds)
     else if (match(name, from))
       *doall = 1;
 
-    *wilds = has_wildcards(name);
+    *wilds = has_wildcards(name, NO);
 
     return name;
   }

@@ -405,7 +405,7 @@ hunt_server(struct Client *source_p, const char *command,
    */
   if (target_p == NULL)
   {
-    if (!has_wildcards(parv[server]))
+    if (!has_wildcards(parv[server], NO))
     {
       if (!(target_p = find_server(parv[server])))
       {

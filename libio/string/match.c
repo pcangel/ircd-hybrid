@@ -184,13 +184,13 @@ match_chan(const char *mask, const char *name)
 }
 
 int
-has_wildcards(const char *s)
+has_wildcards(const char *s, int escape)
 {
   const unsigned char *p = (const unsigned char *)s;
 
   for (; *p != '\0'; ++p)
   {
-    if (*p == '\\')
+    if (*p == '\\' && escape)
     {
       if (*++p == '\0')
         return 0;
