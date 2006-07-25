@@ -524,7 +524,7 @@ get_client_name(const struct Client *client, int showip)
   switch (showip)
   {
     case SHOW_IP:
-      if (*client->sockhost != '\0')
+      if (client->sockhost[0] != '\0' || irccmp(client->sockhost, "0") != 0)
         ircsprintf(nbuf, "%s[%s@%s]", client->name, client->username,
                    client->sockhost);
       else
