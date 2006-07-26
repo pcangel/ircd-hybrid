@@ -824,10 +824,9 @@ do_numeric(char numeric[], struct Client *client_p, struct Client *source_p,
     // Fake it for server hiding, if its our client
     if (ServerHide.hide_servers && MyClient(target_p) && !IsOper(target_p))
       sendto_one(target_p, ":%s %s %s%s", me.name, numeric, target_p->name, buffer);
-    else if (!MyClient(target_p) && IsCapable(target_p->from, CAP_TS6) && HasID(source_p))
-      sendto_one(target_p, ":%s %s %s%s", source_p->id, numeric, target_p->id, buffer);
-    else // either it is our client, or a client linked through a non-ts6 server. must use names!
-      sendto_one(target_p, ":%s %s %s%s", source_p->name, numeric, target_p->name, buffer);
+    else
+      sendto_one(target_p, ":%s %s %s%s", ID_or_name(source_p, target_p->from),
+                 numeric, ID_or_name(target_p, target_p->from), buffer);
     return;
   }
   else if ((chptr = hash_find_channel(parv[1])) != NULL)
