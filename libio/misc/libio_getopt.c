@@ -48,7 +48,7 @@ void
 parseargs(int *argc, char ***argv, struct lgetopt *opts)
 {
   int i;
-  char *progname = (*argv)[0];
+  const char *progname = (*argv)[0];
 
   // loop through each argument
   for (;;)
@@ -80,27 +80,33 @@ parseargs(int *argc, char ***argv, struct lgetopt *opts)
           case YESNO:
             *((int *)opts[i].argloc) = 1;
             break;
+
           case INTEGER:
             if (*argc < 2)
-		    {
-		      fprintf(stderr, "Error: option '%c%s' requires an argument\n",
-			      OPTCHAR, opts[i].opt);
-		      libio_getopt_usage(progname, opts);
-		    }
+            {
+              fprintf(stderr, "Error: option '%c%s' requires an argument\n",
+                      OPTCHAR, opts[i].opt);
+              libio_getopt_usage(progname, opts);
+            }
 
             *((int *)opts[i].argloc) = atoi((*argv)[1]);
+            (*argc)--;
+            (*argv)++;
             break;
+
           case STRING:
             if (*argc < 2)
-		    {
-		      fprintf(stderr, "error: option '%c%s' requires an argument\n",
-			      OPTCHAR, opts[i].opt);
-		      libio_getopt_usage(progname, opts);
-		    }
+            {
+              fprintf(stderr, "error: option '%c%s' requires an argument\n",
+                      OPTCHAR, opts[i].opt);
+              libio_getopt_usage(progname, opts);
+            }
 
             // XXX this could leak memory, although it's harmless
-            *((char**)opts[i].argloc) = malloc(strlen((*argv)[1]) + 1);
-            strcpy(*((char**)opts[i].argloc), (*argv)[1]);
+            *((char **)opts[i].argloc) = malloc(strlen((*argv)[1]) + 1);
+            strcpy(*((char **)opts[i].argloc), (*argv)[1]);
+            (*argc)--;
+            (*argv)++;
             break;
 
           case USAGE:
@@ -113,8 +119,9 @@ parseargs(int *argc, char ***argv, struct lgetopt *opts)
             exit(EXIT_FAILURE);
         }
       }
-	}
-	if (!found)
+    }
+
+    if (!found)
     {
       fprintf(stderr, "error: unknown argument '%c%s'\n", OPTCHAR, (*argv)[0]);
       libio_getopt_usage(progname, opts);
