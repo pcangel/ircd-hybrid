@@ -1311,7 +1311,11 @@ change_local_nick(struct Client *client_p, struct Client *source_p, const char *
   hash_del_client(source_p);
 
   if (!samenick)
+  {
+    clear_ban_cache_client(source_p);
     watch_check_hash(source_p, RPL_LOGOFF);
+  }
+
   strcpy(source_p->name, nick);
   hash_add_client(source_p);
 

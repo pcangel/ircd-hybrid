@@ -105,5 +105,5 @@ EXTERN int add_id(struct Client *, struct Channel *, char *, int);
 EXTERN void set_channel_mode(struct Client *, struct Client *, struct Channel *,
                              struct Membership *, int, char **, char *);
 EXTERN void clear_ban_cache(struct Channel *);
-
+EXTERN void clear_ban_cache_client(struct Client *);
 #endif /* INCLUDED_channel_mode_h */
