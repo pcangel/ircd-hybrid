@@ -60,6 +60,9 @@ SRCS = \
  conf/serverhide.c \
  conf/serverinfo.c \
  conf/shared.c \
+ conf/modern/lex.yy.o \
+ conf/modern/y.tab.o \
+ conf/modern/parse.o \
  channel.c \
  channel_mode.c \
  client.c \

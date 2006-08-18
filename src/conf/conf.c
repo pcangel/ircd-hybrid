@@ -31,16 +31,12 @@
 #include "send.h"
 
 int conf_pass, conf_cold = YES;
-struct ConfParserContext conf_curctx;
-char conf_linebuf[CONF_BUFSIZE];
 
 struct Callback *reset_conf = NULL;
 struct Callback *verify_conf = NULL;
 struct Callback *switch_conf_pass = NULL;
 
 static dlink_list conf_section_list = {NULL, NULL, 0};
-
-extern int yyparse(void);
 
 /*
  * init_conf()
@@ -77,93 +73,6 @@ init_conf(void)
   init_shared();
   init_gecos();
   init_connect();
-}
-
-/*
- * parse_error()
- *
- * Log a parse error message.
- *
- * inputs:
- *   fmt  -  error message format
- * output: none
- */
-static void
-do_parse_error(int fatal, const char *fmt, va_list args)
-{
-  char *newbuf = stripws(conf_linebuf);
-  char msg[CONF_BUFSIZE];
-
-  vsnprintf(msg, sizeof(msg), fmt, args);
-
-  if (conf_pass != 0)
-  {
-    sendto_realops_flags(UMODE_ALL, L_ALL, "\"%s\", line %u: %s: %s",
-      conf_curctx.filename, conf_curctx.lineno+1, msg, newbuf);
-    ilog(fatal ? L_CRIT : L_WARN, "\"%s\", line %u: %s: %s",
-      conf_curctx.filename, conf_curctx.lineno+1, msg, newbuf);
-  }
-  else
-  {
-    sendto_realops_flags(UMODE_ALL, L_ALL, "Conf %s: %s",
-                         fatal ? "FATAL" : "ERROR", msg);
-    ilog(fatal ? L_CRIT : L_WARN, "Conf %s: %s",
-         fatal ? "FATAL" : "ERROR", msg);
-  }
-}
-
-void
-parse_error(const char *fmt, ...)
-{
-  va_list args;
-
-  va_start(args, fmt);
-  do_parse_error(NO, fmt, args);
-  va_end(args);
-}
-
-void
-parse_fatal(const char *fmt, ...)
-{
-  va_list args;
-
-  va_start(args, fmt);
-  do_parse_error(YES, fmt, args);
-  va_end(args);
-
-  server_die("misconfigured server", NO);
-}
-
-/*
- * yyerror()
- *
- * Log a parse error message if the current pass is 2.
- *
- * inputs:
- *   msg  -  error message
- * output: none
- */
-void
-_yyerror(const char *msg)
-{
-  if (conf_pass == 2)
-    parse_error("%s", msg);
-}
-
-/*
- * conf_yy_input()
- *
- * Loads a block of data from the conf file.
- *
- * inputs:
- *   buf  -  address of destination buffer
- *   siz  -  size of the buffer
- * output: number of bytes actually read
- */
-int
-conf_yy_input(char *buf, int siz)
-{
-  return fbgets(buf, siz, conf_curctx.f) == NULL ? 0 : strlen(buf);
 }
 
 /*

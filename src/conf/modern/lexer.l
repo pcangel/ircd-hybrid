@@ -34,6 +34,7 @@
 
 #include "stdinc.h"
 #include "conf/conf.h"
+#include "parse.h"
 #include "y.tab.h"
 
 #undef  YY_INPUT
@@ -183,7 +184,8 @@ conf_include(void)
 
   if (conf_include_sptr == MAX_INCLUDE_DEPTH)
   {
-    ilog(L_ERROR, "Includes nested too deep", fname);
+    if (conf_pass == 2)
+      parse_error("Includes nested too deep");
     return;
   }
 
@@ -194,8 +196,8 @@ conf_include(void)
 
   if ((f = fbopen(filenamebuf, "r")))
   {
-    ilog(L_ERROR, "Unable to read configuration file '%s': %s",
-         filenamebuf, strerror(errno));
+    if (conf_pass == 2)
+      parse_error("Unable to read configuration file");
     return;
   }
 

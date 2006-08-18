@@ -23,8 +23,6 @@
  *  $Id$
  */
 
-#define CONF_BUFSIZE 512
-
 #define CT_NUMBER 0
 #define CT_BOOL   1
 #define CT_TIME   2
@@ -35,12 +33,6 @@
 
 typedef void CONFS_HANDLER(void);
 typedef void CONFF_HANDLER(void *, void *);
-
-struct ConfParserContext {
-  FBFILE *f;
-  char *filename;
-  int lineno;
-};
 
 struct ConfField {
   const char *name;
@@ -61,15 +53,9 @@ struct ConfSection {
 };
 
 void init_conf(void);
-void yyerror(const char *);
-int yylex(void);
-int conf_yy_input(char *, int);
 void conf_clear_ident_list(void);
 
 EXTERN int conf_pass, conf_cold;
-EXTERN struct ConfParserContext conf_curctx;
-EXTERN char conf_linebuf[];
-EXTERN int conf_include_sptr;
 EXTERN struct Callback *reset_conf;
 EXTERN struct Callback *verify_conf;
 EXTERN struct Callback *switch_conf_pass;

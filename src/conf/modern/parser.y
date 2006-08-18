@@ -27,6 +27,7 @@
 
 #include "stdinc.h"
 #include "conf/conf.h"
+#include "parse.h"
 
 #define YY_NO_UNPUT
 
@@ -104,8 +105,8 @@ conf_block: IDENTIFIER
         conf_current_section->before != NULL)
       conf_current_section->before();
   }
-  else
-    yyerror("unknown conf section");
+  else if (conf_pass == 2)
+    parse_error("unknown conf section");
 } default_field '{' conf_items '}' ';'
 {
   if (conf_current_section != NULL)
@@ -146,7 +147,10 @@ number_range: NUMBER '.' '.' NUMBER
   int i;
   
   if ($4 - $1 < 0 || $4 - $1 >= 100)
-    yyerror("invalid range");
+  {
+    if (conf_pass == 2)
+      parse_error("invalid range");
+  }
   else for (i = $1; i <= $4; i++)
     conf_add_number(i);
 };

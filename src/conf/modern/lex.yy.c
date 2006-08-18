@@ -484,9 +484,8 @@ char *yytext;
 
 #include "stdinc.h"
 #include "conf/conf.h"
+#include "parse.h"
 #include "y.tab.h"
-
-int conf_include_sptr = 0;
 
 #undef  YY_INPUT
 #define YY_INPUT(buf, res, siz) res = conf_yy_input(buf, siz)
@@ -495,6 +494,7 @@ int conf_include_sptr = 0;
 
 #define MAX_INCLUDE_DEPTH 10
 
+static int conf_include_sptr = 0;
 static YY_BUFFER_STATE conf_include_yystack[MAX_INCLUDE_DEPTH];
 struct ConfParserContext conf_include_ctxstack[MAX_INCLUDE_DEPTH];
 
@@ -1948,33 +1948,31 @@ int main()
 static void
 conf_include(void)
 {
-  char *fname, *buf;
-  FBFILE *f;
-
-  if (conf_include_sptr == MAX_INCLUDE_DEPTH)
-  {
-    yyerror("includes nested too deep");
-    return;
-  }
+  char filenamebuf[IRCD_BUFSIZE];
+  char *fname = NULL;
+  FBFILE *f = NULL;
 
   if ((fname = strchr(yytext, '"')) == NULL)
     *strchr(fname = strchr(yytext, '<') + 1, '>') = '\0';
   else
     *strchr(++fname, '"') = '\0';
 
-  if (fname[0] == '/')
-    f = fbopen(fname, "r");
-  else
+  if (conf_include_sptr == MAX_INCLUDE_DEPTH)
   {
-    buf = MyMalloc(strlen(ETCPATH) + 1 + strlen(fname) + 1);
-    sprintf(buf, "%s/%s", ETCPATH, fname);
-    f = fbopen(buf, "r");
-    MyFree(buf);
+    if (conf_pass == 2)
+      parse_error("Includes nested too deep");
+    return;
   }
 
-  if (f == NULL)
+  if (*fname == '/')  /* if it is an absolute path */
+    snprintf(filenamebuf, sizeof(filenamebuf), "%s", fname);
+  else
+    snprintf(filenamebuf, sizeof(filenamebuf), "%s/%s", ETCPATH, fname);
+
+  if ((f = fbopen(filenamebuf, "r")))
   {
-    yyerror("cannot open file to include");
+    if (conf_pass == 2)
+      parse_error("Unable to read configuration file");
     return;
   }
 
@@ -1985,9 +1983,11 @@ conf_include(void)
 
   /* switch lexer context */
   conf_linebuf[0] = '\0';
-  conf_curctx.f = f;
-  DupString(conf_curctx.filename, fname);
+
   conf_curctx.lineno = 1;
+  conf_curctx.f = f;
+  DupString(conf_curctx.filename, filenamebuf);
+
   yy_switch_to_buffer(yy_create_buffer(yyin, YY_BUF_SIZE));
 }
 
