@@ -25,6 +25,7 @@
 #include "stdinc.h"
 #include "conf/conf.h"
 #include "client.h"
+#include "ircd.h"
 #include "numeric.h"
 #include "send.h"
 #include "s_serv.h"
@@ -42,6 +43,8 @@ dlink_list class_list = {NULL, NULL, 0};
 static dlink_node *enum_node = NULL;
 static dlink_node *hreset, *hverify;
 static struct Class tmpclass;
+
+static void destroy_cidr_list(dlink_list *);
 
 //
 // Low configuration layer: object storage and reference counting.
@@ -69,18 +72,6 @@ ref_class_by_ptr(struct Class *cl)
   if (cl != default_class)
     cl->refcnt++;
   return cl;
-}
-
-static void
-destroy_cidr_list(dlink_list *l)
-{
-  while (l->head != NULL)
-  {
-    struct CidrItem *cidr = l->head->data;
-
-    dlinkDelete(&cidr->node, l);
-    MyFree(cidr);
-  }
 }
 
 void
@@ -132,8 +123,178 @@ enum_classes(ENUMCLASSFUNC ef, void *param)
 }
 
 //
-// TODO: Class matching and assigning (limits!)
+// Class limits tracking.
 //
+
+int
+cidr_limit_reached(int exempt, struct irc_ssaddr *ip, struct Class *aclass)
+{
+  dlink_node *ptr = NULL;
+  struct CidrItem *cidr;
+
+  if (aclass->number_per_cidr <= 0)
+    return 0;
+
+  if (ip->ss.sin_family == AF_INET)
+  {
+    if (aclass->cidr_bitlen_ipv4 <= 0)
+      return 0;
+
+    DLINK_FOREACH(ptr, aclass->list_ipv4.head)
+    {
+      cidr = ptr->data;
+      if (match_ipv4(ip, &cidr->mask, aclass->cidr_bitlen_ipv4))
+      {
+        if (!exempt && cidr->number_on_this_cidr >= aclass->number_per_cidr)
+          return -1;
+        cidr->number_on_this_cidr++;
+        return 0;
+      }
+    }
+
+    cidr = MyMalloc(sizeof(struct CidrItem));
+    cidr->number_on_this_cidr = 1;
+    cidr->mask = *ip;
+    mask_addr(&cidr->mask, aclass->cidr_bitlen_ipv4);
+    dlinkAdd(cidr, &cidr->node, &aclass->list_ipv4);
+  }
+#ifdef IPV6
+  else if (aclass->cidr_bitlen_ipv6 > 0)
+  {
+    DLINK_FOREACH(ptr, aclass->list_ipv6.head)
+    {
+      cidr = ptr->data;
+      if (match_ipv6(ip, &cidr->mask, aclass->cidr_bitlen_ipv6))
+      {
+        if (!exempt && cidr->number_on_this_cidr >= aclass->number_per_cidr)
+          return -1;
+        cidr->number_on_this_cidr++;
+        return 0;
+      }
+    }
+
+    cidr = MyMalloc(sizeof(struct CidrItem));
+    cidr->number_on_this_cidr = 1;
+    cidr->mask = *ip;
+    mask_addr(&cidr->mask, aclass->cidr_bitlen_ipv6);
+    dlinkAdd(cidr, &cidr->node, &aclass->list_ipv6);
+  }
+#endif
+
+  return 0;
+}
+
+void
+remove_from_cidr_check(struct irc_ssaddr *ip, struct Class *aclass)
+{
+  dlink_node *ptr = NULL;
+  dlink_node *next_ptr = NULL;
+  struct CidrItem *cidr;
+
+  if (aclass->number_per_cidr <= 0)
+    return;
+
+  if (ip->ss.sin_family == AF_INET)
+  {
+    if (aclass->cidr_bitlen_ipv4 <= 0)
+      return;
+
+    DLINK_FOREACH_SAFE(ptr, next_ptr, aclass->list_ipv4.head)
+    {
+      cidr = ptr->data;
+      if (match_ipv4(ip, &cidr->mask, aclass->cidr_bitlen_ipv4))
+      {
+        cidr->number_on_this_cidr--;
+        if (cidr->number_on_this_cidr == 0)
+        {
+          dlinkDelete(ptr, &aclass->list_ipv4);
+          MyFree(cidr);
+          return;
+        }
+      }
+    }
+  }
+#ifdef IPV6
+  else if (aclass->cidr_bitlen_ipv6 > 0)
+    DLINK_FOREACH_SAFE(ptr, next_ptr, aclass->list_ipv6.head)
+    {
+      cidr = ptr->data;
+      if (match_ipv6(ip, &cidr->mask, aclass->cidr_bitlen_ipv6))
+      {
+        cidr->number_on_this_cidr--;
+        if (cidr->number_on_this_cidr == 0)
+        {
+          dlinkDelete(ptr, &aclass->list_ipv6);
+          MyFree(cidr);
+          return;
+        }
+      }
+    }
+#endif
+}
+
+static void
+destroy_cidr_list(dlink_list *l)
+{
+  while (l->head != NULL)
+  {
+    struct CidrItem *cidr = l->head->data;
+    dlinkDelete(&cidr->node, l);
+    MyFree(cidr);
+  }
+}
+
+static void
+rebuild_cidr_list(int aftype, struct Class *oldcl, struct Class *newcl,
+                  dlink_list *old_list, dlink_list *new_list, int changed)
+{
+  dlink_node *ptr;
+  struct Client *client_p;
+
+  if (!changed)
+  {
+    *new_list = *old_list;
+    old_list->head = old_list->tail = NULL;
+    old_list->length = 0;
+    return;
+  }
+
+  DLINK_FOREACH(ptr, local_client_list.head)
+  {
+    client_p = ptr->data;
+    if (client_p->localClient->aftype != aftype)
+      continue;
+    if (client_p->localClient->class == NULL)
+      continue;
+
+    if (client_p->localClient->class == oldcl)
+      cidr_limit_reached(1, &client_p->localClient->ip, newcl);
+  }
+}
+
+static void
+rebuild_cidr_class(struct Class *old_class, struct Class *new_class)
+{
+  if (old_class->number_per_cidr > 0 && new_class->number_per_cidr > 0)
+  {
+    if (old_class->cidr_bitlen_ipv4 > 0 && new_class->cidr_bitlen_ipv4 > 0)
+      rebuild_cidr_list(AF_INET, old_class, new_class,
+                        &old_class->list_ipv4, &new_class->list_ipv4,
+                        old_class->cidr_bitlen_ipv4 !=
+                        new_class->cidr_bitlen_ipv4);
+
+#ifdef IPV6
+    if (old_class->cidr_bitlen_ipv6 > 0 && new_class->cidr_bitlen_ipv6 > 0)
+      rebuild_cidr_list(AF_INET6, old_class, new_class,
+                        &old_class->list_ipv6, &new_class->list_ipv6,
+                        old_class->cidr_bitlen_ipv6 !=
+                        new_class->cidr_bitlen_ipv6);
+#endif
+  }
+
+  destroy_cidr_list(&old_class->list_ipv4);
+  destroy_cidr_list(&old_class->list_ipv6);
+}
 
 //
 // Configuration manager interface.
@@ -193,6 +354,7 @@ after_class(void)
   {
     cl->name = tmpclass.name;
     unref_class(cl);
+    rebuild_cidr_class(cl, &tmpclass);
   }
 
   cl->connectfreq = tmpclass.connectfreq;
@@ -204,7 +366,11 @@ after_class(void)
     sizeof(cl->userhost_limit));
   memcpy(cl->host_limit, tmpclass.host_limit, sizeof(cl->host_limit));
 
-  // TODO: number per cidr stuff ..
+  cl->number_per_cidr = tmpclass.number_per_cidr;
+  cl->cidr_bitlen_ipv4 = tmpclass.cidr_bitlen_ipv4;
+  cl->cidr_bitlen_ipv6 = tmpclass.cidr_bitlen_ipv6;
+  cl->list_ipv4 = tmpclass.list_ipv4;
+  cl->list_ipv6 = tmpclass.list_ipv6;
 
   cl->max_ident = tmpclass.max_ident;
   cl->max_noident = tmpclass.max_noident;

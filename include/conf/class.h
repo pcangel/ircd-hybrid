@@ -54,6 +54,8 @@ EXTERN void unref_class(struct Class *);
 EXTERN struct Class *make_class(const char *);
 EXTERN void delete_class(struct Class *);
 EXTERN void enum_classes(ENUMCLASSFUNC, void *);
+EXTERN int cidr_limit_reached(int, struct irc_ssaddr *, struct Class *);
+EXTERN void remove_from_cidr_check(struct irc_ssaddr *, struct Class *);
 EXTERN void report_class(struct Client *);
 
 #ifdef IN_CONF_C
