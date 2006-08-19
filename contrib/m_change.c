@@ -36,6 +36,7 @@
 #include "parse.h"
 #include "s_user.h"
 #include "hash.h"
+#include "userhost.h"
 
 static void mo_chgident(struct Client *, struct Client *, int, char *[]);
 static void mo_chghost(struct Client *, struct Client *, int, char *[]);
@@ -108,8 +109,10 @@ mo_chgident(struct Client *client_p, struct Client *source_p,
     return;
   }
 
+  delete_user_host(target_p->username, target_p->host, !MyConnect(target_p));
   strcpy(target_p->username, parv[2]);
-  
+  add_user_host(target_p->username, target_p->host, !MyConnect(target_p));
+
   if (MyClient(source_p))
   {
     sendto_server(client_p, source_p, NULL, NOCAPS, NOCAPS,
@@ -162,7 +165,9 @@ mo_chghost(struct Client *client_p, struct Client *source_p,
     return;
   }
 
+  delete_user_host(target_p->username, target_p->host, !MyConnect(target_p));
   strcpy(target_p->host, parv[2]);
+  add_user_host(target_p->username, target_p->host, !MyConnect(target_p));
   SetIPSpoof(target_p);
   
   if (MyClient(source_p))

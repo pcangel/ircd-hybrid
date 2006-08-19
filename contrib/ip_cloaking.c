@@ -49,6 +49,7 @@
  */
 
 #include "stdinc.h"
+#include "conf/modules.h"
 #include "ircd_defs.h"
 #include "whowas.h"
 #include "channel.h"
@@ -61,7 +62,7 @@
 #include "s_serv.h"
 #include "s_user.h"
 #include "send.h"
-#include "conf/modules.h"
+#include "userhost.h"
 
 static unsigned int umode_vhost = 0;
 static int vhost_ipv6_err;
@@ -383,16 +384,20 @@ set_vhost(struct Client *client_p, struct Client *source_p,
           struct Client *target_p)
 {
   target_p->umodes |= umode_vhost;
-  SetIPSpoof(target_p);
+
+  delete_user_host(target_p->username, target_p->host, !MyConnect(target_p));
   make_virthost(target_p->host, target_p->sockhost, target_p->host);
+  add_user_host(target_p->username, target_p->host, !MyConnect(target_p));
+
+  SetIPSpoof(target_p);
 
   if (IsClient(target_p))
     sendto_server(client_p, source_p, NULL, CAP_ENCAP, NOCAPS,
                   ":%s ENCAP * CHGHOST %s %s",
                   me.name, target_p->name, target_p->host);
 
-    sendto_one(target_p, form_str(RPL_HOSTHIDDEN),
-               me.name, target_p->name, target_p->host);
+  sendto_one(target_p, form_str(RPL_HOSTHIDDEN),
+             me.name, target_p->name, target_p->host);
 }
 
 static void *
