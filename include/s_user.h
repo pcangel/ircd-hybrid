@@ -55,7 +55,7 @@ EXTERN void send_umode(struct Client *, struct Client *,
 EXTERN void send_umode_out(struct Client *, struct Client *, unsigned int);
 EXTERN void show_lusers(struct Client *);
 EXTERN void oper_up(struct Client *, struct OperatorConf *);
-EXTERN void *reject_user(struct Client *, const char *);
+EXTERN void *reject_user(struct Client *, const char *, int);
 EXTERN void *register_local_user(struct Client *, const char *);
 EXTERN void register_remote_user(struct Client *, struct Client *,
                                  const char *, const char *,

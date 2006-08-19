@@ -28,16 +28,14 @@ struct Class
   int connectfreq, ping_time, ping_warning;
   long sendq_size;
 
-  int userhost_limit[2], host_limit[2];
+  int userhost_limit[2], host_limit[2], noident_limit[2];
+  int max_number, cur_clients;
 
   int number_per_cidr;
   int cidr_bitlen_ipv4, cidr_bitlen_ipv6;
   dlink_list list_ipv4, list_ipv6;
 
-  int max_ident, max_noident, max_number;
-
-  int stale;
-  int refcnt, cur_clients;
+  int refcnt, stale;
   dlink_node node;
 };
 
@@ -54,8 +52,8 @@ EXTERN void unref_class(struct Class *);
 EXTERN struct Class *make_class(const char *);
 EXTERN void delete_class(struct Class *);
 EXTERN void enum_classes(ENUMCLASSFUNC, void *);
-EXTERN int cidr_limit_reached(int, struct irc_ssaddr *, struct Class *);
-EXTERN void remove_from_cidr_check(struct irc_ssaddr *, struct Class *);
+EXTERN void detach_class(struct Client *);
+EXTERN int attach_class(struct Client *, struct Class *);
 EXTERN void report_class(struct Client *);
 
 #ifdef IN_CONF_C

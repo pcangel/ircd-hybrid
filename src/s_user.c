@@ -238,16 +238,17 @@ show_lusers(struct Client *source_p)
  * inputs:
  *   source_p  -  the client we're disconnecting
  *   reason    -  exit reason
+ *   delay     -  whether delaying user's exit makes any sense
  * output: always NULL
  */
 void *
-reject_user(struct Client *source_p, const char *reason)
+reject_user(struct Client *source_p, const char *reason, int delay)
 {
   /* XXX It is problematical whether it is better to use the
    * capture reject code here or rely on the connecting too fast code.
    * - Dianora
    */
-  if (REJECT_HOLD_TIME > 0)
+  if (delay && REJECT_HOLD_TIME > 0)
   {
     source_p->localClient->reject_delay = CurrentTime + REJECT_HOLD_TIME;
     SetCaptured(source_p);
@@ -307,7 +308,7 @@ do_authorize_client(va_list args)
     sendto_one(source_p,
       ":%s NOTICE %s :You are not authorized to use this server",
       me.name, source_p->name);
-    return reject_user(source_p, "Not authorized");
+    return reject_user(source_p, "Not authorized", YES);
   }
 
   // setup client parameters as required by is_client_banned
@@ -340,7 +341,7 @@ do_authorize_client(va_list args)
     sendto_one(source_p, ":%s NOTICE %s :*** %s: %s", me.name, type,
                source_p->name, (reason && General.kline_with_reason) ?
                reason : "No reason");
-    return reject_user(source_p, "Banned");
+    return reject_user(source_p, "Banned", YES);
   }
 
   // password check
@@ -355,7 +356,7 @@ do_authorize_client(va_list args)
                            source_p->sockhost);
       sendto_one(source_p, form_str(ERR_PASSWDMISMATCH),
                  me.name, source_p->name);
-      return reject_user(source_p, "Bad Password");
+      return reject_user(source_p, "Bad Password", YES);
     }
 
   // ident check
@@ -368,7 +369,7 @@ do_authorize_client(va_list args)
                          source_p->sockhost);
     sendto_one(source_p, ":%s NOTICE %s :*** Notice -- You need to install "
                "identd to use this server", me.name, source_p->name);
-    return reject_user(source_p, "Install identd");
+    return reject_user(source_p, "Install identd", YES);
   }
 
   // spoof check
@@ -413,6 +414,7 @@ void *
 register_local_user(struct Client *source_p, const char *username)
 {
   struct Class *cptr;
+  int i;
 
   assert(source_p != NULL);
   assert(MyConnect(source_p));
@@ -439,7 +441,7 @@ register_local_user(struct Client *source_p, const char *username)
   }
 
   if (!valid_username(username))
-    return reject_user(source_p, "Invalid username");
+    return reject_user(source_p, "Invalid username", YES);
 
   if (!valid_hostname(source_p->host))
   {
@@ -451,8 +453,56 @@ register_local_user(struct Client *source_p, const char *username)
   if (!(cptr = execute_callback(authorize_client, source_p, username)))
     return NULL;
 
-  source_p->localClient->class = ref_class_by_ptr(cptr);
-  // TODO: limit checks
+  // Enforce class limits
+  if ((i = attach_class(source_p, cptr)) == 0)
+  {
+    int lochost = find_or_add_ip(&source_p->localClient->ip)->count++;
+    int globhost = 0, locuh = 0, globuh = 0, globnoid = 0, locnoid = 0;
+
+    SetIpHash(source_p);
+
+    count_user_host(source_p->username, source_p->host,
+                    &globuh, &globhost, &locuh, &globnoid, &locnoid);
+
+    /* XXX blah. go down checking the various silly limits
+     * setting a_limit_reached if any limit is reached.
+     * - Dianora
+     */
+    if (cptr->host_limit[0] > 0 && lochost >= cptr->host_limit[0])
+      i++;
+    else if (cptr->host_limit[1] > 0 && globhost >= cptr->host_limit[1])
+      i++;
+    else if (cptr->userhost_limit[0] > 0 && locuh >= cptr->userhost_limit[0])
+      i++;
+    else if (cptr->userhost_limit[1] > 0 && globuh >= cptr->userhost_limit[1])
+      i++;
+    else if (source_p->username[0] == '~')
+    {
+      if (cptr->noident_limit[0] > 0 && locnoid >= cptr->noident_limit[0])
+        i++;
+      else if (cptr->noident_limit[1] > 0 && globnoid >= cptr->noident_limit[1])
+        i++;
+    }
+  }
+
+  if (i != 0)
+  {
+    char *action = (i > 0 ? "rejecting" : "exceeding anyway");
+
+    ilog(L_INFO, "Class limit reached for %s {%s}, %s",
+         get_client_name(source_p, SHOW_IP), cptr->name, action);
+    sendto_realops_flags(UMODE_FULL, L_ALL,
+                         "Class limit reached for %s {%s}, %s",
+                         get_client_name(source_p, HIDE_IP),
+                         cptr->name, action);
+
+    if (i > 0)
+      return reject_user(source_p, "No more connections allowed - "
+                         "try again later", NO);
+    else
+      sendto_one(source_p, ":%s NOTICE %s :*** Your class limit is reached, "
+                 "but you have exceed_limit = yes;", me.name, source_p->name);
+  }
 
   /* Limit clients -
    * We want to be able to have servers and F-line clients
@@ -462,16 +512,24 @@ register_local_user(struct Client *source_p, const char *username)
    *   -Taner
    */
   // Except "F:" clients
-  if ((Count.local >= ServerInfo.max_clients + MAX_BUFFER) ||
-      (Count.local >= ServerInfo.max_clients && !IsExemptLimits(source_p)))
+  if (Count.local >= ServerInfo.max_clients)
   {
-    ilog(L_INFO, "Server is full: %s",
+    int exempt = (Count.local < ServerInfo.max_clients + MAX_BUFFER) &&
+      IsExemptLimits(source_p);
+    char *action = exempt ? "exceeding anyway" : "rejecting";
+
+    ilog(L_INFO, "Server is full - %s: %s", action,
          get_client_name(source_p, SHOW_IP));
     sendto_realops_flags(UMODE_FULL, L_ALL,
-                         "Too many clients, rejecting %s (%s)",
+                         "Server is full, %s: %s (%s)", action,
                          get_client_name(source_p, HIDE_IP),
                          source_p->sockhost);
-    return reject_user(source_p, "Sorry, server is full - try later");
+
+    if (exempt)
+      sendto_one(source_p, ":%s NOTICE %s :*** Server is full, but you have "
+                 "exceed_limit = yes;", me.name, source_p->name);
+    else
+      return reject_user(source_p, "Sorry, server is full - try later", NO);
   }
 
   if (me.id[0] != '\0')
@@ -1130,6 +1188,9 @@ oper_up(struct Client *source_p, struct OperatorConf *conf)
 
   assert(dlinkFind(&oper_list, source_p) == NULL);
   dlinkAdd(source_p, make_dlink_node(), &oper_list);
+
+  if (conf->class_ptr != source_p->localClient->class)
+    attach_class(source_p, conf->class_ptr);
 
   SetOperFlags(source_p, conf->flags);
 

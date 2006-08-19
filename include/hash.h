@@ -69,6 +69,15 @@ EXTERN unsigned int strhash(const char *);
 #define BANNED_CLIENT (-1)
 #define TOO_FAST      (-2)
 
+struct ip_entry
+{
+  struct irc_ssaddr ip;
+  int count;
+  time_t last_attempt;
+  struct ip_entry *next;
+};
+
+EXTERN struct ip_entry *find_or_add_ip(const struct irc_ssaddr *);
 EXTERN void remove_one_ip(struct irc_ssaddr *);
 EXTERN int ip_connect_allowed(const struct irc_ssaddr *);
 EXTERN void count_ip_hash(int *, size_t *);

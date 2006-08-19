@@ -935,7 +935,7 @@ server_estab(struct Client *client_p)
     return;
   }
 
-  client_p->localClient->class = ref_class_by_ptr(conf->class_ptr);
+  attach_class(client_p, conf->class_ptr);
   MyFree(client_p->localClient->passwd);
   client_p->localClient->passwd = NULL;
 

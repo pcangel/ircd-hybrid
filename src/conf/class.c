@@ -126,7 +126,7 @@ enum_classes(ENUMCLASSFUNC ef, void *param)
 // Class limits tracking.
 //
 
-int
+static int
 cidr_limit_reached(int exempt, struct irc_ssaddr *ip, struct Class *aclass)
 {
   dlink_node *ptr = NULL;
@@ -184,7 +184,7 @@ cidr_limit_reached(int exempt, struct irc_ssaddr *ip, struct Class *aclass)
   return 0;
 }
 
-void
+static void
 remove_from_cidr_check(struct irc_ssaddr *ip, struct Class *aclass)
 {
   dlink_node *ptr = NULL;
@@ -296,6 +296,43 @@ rebuild_cidr_class(struct Class *old_class, struct Class *new_class)
   destroy_cidr_list(&old_class->list_ipv6);
 }
 
+void
+detach_class(struct Client *source_p)
+{
+  struct Class *cptr = source_p->localClient->class;
+
+  if (IsAddedCidr(source_p))
+  {
+    remove_from_cidr_check(&source_p->localClient->ip, cptr);
+    ClearAddedCidr(source_p);
+  }
+
+  cptr->cur_clients--;
+  unref_class(source_p->localClient->class);
+
+  source_p->localClient->class = default_class;
+}
+
+int
+attach_class(struct Client *source_p, struct Class *cptr)
+{
+  int exempt = !!IsExemptLimits(source_p);
+  int a_limit_reached = 0;
+
+  detach_class(source_p);
+
+  source_p->localClient->class = ref_class_by_ptr(cptr);
+  if (++cptr->cur_clients > cptr->max_number)
+    a_limit_reached++;
+
+  if (!cidr_limit_reached(exempt, &source_p->localClient->ip, cptr))
+    SetAddedCidr(source_p);
+  else
+    a_limit_reached++;
+
+  return a_limit_reached * (1 - exempt * 2);
+}
+
 //
 // Configuration manager interface.
 //
@@ -365,6 +402,8 @@ after_class(void)
   memcpy(cl->userhost_limit, tmpclass.userhost_limit,
     sizeof(cl->userhost_limit));
   memcpy(cl->host_limit, tmpclass.host_limit, sizeof(cl->host_limit));
+  memcpy(cl->noident_limit, tmpclass.noident_limit,
+    sizeof(cl->noident_limit));
 
   cl->number_per_cidr = tmpclass.number_per_cidr;
   cl->cidr_bitlen_ipv4 = tmpclass.cidr_bitlen_ipv4;
@@ -372,8 +411,6 @@ after_class(void)
   cl->list_ipv4 = tmpclass.list_ipv4;
   cl->list_ipv6 = tmpclass.list_ipv6;
 
-  cl->max_ident = tmpclass.max_ident;
-  cl->max_noident = tmpclass.max_noident;
   cl->max_number = tmpclass.max_number;
 
   cl->stale = NO;
@@ -441,12 +478,10 @@ init_class(void)
 
   add_conf_field(s, "host_limit", CT_LIST, local_or_global_limit,
     &tmpclass.host_limit);
-  add_conf_field(s, "number_per_ip", CT_NUMBER, local_or_global_limit,
-    &tmpclass.host_limit);
   add_conf_field(s, "userhost_limit", CT_LIST, local_or_global_limit,
     &tmpclass.userhost_limit);
-  add_conf_field(s, "number_per_userhost", CT_NUMBER, local_or_global_limit,
-    &tmpclass.userhost_limit);
+  add_conf_field(s, "noident_limit", CT_LIST, local_or_global_limit,
+    &tmpclass.noident_limit);
 
   add_conf_field(s, "number_per_cidr", CT_NUMBER, NULL,
     &tmpclass.number_per_cidr);
@@ -455,8 +490,6 @@ init_class(void)
   add_conf_field(s, "cidr_bitlen_ipv6", CT_NUMBER, NULL,
     &tmpclass.cidr_bitlen_ipv4);
 
-  add_conf_field(s, "max_ident", CT_NUMBER, NULL, &tmpclass.max_ident);
-  add_conf_field(s, "max_noident", CT_NUMBER, NULL, &tmpclass.max_noident);
   add_conf_field(s, "max_number", CT_NUMBER, NULL, &tmpclass.max_number);
 
   // for backwards compatibility only, these names really sucked
@@ -464,6 +497,8 @@ init_class(void)
     &tmpclass.userhost_limit[0]);
   add_conf_field(s, "max_global", CT_NUMBER, NULL,
     &tmpclass.userhost_limit[1]);
+  add_conf_field(s, "max_noident", CT_NUMBER, NULL,
+    &tmpclass.noident_limit[0]);
 
   s->after = after_class;
 

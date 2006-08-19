@@ -349,6 +349,7 @@ struct LocalUser
 #define FLAGS_PINGWARNING   0x0000000020000000ULL /* unreplied ping warning already sent      */
 #define FLAGS_FLOOD_NOTICED 0x0000000040000000ULL /* if we already sent a notice to opers     */
 #define FLAGS_FINISHED_AUTH 0x0000000080000000ULL /* Client has been released from auth       */
+#define FLAGS_CIDR_ADDED    0x0000000100000000ULL /* added to class cidr list                 */
 
 
 /* umodes, settable flags */
@@ -380,6 +381,9 @@ struct LocalUser
                       UMODE_ADMIN)
 
 /* flags macros. */
+#define IsAddedCidr(x)          ((x)->flags & FLAGS_CIDR_ADDED)
+#define SetAddedCidr(x)         ((x)->flags |= FLAGS_CIDR_ADDED)
+#define ClearAddedCidr(x)       ((x)->flags &= ~FLAGS_CIDR_ADDED)
 #define IsAuthFinished(x)       ((x)->flags & FLAGS_FINISHED_AUTH)
 #define IsDead(x)               ((x)->flags & FLAGS_DEADSOCKET)
 #define SetDead(x)              ((x)->flags |= FLAGS_DEADSOCKET)
@@ -437,7 +441,7 @@ struct LocalUser
 
 #define SetUserHost(x)          ((x)->flags |= FLAGS_USERHOST)
 #define ClearUserHost(x)        ((x)->flags &= ~FLAGS_USERHOST)
-#define IsUserHostIp(x)         ((x)->flags & FLAGS_USERHOST)
+#define IsUserHostHash(x)       ((x)->flags & FLAGS_USERHOST)
 
 #define SetPingSent(x)		((x)->flags |= FLAGS_PINGSENT)
 #define IsPingSent(x)		((x)->flags & FLAGS_PINGSENT)

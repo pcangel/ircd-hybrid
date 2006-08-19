@@ -59,14 +59,6 @@ static struct ResvChannel *resvchannelTable[HASHSIZE];
  */
 #define IP_HASH_SIZE 0x1000
 
-struct ip_entry
-{
-  struct irc_ssaddr ip;
-  int count;
-  time_t last_attempt;
-  struct ip_entry *next;
-};
-
 static struct ip_entry *ip_hash_table[IP_HASH_SIZE] = {0};
 static BlockHeap *ip_entry_heap = NULL;
 static int ip_entries_count = 0;
@@ -578,16 +570,17 @@ hash_find_userhost(const char *host)
  *
  * inputs	- user name
  *		- hostname
- *		- int flag 1 if global, 0 if local
  * 		- pointer to where global count should go
+ *      - same as above, but counts all *@host
  *		- pointer to where local count should go
- *		- pointer to where identd count should go (local clients only)
+ *		- pointer to where global ~*@host count should go
+ *      - pointer to where local ~*@host count should go
  * output	- none
  * side effects	-
  */
 void
-count_user_host(const char *user, const char *host, int *global_p,
-                int *local_p, int *icount_p)
+count_user_host(const char *user, const char *host, int *globuh,
+                int *globhost, int *locuh, int *globnonid, int *locnonid)
 {
   dlink_node *ptr;
   struct UserHost *found_userhost;
@@ -596,18 +589,23 @@ count_user_host(const char *user, const char *host, int *global_p,
   if ((found_userhost = hash_find_userhost(host)) == NULL)
     return;
 
-  DLINK_FOREACH(ptr, found_userhost->list.head)
+  if (globhost)
+    *globhost = found_userhost->total_clients;
+  if (globnonid)
+    *globnonid = found_userhost->total_nonident;
+  if (locnonid)
+    *locnonid = found_userhost->local_nonident;
+
+  DLINK_FOREACH(ptr, found_userhost->names.head)
   {
     nameh = ptr->data;
 
     if (!irccmp(user, nameh->name))
     {
-      if (global_p != NULL)
-        *global_p = nameh->gcount;
-      if (local_p != NULL)
-        *local_p  = nameh->lcount;
-      if (icount_p != NULL)
-        *icount_p = nameh->icount;
+      if (globuh)
+        *globuh = nameh->total;
+      if (locuh)
+        *locuh = nameh->local;
       return;
     }
   }
@@ -627,30 +625,29 @@ add_user_host(const char *user, const char *host, int global)
   dlink_node *ptr;
   struct UserHost *found_userhost;
   struct NameHost *nameh;
-  int hasident = 1;
-
-  if (*user == '~')
-  {
-    hasident = 0;
-    ++user;
-  }
 
   if ((found_userhost = find_or_add_userhost(host)) == NULL)
     return;
 
-  DLINK_FOREACH(ptr, found_userhost->list.head)
+  found_userhost->total_clients++;
+
+  if (*user == '~')
+  {
+    found_userhost->total_nonident++;
+    if (!global)
+      found_userhost->local_nonident++;
+    user++;
+  }
+
+  DLINK_FOREACH(ptr, found_userhost->names.head)
   {
     nameh = ptr->data;
 
     if (!irccmp(user, nameh->name))
     {
-      nameh->gcount++;
+      nameh->total++;
       if (!global)
-      {
-        if (hasident)
-          nameh->icount++;
-        nameh->lcount++;
-      }
+        nameh->local++;
       return;
     }
   }
@@ -658,15 +655,11 @@ add_user_host(const char *user, const char *host, int global)
   nameh = BlockHeapAlloc(namehost_heap);
   strlcpy(nameh->name, user, sizeof(nameh->name));
 
-  nameh->gcount = 1;
+  nameh->total = 1;
   if (!global)
-  {
-    if (hasident)
-      nameh->icount = 1;
-    nameh->lcount = 1;
-  }
+    nameh->local = 1;
 
-  dlinkAdd(nameh, &nameh->node, &found_userhost->list);
+  dlinkAdd(nameh, &nameh->node, &found_userhost->names);
 }
 
 /* delete_user_host()
@@ -680,43 +673,43 @@ add_user_host(const char *user, const char *host, int global)
 void
 delete_user_host(const char *user, const char *host, int global)
 {
-  dlink_node *ptr = NULL, *next_ptr = NULL;
-  struct UserHost *found_userhost;
+  dlink_node *ptr;
   struct NameHost *nameh;
-  int hasident = 1;
+  struct UserHost *found_userhost = hash_find_userhost(host);
+
+  if (!found_userhost)
+    return;
+
+  found_userhost->total_clients--;
 
   if (*user == '~')
   {
-    hasident = 0;
-    ++user;
+    found_userhost->total_nonident--;
+    if (!global)
+      found_userhost->local_nonident--;
+    user++;
   }
 
-  if ((found_userhost = hash_find_userhost(host)) == NULL)
-    return;
-
-  DLINK_FOREACH_SAFE(ptr, next_ptr, found_userhost->list.head)
+  DLINK_FOREACH(ptr, found_userhost->names.head)
   {
     nameh = ptr->data;
 
     if (!irccmp(user, nameh->name))
     {
-      if (nameh->gcount > 0)
-        nameh->gcount--;
-      if (!global)
+      if (nameh->total > 0 && (global || nameh->local > 0))
       {
-        if (nameh->lcount > 0)
-          nameh->lcount--;
-        if (hasident && nameh->icount > 0)
-          nameh->icount--;
+        nameh->total--;
+        if (!global)
+          nameh->local--;
       }
 
-      if (nameh->gcount == 0 && nameh->lcount == 0)
+      if (!nameh->total && !nameh->local)
       {
-        dlinkDelete(&nameh->node, &found_userhost->list);
+        dlinkDelete(&nameh->node, &found_userhost->names);
         BlockHeapFree(namehost_heap, nameh);
       }
 
-      if (dlink_list_length(&found_userhost->list) == 0)
+      if (dlink_list_length(&found_userhost->names) == 0)
       {
         hash_del_userhost(found_userhost);
         BlockHeapFree(userhost_heap, found_userhost);
@@ -795,7 +788,7 @@ garbage_collect_ip_entries(void)
  * If the ip # was not found, a new struct ip_entry is created, and the ip
  * count set to 0.
  */
-static struct ip_entry *
+struct ip_entry *
 find_or_add_ip(const struct irc_ssaddr *ip_in)
 {
   struct ip_entry *ptr = NULL, *last = NULL;

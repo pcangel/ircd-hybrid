@@ -27,21 +27,25 @@
 
 struct NameHost
 {
-  dlink_node node;		/* point to other names on this hostname */
   char name[USERLEN + 1];
-  int icount;			/* number of =local= identd on this name*/
-  int gcount;			/* global user count on this name */
-  int lcount;			/* local user count on this name */
+  int local;
+  int total;
+  dlink_node node;
 };
 
 struct UserHost
 {
-  dlink_list list;		/* list of names on this hostname */
-  struct UserHost *next;
   char host[HOSTLEN + 1];
+  int total_clients;
+  int local_nonident;
+  int total_nonident;
+  dlink_list names;
+  struct UserHost *next;
 };
 
-EXTERN void count_user_host(const char *, const char *, int *, int *, int *);
+EXTERN void count_user_host(const char *, const char *, int *, int *, int *,
+  int *, int *);
 EXTERN void add_user_host(const char *, const char *, int);
 EXTERN void delete_user_host(const char *, const char *, int global);
+
 #endif  /* INCLUDED_userhost_h */

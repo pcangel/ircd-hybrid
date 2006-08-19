@@ -27,6 +27,7 @@
 #include "handlers.h"    /* m_pass prototype */
 #include "client.h"      /* Client */
 #include "common.h"      /* TRUE/FALSE */
+#include "hash.h"
 #include "ircd.h"        /* me */
 #include "listener.h"    /* show_ports */
 #include "ircd_handler.h"

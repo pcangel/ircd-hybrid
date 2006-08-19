@@ -111,9 +111,9 @@ make_client(struct Client *from)
     client_p->since = client_p->lasttime = client_p->firsttime = CurrentTime;
 
     client_p->localClient = BlockHeapAlloc(lclient_heap);
-    client_p->localClient->class = default_class;
+    attach_class(client_p, default_class);
     client_p->localClient->registration = REG_INIT;
-    /* as good a place as any... */
+    // as good a place as any...
     dlinkAdd(client_p, &client_p->localClient->lclient_node, &unknown_list);
   }
   else
@@ -634,7 +634,7 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
   if (source_p->name[0])
     hash_del_client(source_p);
 
-  if (IsUserHostIp(source_p))
+  if (IsUserHostHash(source_p))
     delete_user_host(source_p->username, source_p->host, !MyConnect(source_p));
 
   /* remove from global client list
@@ -959,8 +959,7 @@ close_connection(struct Client *client_p)
 
   MyFree(client_p->localClient->passwd);
 
-  unref_class(client_p->localClient->class);
-  client_p->localClient->class = NULL;
+  detach_class(client_p);
   if (client_p->serv && client_p->serv->sconf)
   {
     unref_link(client_p->serv->sconf);
