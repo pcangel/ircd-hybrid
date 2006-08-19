@@ -490,7 +490,6 @@ main(int argc, char *argv[])
   init_motd();
   init_isupport();
   hash_init();
-  init_ip_hash_table(); // client host ip hash table
   clear_tree_parse();
   init_client();
   whowas_init();

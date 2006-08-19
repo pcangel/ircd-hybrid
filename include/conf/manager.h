@@ -73,3 +73,4 @@ EXTERN CONFF_HANDLER conf_assign_string;
 EXTERN struct ConfField *add_conf_field(struct ConfSection *, const char *,
   int, CONFF_HANDLER *, void *);
 EXTERN void delete_conf_field(struct ConfSection *, struct ConfField *);
+EXTERN void read_conf_files(int);

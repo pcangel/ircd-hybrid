@@ -40,60 +40,6 @@ static struct
 } acb_types[MAX_ACB_TYPES] = {{0}};
 
 /*
- * hash_ipv4()
- *
- * Hash algorithm for IPv4.
- *
- * inputs: the IP address
- * output: hash value
- */
-static unsigned int
-hash_ipv4(const struct irc_ssaddr *addr, int bits)
-{
-  if (bits != 0)
-  {
-    const struct sockaddr_in *v4 = (const struct sockaddr_in *) addr;
-    unsigned int av = ntohl(v4->sin_addr.s_addr) & ~((1 << (32 - bits)) - 1);
-
-    return (av ^ (av >> 12) ^ (av >> 24)) % ATABLE_SIZE;
-  }
-
-  return 0;
-}
-
-/*
- * hash_ipv6()
- *
- * Hash algorithm for IPv6.
- *
- * inputs: the IP address
- * output: hash value
- */
-#ifdef IPV6
-static unsigned int
-hash_ipv6(const struct irc_ssaddr *addr, int bits)
-{
-  const struct sockaddr_in6 *v6 = (const struct sockaddr_in6 *) addr;
-  unsigned int av = 0, n;
-
-  for (n = 0; n < 16; n++)
-    if (bits >= 8)
-    {
-      av ^= v6->sin6_addr.s6_addr[n];
-      bits -= 8;
-    }
-    else
-    {
-      if (bits > 0)
-        av ^= v6->sin6_addr.s6_addr[n] & ~((1 << (8 - bits)) - 1);
-      break;
-    }
-
-  return av % ATABLE_SIZE;
-}
-#endif
-
-/*
  * hash_hostmask()
  *
  * Calculates the hash value for a given hostmask.
@@ -110,32 +56,24 @@ hash_hostmask(const char *p, struct irc_ssaddr *addr)
   unsigned int hv;
   const char *seg;
 
-  switch (parse_netmask(p, addr, &bits))
+  if (parse_netmask(p, addr, &bits) != HM_HOST)
+    hv = hash_ip(addr, bits - bits % 8, ATABLE_SIZE);
+  else
   {
-    case HM_IPV4:
-      hv = hash_ipv4(addr, bits - bits % 8);
-      break;
-#ifdef IPV6
-    case HM_IPV6:
-      hv = hash_ipv6(addr, bits - bits % 16);
-      break;
-#endif
-    default:
-      //
-      // Choose the longest domain substring which contains no wildcards.
-      // This way hash value will be as precise as possible.
-      //
-      for (seg = p; *p; p++)
-        if (*p == '.' && !seg)
-          seg = p + 1;
-        else if (IsMWildChar(*p))
-          seg = NULL;
+    //
+    // Choose the longest domain substring which contains no wildcards.
+    // This way hash value will be as precise as possible.
+    //
+    for (seg = p; *p; p++)
+      if (*p == '.' && !seg)
+        seg = p + 1;
+      else if (IsMWildChar(*p))
+        seg = NULL;
 
-      hv = seg ? hash_text(seg, ATABLE_SIZE) : 0;
+    hv = seg ? hash_text(seg, ATABLE_SIZE) : 0;
   }
 
   addr->ss_port = (in_port_t) bits;
-
   return hv;
 }
 
@@ -340,7 +278,8 @@ find_access_conf(int type, const char *user, const char *host,
   if (ip != NULL)
     if (ip->ss.sin_family == AF_INET)
       for (bits = 32; bits >= 0; bits -= 8)
-        for (conf = atable[hash_ipv4(ip, bits)]; conf; conf = conf->hnext)
+        for (conf = atable[hash_ip(ip, bits, ATABLE_SIZE)]; conf;
+             conf = conf->hnext)
           if ((best == NULL || conf->precedence > best->precedence) &&
               conf->type == type && conf->ip.ss.sin_family == AF_INET &&
               match_ipv4(ip, &conf->ip, conf->ip.ss_port) &&
@@ -350,7 +289,8 @@ find_access_conf(int type, const char *user, const char *host,
 #ifdef IPV6
     else if (ip->ss.sin_family == AF_INET6)
       for (bits = 128; bits >= 0; bits -= 16)
-        for (conf = atable[hash_ipv6(ip, bits)]; conf; conf = conf->hnext)
+        for (conf = atable[hash_ip(ip, bits, ATABLE_SIZE)]; conf;
+             conf = conf->hnext)
           if ((best == NULL || conf->precedence > best->precedence) &&
               conf->type == type && conf->ip.ss.sin_family == AF_INET6 &&
               match_ipv6(ip, &conf->ip, conf->ip.ss_port) &&

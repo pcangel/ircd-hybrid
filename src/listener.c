@@ -27,6 +27,7 @@
 #include "ircd_defs.h"
 #include "listener.h"
 #include "client.h"
+#include "hash.h"
 #include "ircd.h"
 #include "send.h"
 #ifdef HAVE_LIBCRYPTO
@@ -342,7 +343,7 @@ accept_connection(fde_t *pfd, void *data)
 {
   static time_t last_oper_notice = 0;
   struct irc_ssaddr addr;
-  int fd;
+  int fd, pe;
   struct Listener *listener = data;
 
   memset(&addr, 0, sizeof(addr));
@@ -389,7 +390,7 @@ accept_connection(fde_t *pfd, void *data)
 
     /* Do an initial check we aren't connecting too fast or with too many
      * from this IP... */
-/*    if ((pe = conf_connect_allowed(&addr)))
+    if ((pe = ip_connect_allowed(&addr)))
     {
       ++ServerStats.is_ref;
 
@@ -410,7 +411,7 @@ accept_connection(fde_t *pfd, void *data)
       close(fd);
 #endif
       continue;    // drop the one and keep on clearing the queue
-    }*/
+    }
 
     ++ServerStats.is_ac;
     add_connection(listener, &addr, fd);

@@ -23,12 +23,12 @@
  */
 
 #include "stdinc.h"
+#include "conf/conf.h"
 #include "channel.h"
 #include "channel_mode.h"
 #include "client.h"
 #include "common.h"
 #include "handlers.h"
-#include "conf/modules.h"
 #include "hash.h"
 #include "userhost.h"
 #include "ircd.h"
@@ -53,6 +53,24 @@ static struct Channel *channelTable[HASHSIZE];
 static struct UserHost *userhostTable[HASHSIZE];
 static struct ResvChannel *resvchannelTable[HASHSIZE];
 
+/* usually, with hash tables, you use a prime number...
+ * but in this case I am dealing with ip addresses,
+ * not ascii strings.
+ */
+#define IP_HASH_SIZE 0x1000
+
+struct ip_entry
+{
+  struct irc_ssaddr ip;
+  int count;
+  time_t last_attempt;
+  struct ip_entry *next;
+};
+
+static struct ip_entry *ip_hash_table[IP_HASH_SIZE] = {0};
+static BlockHeap *ip_entry_heap = NULL;
+static int ip_entries_count = 0;
+
 
 /* init_hash()
  *
@@ -75,7 +93,7 @@ hash_init(void)
 
   ircd_random_key = rand() % 256;  /* better than nothing --adx */
 
-  /* Clear the hash tables first */
+  // Clear the hash tables first
   for (i = 0; i < HASHSIZE; ++i)
   {
     idTable[i]          = NULL;
@@ -84,6 +102,10 @@ hash_init(void)
     userhostTable[i]    = NULL;
     resvchannelTable[i] = NULL;
   }
+
+  // Initialize IP hashing
+  ip_entry_heap = BlockHeapCreate("ip", sizeof(struct ip_entry),
+                                  hard_fdlimit * 2);
 }
 
 /*
@@ -625,9 +647,9 @@ add_user_host(const char *user, const char *host, int global)
       nameh->gcount++;
       if (!global)
       {
-	if (hasident)
-	  nameh->icount++;
-	nameh->lcount++;
+        if (hasident)
+          nameh->icount++;
+        nameh->lcount++;
       }
       return;
     }
@@ -682,22 +704,22 @@ delete_user_host(const char *user, const char *host, int global)
         nameh->gcount--;
       if (!global)
       {
-	if (nameh->lcount > 0)
-	  nameh->lcount--;
-	if (hasident && nameh->icount > 0)
-	  nameh->icount--;
+        if (nameh->lcount > 0)
+          nameh->lcount--;
+        if (hasident && nameh->icount > 0)
+          nameh->icount--;
       }
 
       if (nameh->gcount == 0 && nameh->lcount == 0)
       {
-	dlinkDelete(&nameh->node, &found_userhost->list);
-	BlockHeapFree(namehost_heap, nameh);
+        dlinkDelete(&nameh->node, &found_userhost->list);
+        BlockHeapFree(namehost_heap, nameh);
       }
 
       if (dlink_list_length(&found_userhost->list) == 0)
       {
-	hash_del_userhost(found_userhost);
-	BlockHeapFree(userhost_heap, found_userhost);
+        hash_del_userhost(found_userhost);
+        BlockHeapFree(userhost_heap, found_userhost);
       }
 
       return;
@@ -724,4 +746,211 @@ find_or_add_userhost(const char *host)
   hash_add_userhost(userhost);
 
   return userhost;
+}
+
+/* garbage_collect_ip_entries()
+ *
+ * input    - NONE
+ * output   - NONE
+ * side effects - free up all ip entries with no connections
+ */
+static void
+garbage_collect_ip_entries(void)
+{
+  struct ip_entry *ptr;
+  struct ip_entry *last_ptr;
+  struct ip_entry *next_ptr;
+  int i;
+
+  for (i = 0; i < IP_HASH_SIZE; i++)
+  {
+    last_ptr = NULL;
+
+    for (ptr = ip_hash_table[i]; ptr; ptr = next_ptr)
+    {
+      next_ptr = ptr->next;
+
+      if (ptr->count == 0 && (CurrentTime - ptr->last_attempt) >=
+          General.throttle_time)
+      {
+        if (last_ptr != NULL)
+          last_ptr->next = ptr->next;
+        else
+          ip_hash_table[i] = ptr->next;
+        BlockHeapFree(ip_entry_heap, ptr);
+        ip_entries_count--;
+      }
+      else
+        last_ptr = ptr;
+    }
+  }
+}
+
+/* find_or_add_ip()
+ *
+ * inputs       - pointer to struct irc_ssaddr
+ * output       - pointer to a struct ip_entry
+ * side effects -
+ *
+ * If the ip # was not found, a new struct ip_entry is created, and the ip
+ * count set to 0.
+ */
+static struct ip_entry *
+find_or_add_ip(const struct irc_ssaddr *ip_in)
+{
+  struct ip_entry *ptr = NULL, *last = NULL;
+  unsigned int hash_index = hash_ip(ip_in, -1, IP_HASH_SIZE), res;
+  const struct sockaddr_in *v4 = (const struct sockaddr_in *)ip_in, *ptr_v4;
+#ifdef IPV6
+  const struct sockaddr_in6 *v6 = (const struct sockaddr_in6 *)ip_in, *ptr_v6;
+#endif
+
+  for (ptr = ip_hash_table[hash_index]; ptr; last = ptr, ptr = ptr->next)
+  {
+#ifdef IPV6
+    if (ptr->ip.ss.sin_family != ip_in->ss.sin_family)
+      continue;
+    if (ip_in->ss.sin_family == AF_INET6)
+    {
+      ptr_v6 = (struct sockaddr_in6 *)&ptr->ip;
+      res = memcmp(&v6->sin6_addr, &ptr_v6->sin6_addr, sizeof(struct in6_addr));
+    }
+    else
+#endif
+    {
+      ptr_v4 = (struct sockaddr_in *)&ptr->ip;
+      res = memcmp(&v4->sin_addr, &ptr_v4->sin_addr, sizeof(struct in_addr));
+    }
+
+    if (res == 0)
+    {
+      // Found entry already in hash, return it.
+      return ptr;
+    }
+  }
+
+  if (ip_entries_count >= 2 * hard_fdlimit)
+    garbage_collect_ip_entries();
+
+  ptr = BlockHeapAlloc(ip_entry_heap);
+  ++ip_entries_count;
+  memcpy(&ptr->ip, ip_in, sizeof(struct irc_ssaddr));
+
+  ptr->next = ip_hash_table[hash_index];
+  ip_hash_table[hash_index] = ptr;
+
+  return ptr;
+}
+
+/* remove_one_ip()
+ *
+ * inputs        - unsigned long IP address value
+ * output        - NONE
+ * side effects  - The ip address given, is looked up in ip hash table
+ *                 and number of ip#'s for that ip decremented.
+ *                 If ip # count reaches 0 and has expired,
+ *         the struct ip_entry is returned to the ip_entry_heap
+ */
+void
+remove_one_ip(struct irc_ssaddr *ip_in)
+{
+  struct ip_entry *ptr;
+  struct ip_entry *last_ptr = NULL;
+  unsigned int hash_index = hash_ip(ip_in, -1, IP_HASH_SIZE), res;
+  struct sockaddr_in *v4 = (struct sockaddr_in *)ip_in, *ptr_v4;
+#ifdef IPV6
+  struct sockaddr_in6 *v6 = (struct sockaddr_in6 *)ip_in, *ptr_v6;
+#endif
+
+  for (ptr = ip_hash_table[hash_index]; ptr; ptr = ptr->next)
+  {
+#ifdef IPV6
+    if (ptr->ip.ss.sin_family != ip_in->ss.sin_family)
+      continue;
+    if (ip_in->ss.sin_family == AF_INET6)
+    {
+      ptr_v6 = (struct sockaddr_in6 *)&ptr->ip;
+      res = memcmp(&v6->sin6_addr, &ptr_v6->sin6_addr, sizeof(struct in6_addr));
+    }
+    else
+#endif
+    {
+      ptr_v4 = (struct sockaddr_in *)&ptr->ip;
+      res = memcmp(&v4->sin_addr, &ptr_v4->sin_addr, sizeof(struct in_addr));
+    }
+    if (res)
+      continue;
+    if (ptr->count > 0)
+      ptr->count--;
+    if (ptr->count == 0 && (CurrentTime - ptr->last_attempt) >=
+        General.throttle_time)
+    {
+      if (last_ptr != NULL)
+        last_ptr->next = ptr->next;
+      else
+        ip_hash_table[hash_index] = ptr->next;
+
+      BlockHeapFree(ip_entry_heap, ptr);
+      ip_entries_count--;
+      return;
+    }
+    last_ptr = ptr;
+  }
+}
+
+/* ip_connect_allowed()
+ *
+ * inputs   - pointer to inaddr
+ *      - int type ipv4 or ipv6
+ * output   - BANNED or accepted
+ * side effects - none
+ */
+int
+ip_connect_allowed(const struct irc_ssaddr *addr)
+{
+  struct ip_entry *ip_found = NULL;
+
+  if (find_dline(addr))
+    return BANNED_CLIENT;
+
+  ip_found = find_or_add_ip(addr);
+
+  if ((CurrentTime - ip_found->last_attempt) < General.throttle_time &&
+      !find_exempt(addr))
+  {
+    ip_found->last_attempt = CurrentTime;
+    return TOO_FAST;
+  }
+
+  ip_found->last_attempt = CurrentTime;
+  return 0;
+}
+
+/* count_ip_hash()
+ *
+ * inputs        - pointer to counter of number of ips hashed
+ *               - pointer to memory used for ip hash
+ * output        - returned via pointers input
+ * side effects  - NONE
+ *
+ * number of hashed ip #'s is counted up, plus the amount of memory
+ * used in the hash.
+ */
+void
+count_ip_hash(int *number_ips_stored, size_t *mem_ips_stored)
+{
+  struct ip_entry *ptr;
+  int i;
+
+  *number_ips_stored = 0;
+  *mem_ips_stored    = 0;
+
+  for (i = 0; i < IP_HASH_SIZE; i++)
+  {
+    for (ptr = ip_hash_table[i]; ptr; ptr = ptr->next)
+    {
+      *number_ips_stored += 1;
+      *mem_ips_stored += sizeof(struct ip_entry);
+    }
+  }
 }

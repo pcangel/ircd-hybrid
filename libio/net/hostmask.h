@@ -35,3 +35,4 @@ LIBIO_EXTERN int match_ipv4(const struct irc_ssaddr *,
   const struct irc_ssaddr *, int);
 LIBIO_EXTERN void mask_addr(struct irc_ssaddr *, int);
 LIBIO_EXTERN int parse_netmask(const char *, struct irc_ssaddr *, int *);
+LIBIO_EXTERN unsigned int hash_ip(const struct irc_ssaddr *, int, unsigned int);

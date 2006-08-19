@@ -65,4 +65,12 @@ EXTERN void *hash_get_bucket(int, unsigned int);
 EXTERN struct ResvChannel *hash_find_resv(const char *);
 
 EXTERN unsigned int strhash(const char *);
+
+#define BANNED_CLIENT (-1)
+#define TOO_FAST      (-2)
+
+EXTERN void remove_one_ip(struct irc_ssaddr *);
+EXTERN int ip_connect_allowed(const struct irc_ssaddr *);
+EXTERN void count_ip_hash(int *, size_t *);
+
 #endif  /* INCLUDED_hash_h */

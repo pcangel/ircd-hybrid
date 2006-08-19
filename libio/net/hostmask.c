@@ -328,3 +328,71 @@ mask_addr(struct irc_ssaddr *ip, int bits)
   }
 #endif
 }
+
+/*
+ * hash_ip()
+ *
+ * Hash algorithm for IP addresses.
+ *
+ * inputs:
+ *   addr  -  the address with sin_family set
+ *   bits  -  number of significant bits
+ *   size  -  number of buckets
+ * output: hash value
+ */
+static unsigned int
+hash_ipv4(struct sockaddr_in *v4, int bits, unsigned int size)
+{
+  if (bits < 0)
+    bits = 32;
+
+  if (bits != 0)
+  {
+    unsigned int av = ntohl(v4->sin_addr.s_addr) & ~((1 << (32 - bits)) - 1);
+    return (av ^ (av >> 12) ^ (av >> 24)) % size;
+  }
+
+  return 0;
+}
+
+#ifdef IPV6
+static unsigned int
+hash_ipv6(struct sockaddr_in6 *v6, int bits, unsigned int size)
+{
+  unsigned int av = 0, n;
+
+  if (bits < 0)
+    bits = 128;
+
+  for (n = 0; n < 16; n++)
+    if (bits >= 8)
+    {
+      av ^= v6->sin6_addr.s6_addr[n];
+      bits -= 8;
+    }
+    else
+    {
+      if (bits > 0)
+        av ^= v6->sin6_addr.s6_addr[n] & ~((1 << (8 - bits)) - 1);
+      break;
+    }
+
+  return av % size;
+}
+#endif
+
+unsigned int
+hash_ip(const struct irc_ssaddr *addr, int bits, unsigned int size)
+{
+  switch (addr->ss.sin_family)
+  {
+    case AF_INET:
+      return hash_ipv4((struct sockaddr_in *) addr, bits, size);
+#ifdef IPV6
+    case AF_INET6:
+      return hash_ipv6((struct sockaddr_in6 *) addr, bits, size);
+#endif
+    default:
+      return 0;
+  }
+}
