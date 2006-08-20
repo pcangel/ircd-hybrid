@@ -213,90 +213,6 @@ parse_csv_line(char *line, ...)
   }
 }
 
-/* write_conf_line()
- *
- * inputs       - pointer to struct AccessItem
- *		- string current_date (small date)
- *              - time_t cur_time
- * output       - NONE
- * side effects - This function takes care of
- *                finding right conf file, writing
- *                the right lines to this file, 
- *                notifying the oper that their kline/dline etc. is in place
- *                notifying the opers on the server about the k/d etc. line
- *                
- * - Dianora
- */
-void 
-write_conf_line(struct Client *source_p, struct ConfItem *conf,
-		const char *current_date, time_t cur_time)
-{
-  FBFILE *out;
-  const char *filename;
-  struct AccessItem *aconf;
-  struct MatchItem *xconf;
-  struct ResvChannel *cresv_p=NULL;
-  struct MatchItem *nresv_p=NULL;
-  ConfType type;
-
-  type = conf->type;
-  filename = get_conf_name(type);
-
-  if ((out = fbopen(filename, "a")) == NULL)
-  {
-    sendto_realops_flags(UMODE_ALL, L_ALL,
-                         "*** Problem opening %s", filename);
-    return;
-  }
-
-  switch(type)
-  {
-  case KLINE_TYPE:
-  case RKLINE_TYPE:
-    aconf = &conf->conf.AccessItem;
-    write_csv_line(out, "%s%s%s%s%s%s%d",
-		   aconf->user, aconf->host,
-		   aconf->reason, aconf->oper_reason, current_date,
-		   get_oper_name(source_p), cur_time);
-    break;
-
-  case DLINE_TYPE:
-    aconf = &conf->conf.AccessItem;
-    write_csv_line(out, "%s%s%s%s%s%d",
-		   aconf->host, aconf->reason, aconf->oper_reason, 
-		   current_date, get_oper_name(source_p), cur_time);
-    break;
-
-  case XLINE_TYPE:
-  case RXLINE_TYPE:
-    xconf = &conf->conf.MatchItem;
-    write_csv_line(out, "%s%s%s%s%s%d",
-		   conf->name, xconf->reason, xconf->oper_reason,
-		   current_date, get_oper_name(source_p), cur_time);
-    break;
-
-  case CRESV_TYPE:
-    cresv_p = &conf->conf.ResvChannel;
-
-    write_csv_line(out, "%s%s",
-		   cresv_p->name, cresv_p->reason);
-    break;
-
-  case NRESV_TYPE:
-    nresv_p = &conf->conf.MatchItem;
-
-    write_csv_line(out, "%s%s",
-		   conf->name, nresv_p->reason);
-    break;
-
-  default:
-    fbclose(out);
-    return;
-  }
-
-  fbclose(out);
-}
-
 /*
  * write_csv_line()
  *
@@ -415,6 +331,7 @@ write_csv_line(FBFILE *out, const char *format, ...)
   va_end(args);
   str = tmp;
   fbputs(str, out, bytes);
+  fbclose(out);
 
   return(bytes);
 }

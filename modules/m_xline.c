@@ -348,6 +348,7 @@ write_xline(struct Client *source_p, char *gecos, char *reason,
   struct GecosConf *conf;
   const char *current_date;
   time_t cur_time;
+  FBFILE *out = NULL;
 
   conf = MyMalloc(sizeof(*conf));
 
@@ -375,7 +376,15 @@ write_xline(struct Client *source_p, char *gecos, char *reason,
   }
   else
   {
-    write_conf_line(source_p, conf, current_date, cur_time);
+// TBD - don't keep the *line in memory if we cannot open the conf file
+    if ((out = fbopen(ServerState.xlinefile, "a")) == NULL)
+      sendto_realops_flags(UMODE_ALL, L_ALL,
+                           "*** Problem opening %s", ServerState.xlinefile);
+    else
+      write_csv_line(out, "%s%s%s%s%s%d",
+                     conf->mask, conf->reason, conf->reason, /* XXX oper_reason */
+                     current_date, get_oper_name(source_p), cur_time);
+
 
     sendto_realops_flags(UMODE_ALL, L_ALL,
                          "%s added X-Line for [%s] [%s]",

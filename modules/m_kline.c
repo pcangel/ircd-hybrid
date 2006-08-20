@@ -307,10 +307,19 @@ static void
 apply_kline(struct Client *source_p, struct KillConf *conf,
             const char *current_date, time_t cur_time)
 {
+  FBFILE *out = NULL;
   conf->access.type = acb_type_kline;
   add_access_conf(&conf->access);
 
-  write_conf_line(source_p, conf, current_date, cur_time);
+// TBD - don't keep the *line in memory if we cannot open the conf file
+  if ((out = fbopen(ServerState.klinefile, "a")) == NULL)
+    sendto_realops_flags(UMODE_ALL, L_ALL,
+                         "*** Problem opening %s", ServerState.klinefile);
+  else
+    write_csv_line(out, "%s%s%s%s%s%s%d",
+                   conf->access.user, conf->access.host,
+                   conf->reason, conf->oper_reason, current_date,
+                   get_oper_name(source_p), cur_time);
 
   sendto_realops_flags(UMODE_ALL, L_ALL,
                        "%s added K-Line for [%s@%s] [%s]",
@@ -415,6 +424,7 @@ mo_dline(struct Client *client_p, struct Client *source_p,
   const char *current_date = NULL;
   time_t cur_time;
   char hostip[HOSTIPLEN];
+  FBFILE *out = NULL;
 
   if (!IsOperK(source_p))
   {
@@ -522,8 +532,15 @@ mo_dline(struct Client *client_p, struct Client *source_p,
 
     conf->access.type = acb_type_deny;
     add_access_conf(&conf->access);
-    write_conf_line(source_p, conf, current_date, cur_time);
 
+    if ((out = fbopen(ServerState.dlinefile, "a")) == NULL)
+      sendto_realops_flags(UMODE_ALL, L_ALL,
+                           "*** Problem opening %s", ServerState.dlinefile);
+    else
+      write_csv_line(out, "%s%s%s%s%s%d",
+                     conf->access.host, conf->reason, conf->oper_reason,
+                     current_date, get_oper_name(source_p), cur_time);
+// TBD - don't keep the *line in memory if we cannot open the conf file
     sendto_realops_flags(UMODE_ALL, L_ALL,
                          "%s added D-Line for [%s] [%s]",
                          get_oper_name(source_p), conf->access.host,

@@ -241,7 +241,8 @@ ms_unresv(struct Client *client_p, struct Client *source_p,
 static void
 parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
 {
-  struct ResvConf *conf;
+  struct ResvConf *conf = NULL;
+  FBFILE *out = NULL;
 
   if (!IsAdmin(source_p) && has_wildcards(name, IsChanPrefix(*name)))
   {
@@ -299,7 +300,13 @@ parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
                            "%s has placed a %s RESV on channel %s : [%s]",
                            get_oper_name(source_p), (MyClient(source_p) ?
                            "local" : "remote"), conf->mask, conf->reason);
-      write_conf_line(source_p, conf, NULL /* not used */, 0 /* not used */);
+// TBD - don't keep the *line in memory if we cannot open the conf file
+    if ((out = fbopen(ServerState.cresvfile, "a")) == NULL)
+      sendto_realops_flags(UMODE_ALL, L_ALL,
+                           "*** Problem opening %s", ServerState.cresvfile);
+    else
+      write_csv_line(out, "%s%s",
+                   conf->mask, conf->reason);
     }
   }
   else
@@ -360,7 +367,12 @@ parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
                            "%s has placed a %s RESV on nick %s : [%s]",
                            get_oper_name(source_p), (MyClient(source_p) ?
                            "local" : "remote"), conf->mask, conf->reason);
-      write_conf_line(source_p, conf, NULL /* not used */, 0 /* not used */);
+   if ((out = fbopen(ServerState.nresvfile, "a")) == NULL)
+      sendto_realops_flags(UMODE_ALL, L_ALL,
+                           "*** Problem opening %s", ServerState.nresvfile);
+    else
+      write_csv_line(out, "%s%s",
+                   conf->mask, conf->reason);
     }
   }
 }

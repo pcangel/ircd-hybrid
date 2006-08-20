@@ -291,6 +291,7 @@ write_rxline(struct Client *source_p, const char *gecos, char *reason,
   time_t cur_time = 0;
   pcre *exp_gecos = NULL;
   const char *errptr = NULL;
+  FBFILE *out = NULL;
 
   if (!(exp_gecos = ircd_pcre_compile(gecos, &errptr)))
   {
@@ -324,8 +325,14 @@ write_rxline(struct Client *source_p, const char *gecos, char *reason,
   }
   else
   {
-    write_conf_line(source_p, conf, current_date, cur_time);
-
+// TBD - don't keep the *line in memory if we cannot open the conf file
+    if ((out = fbopen(ServerState.rxlinefile, "a")) == NULL)
+      sendto_realops_flags(UMODE_ALL, L_ALL,
+                           "*** Problem opening %s", ServerState.rxlinefile);
+    else
+      write_csv_line(out, "%s%s%s%s%s%d",
+                     conf->mask, conf->reason, conf->reason, /* XXX oper_reason */
+                     current_date, get_oper_name(source_p), cur_time);
     sendto_realops_flags(UMODE_ALL, L_ALL,
                          "%s added RX-Line for [%s] [%s]",
                          get_oper_name(source_p), conf->mask,
