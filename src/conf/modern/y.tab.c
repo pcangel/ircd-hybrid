@@ -86,7 +86,7 @@
 
 #include "stdinc.h"
 #include "conf/conf.h"
-#include "parse.h"
+#include "modern.h"
 
 #define YY_NO_UNPUT
 

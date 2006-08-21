@@ -62,7 +62,7 @@ SRCS = \
  conf/shared.c \
  conf/modern/lex.yy.c \
  conf/modern/y.tab.c \
- conf/modern/parse.c \
+ conf/modern/modern.c \
  channel.c \
  channel_mode.c \
  client.c \

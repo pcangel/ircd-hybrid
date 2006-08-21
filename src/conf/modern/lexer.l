@@ -34,7 +34,7 @@
 
 #include "stdinc.h"
 #include "conf/conf.h"
-#include "parse.h"
+#include "modern.h"
 #include "y.tab.h"
 
 #undef  YY_INPUT

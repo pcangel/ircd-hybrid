@@ -24,7 +24,7 @@
 
 #include "stdinc.h"
 #include "conf/conf.h"
-#include "parse.h"
+#include "modern.h"
 #include "client.h"
 #include "ircd.h"
 #include "restart.h"
