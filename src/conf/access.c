@@ -368,6 +368,8 @@ do_expire_confs(void *unused)
 void
 init_access(void)
 {
+  is_client_banned = register_callback("is_client_banned", NULL);
+
   hreset = install_hook(reset_conf, reset_access);
 
   expire_confs = register_callback("expire_confs", NULL);
