@@ -469,7 +469,7 @@ main(int argc, char *argv[])
 #endif
 
   libio_init(!ServerState.foreground);
-  outofmemory = ircd_outofmemory;
+  init_restart();
   fdlimit_hook = install_hook(fdlimit_cb, changing_fdlimit);
 
   check_pidfile(ServerState.pidfile);

@@ -25,7 +25,11 @@
 #ifndef INCLUDED_restart_h
 #define INCLUDED_restart_h
 
+EXTERN struct Callback *ircd_shutdown;
+
 EXTERN void server_die(const char *, int);
 EXTERN void ircd_outofmemory(void);
+
+void init_restart(void);
 
 #endif

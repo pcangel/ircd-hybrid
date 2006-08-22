@@ -29,17 +29,16 @@
 #include "send.h"
 #include "client.h" /* for UMODE_ALL */
 
+struct Callback *ircd_shutdown = NULL;
 
-void
-server_die(const char *mesg, int rboot)
+static void *
+do_server_die(va_list args)
 {
+  const char *mesg = va_arg(args, const char *);
+  int rboot = va_arg(args, int);
   char buffer[IRCD_BUFSIZE];
   dlink_node *ptr = NULL;
   struct Client *target_p = NULL;
-  static int was_here = 0;
-
-  if (rboot && was_here++)
-    abort();
 
   if (EmptyString(mesg))
     snprintf(buffer, sizeof(buffer), "Server %s",
@@ -80,7 +79,24 @@ server_die(const char *mesg, int rboot)
 }
 
 void
+server_die(const char *mesg, int rboot)
+{
+  static int was_here = 0;
+
+  if (rboot && was_here++)
+    abort();
+
+  execute_callback(ircd_shutdown, mesg, rboot);
+}
+
+void
 ircd_outofmemory(void)
 {
   server_die("Out of memory", YES);
+}
+
+void
+init_restart(void)
+{
+  ircd_shutdown = register_callback("ircd_shutdown", do_server_die);
 }
