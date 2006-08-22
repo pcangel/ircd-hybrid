@@ -87,11 +87,6 @@ setup_signals(void)
   sigaddset(&act.sa_mask, SIGALRM);
   sigaction(SIGALRM, &act, 0);
 
-#ifdef SIGTRAP
-  sigaddset(&act.sa_mask, SIGTRAP);
-  sigaction(SIGTRAP, &act, 0);
-#endif
-
 #ifdef SIGWINCH
   sigaddset(&act.sa_mask, SIGWINCH);
   sigaction(SIGWINCH, &act, 0);
