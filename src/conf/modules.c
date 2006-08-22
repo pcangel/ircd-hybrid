@@ -148,6 +148,7 @@ init_module(struct Module *mod, const char *fullname)
 static int
 load_shared_module(const char *name, const char *dir, const char *fname)
 {
+  char error[IRCD_BUFSIZE];
   char path[PATH_MAX];
   char sym[PATH_MAX];
   void *handle, *base;
@@ -155,13 +156,16 @@ load_shared_module(const char *name, const char *dir, const char *fname)
 
   snprintf(path, sizeof(path), "%s/%s", dir, fname);
   if (!(handle = modload(path, &base)))
+  {
+    strlcpy(error, moderror(), sizeof(error));
+    ilog(L_WARN, "%s", error);
+    sendto_realops_flags(UMODE_ALL, L_ALL, "%s", error);
     return 0;
+  }
 
   snprintf(sym, sizeof(sym), "%s_module", name);
   if (!(mod = modsym(handle, sym)))
   {
-    char error[IRCD_BUFSIZE];
-
     modunload(handle);
     snprintf(error, sizeof(error), "%s contains no %s export!", fname, sym);
 
@@ -296,6 +300,9 @@ boot_modules(char cold)
       {
         while ((ldirent = readdir(moddir)) != NULL)
         {
+          if (ldirent->d_name[0] == '.' && ((ldirent->d_name[1] == '.' &&
+              !ldirent->d_name[2]) || !ldirent->d_name[1]))
+            continue;
           strlcpy(buf, ldirent->d_name, sizeof(buf));
           if ((pp = strchr(buf, '.')) != NULL)
             *pp = 0;

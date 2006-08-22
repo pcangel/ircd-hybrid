@@ -184,7 +184,7 @@ m_join(struct Client *client_p, struct Client *source_p,
 
     if (!IsExemptResv(source_p) &&
         !(IsOper(source_p) && General.oper_pass_resv) &&
-        (!hash_find_resv(chan) == Channel.restrict_channels))
+        (!find_channel_resv(chan) == Channel.restrict_channels))
     {
       sendto_one(source_p, form_str(ERR_BADCHANNAME),
                  me.name, source_p->name, chan);

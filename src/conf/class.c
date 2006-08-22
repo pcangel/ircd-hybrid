@@ -319,7 +319,8 @@ attach_class(struct Client *source_p, struct Class *cptr)
   int exempt = !!IsExemptLimits(source_p);
   int a_limit_reached = 0;
 
-  detach_class(source_p);
+  if (source_p->localClient->class != NULL)
+    detach_class(source_p);
 
   source_p->localClient->class = ref_class_by_ptr(cptr);
   if (++cptr->cur_clients > cptr->max_number)
@@ -499,6 +500,7 @@ init_class(void)
     &tmpclass.userhost_limit[1]);
   add_conf_field(s, "max_noident", CT_NUMBER, NULL,
     &tmpclass.noident_limit[0]);
+  add_conf_field(s, "number_per_ip", CT_NUMBER, NULL, &tmpclass.host_limit[0]);
 
   s->after = after_class;
 

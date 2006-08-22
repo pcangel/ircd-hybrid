@@ -211,7 +211,7 @@ iline_flags(void *list, void *unused)
 static void
 iline_flag(void *state, void *flag)
 {
-  if (state)
+  if (*(int *) state)
     tmpauth.flags |= (unsigned long) flag;
   else
     tmpauth.flags &= ~((unsigned long) flag);

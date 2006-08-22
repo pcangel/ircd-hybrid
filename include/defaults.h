@@ -53,8 +53,8 @@
 #define MSGPATH     IRCD_PREFIX "/messages/"
 #define ETCPATH     IRCD_PREFIX "/etc"
 #define LOGPATH     IRCD_PREFIX "/logs"
-#define MODPATH     IRCD_PREFIX "/modules/"
-#define AUTOMODPATH IRCD_PREFIX "/modules/autoload/"
+#define MODPATH     IRCD_PREFIX "/modules"
+#define AUTOMODPATH IRCD_PREFIX "/modules/autoload"
 
 /* files */
 #define SPATH   BINPATH "/ircd"                 /* ircd executable */

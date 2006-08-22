@@ -97,7 +97,7 @@ clear_temp(void)
 {
   free_interior(&tmpconn);
   memset(&tmpconn, 0, sizeof(tmpconn));
-  tmpconn.aftype = AF_INET6;
+  tmpconn.aftype = AF_INET;
 }
 
 /*
@@ -409,7 +409,7 @@ parse_cipherpref(void *value, void *unused)
 static void
 parse_flag(void *state, void *flag)
 {
-  if (state)
+  if (*(int *) state)
     tmpconn.flags |= (unsigned long) flag;
   else
     tmpconn.flags &= ~((unsigned long) flag);
@@ -478,8 +478,10 @@ after_connect(void)
 
   conf = MyMalloc(sizeof(*conf));
   memcpy(conf, &tmpconn, sizeof(*conf));
-  memset(&tmpconn, 0, sizeof(tmpconn));
   dlinkAdd(conf, &conf->node, &connect_confs);
+  ref_link_by_ptr(conf);
+
+  memset(&tmpconn, 0, sizeof(tmpconn));
 }
 
 /*

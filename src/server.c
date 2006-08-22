@@ -1530,6 +1530,7 @@ serv_connect(struct ConnectConf *conf, struct Client *by, int connect_port)
   // Copy in the server, hostname, fd
   strlcpy(client_p->name, conf->name, sizeof(client_p->name));
   strlcpy(client_p->host, conf->host, sizeof(client_p->host));
+  client_p->localClient->aftype = conf->aftype;
 
   // servernames are always guaranteed under HOSTLEN chars
   fd_note(&client_p->localClient->fd, "Server: %s", conf->name);

@@ -144,8 +144,11 @@ clear_operconf(struct OperatorConf *conf)
     MyFree(mask);
   }
 
-  unref_class(conf->class_ptr);
-  conf->class_ptr = NULL;
+  if (conf->class_ptr != NULL)
+  {
+    unref_class(conf->class_ptr);
+    conf->class_ptr = NULL;
+  }
 
 #ifdef HAVE_LIBCRYPTO
   if (conf->rsa_public_key != NULL)

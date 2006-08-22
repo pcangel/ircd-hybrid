@@ -433,13 +433,15 @@ main(int argc, char *argv[])
 
   ServerState.configfile = CPATH;  // Server configuration file
   ServerState.klinefile  = KPATH;  // Server kline file
-  ServerState.xlinefile  = XPATH;  // Server xline file
-  ServerState.rxlinefile = RXPATH; // Server regex xline file
   ServerState.rklinefile = RKPATH; // Server regex kline file
   ServerState.dlinefile  = DLPATH; // dline file
   ServerState.glinefile  = GPATH;  // gline log file
+  ServerState.xlinefile  = XPATH;  // Server xline file
+  ServerState.rxlinefile = RXPATH; // Server regex xline file
   ServerState.cresvfile  = CRESVPATH; // channel resv file
   ServerState.nresvfile  = NRESVPATH; // nick resv file
+  ServerState.logfile    = LPATH;
+  ServerState.pidfile    = PPATH;
   myargv = argv;
   umask(077);                // better safe than sorry --SRB
 

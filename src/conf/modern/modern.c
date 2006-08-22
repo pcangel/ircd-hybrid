@@ -138,16 +138,22 @@ read_conf_files(int cold)
     return;
   }
 
+  conf_cold = cold;
+  execute_callback(reset_conf);
+
+  conf_pass = 1;
   conf_curctx.filename = ServerState.configfile;
   conf_curctx.lineno = 0;
-
   conf_linebuf[0] = 0;
-  conf_cold = cold;
-  conf_pass = 1;
-
-  execute_callback(reset_conf);
   yyparse();
-  execute_callback(verify_conf);
 
+  conf_pass = 2;
+  execute_callback(switch_conf_pass);
+  fbrewind(conf_curctx.f);
+  conf_curctx.lineno = 0;
+  conf_linebuf[0] = 0;
+  yyparse();
+
+  execute_callback(verify_conf);
   conf_pass = 0;
 }
