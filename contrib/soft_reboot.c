@@ -35,12 +35,12 @@
 #include "s_serv.h"
 #include "s_user.h"
 #include "send.h"
+#include "userhost.h"
 
 #ifdef HAVE_LIBCRYPTO
-#define CanForward(x)   (!IsDefunct(x) && !(x)->localClient->fd.ssl && \
-                         !(x)->localClient->ctrlfd.flags.open)
+#define CanForward(x)   (!IsDefunct(x) && !(x)->localClient->fd.ssl)
 #else
-#define CanForward(x)   (!IsDefunct(x) && !(x)->localClient->ctrlfd.flags.open)
+#define CanForward(x)   (!IsDefunct(x))
 #endif
 
 static dlink_node *h_shutdown, *h_verify;
@@ -48,11 +48,14 @@ static dlink_node *h_shutdown, *h_verify;
 struct SocketInfo
 {
   int fd;
+  int ctrlfd;
   int namelen;
   int pwdlen;
   int caplen;
   int recvqlen;
   int sendqlen;
+  int slinkqofs;
+  int slinkqlen;
   time_t first;
   time_t last;
 };
@@ -161,12 +164,16 @@ introduce_socket(int transfd, struct Client *client_p)
     capabs = show_capabilities(client_p);
 
   si.fd = client_p->localClient->fd.fd;
+  si.ctrlfd = client_p->localClient->ctrlfd.flags.open ?
+    client_p->localClient->ctrlfd.fd : -1;
   si.namelen = strlen(client_p->name);
   si.pwdlen = EmptyString(client_p->localClient->passwd) ? 0 :
     strlen(client_p->localClient->passwd);
   si.caplen = strlen(capabs);
   si.recvqlen = dbuf_length(&client_p->localClient->buf_recvq);
   si.sendqlen = dbuf_length(&client_p->localClient->buf_sendq);
+  si.slinkqofs = client_p->localClient->slinkq_ofs;
+  si.slinkqlen = client_p->localClient->slinkq_len;
   si.first = client_p->firsttime;
   si.last = client_p->localClient->last;
 
@@ -179,6 +186,8 @@ introduce_socket(int transfd, struct Client *client_p)
 
   write_dbuf(transfd, &client_p->localClient->buf_recvq);
   write_dbuf(transfd, &client_p->localClient->buf_sendq);
+  if (si.slinkqlen > 0)
+    write(transfd, client_p->localClient->slinkq, si.slinkqlen);
 }
 
 /*
@@ -299,23 +308,33 @@ do_shutdown(va_list args)
  * inputs:
  *   client_p  -  client pointer
  *   fd        -  file descriptor
+ *   ctrlfd    -  servlink control fd
+ *   first     -  when the client was created
  *   last      -  since when the client is idle
  * output: none
  */
 static void
-restore_socket(struct Client *client_p, int fd, time_t first, time_t last)
+restore_socket(struct Client *client_p, int fd, int ctrlfd,
+               time_t first, time_t last)
 {
-  char buf[HOSTLEN+10];
+  char buf[HOSTLEN+16];
   struct irc_ssaddr addr;
   int family, port;
 
-  snprintf(buf, sizeof(buf), IsServer(client_p) ? "Server: %s" : "Nick: %s",
+  snprintf(buf, sizeof(buf), IsClient(client_p) ? "Nick: %s" :
+           (ctrlfd >= 0 ? "slink data: %s" : "Server: %s"),
            client_p->name);
 
   client_p->localClient = BlockHeapAlloc(lclient_heap);
   attach_class(client_p, default_class);
+
   fd_open(&client_p->localClient->fd, fd, 1, buf);
   fcntl(fd, F_SETFD, FD_CLOEXEC);
+  if (ctrlfd >= 0)
+  {
+    snprintf(buf, sizeof(buf), "slink ctrl: %s", client_p->name);
+    fd_open(&client_p->localClient->ctrlfd, ctrlfd, 1, buf);
+  }
 
   addr.ss_len = sizeof(addr);
   getsockname(fd, (struct sockaddr *) &addr, &addr.ss_len);
@@ -373,8 +392,13 @@ restore_client(struct Client *client_p, char *capabs)
   if (Count.local > Count.max_loc)
     Count.max_loc = Count.local;
 
+  add_user_host(client_p->username, client_p->host, 0);
+  SetUserHost(client_p);
+
   dlinkAdd(client_p, &client_p->localClient->lclient_node, &local_client_list);
   dlinkAdd(client_p, &client_p->lnode, &me.serv->client_list);
+  if (IsOper(client_p))
+    dlinkAdd(client_p, make_dlink_node(), &oper_list);
 }
 
 static void
@@ -429,7 +453,7 @@ restore_dbuf(FILE *f, struct dbuf_queue *dbuf, int cnt)
 {
   while (cnt > 0)
   {
-    int nread = fread(readBuf, 1, sizeof(readBuf), f);
+    int nread = fread(readBuf, 1, LIBIO_MIN(sizeof(readBuf), cnt), f);
 
     if (dbuf != NULL)
       dbuf_put(dbuf, readBuf, nread);
@@ -452,7 +476,7 @@ load_state(int transfd)
   char buf[IRCD_BUFSIZE+1], *p, *parv[4] = {NULL, NULL, "-o", NULL};
   struct Client *client_p;
   struct SocketInfo si;
-  dlink_node *ptr;
+  dlink_node *ptr, *ptr_next;
 
   //
   // Read server burst from &me
@@ -493,7 +517,7 @@ load_state(int transfd)
     buf[si.namelen] = 0;
 
     if ((client_p = find_client(buf)) != NULL)
-      restore_socket(client_p, si.fd, si.first, si.last);
+      restore_socket(client_p, si.fd, si.ctrlfd, si.first, si.last);
     else
       close(si.fd);
 
@@ -514,17 +538,29 @@ load_state(int transfd)
                  si.recvqlen);
     restore_dbuf(f, client_p ? &client_p->localClient->buf_sendq : NULL,
                  si.sendqlen);
+
+    if (si.slinkqlen > 0)
+    {
+      client_p->localClient->slinkq = MyMalloc(si.slinkqlen);
+      fread(client_p->localClient->slinkq, 1, si.slinkqlen, f);
+      client_p->localClient->slinkq_ofs = si.slinkqofs;
+      client_p->localClient->slinkq_len = si.slinkqlen;
+    }
   }
 
   //
   // Finalization
   //
-  DLINK_FOREACH(ptr, global_client_list.head)
+  DLINK_FOREACH_SAFE(ptr, ptr_next, global_client_list.head)
   {
     client_p = ptr->data;
     client_p->from = discover_from(client_p);
-    if (MyOper(client_p))
-      dlinkAdd(client_p, make_dlink_node(), &oper_list);
+    if (client_p->from == client_p && !client_p->localClient)
+    {
+      SetDead(client_p);
+      client_p->localClient = BlockHeapAlloc(lclient_heap);
+      exit_client(client_p, &me, "Soft reboot");
+    }
   }
 
   while (oper_list.head != NULL)
