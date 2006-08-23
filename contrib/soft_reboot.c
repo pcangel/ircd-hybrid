@@ -28,6 +28,7 @@
 #include "ircd.h"
 #include "ircd_defs.h"
 #include "listener.h"
+#include "numeric.h"
 #include "packet.h"
 #include "parse.h"
 #include "restart.h"
@@ -179,7 +180,11 @@ do_shutdown(va_list args)
   {
     client_p = ptr->data;
     if (!IsDefunct(client_p))
+    {
       fcntl(client_p->localClient->fd.fd, F_SETFD, 0);
+      if (client_p->localClient->list_task != NULL)
+        sendto_one(client_p, form_str(RPL_LISTEND), me.name, client_p->name);
+    }
   }
 
   DLINK_FOREACH(ptr, serv_list.head)
