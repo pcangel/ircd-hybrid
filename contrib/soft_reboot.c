@@ -262,6 +262,7 @@ restore_socket(struct Client *client_p, int fd)
 
   client_p->localClient = BlockHeapAlloc(lclient_heap);
   fd_open(&client_p->localClient->fd, fd, 1, buf);
+  fcntl(fd, F_SETFD, FD_CLOEXEC);
 
   addr.ss_len = sizeof(addr);
   getsockname(fd, (struct sockaddr *) &addr, &addr.ss_len);
@@ -371,7 +372,8 @@ restore_dbuf(FILE *f, struct dbuf_queue *dbuf, int cnt)
   {
     int nread = fread(readBuf, 1, sizeof(readBuf), f);
 
-    dbuf_put(dbuf, readBuf, nread);
+    if (dbuf != NULL)
+      dbuf_put(dbuf, readBuf, nread);
     cnt -= nread;
   }
 }
@@ -418,6 +420,8 @@ load_state(int transfd)
       client_p->from = client_p;
       client_p = restore_socket(client_p, si.fd);
     }
+    else
+      close(si.fd);
 
     fread(buf, 1, si.caplen, f);
     buf[si.caplen] = 0;
