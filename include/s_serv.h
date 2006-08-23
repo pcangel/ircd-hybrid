@@ -242,5 +242,6 @@ EXTERN struct Server *make_server(struct Client *);
 // No, they should be moved to libio.
 EXTERN int base64_block(unsigned char **, char *, int);
 EXTERN int unbase64_block(unsigned char **, char *, int);
+EXTERN void burst_all(struct Client *);
 
 #endif /* INCLUDED_s_serv_h */

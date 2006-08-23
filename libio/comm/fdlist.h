@@ -57,7 +57,7 @@ struct irc_ssaddr
     struct sockaddr_in6 ss6;
 #endif
   };
-  unsigned char ss_len;
+  socklen_t ss_len;
   in_port_t ss_port;
 };
 

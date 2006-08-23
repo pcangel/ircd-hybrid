@@ -49,8 +49,10 @@
 struct Callback;
 
 void *iorecv_default(va_list);
+
 EXTERN struct Callback *iorecv_cb;
 EXTERN struct Callback *iorecvctrl_cb;
+EXTERN char readBuf[READBUF_SIZE];
 
 PF read_ctrl_packet;
 PF read_packet;

@@ -31,10 +31,11 @@
 #include "packet.h"
 #include "send.h"
 
+char readBuf[READBUF_SIZE];
+
 struct Callback *iorecv_cb = NULL;
 struct Callback *iorecvctrl_cb = NULL;
 
-static char readBuf[READBUF_SIZE];
 static void client_dopacket(struct Client *, char *, size_t);
 
 /* extract_one_line()

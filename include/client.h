@@ -501,6 +501,7 @@ struct LocalUser
 EXTERN struct Client me;
 EXTERN dlink_list listing_client_list;
 EXTERN dlink_list global_client_list;
+EXTERN BlockHeap *lclient_heap;
 
 EXTERN void init_client(void);
 EXTERN void dead_link_on_write(struct Client *, int);
@@ -514,6 +515,7 @@ EXTERN struct Accept *find_accept(const char *, const char *,
 EXTERN void del_accept(struct Accept *, struct Client *);
 EXTERN void set_initial_nick(struct Client *, const char *);
 EXTERN void exit_client(struct Client *, struct Client *, const char *);
+EXTERN void exit_one_client(struct Client *, const char *);
 EXTERN void check_conf_klines(void);
 EXTERN void change_local_nick(struct Client *, struct Client *, const char *);
 EXTERN void report_error(int, const char *, const char *, int);

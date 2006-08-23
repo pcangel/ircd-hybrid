@@ -48,7 +48,6 @@
 static dlink_list cap_list = { NULL, NULL, 0 };
 static void server_burst(struct Client *);
 static int fork_server(struct Client *);
-static void burst_all(struct Client *);
 static void send_tb(struct Client *, const struct Channel *);
 
 static CNCB serv_connect_callback;
@@ -1114,55 +1113,6 @@ server_estab(struct Client *client_p)
                  client_p->info);
   }
 
-  /* Pass on my client information to the new server
-  **
-  ** First, pass only servers (idea is that if the link gets
-  ** cancelled beacause the server was already there,
-  ** there are no NICK's to be cancelled...). Of course,
-  ** if cancellation occurs, all this info is sent anyway,
-  ** and I guess the link dies when a read is attempted...? --msa
-  ** 
-  ** Note: Link cancellation to occur at this point means
-  ** that at least two servers from my fragment are building
-  ** up connection this other fragment at the same time, it's
-  ** a race condition, not the normal way of operation...
-  **
-  ** ALSO NOTE: using the get_client_name for server names--
-  **    see previous *WARNING*!!! (Also, original inpath
-  **    is destroyed...)
-  */
-
-  conf = client_p->serv->sconf;
-
-  DLINK_FOREACH_PREV(ptr, global_serv_list.tail)
-  {
-    target_p = ptr->data;
-
-    // target_p->from == target_p for target_p == client_p
-    if (target_p->from == client_p)
-      continue;
-
-    if (match(my_name_for_link(conf), target_p->name))
-      continue;
-
-    if (IsCapable(client_p, CAP_TS6))
-    {
-      if (HasID(target_p))
-        sendto_one(client_p, ":%s SID %s %d %s :%s%s",
-                   ID(target_p->servptr), target_p->name, target_p->hopcount+1,
-                   target_p->id, IsHidden(target_p) ? "(H) " : "",
-                   target_p->info);
-      else  // introducing non-ts6 server
-        sendto_one(client_p, ":%s SERVER %s %d :%s%s",
-                   ID(target_p->servptr), target_p->name, target_p->hopcount+1,
-                   IsHidden(target_p) ? "(H) " : "", target_p->info);
-    }
-    else
-      sendto_one(client_p, ":%s SERVER %s %d :%s%s", 
-                 target_p->servptr->name, target_p->name, target_p->hopcount+1,
-                 IsHidden(target_p) ? "(H) " : "", target_p->info);
-  }
-
   server_burst(client_p);
 }
 
@@ -1370,10 +1320,57 @@ server_burst(struct Client *client_p)
  * output	- NONE
  * side effects - complete burst of channels/nicks is sent to client_p
  */
-static void
+void
 burst_all(struct Client *client_p)
 {
-  dlink_node *ptr = NULL;
+  dlink_node *ptr;
+  struct ConnectConf *conf = client_p->serv->sconf;
+
+  /* Pass on my client information to the new server
+  **
+  ** First, pass only servers (idea is that if the link gets
+  ** cancelled beacause the server was already there,
+  ** there are no NICK's to be cancelled...). Of course,
+  ** if cancellation occurs, all this info is sent anyway,
+  ** and I guess the link dies when a read is attempted...? --msa
+  ** 
+  ** Note: Link cancellation to occur at this point means
+  ** that at least two servers from my fragment are building
+  ** up connection this other fragment at the same time, it's
+  ** a race condition, not the normal way of operation...
+  **
+  ** ALSO NOTE: using the get_client_name for server names--
+  **    see previous *WARNING*!!! (Also, original inpath
+  **    is destroyed...)
+  */
+  DLINK_FOREACH_PREV(ptr, global_serv_list.tail)
+  {
+    target_p = ptr->data;
+
+    // target_p->from == target_p for target_p == client_p
+    if (target_p->from == client_p)
+      continue;
+
+    if (match(my_name_for_link(conf), target_p->name))
+      continue;
+
+    if (IsCapable(client_p, CAP_TS6))
+    {
+      if (HasID(target_p))
+        sendto_one(client_p, ":%s SID %s %d %s :%s%s",
+                   ID(target_p->servptr), target_p->name, target_p->hopcount+1,
+                   target_p->id, IsHidden(target_p) ? "(H) " : "",
+                   target_p->info);
+      else  // introducing non-ts6 server
+        sendto_one(client_p, ":%s SERVER %s %d :%s%s",
+                   ID(target_p->servptr), target_p->name, target_p->hopcount+1,
+                   IsHidden(target_p) ? "(H) " : "", target_p->info);
+    }
+    else
+      sendto_one(client_p, ":%s SERVER %s %d :%s%s", 
+                 target_p->servptr->name, target_p->name, target_p->hopcount+1,
+                 IsHidden(target_p) ? "(H) " : "", target_p->info);
+  }
 
   DLINK_FOREACH(ptr, global_channel_list.head)
   {
@@ -1386,7 +1383,7 @@ burst_all(struct Client *client_p)
 
       if (IsCapable(client_p, CAP_TBURST) ||
           IsCapable(client_p, CAP_TB))
-	send_tb(client_p, chptr);
+        send_tb(client_p, chptr);
     }
   }
 

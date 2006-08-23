@@ -46,4 +46,6 @@ EXTERN void add_listener(int, const char *, unsigned int);
 EXTERN void close_listeners(void);
 EXTERN const char *get_listener_name(const struct Listener *const);
 EXTERN void free_listener(struct Listener *);
+EXTERN struct Listener *find_listener(int, struct irc_ssaddr *);
+
 #endif /* INCLUDED_listener_h */
