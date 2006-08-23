@@ -49,10 +49,36 @@ struct SocketInfo
 {
   int fd;
   int namelen;
+  int pwdlen;
   int caplen;
   int recvqlen;
   int sendqlen;
 };
+
+/*
+ * serverize()
+ *
+ * Turns a dummy client into a server.
+ *
+ * inputs: client pointer
+ * output: none
+ */
+static void
+serverize(struct Client *client_p)
+{
+  struct ConnectConf *sconf = ref_link_by_ptr(MyMalloc(sizeof(*sconf)));
+  char *hub_mask;
+
+  DupString(sconf->name, client_p->name);
+  sconf->flags = LINK_BURSTAWAY | LINK_TOPICBURST;
+
+  DupString(hub_mask, "*");
+  dlinkAdd(hub_mask, make_dlink_node(), &sconf->hub_list);
+
+  client_p->serv->sconf = ref_link_by_ptr(sconf);
+
+  SetServer(client_p);
+}
 
 /*
  * make_dummy()
@@ -67,7 +93,6 @@ make_dummy(int transfd)
 {
   dlink_node *m;
   struct Client *client_p = make_client(NULL);
-  struct ConnectConf *sconf;
 
   fd_open(&client_p->localClient->fd, transfd, 1, "Softboot");
   client_p->localClient->caps = -1;
@@ -84,12 +109,7 @@ make_dummy(int transfd)
   dlinkAdd(client_p, make_dlink_node(), &global_serv_list);
 
   make_server(client_p);
-  SetServer(client_p);
-
-  sconf = ref_link_by_ptr(MyMalloc(sizeof(*sconf)));
-  DupString(sconf->name, client_p->name);
-  sconf->flags = LINK_BURSTAWAY | LINK_TOPICBURST;
-  client_p->serv->sconf = ref_link_by_ptr(sconf);
+  serverize(client_p);
 
   return client_p;
 }
@@ -140,13 +160,18 @@ introduce_socket(int transfd, struct Client *client_p)
 
   si.fd = client_p->localClient->fd.fd;
   si.namelen = strlen(client_p->name);
+  si.pwdlen = EmptyString(client_p->localClient->passwd) ? 0 :
+    strlen(client_p->localClient->passwd);
   si.caplen = strlen(capabs);
   si.recvqlen = dbuf_length(&client_p->localClient->buf_recvq);
   si.sendqlen = dbuf_length(&client_p->localClient->buf_sendq);
 
   write(transfd, &si, sizeof(si));
   write(transfd, client_p->name, si.namelen);
-  write(transfd, capabs, si.caplen);
+  if (si.pwdlen > 0)
+    write(transfd, client_p->localClient->passwd, si.pwdlen);
+  if (si.caplen > 0)
+    write(transfd, capabs, si.caplen);
 
   write_dbuf(transfd, &client_p->localClient->buf_recvq);
   write_dbuf(transfd, &client_p->localClient->buf_sendq);
@@ -246,9 +271,8 @@ do_shutdown(va_list args)
   //
   // Pass our data.
   //
-  client_p = make_dummy(transfd[1]);
-  burst_all(client_p);
-  send_queued_write(client_p);
+  burst_all(make_dummy(transfd[1]));
+  send_queued_all();
 
   write(transfd[1], "\001\r\n", 3);
 
@@ -269,9 +293,9 @@ do_shutdown(va_list args)
  * inputs:
  *   client_p  -  client pointer
  *   fd        -  file descriptor
- * output: the same pointer or NULL if exited
+ * output: none
  */
-static struct Client *
+static void
 restore_socket(struct Client *client_p, int fd)
 {
   char buf[HOSTLEN+10];
@@ -282,6 +306,7 @@ restore_socket(struct Client *client_p, int fd)
            client_p->name);
 
   client_p->localClient = BlockHeapAlloc(lclient_heap);
+  attach_class(client_p, default_class);
   fd_open(&client_p->localClient->fd, fd, 1, buf);
   fcntl(fd, F_SETFD, FD_CLOEXEC);
 
@@ -290,36 +315,18 @@ restore_socket(struct Client *client_p, int fd)
   family = addr.ss.sin_family;
   port = ntohs(addr.ss.sin_port);
 
-  if (!(client_p->localClient->listener = find_listener(port, &addr)))
-  {
-    memset(&addr.ss, 0, sizeof(addr.ss));
-    addr.ss.sin_family = family;
-    addr.ss.sin_port = htons(port);
-
-    if (!(client_p->localClient->listener = find_listener(port, &addr)))
-    {
-      exit_client(client_p, &me, "Listener closed");
-      return NULL;
-    }
-  }
-
   client_p->localClient->ip.ss_len = sizeof(client_p->localClient->ip.ss);
   getpeername(fd, (struct sockaddr *) &client_p->localClient->ip,
               &client_p->localClient->ip.ss_len);
   client_p->localClient->aftype = client_p->localClient->ip.ss.sin_family;
 
-  if (irc_getnameinfo((struct sockaddr *) &client_p->localClient->ip,
-                      client_p->localClient->ip.ss_len, client_p->sockhost,
-                      sizeof(client_p->sockhost), NULL, 0,
-                      NI_NUMERICHOST) != 0)
-  {
-    exit_client(client_p, &me, "Protocol family no longer supported");
-    return NULL;
-  }
+  irc_getnameinfo((struct sockaddr *) &client_p->localClient->ip,
+                  client_p->localClient->ip.ss_len, client_p->sockhost,
+                  sizeof(client_p->sockhost), NULL, 0, NI_NUMERICHOST);
 
   client_p->servptr = &me;
-  client_p->from = client_p;
-  client_p->since = client_p->lasttime = client_p->firsttime = CurrentTime;
+  client_p->since = client_p->lasttime = client_p->firsttime =
+    client_p->localClient->last = CurrentTime;
 
   client_p->localClient->allow_read = MAX_FLOOD;
   comm_setflush(&client_p->localClient->fd, 1000, flood_recalc, client_p);
@@ -327,8 +334,6 @@ restore_socket(struct Client *client_p, int fd)
   client_p->flags |= FLAGS_FINISHED_AUTH;
   comm_setselect(&client_p->localClient->fd, COMM_SELECT_READ, read_packet,
                  client_p, 0);
-
-  return client_p;
 }
 
 /*
@@ -340,9 +345,9 @@ restore_socket(struct Client *client_p, int fd)
  * inputs:
  *   client_p  -  client pointer
  *   capabs    -  user/server capab string
- * output: the same pointer or NULL if exited
+ * output: none
  */
-static struct Client *
+static void
 restore_client(struct Client *client_p, char *capabs)
 {
   char userbuf[USERLEN+1];
@@ -353,9 +358,8 @@ restore_client(struct Client *client_p, char *capabs)
   strlcpy(userbuf, client_p->username + !IsGotId(client_p),
           sizeof(userbuf));
 
-  if (!(cptr = execute_callback(authorize_client, client_p, userbuf)))
-    return NULL;
-  attach_class(client_p, cptr);
+  if ((cptr = execute_callback(authorize_client, client_p, userbuf)))
+    attach_class(client_p, cptr);
 
   Count.local++, Count.totalrestartcount++;
   if (Count.local > Count.max_loc)
@@ -363,10 +367,9 @@ restore_client(struct Client *client_p, char *capabs)
 
   dlinkAdd(client_p, &client_p->localClient->lclient_node, &local_client_list);
   dlinkAdd(client_p, &client_p->lnode, &me.serv->client_list);
-  return client_p;
 }
 
-static struct Client *
+static void
 restore_server(struct Client *client_p, char *capabs)
 {
   char *p = NULL, *s = NULL;
@@ -378,12 +381,28 @@ restore_server(struct Client *client_p, char *capabs)
     if ((cap = find_capability(s)) != 0)
       SetCapable(client_p, cap);
 
+  if (check_server(client_p->name, client_p, NO) != 0)
+    serverize(client_p);
+
   set_chcap_usage_counts(client_p);
   Count.myserver++;
 
   dlinkAdd(client_p, &client_p->localClient->lclient_node, &serv_list);
   dlinkAdd(client_p, &client_p->lnode, &me.serv->server_list);
-  return client_p;
+}
+
+/*
+ * discover_from()
+ *
+ * Returns correct value of a client's from field.
+ *
+ * inputs: client pointer
+ * output: from
+ */
+static struct Client *
+discover_from(struct Client *client_p)
+{
+  return IsMe(client_p->servptr) ? client_p : discover_from(client_p->servptr);
 }
 
 /*
@@ -425,9 +444,13 @@ load_state(int transfd)
   char buf[IRCD_BUFSIZE+1], *p;
   struct Client *client_p;
   struct SocketInfo si;
+  dlink_node *ptr;
 
+  //
+  // Read server burst from &me
+  //
   fd_open(&me.localClient->fd, transfd, 1, "Softboot");
-  me.handler = SERVER_HANDLER;
+  serverize(&me);
 
   while (fgets(buf, sizeof(buf), f))
   {
@@ -435,12 +458,18 @@ load_state(int transfd)
       *p = 0;
     if (buf[0] == '\001')
       break;
-    ilog(L_CRIT, "Feed: %s", buf);
     parse(&me, buf, buf + strlen(buf));
   }
 
+  SetMe(&me);
+  unref_link(me.serv->sconf);
+  me.serv->sconf = NULL;
+
   fd_close(&me.localClient->fd);
 
+  //
+  // Read local client information
+  //
   while (fread(&si, sizeof(si), 1, f) == 1)
   {
     if (si.fd == -1)
@@ -453,16 +482,22 @@ load_state(int transfd)
     buf[si.namelen] = 0;
 
     if ((client_p = find_client(buf)) != NULL)
-      client_p = restore_socket(client_p, si.fd);
+      restore_socket(client_p, si.fd);
     else
       close(si.fd);
+
+    fread(buf, 1, si.pwdlen, f);
+    if (client_p != NULL && si.pwdlen > 0)
+    {
+      buf[si.pwdlen] = 0;
+      DupString(client_p->localClient->passwd, buf);
+    }
 
     fread(buf, 1, si.caplen, f);
     buf[si.caplen] = 0;
 
     if (client_p != NULL)
-      client_p = (IsServer(client_p) ? restore_server : restore_client)
-        (client_p, buf);
+      (IsServer(client_p) ? restore_server : restore_client) (client_p, buf);
 
     restore_dbuf(f, client_p ? &client_p->localClient->buf_recvq : NULL,
                  si.recvqlen);
@@ -470,7 +505,14 @@ load_state(int transfd)
                  si.sendqlen);
   }
 
+  //
+  // Finalization
+  //
+  DLINK_FOREACH(ptr, global_client_list.head)
+    ((struct Client *) ptr->data)->from = discover_from(ptr->data);
+
   fclose(f);
+  send_queued_all();
 }
 
 /*

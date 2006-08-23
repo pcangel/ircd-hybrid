@@ -634,7 +634,7 @@ check_server(const char *name, struct Client *client_p, int cryptlink)
         return -2;
 
       if (match_password(conf->accept_password, client_p->localClient->passwd,
-                         (conf->flags & LINK_CRYPTPWD)))
+                         (conf->flags & LINK_CRYPTPWD)) || IsServer(client_p))
         server_conf = conf;
     }
   }
