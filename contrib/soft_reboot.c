@@ -36,6 +36,13 @@
 #include "s_user.h"
 #include "send.h"
 
+#ifdef HAVE_LIBCRYPTO
+#define CanForward(x)   (!IsDefunct(x) && !(x)->localClient->fd.ssl && \
+                         !(x)->localClient->ctrlfd.flags.open)
+#else
+#define CanForward(x)   (!IsDefunct(x) && !(x)->localClient->ctrlfd.flags.open)
+#endif
+
 static dlink_node *h_shutdown, *h_verify;
 
 struct SocketInfo
@@ -60,12 +67,15 @@ make_dummy(int transfd)
 {
   dlink_node *m;
   struct Client *client_p = make_client(NULL);
+  struct ConnectConf *sconf;
 
   fd_open(&client_p->localClient->fd, transfd, 1, "Softboot");
   client_p->localClient->caps = -1;
 
   strcpy(client_p->name, ".");
   strcpy(client_p->id, "...");
+  hash_add_client(client_p);
+  hash_add_id(client_p);
   dlinkAdd(client_p, &client_p->node, &global_client_list);
 
   m = dlinkFind(&unknown_list, client_p);
@@ -75,6 +85,11 @@ make_dummy(int transfd)
 
   make_server(client_p);
   SetServer(client_p);
+
+  sconf = ref_link_by_ptr(MyMalloc(sizeof(*sconf)));
+  DupString(sconf->name, client_p->name);
+  sconf->flags = LINK_BURSTAWAY | LINK_TOPICBURST;
+  client_p->serv->sconf = ref_link_by_ptr(sconf);
 
   return client_p;
 }
@@ -117,7 +132,7 @@ introduce_socket(int transfd, struct Client *client_p)
   struct SocketInfo si;
   const char *capabs = "";
 
-  if (IsDefunct(client_p))
+  if (!CanForward(client_p))
     return;
 
   if (IsServer(client_p))
@@ -179,7 +194,7 @@ do_shutdown(va_list args)
   DLINK_FOREACH(ptr, local_client_list.head)
   {
     client_p = ptr->data;
-    if (!IsDefunct(client_p))
+    if (CanForward(client_p))
     {
       fcntl(client_p->localClient->fd.fd, F_SETFD, 0);
       if (client_p->localClient->list_task != NULL)
@@ -190,9 +205,12 @@ do_shutdown(va_list args)
   DLINK_FOREACH(ptr, serv_list.head)
   {
     client_p = ptr->data;
-    if (!IsDefunct(client_p))
+    if (CanForward(client_p))
       fcntl(client_p->localClient->fd.fd, F_SETFD, 0);
   }
+
+  close_listeners();
+  unlink(ServerState.pidfile);
 
   //
   // Start the new ircd.
@@ -208,6 +226,7 @@ do_shutdown(va_list args)
       int i;
       char **argv, buf[24];
 
+      close(transfd[1]);
       snprintf(buf, sizeof(buf), "softboot_%d", transfd[0]);
 
       for (i = 0; myargv[i] != NULL; i++);
@@ -219,7 +238,7 @@ do_shutdown(va_list args)
       argv[i] = NULL;
 
       execv(SPATH, argv);
-      ilog(L_CRIT, "Unable to execve(): %s", strerror(errno));
+      ilog(L_CRIT, "Unable to exec(): %s", strerror(errno));
       exit(1);
     }
   }
@@ -227,7 +246,9 @@ do_shutdown(va_list args)
   //
   // Pass our data.
   //
-  burst_all(make_dummy(transfd[1]));
+  client_p = make_dummy(transfd[1]);
+  burst_all(client_p);
+  send_queued_write(client_p);
 
   write(transfd[1], "\001\r\n", 3);
 
@@ -295,6 +316,17 @@ restore_socket(struct Client *client_p, int fd)
     exit_client(client_p, &me, "Protocol family no longer supported");
     return NULL;
   }
+
+  client_p->servptr = &me;
+  client_p->from = client_p;
+  client_p->since = client_p->lasttime = client_p->firsttime = CurrentTime;
+
+  client_p->localClient->allow_read = MAX_FLOOD;
+  comm_setflush(&client_p->localClient->fd, 1000, flood_recalc, client_p);
+
+  client_p->flags |= FLAGS_FINISHED_AUTH;
+  comm_setselect(&client_p->localClient->fd, COMM_SELECT_READ, read_packet,
+                 client_p, 0);
 
   return client_p;
 }
@@ -391,9 +423,11 @@ load_state(int transfd)
 {
   FILE *f = fdopen(transfd, "r");
   char buf[IRCD_BUFSIZE+1], *p;
-  struct Client *dummy = make_dummy(transfd);
   struct Client *client_p;
   struct SocketInfo si;
+
+  fd_open(&me.localClient->fd, transfd, 1, "Softboot");
+  me.handler = SERVER_HANDLER;
 
   while (fgets(buf, sizeof(buf), f))
   {
@@ -401,13 +435,17 @@ load_state(int transfd)
       *p = 0;
     if (buf[0] == '\001')
       break;
-    parse(dummy, buf, buf + strlen(buf));
+    ilog(L_CRIT, "Feed: %s", buf);
+    parse(&me, buf, buf + strlen(buf));
   }
 
-  SetDead(dummy);
+  fd_close(&me.localClient->fd);
 
   while (fread(&si, sizeof(si), 1, f) == 1)
   {
+    if (si.fd == -1)
+      break;
+
     assert(si.namelen < IRCD_BUFSIZE);
     assert(si.caplen < IRCD_BUFSIZE);
 
@@ -415,11 +453,7 @@ load_state(int transfd)
     buf[si.namelen] = 0;
 
     if ((client_p = find_client(buf)) != NULL)
-    {
-      client_p->servptr = &me;
-      client_p->from = client_p;
       client_p = restore_socket(client_p, si.fd);
-    }
     else
       close(si.fd);
 
@@ -436,7 +470,6 @@ load_state(int transfd)
                  si.sendqlen);
   }
 
-  exit_one_client(dummy, "Soft reboot");
   fclose(f);
 }
 

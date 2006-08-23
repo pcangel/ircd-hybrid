@@ -84,10 +84,14 @@ verify_serverinfo(va_list args)
   if (ServerInfo.network_desc == NULL)
     DupString(ServerInfo.network_desc, ServerInfo.network_name);
 
-  if (conf_cold && me.id[0])
+  if (conf_cold)
   {
-    hash_add_id(&me);
-    memcpy(new_uid, me.id, IRC_MAXSID);
+    hash_add_client(&me);
+    if (me.id[0])
+    {
+      hash_add_id(&me);
+      memcpy(new_uid, me.id, IRC_MAXSID);
+    }
   }
 
   recalc_fdlimit(NULL);

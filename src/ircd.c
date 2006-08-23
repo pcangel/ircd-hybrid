@@ -502,11 +502,6 @@ main(int argc, char *argv[])
   server_init();
   init_conf();
   read_conf_files(YES); // cold start init conf files
-
-  hash_add_client(&me);
-  if (me.id[0])
-    hash_add_id(&me);
-
   init_uid();
   initialize_global_set_options();
 

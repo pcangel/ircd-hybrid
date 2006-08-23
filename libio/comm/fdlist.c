@@ -229,7 +229,7 @@ close_fds(fde_t *one)
         if (F->flags.is_socket)
           closesocket(F->fd);
         else
-	  CloseHandle((HANDLE)F->fd);
+          CloseHandle((HANDLE)F->fd);
 #else
         close(F->fd);
 #endif	 

@@ -57,7 +57,7 @@ static EVH check_pings;
 static BlockHeap *client_heap  = NULL;
 BlockHeap *lclient_heap = NULL;
 
-static dlink_list dead_list  = { NULL, NULL, 0};
+dlink_list dead_list  = { NULL, NULL, 0};
 static dlink_list abort_list = { NULL, NULL, 0};
 
 static dlink_node *eac_next;  /* next aborted client to exit */
@@ -562,7 +562,7 @@ free_exited_clients(void)
  *
  * The only messages generated are QUITs on channels.
  */
-void
+static void
 exit_one_client(struct Client *source_p, const char *quitmsg)
 {
   dlink_node *lp = NULL, *next_lp = NULL;

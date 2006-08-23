@@ -1309,7 +1309,13 @@ server_burst(struct Client *client_p)
   */
   burst_all(client_p);
 
-  /* EOB stuff is now in burst_all */
+  /* We send the time we started the burst, and let the remote host determine an EOB time,
+  ** as otherwise we end up sending a EOB of 0   Sending here means it gets sent last -- fl
+  */
+  /* Its simpler to just send EOB and use the time its been connected.. --fl_ */
+  if (IsCapable(client_p, CAP_EOB))
+    sendto_one(client_p, ":%s EOB", ID_or_name(&me, client_p));
+
   /* Always send a PING after connect burst is done */
   sendto_one(client_p, "PING :%s", ID_or_name(&me, client_p));
 }
@@ -1325,6 +1331,7 @@ burst_all(struct Client *client_p)
 {
   dlink_node *ptr;
   struct ConnectConf *conf = client_p->serv->sconf;
+  struct Client *target_p;
 
   /* Pass on my client information to the new server
   **
@@ -1391,20 +1398,13 @@ burst_all(struct Client *client_p)
    */
   DLINK_FOREACH(ptr, global_client_list.head)
   {
-    struct Client *target_p = ptr->data;
+    target_p = ptr->data;
 
     if (!IsBursted(target_p) && target_p->from != client_p)
       sendnick_TS(client_p, target_p);
     
     ClearBursted(target_p);
   }
-
-  /* We send the time we started the burst, and let the remote host determine an EOB time,
-  ** as otherwise we end up sending a EOB of 0   Sending here means it gets sent last -- fl
-  */
-  /* Its simpler to just send EOB and use the time its been connected.. --fl_ */
-  if (IsCapable(client_p, CAP_EOB))
-    sendto_one(client_p, ":%s EOB", ID_or_name(&me, client_p));
 }
 
 /*
