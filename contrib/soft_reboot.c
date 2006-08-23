@@ -53,6 +53,8 @@ struct SocketInfo
   int caplen;
   int recvqlen;
   int sendqlen;
+  time_t first;
+  time_t last;
 };
 
 /*
@@ -152,7 +154,7 @@ introduce_socket(int transfd, struct Client *client_p)
   struct SocketInfo si;
   const char *capabs = "";
 
-  if (!CanForward(client_p))
+  if (!CanForward(client_p) || client_p->localClient->fd.fd == transfd)
     return;
 
   if (IsServer(client_p))
@@ -165,6 +167,8 @@ introduce_socket(int transfd, struct Client *client_p)
   si.caplen = strlen(capabs);
   si.recvqlen = dbuf_length(&client_p->localClient->buf_recvq);
   si.sendqlen = dbuf_length(&client_p->localClient->buf_sendq);
+  si.first = client_p->firsttime;
+  si.last = client_p->localClient->last;
 
   write(transfd, &si, sizeof(si));
   write(transfd, client_p->name, si.namelen);
@@ -195,6 +199,7 @@ do_shutdown(va_list args)
   struct Client *client_p;
   dlink_node *ptr;
   int transfd[2];
+  char buf[24];
 
   if (!rboot || socketpair(AF_UNIX, SOCK_STREAM, 0, transfd) < 0)
     return pass_callback(h_shutdown, msg, rboot);
@@ -249,7 +254,7 @@ do_shutdown(va_list args)
     case 0:
     {
       int i;
-      char **argv, buf[24];
+      char **argv;
 
       close(transfd[1]);
       snprintf(buf, sizeof(buf), "softboot_%d", transfd[0]);
@@ -274,7 +279,8 @@ do_shutdown(va_list args)
   burst_all(make_dummy(transfd[1]));
   send_queued_all();
 
-  write(transfd[1], "\001\r\n", 3);
+  snprintf(buf, sizeof(buf), "\001%ld\r\n", me.since);
+  write(transfd[1], buf, strlen(buf));
 
   DLINK_FOREACH(ptr, local_client_list.head)
     introduce_socket(transfd[1], ptr->data);
@@ -293,10 +299,11 @@ do_shutdown(va_list args)
  * inputs:
  *   client_p  -  client pointer
  *   fd        -  file descriptor
+ *   last      -  since when the client is idle
  * output: none
  */
 static void
-restore_socket(struct Client *client_p, int fd)
+restore_socket(struct Client *client_p, int fd, time_t first, time_t last)
 {
   char buf[HOSTLEN+10];
   struct irc_ssaddr addr;
@@ -325,8 +332,9 @@ restore_socket(struct Client *client_p, int fd)
                   sizeof(client_p->sockhost), NULL, 0, NI_NUMERICHOST);
 
   client_p->servptr = &me;
-  client_p->since = client_p->lasttime = client_p->firsttime =
-    client_p->localClient->last = CurrentTime;
+  client_p->since = client_p->lasttime = CurrentTime;
+  client_p->firsttime = first;
+  client_p->localClient->last = last;
 
   client_p->localClient->allow_read = MAX_FLOOD;
   comm_setflush(&client_p->localClient->fd, 1000, flood_recalc, client_p);
@@ -441,7 +449,7 @@ static void
 load_state(int transfd)
 {
   FILE *f = fdopen(transfd, "r");
-  char buf[IRCD_BUFSIZE+1], *p;
+  char buf[IRCD_BUFSIZE+1], *p, *parv[4] = {NULL, NULL, "-o", NULL};
   struct Client *client_p;
   struct SocketInfo si;
   dlink_node *ptr;
@@ -457,7 +465,10 @@ load_state(int transfd)
     if ((p = strpbrk(buf, "\r\n")) != NULL)
       *p = 0;
     if (buf[0] == '\001')
+    {
+      me.since = atoi(buf + 1);
       break;
+    }
     parse(&me, buf, buf + strlen(buf));
   }
 
@@ -482,7 +493,7 @@ load_state(int transfd)
     buf[si.namelen] = 0;
 
     if ((client_p = find_client(buf)) != NULL)
-      restore_socket(client_p, si.fd);
+      restore_socket(client_p, si.fd, si.first, si.last);
     else
       close(si.fd);
 
@@ -509,7 +520,19 @@ load_state(int transfd)
   // Finalization
   //
   DLINK_FOREACH(ptr, global_client_list.head)
-    ((struct Client *) ptr->data)->from = discover_from(ptr->data);
+  {
+    client_p = ptr->data;
+    client_p->from = discover_from(client_p);
+    if (MyOper(client_p))
+      dlinkAdd(client_p, make_dlink_node(), &oper_list);
+  }
+
+  while (oper_list.head != NULL)
+  {
+    client_p = oper_list.head->data;
+    parv[0] = parv[1] = client_p->name;
+    set_user_mode(client_p, client_p, 4, parv);
+  }
 
   fclose(f);
   send_queued_all();
