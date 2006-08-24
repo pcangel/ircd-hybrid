@@ -22,7 +22,6 @@
  *  $Id: $
  */
 
-#include <iconv.h>
 #include "stdinc.h"
 #include "client.h"
 #include "listener.h"
@@ -34,8 +33,8 @@ struct Conversion
 {
   unsigned short port;
   char first;
-  iconv_t to_utf8;
-  iconv_t from_utf8;
+  void *to_utf8;
+  void *from_utf8;
   struct Conversion *hnext;
 };
 
@@ -54,6 +53,10 @@ static struct ConfField *codepage;
 static char *last_codepage = NULL;
 static struct ConfField *port;
 static CONFF_HANDLER *old_port_handler;
+
+extern void *iconv_open(const char *, const char *);
+extern size_t iconv(void *, const char **, size_t *, char **, size_t *);
+extern int iconv_close(void *);
 
 /*
  * free_convtab()
@@ -115,17 +118,17 @@ my_port_handler(void *list, void *var)
   if (last_codepage != NULL)
   {
     dlink_node *ptr;
-    iconv_t to_utf8 = iconv_open("UTF-8", last_codepage);
-    iconv_t from_utf8 = iconv_open(last_codepage, "UTF-8");
+    void *to_utf8 = iconv_open("UTF-8", last_codepage);
+    void *from_utf8 = iconv_open(last_codepage, "UTF-8");
 
-    if (to_utf8 == (iconv_t) -1 || from_utf8 == (iconv_t) -1)
+    if (to_utf8 == (void *) -1 || from_utf8 == (void *) -1)
     {
       parse_error("Unable to open character set [%s]: %s",
         last_codepage, strerror(errno));
 
-      if (to_utf8 != (iconv_t) -1)
+      if (to_utf8 != (void *) -1)
         iconv_close(to_utf8);
-      if (from_utf8 != (iconv_t) -1)
+      if (from_utf8 != (void *) -1)
         iconv_close(from_utf8);
     }
     else
@@ -171,23 +174,27 @@ my_iorecv(va_list args)
 {
   struct Client *client_p = va_arg(args, struct Client *);
   size_t inlen = va_arg(args, int);
+  size_t saved_inlen = inlen;
   const char *inbuf = va_arg(args, char *);
-  unsigned short port = client_p->localClient->listener->port;
+  struct Listener *li = client_p->localClient->listener;
   struct Conversion *conv;
 
-  for (conv = convtab[port % CONVSIZE]; conv != NULL; conv = conv->hnext)
-    if (conv->port == port)
-    {
-      char transbuf[2 * READBUF_SIZE];
-      size_t outlen = sizeof(transbuf);
-      char *outbuf = transbuf;
+  if (li != NULL)
+    for (conv = convtab[li->port % CONVSIZE]; conv != NULL; conv = conv->hnext)
+      if (conv->port == li->port)
+      {
+        char transbuf[2 * READBUF_SIZE];
+        size_t outlen = sizeof(transbuf);
+        char *outbuf = transbuf;
 
-      iconv(conv->to_utf8, NULL, NULL, NULL, NULL);
-      iconv(conv->to_utf8, &inbuf, &inlen, &outbuf, &outlen);
+        iconv(conv->to_utf8, NULL, NULL, NULL, NULL);
+        iconv(conv->to_utf8, &inbuf, &inlen, &outbuf, &outlen);
 
-      inlen = outbuf - transbuf;
-      inbuf = transbuf;
-    }
+        if ((inlen = outbuf - transbuf) > 0)
+          inbuf = transbuf;
+        else
+          inlen = saved_inlen;
+      }
 
   return pass_callback(hiorecv, client_p, inlen, inbuf);
 }
@@ -208,23 +215,27 @@ my_iosend(va_list args)
 {
   struct Client *client_p = va_arg(args, struct Client *);
   size_t inlen = va_arg(args, int);
+  size_t saved_inlen = inlen;
   const char *inbuf = va_arg(args, char *);
-  unsigned short port = client_p->localClient->listener->port;
+  struct Listener *li = client_p->localClient->listener;
   struct Conversion *conv;
 
-  for (conv = convtab[port % CONVSIZE]; conv != NULL; conv = conv->hnext)
-    if (conv->port == port)
-    {
-      char transbuf[2 * IRCD_BUFSIZE];
-      size_t outlen = sizeof(transbuf);
-      char *outbuf = transbuf;
+  if (li != NULL)
+    for (conv = convtab[li->port % CONVSIZE]; conv != NULL; conv = conv->hnext)
+      if (conv->port == li->port)
+      {
+        char transbuf[2 * IRCD_BUFSIZE];
+        size_t outlen = sizeof(transbuf);
+        char *outbuf = transbuf;
 
-      iconv(conv->from_utf8, NULL, NULL, NULL, NULL);
-      iconv(conv->from_utf8, &inbuf, &inlen, &outbuf, &outlen);
+        iconv(conv->from_utf8, NULL, NULL, NULL, NULL);
+        iconv(conv->from_utf8, &inbuf, &inlen, &outbuf, &outlen);
 
-      inlen = outbuf - transbuf;
-      inbuf = transbuf;
-    }
+        if ((inlen = outbuf - transbuf) > 0)
+          inbuf = transbuf;
+        else
+          inlen = saved_inlen;
+      }
 
   return pass_callback(hiosend, client_p, inlen, inbuf);
 }

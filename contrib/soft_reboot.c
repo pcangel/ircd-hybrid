@@ -340,6 +340,13 @@ restore_socket(struct Client *client_p, int fd, int ctrlfd,
   getsockname(fd, (struct sockaddr *) &addr, &addr.ss_len);
   family = addr.ss.sin_family;
   port = ntohs(addr.ss.sin_port);
+  if (!(client_p->localClient->listener = find_listener(port, &addr)))
+  {
+    memset(&addr.ss, 0, sizeof(addr.ss));
+    addr.ss.sin_family = family;
+    addr.ss.sin_port = port;
+    client_p->localClient->listener = find_listener(port, &addr);
+  }
 
   client_p->localClient->ip.ss_len = sizeof(client_p->localClient->ip.ss);
   getpeername(fd, (struct sockaddr *) &client_p->localClient->ip,

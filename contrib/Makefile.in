@@ -31,6 +31,7 @@ CPPFLAGS	= ${INCLUDES} @CPPFLAGS@
 
 SRCS = \
   ip_cloaking.c \
+  recode.c      \
   soft_reboot.c \
   m_capture.c   \
   m_change.c    \
@@ -114,7 +115,7 @@ install_libmodules.a:
 .SUFFIXES: .so .sl .o
 
 .c.so:
-	${CC} ${PICFLAGS} ${CPPFLAGS} ${CFLAGS} $< -o $@
+	${CC} ${PICFLAGS} ${CPPFLAGS} ${CFLAGS} $< -o $@ -liconv
 
 .c.o:
 	${CC} ${CPPFLAGS} ${CFLAGS} -c $< -o $@
