@@ -178,6 +178,10 @@ recode.c         --  Load this module to extend listen{} blocks with an
 
                      The module is not yet ready to be used.
 
+soft_reboot.c    --  If this module is mentioned in ircd.conf, you will be
+                     able to perform a full server restart/upgrade without
+                     disconnecting a single user or server (except SSL users).
+
 example_module.c --  This is an example module template to help users create
                      their own modules.
 
