@@ -101,7 +101,8 @@ m_whois(struct Client *client_p, struct Client *source_p,
 
     last_used = CurrentTime;
 
-    /* if we have serverhide enabled, they can either ask the clients
+    /*
+     * if we have serverhide enabled, they can either ask the clients
      * server, or our server.. I dont see why they would need to ask
      * anything else for info about the client.. --fl_
      */
@@ -294,7 +295,8 @@ single_whois(struct Client *source_p, struct Client *target_p)
   /* target_p is +i. Check if it is on any common channels with source_p */
   DLINK_FOREACH(ptr, target_p->channel.head)
   {
-    chptr = ((struct Membership *) ptr->data)->chptr;
+    chptr = ((struct Membership *)ptr->data)->chptr;
+
     if (IsMember(source_p, chptr))
     {
       whois_person(source_p, target_p);
@@ -317,7 +319,7 @@ whois_person(struct Client *source_p, struct Client *target_p)
 {
   char buf[IRCD_BUFSIZE];
   dlink_node *lp;
-  struct Client *server_p;
+  const struct Client *server_p = NULL;
   struct Channel *chptr;
   struct Membership *ms;
   int cur_len = 0;
@@ -398,20 +400,18 @@ whois_person(struct Client *source_p, struct Client *target_p)
 
   if (General.use_whois_actually)
   {
-    int show_ip = 0;
-
     if (target_p->sockhost[0] && irccmp(target_p->sockhost, "0"))
     {
-      if ((IsAdmin(source_p) || source_p == target_p))
-	show_ip = 1;
-      else if (IsIPSpoof(target_p))
-	show_ip = (IsOper(source_p) && !General.hide_spoof_ips);
-      else
-	show_ip = 1;
+      int show_ip = 1;
 
-	sendto_one(source_p, form_str(RPL_WHOISACTUALLY),
-		   me.name, source_p->name, target_p->name,
-		   show_ip ? target_p->sockhost : "255.255.255.255");
+      if (IsAdmin(source_p) || source_p == target_p)
+        show_ip = 1;
+      else if (IsIPSpoof(target_p))
+        show_ip = (IsOper(source_p) && !General.hide_spoof_ips);
+
+      sendto_one(source_p, form_str(RPL_WHOISACTUALLY),
+                 me.name, source_p->name, target_p->name,
+                 show_ip ? target_p->sockhost : "255.255.255.255");
     }
   }
 
