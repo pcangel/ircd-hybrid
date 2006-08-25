@@ -100,7 +100,7 @@ EXTERN int find_bmask(const struct Client *, const dlink_list *const);
 EXTERN int check_channel_name(const char *, int);
 EXTERN int can_send(struct Channel *, struct Client *, struct Membership *);
 EXTERN int is_banned(const struct Channel *, const struct Client *);
-EXTERN int has_member_flags(struct Membership *, unsigned int);
+EXTERN int has_member_flags(const struct Membership *, unsigned int);
 
 EXTERN void channel_init(void);
 EXTERN void free_list_task(struct ListTask *, struct Client *);

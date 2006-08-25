@@ -150,12 +150,12 @@ remove_user_from_channel(struct Membership *member)
  * side effects -
  */
 static void
-send_members(struct Client *client_p, struct Channel *chptr,
+send_members(struct Client *client_p, const struct Channel *chptr,
              char *lmodebuf, char *lparabuf)
 {
   const dlink_node *ptr = NULL;
-  int tlen;              /* length of text to append */
-  char *t, *start;       /* temp char pointer */
+  int tlen;              // length of text to append
+  char *t, *start;       // temp char pointer
 
   start = t = buf + ircsprintf(buf, ":%s SJOIN %lu %s %s %s:",
                                ID_or_name(&me, client_p),
@@ -167,7 +167,7 @@ send_members(struct Client *client_p, struct Channel *chptr,
     const struct Membership *ms = ptr->data;
 
     tlen = strlen(IsCapable(client_p, CAP_TS6) ?
-      ID(ms->client_p) : ms->client_p->name) + 1;  /* nick + space */
+      ID(ms->client_p) : ms->client_p->name) + 1;  // nick + space
 
     if (ms->flags & CHFL_CHANOP)
       ++tlen;
@@ -185,7 +185,7 @@ send_members(struct Client *client_p, struct Channel *chptr,
      */
     if (t + tlen - buf > sizeof(buf) - 1)
     {
-      *(t - 1) = '\0';  /* kill the space and terminate the string */
+      *(t - 1) = '\0';  // kill the space and terminate the string
       sendto_one(client_p, "%s", buf);
       t = start;
     }
@@ -204,9 +204,9 @@ send_members(struct Client *client_p, struct Channel *chptr,
     *t++ = ' ';
   }
 
-  /* should always be non-NULL unless we have a kind of persistent channels */
+  // should always be non-NULL unless we have a kind of persistent channels
   if (chptr->members.head != NULL)
-    t--;  /* take the space out */
+    --t;  // take the space out
   *t = '\0';
   sendto_one(client_p, "%s", buf);
 }
@@ -218,12 +218,11 @@ send_members(struct Client *client_p, struct Channel *chptr,
  * \param flag     char flag flagging type of mode. Currently this can be 'b', e' or 'I'
  */
 static void
-send_mode_list(struct Client *client_p, struct Channel *chptr,
+send_mode_list(struct Client *client_p, const struct Channel *chptr,
                dlink_list *top, char flag)
 {
   int ts5 = !IsCapable(client_p, CAP_TS6);
-  dlink_node *lp;
-  struct Ban *banptr;
+  const dlink_node *lp = NULL;
   char pbuf[IRCD_BUFSIZE];
   int tlen, mlen, cur_len, count = 0;
   char *mp = NULL, *pp = pbuf;
@@ -237,15 +236,15 @@ send_mode_list(struct Client *client_p, struct Channel *chptr,
     mlen = ircsprintf(buf, ":%s BMASK %lu %s %c :", me.id,
                       (unsigned long)chptr->channelts, chptr->chname, flag);
 
-  /* MODE needs additional one byte for space between buf and pbuf */
+  // MODE needs additional one byte for space between buf and pbuf
   cur_len = mlen + ts5;
   mp = buf + mlen;
 
   DLINK_FOREACH(lp, top->head)
   {
-    banptr = lp->data;
+    const struct Ban *banptr = lp->data;
 
-    /* must add another b/e/I letter if we use MODE */
+    // must add another b/e/I letter if we use MODE
     tlen = banptr->len + 3 + ts5;
 
     /*
@@ -257,7 +256,7 @@ send_mode_list(struct Client *client_p, struct Channel *chptr,
         (!IsCapable(client_p, CAP_TS6) &&
          (count >= MAXMODEPARAMS || pp - pbuf >= MODEBUFLEN)))
     {
-      *(pp - 1) = '\0';  /* get rid of trailing space on buffer */
+      *(pp - 1) = '\0';    // get rid of trailing space on buffer
       sendto_one(client_p, "%s%s%s", buf, ts5 ? " " : "", pbuf);
 
       cur_len = mlen + ts5;
@@ -279,7 +278,7 @@ send_mode_list(struct Client *client_p, struct Channel *chptr,
     cur_len += tlen;
   }
 
-  *(pp - 1) = '\0';  /* get rid of trailing space on buffer */
+  *(pp - 1) = '\0';    // get rid of trailing space on buffer
   sendto_one(client_p, "%s%s%s", buf, ts5 ? " " : "", pbuf);
 }
 
@@ -379,7 +378,7 @@ make_channel(const char *chname)
 
   chptr = BlockHeapAlloc(channel_heap);
 
-  /* doesn't hurt to set it here */
+  // doesn't hurt to set it here
   chptr->channelts = CurrentTime;
   chptr->last_join_time = CurrentTime;
 
@@ -402,7 +401,6 @@ destroy_channel(struct Channel *chptr)
   DLINK_FOREACH_SAFE(ptr, ptr_next, chptr->invites.head)
     del_invite(chptr, ptr->data);
 
-  /* free ban/exception/invex lists */
   free_channel_list(&chptr->banlist);
   free_channel_list(&chptr->exceptlist);
   free_channel_list(&chptr->invexlist);
@@ -461,7 +459,7 @@ channel_member_names(struct Client *source_p, struct Channel *chptr,
       if (IsInvisible(target_p) && !is_member)
         continue;
 
-      tlen = strlen(target_p->name) + 1;  /* nick + space */
+      tlen = strlen(target_p->name) + 1;  // nick + space
 
       if (!multi_prefix)
       {
@@ -510,17 +508,15 @@ add_invite(struct Channel *chptr, struct Client *who)
 {
   del_invite(chptr, who);
 
-  /*
-   * delete last link in chain if the list is max length
-   */
+   // delete last link in chain if the list is max length
   if (dlink_list_length(&who->localClient->invited) >=
       Channel.max_chans_per_user)
     del_invite(who->localClient->invited.tail->data, who);
 
-  /* add client to channel invite list */
+  // add client to channel invite list
   dlinkAdd(who, make_dlink_node(), &chptr->invites);
 
-  /* add channel to the end of the client invite list */
+  // add channel to the end of the client invite list
   dlinkAdd(chptr, make_dlink_node(), &who->localClient->invited);
 }
 
@@ -647,7 +643,7 @@ is_banned(const struct Channel *chptr, const struct Client *who)
 }
 
 int
-has_member_flags(struct Membership *ms, unsigned int flags)
+has_member_flags(const struct Membership *ms, unsigned int flags)
 {
   if (ms != NULL)
     return ms->flags & flags;
@@ -693,7 +689,7 @@ can_send(struct Channel *chptr, struct Client *source_p, struct Membership *ms)
     if (ms->flags & (CHFL_CHANOP|CHFL_HALFOP|CHFL_VOICE))
       return CAN_SEND_OPV;
 
-    /* cache can send if quiet_on_ban and banned */
+    // cache can send if quiet_on_ban and banned
     if (Channel.quiet_on_ban && MyClient(source_p))
     {
       if (ms->flags & CHFL_BAN_SILENCED)
@@ -743,7 +739,7 @@ check_spambot_warning(struct Client *source_p, const char *name)
 
     if (source_p->localClient->oper_warn_count_down == 0)
     {
-      /* Its already known as a possible spambot */
+      // It's already known as a possible spambot
       if (name != NULL)
         sendto_realops_flags(UMODE_BOTS, L_ALL,
                              "User %s (%s@%s) trying to join %s is a possible spambot",
@@ -773,8 +769,8 @@ check_spambot_warning(struct Client *source_p, const char *name)
       if ((CurrentTime - (source_p->localClient->last_join_time)) <
           GlobalSetOptions.spam_time)
       {
-        /* oh, its a possible spambot */
-        source_p->localClient->join_leave_count++;
+        // oh, it's a possible spambot
+        ++source_p->localClient->join_leave_count;
       }
     }
 
@@ -825,16 +821,16 @@ static void
 allocate_topic(struct Channel *chptr)
 {
   void *ptr = NULL;
-  assert(chptr);
 
   ptr = BlockHeapAlloc(topic_heap);  
 
-  /* Basically we allocate one large block for the topic and
+  /*
+   * Basically we allocate one large block for the topic and
    * the topic info.  We then split it up into two and shove it
    * in the chptr 
    */
   chptr->topic       = ptr;
-  chptr->topic_info  = (char *)ptr + TOPICLEN+1;
+  chptr->topic_info  = (char *)(ptr + TOPICLEN + 1);
   *chptr->topic      = '\0';
   *chptr->topic_info = '\0';
 }
@@ -843,7 +839,7 @@ void
 free_topic(struct Channel *chptr)
 {
   void *ptr = NULL;
-  assert(chptr);
+
   if (chptr->topic == NULL)
     return;
 
@@ -905,7 +901,7 @@ set_channel_topic(struct Channel *chptr, const char *topic,
  * Sendq limit is fairly conservative at 1/2 (In original anyway)
  */
 static int
-exceeding_sendq(struct Client *to)
+exceeding_sendq(const struct Client *to)
 {
   return dbuf_length(&to->localClient->buf_sendq) >
       (to->localClient->class->sendq_size / 2);
@@ -953,7 +949,7 @@ free_list_task(struct ListTask *lt, struct Client *source_p)
  * side effects -
  */
 static int
-list_allow_channel(const char *chname, struct ListTask *lt)
+list_allow_channel(const char *chname, const struct ListTask *lt)
 {
   const dlink_node *dl = NULL;
 
@@ -1026,7 +1022,7 @@ safe_list_channels(struct Client *source_p, struct ListTask *list_task,
       if (exceeding_sendq(source_p->from))
       {
         list_task->hash_index = i;
-        return; /* still more to do */
+        return;    // still more to do
       }
 
       for (chptr = hash_get_bucket(HASH_TYPE_CHANNEL, i); chptr;
