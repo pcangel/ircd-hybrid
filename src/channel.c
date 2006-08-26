@@ -585,7 +585,6 @@ get_member_status(const struct Membership *ms, int combine)
  * \param who  pointer to Client to check
  * \param list pointer to ban list to search
  * \return 1 if ban found for given n!u\@h mask, 0 otherwise
- *
  */
 int
 find_bmask(const struct Client *who, const dlink_list *const list)
@@ -875,8 +874,6 @@ set_channel_topic(struct Channel *chptr, const char *topic,
   {
     if (chptr->topic != NULL)
       free_topic(chptr);
-
-    chptr->topic_time = 0;
   }
 }
 
@@ -999,7 +996,7 @@ list_one_channel(struct Client *source_p, struct Channel *chptr,
 /* safe_list_channels()
  *
  * inputs       - pointer to client requesting list
- * output       - 0/1
+ * output       - none
  * side effects - safely list all channels to source_p
  *
  * Walk the channel buckets, ensure all pointers in a bucket are
