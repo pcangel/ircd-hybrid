@@ -262,7 +262,7 @@ si_set_ssl_certificate(void *value, void *unused)
 void
 init_serverinfo(void)
 {
-  struct ConfSection *s = add_conf_section("serverinfo", 2);
+  struct ConfSection *s = add_conf_section("serverinfo", 1);
 
   hreset = install_hook(reset_conf, reset_serverinfo);
   hverify = install_hook(verify_conf, verify_serverinfo);

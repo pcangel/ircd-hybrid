@@ -128,7 +128,7 @@ reset_listen:
 void
 init_listen(void)
 {
-  struct ConfSection *s = add_conf_section("listen", 1);
+  struct ConfSection *s = add_conf_section("listen", 2);
 
   hreset = install_hook(reset_conf, reset_listen);
 
