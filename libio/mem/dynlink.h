@@ -29,19 +29,19 @@
 // Loads a module given by name. void ** receives module base address
 // (best we can determine). Return value: module handle or NULL.
 
-void *modload(const char *, void **);
+LIBIO_EXTERN void *modload(const char *, void **);
 
 // Returns symbol address from a loaded module given by handle.
 
-void *modsym(void *, const char *);
+LIBIO_EXTERN void *modsym(void *, const char *);
 
 // Unloads a module specified by handle.
 
-void modunload(void *);
+LIBIO_EXTERN void modunload(void *);
 
 // moderror can be called after modload if it failed to get a detailed
 // error description.
 
-const char *moderror(void);
+LIBIO_EXTERN const char *moderror(void);
 
 #endif

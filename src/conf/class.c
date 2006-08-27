@@ -59,7 +59,7 @@ ref_class_by_name(const char *name)
   {
     struct Class *cl = ptr->data;
 
-    if (!strcasecmp(cl->name, name))
+    if (!irccmp(cl->name, name))
       return ref_class_by_ptr(cl);
   }
 
@@ -431,9 +431,9 @@ local_or_global_limit(void *value, void *where)
     if ((s = strchr(item, ':')) != NULL)
     {
       *s++ = 0;
-      if (!strcasecmp(item, "global"))
+      if (!irccmp(item, "global"))
         type = 1;
-      else if (strcasecmp(item, "local"))
+      else if (irccmp(item, "local"))
       {
         parse_error("unknown limit type [%s]", item);
         return;

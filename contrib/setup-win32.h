@@ -253,8 +253,8 @@
 /* Define to 1 if sockaddr_in has a 'sin_len' member. */
 /* #undef SOCKADDR_IN_HAS_LEN */
 
-/* Define to 1 if dynamic modules can't be used. */
-/* #undef STATIC_MODULES */
+#define BUILTIN_MODULES m_info_module
+#define BUILTIN_MODADDR &m_info_module
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1

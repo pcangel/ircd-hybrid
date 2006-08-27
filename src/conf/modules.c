@@ -50,7 +50,8 @@ const char *core_modules[] =
 };
 
 #ifdef BUILTIN_MODULES
-static struct Module builtin_mods[] = {BUILTIN_MODULES, NULL};
+extern struct Module BUILTIN_MODULES;
+static struct Module *builtin_mods[] = {BUILTIN_MODADDR, NULL};
 #endif
 static dlink_list mod_paths = {NULL, NULL, 0};
 static dlink_list mod_extra = {NULL, NULL, 0};
@@ -62,8 +63,8 @@ static dlink_node *hreset, *hpass;
 //
 
 #ifdef _WIN32
-# define _COMPARE   strcasecmp
-# define _NCOMPARE  strncasecmp
+# define _COMPARE   stricmp
+# define _NCOMPARE  strnicmp
 #else
 # define _COMPARE   strcmp
 # define _NCOMPARE  strncmp
@@ -218,7 +219,6 @@ load_module(const char *filename)
 #endif
 
 #ifdef BUILTIN_MODULES
-    if (mod == NULL)
     {
       struct Module **mptr;
 
@@ -226,7 +226,7 @@ load_module(const char *filename)
       {
         if (!_COMPARE((*mptr)->name, filename))
         {
-          init_module(*mptr, mod->name);
+          init_module(*mptr, name);
           return 1;
         }
       }
@@ -316,11 +316,11 @@ boot_modules(char cold)
 
 #ifdef BUILTIN_MODULES
     {
-      struct Module *mptr;
+      struct Module **mptr;
 
       for (mptr = builtin_mods; *mptr; mptr++)
-        if (!find_module(mptr->name, NO))
-          init_module(mptr);
+        if (!find_module((*mptr)->name, NO))
+          init_module(*mptr, (*mptr)->name);
     }
 #endif
   }

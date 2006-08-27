@@ -3,7 +3,7 @@
  *  conf.c: Configuration manager.
  *
  *  Copyright (C) 2003 by Piotr Nizynski, Advanced IRC Services Project
- *  Copyright (C) 2005 by the Hybrid Development Team.
+ *  Copyright (C) 2005-2006 by the Hybrid Development Team.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -73,6 +73,7 @@ init_conf(void)
   init_shared();
   init_gecos();
   init_connect();
+  init_resv();
 }
 
 /*
@@ -93,7 +94,7 @@ find_conf_section(const char *name)
   DLINK_FOREACH(ptr, conf_section_list.head)
   {
     section = ptr->data;
-    if (!strcasecmp(section->name, name))
+    if (!irccmp(section->name, name))
       return section;
   }
 
@@ -162,7 +163,7 @@ find_conf_field(struct ConfSection *section, char *name)
   DLINK_FOREACH(ptr, section->fields.head)
   {
     field = ptr->data;
-    if (!strcasecmp(field->name, name))
+    if (!irccmp(field->name, name))
       return field;
   }
 

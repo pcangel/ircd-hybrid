@@ -465,8 +465,12 @@ after_connect(void)
   struct ConnectConf *conf;
 
   if (!tmpconn.name || !tmpconn.class_ptr ||
-      (!tmpconn.send_password && !tmpconn.accept_password &&
-       !tmpconn.rsa_public_key))
+      (!tmpconn.send_password &&
+#ifdef HAVE_LIBCRYPTO
+       !tmpconn.accept_password && !tmpconn.rsa_public_key))
+#else
+       !tmpconn.accept_password))
+#endif
   {
     parse_error("Incomplete connect{} block");
     clear_temp();

@@ -32,12 +32,12 @@ struct Module
   void *handle;
   void *address;
   dlink_node node;
-};
+};                                
 
 #define INIT_MODULE(NAME, REV) \
   static void _modinit(void); \
   static void _moddeinit(void); \
-  struct Module NAME ## _module = {#NAME, REV, _modinit, _moddeinit}; \
+  LIBIO_EXPORT struct Module NAME ## _module = {#NAME, REV, _modinit, _moddeinit}; \
   static void _modinit(void)
 
 #define CLEANUP_MODULE \

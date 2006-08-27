@@ -69,7 +69,7 @@ void conf_add_number(int number)
     char *string;
 }
 
-%token BOOL
+%token T_BOOL
 %token BYTES
 %token DAYS
 %token HOURS
@@ -82,7 +82,7 @@ void conf_add_number(int number)
 %token SECONDS
 %token WEEKS
 
-%type <number> BOOL
+%type <number> T_BOOL
 %type <number> NUMBER
 %type <string> IDENTIFIER
 %type <string> QSTRING
@@ -175,7 +175,7 @@ value: QSTRING {
          conf_assign(CT_STRING, conf_field, $1);
        } | NUMBER {
          conf_assign(CT_NUMBER, conf_field, &$1);
-       } | BOOL {
+       } | T_BOOL {
          conf_assign(CT_BOOL, conf_field, &$1);
        } | timespec {
          conf_assign(CT_TIME, conf_field, &$1);

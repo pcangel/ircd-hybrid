@@ -136,7 +136,7 @@ ms_tburst(struct Client *client_p, struct Client *source_p,
 
     if (topic_differs)
       sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s TOPIC %s :%s",
-                           ConfigServerHide.hide_servers ? me.name : source_p->name,
+                           ServerHide.hide_servers ? me.name : source_p->name,
                            chptr->chname, chptr->topic == NULL ? "" : chptr->topic);
   }
 

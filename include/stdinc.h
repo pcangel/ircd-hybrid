@@ -149,9 +149,6 @@ extern int errno;
 # else
 #  define EXTERN extern __declspec(dllimport)
 # endif
-# define _modinit   __declspec(dllexport) _modinit
-# define _moddeinit __declspec(dllexport) _moddeinit
-# define _version   __declspec(dllexport) _version
 #endif
 
 #endif

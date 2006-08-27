@@ -91,25 +91,29 @@ moderror(void)
 void *
 modload(const char *name, void **base)
 {
-  return (*base = LoadLibrary(filename));
+  return (*base = LoadLibrary(name));
 }
 
 void *
 modsym(void *handle, const char *name)
 {
-  return GetProcAddress((HMODULE) handle, name);
+  char buf[128];
+
+  snprintf(buf, sizeof(buf), "_%s", name);
+
+  return GetProcAddress((HMODULE) handle, buf);
 }
 
 void
 modunload(void *handle)
 {
-  FreeLibrary((HMODULE) module);
+  FreeLibrary((HMODULE) handle);
 }
 
 const char *
 moderror(void)
 {
-  static char errbuf[IRCD_BUFSIZE];
+  static char errbuf[512];
   char *p;
 
   FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),

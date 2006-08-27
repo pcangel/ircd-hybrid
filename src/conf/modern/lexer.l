@@ -124,7 +124,7 @@ bytes       { return BYTES; }
 d           { return DAYS; }
 day	        { return DAYS; }
 days        { return DAYS; }
-false		{ yylval.number = 0; return BOOL; }
+false           { yylval.number = 0; return T_BOOL; }
 h           { return HOURS; }
 hour		{ return HOURS; }
 hours		{ return HOURS; }
@@ -143,19 +143,19 @@ min         { return MINUTES; }
 mins		{ return MINUTES; }
 minute		{ return MINUTES; }
 minutes		{ return MINUTES; }
-no          { yylval.number = 0; return BOOL; }
-off         { yylval.number = 0; return BOOL; }
-on          { yylval.number = 1; return BOOL; }
+no          { yylval.number = 0; return T_BOOL; }
+off         { yylval.number = 0; return T_BOOL; }
+on          { yylval.number = 1; return T_BOOL; }
 s           { return SECONDS; }
 sec         { return SECONDS; }
 secs		{ return SECONDS; }
 second		{ return SECONDS; }
 seconds		{ return SECONDS; }
-true		{ yylval.number = 1; return BOOL; }
+true            { yylval.number = 1; return T_BOOL; }
 w           { return WEEKS; }
 week		{ return WEEKS; }
 weeks		{ return WEEKS; }
-yes         { yylval.number = 1; return BOOL; }
+yes         { yylval.number = 1; return T_BOOL; }
 {IDENTIFIER}	{ yylval.string = yytext; return IDENTIFIER; }
 .           { return yytext[0]; }
 <<EOF>>		{ if (conf_eof()) yyterminate(); }

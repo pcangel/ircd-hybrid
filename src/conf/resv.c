@@ -301,14 +301,20 @@ do_report_resv(struct Client *source_p, dlink_list *list,
 void
 init_resv(void)
 {
-  struct ConfSection *s = add_conf_section("resv", 2);
+  int i;
+  char *names[2] = {"resv", "quarantine"};
 
   hreset = install_hook(reset_conf, reset_resv);
   hexpire = install_hook(expire_confs, expire_resv);
 
-  s->before = s->after = before_resv;
+  for (i = 0; i < 2; i++)
+  {
+    struct ConfSection *s = add_conf_section(names[i], 2);
 
-  s->def_field = add_conf_field(s, "reason", CT_STRING, NULL, &tmpreason);
-  add_conf_field(s, "nick", CT_STRING, resv_nick, NULL);
-  add_conf_field(s, "channel", CT_STRING, resv_channel, NULL);
+    s->before = s->after = before_resv;
+
+    s->def_field = add_conf_field(s, "reason", CT_STRING, NULL, &tmpreason);
+    add_conf_field(s, "nick", CT_STRING, resv_nick, NULL);
+    add_conf_field(s, "channel", CT_STRING, resv_channel, NULL);
+  }
 }

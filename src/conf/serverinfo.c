@@ -52,6 +52,9 @@ reset_serverinfo(va_list args)
   ServerInfo.hub = NO;
   ServerInfo.max_clients = 512;
 
+  if (!ServerInfo.network_name)
+    DupString(ServerInfo.network_name, "EFnet");
+
   return pass_callback(hreset);
 }
 
@@ -74,8 +77,6 @@ verify_serverinfo(va_list args)
   if (!me.info[0])
     parse_fatal("description= field missing in serverinfo{} section");
 
-  if (ServerInfo.network_name == NULL)
-    parse_fatal("network_name= field missing in serverinfo{} section");
   add_isupport("NETWORK", ServerInfo.network_name, -1);
 
   if ((p = strchr(ServerInfo.network_name, ' ')) != NULL)

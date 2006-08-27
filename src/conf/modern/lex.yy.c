@@ -874,7 +874,7 @@ YY_RULE_SETUP
 case 17:
 YY_RULE_SETUP
 #line 127 "lexer.l"
-{ yylval.number = 0; return BOOL; }
+{ yylval.number = 0; return T_BOOL; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
@@ -969,17 +969,17 @@ YY_RULE_SETUP
 case 36:
 YY_RULE_SETUP
 #line 146 "lexer.l"
-{ yylval.number = 0; return BOOL; }
+{ yylval.number = 0; return T_BOOL; }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
 #line 147 "lexer.l"
-{ yylval.number = 0; return BOOL; }
+{ yylval.number = 0; return T_BOOL; }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
 #line 148 "lexer.l"
-{ yylval.number = 1; return BOOL; }
+{ yylval.number = 1; return T_BOOL; }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
@@ -1009,7 +1009,7 @@ YY_RULE_SETUP
 case 44:
 YY_RULE_SETUP
 #line 154 "lexer.l"
-{ yylval.number = 1; return BOOL; }
+{ yylval.number = 1; return T_BOOL; }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
@@ -1029,7 +1029,7 @@ YY_RULE_SETUP
 case 48:
 YY_RULE_SETUP
 #line 158 "lexer.l"
-{ yylval.number = 1; return BOOL; }
+{ yylval.number = 1; return T_BOOL; }
 	YY_BREAK
 case 49:
 YY_RULE_SETUP

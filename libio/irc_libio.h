@@ -24,12 +24,14 @@
 
 #ifndef _WIN32
 # define LIBIO_EXTERN extern
+# define LIBIO_EXPORT
 #else
 # ifdef IN_LIBIO
 #  define LIBIO_EXTERN extern __declspec(dllexport)
 # else
 #  define LIBIO_EXTERN extern __declspec(dllimport)
 # endif
+# define LIBIO_EXPORT __declspec(dllexport)
 #endif
 
 #include "misc/event.h"

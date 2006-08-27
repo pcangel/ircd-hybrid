@@ -63,11 +63,17 @@ reset_admin(va_list args)
 void
 init_admin(void)
 {
-  struct ConfSection *s = add_conf_section("admin", 2);
+  int i;
+  char *names[2] = {"admin", "administrator"};
 
   hreset = install_hook(reset_conf, reset_admin);
 
-  add_conf_field(s, "name", CT_STRING, NULL, &Admin.name);
-  add_conf_field(s, "description", CT_STRING, NULL, &Admin.description);
-  add_conf_field(s, "email", CT_STRING, NULL, &Admin.email);
+  for (i = 0; i < 2; i++)
+  {
+    struct ConfSection *s = add_conf_section(names[i], 2);
+
+    add_conf_field(s, "name", CT_STRING, NULL, &Admin.name);
+    add_conf_field(s, "description", CT_STRING, NULL, &Admin.description);
+    add_conf_field(s, "email", CT_STRING, NULL, &Admin.email);
+  }
 }

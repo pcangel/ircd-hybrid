@@ -32,7 +32,7 @@
    /* Put the tokens into the symbol table, so that GDB and other debuggers
       know about them.  */
    enum yytokentype {
-     BOOL = 258,
+     T_BOOL = 258,
      BYTES = 259,
      DAYS = 260,
      HOURS = 261,
@@ -46,7 +46,7 @@
      WEEKS = 269
    };
 #endif
-#define BOOL 258
+#define T_BOOL 258
 #define BYTES 259
 #define DAYS 260
 #define HOURS 261

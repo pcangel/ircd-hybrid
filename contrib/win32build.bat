@@ -57,7 +57,7 @@ copy contrib\setup-win32.h include\setup.h >nul
 copy nul include\unistd.h >nul
 
 for %%a in (ircd.exe src\irc_reslib.c src\rsa.c libio\net\res.c libio\net\reslib.c) do if exist %%a del %%a
-for %%a in (modules\m_challenge.c modules\m_cryptlink.c contrib\libc_vprintf.c contrib\example_module.c) do if exist %%a del %%a
+for %%a in (modules\m_challenge.c modules\m_cryptlink.c contrib\recode.c contrib\soft_reboot.c contrib\example_module.c) do if exist %%a del %%a
 
 if %1'==msvc' goto msvc
 set COMPILER=BCC
@@ -67,7 +67,7 @@ if not exist libio.dll goto error
 implib libio.lib libio.dll
 if errorlevel 1 goto error
 if not exist libio.lib goto error
-bcc32 -q -tWD -6 -O -w- -eircd.dll -DIN_IRCD -I"include" -I"libio" src\*.c modules\m_info.c libio.lib
+bcc32 -q -tWD -6 -O -w- -eircd.dll -DIN_IRCD -I"include" -I"libio" src\*.c src\conf\*.c src\conf\modern\*.c modules\m_info.c libio.lib
 if errorlevel 1 goto error
 if not exist ircd.dll goto error
 implib ircd.lib ircd.dll
@@ -89,7 +89,7 @@ cl /nologo /O2 /Oy /GD /w /Felibio.dll /DIN_LIBIO /I"include" /I"libio" libio\co
 if errorlevel 1 goto error
 if not exist libio.dll goto error
 if not exist libio.lib goto error
-cl /nologo /O2 /Oy /GD /w /Feircd.dll /DIN_IRCD /I"include" /I"libio" src\*.c modules\m_info.c user32.lib wsock32.lib libio.lib /link /dll /subsystem:windows
+cl /nologo /O2 /Oy /GD /w /Feircd.dll /DIN_IRCD /I"include" /I"libio" src\*.c src\conf\*.c src\conf\modern\*.c modules\m_info.c user32.lib wsock32.lib libio.lib /link /dll /subsystem:windows
 if errorlevel 1 goto error
 if not exist ircd.dll goto error
 if not exist ircd.lib goto error

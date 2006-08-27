@@ -173,7 +173,7 @@ libio_basename(const char *path)
 #ifdef _WIN32
   const char *s2 = strrchr(path, '\\');
 
-  s = IRCD_MAX(s, s2);
+  s = LIBIO_MAX(s, s2);
 #endif
 
   if (s == NULL)

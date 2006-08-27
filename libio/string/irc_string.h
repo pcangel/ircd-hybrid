@@ -22,6 +22,11 @@
  *  $Id$
  */
 
+#ifdef _WIN32
+#define strcasecmp strcmpi
+#define strncasecmp strncmpi
+#endif
+
 LIBIO_EXTERN int ircd_pcre_exec(const pcre *, const char *);
 LIBIO_EXTERN pcre *ircd_pcre_compile(const char *, const char **);
 

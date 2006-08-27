@@ -278,7 +278,7 @@ after_operator(void)
   }
 
   if (tmpoper.name == NULL || dlink_list_length(&tmpoper.masks) == 0 ||
-#ifdef HAVE_LIBCRYPTO
+#ifndef HAVE_LIBCRYPTO
       !tmpoper.passwd
 #else
       (!tmpoper.passwd && !tmpoper.rsa_public_key)

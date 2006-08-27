@@ -99,7 +99,7 @@ hybrid_wndproc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	    reply = &_reply;
 
             reply->h_name = h->h_name;
-	    reply->addr.ss.ss_family = h->h_addrtype;
+            reply->addr.ss.sin_family = h->h_addrtype;
 
 	    switch (h->h_addrtype)
 	    {
@@ -329,14 +329,14 @@ gethost_byaddr(const struct irc_ssaddr *addr, struct DNSQuery *query)
   query->handle = WSAAsyncGetHostByAddr(
     wndhandle, WM_DNS,
 #ifdef IPV6
-    addr.ss.ss_family == AF_INET6 ? &((struct sockaddr_in6*)addr)->sin6_addr) :
+    addr.ss.sin_family==AF_INET6? &((struct sockaddr_in6*)addr)->sin6_addr) :
 #endif
     &((struct sockaddr_in *) addr)->sin_addr,
 #ifdef IPV6
-    addr.ss.ss_family == AF_INET6 ? sizeof(struct in6_addr) :
+    addr.ss.sin_family==AF_INET6? sizeof(struct in6_addr) :
 #endif
     sizeof(struct in_addr),
-    addr->ss.ss_family, query->reply, sizeof(query->reply)
+    addr->ss.sin_family, query->reply, sizeof(query->reply)
   );
 
   if (!query->handle)

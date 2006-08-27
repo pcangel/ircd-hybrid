@@ -50,7 +50,7 @@
    /* Put the tokens into the symbol table, so that GDB and other debuggers
       know about them.  */
    enum yytokentype {
-     BOOL = 258,
+     T_BOOL = 258,
      BYTES = 259,
      DAYS = 260,
      HOURS = 261,
@@ -64,7 +64,7 @@
      WEEKS = 269
    };
 #endif
-#define BOOL 258
+#define T_BOOL 258
 #define BYTES 259
 #define DAYS 260
 #define HOURS 261
@@ -358,7 +358,7 @@ static const unsigned char yyrline[] =
    First, the terminals, then, starting at YYNTOKENS, nonterminals. */
 static const char *const yytname[] =
 {
-  "$end", "error", "$undefined", "BOOL", "BYTES", "DAYS", "HOURS", "KBYTES", 
+  "$end", "error", "$undefined", "T_BOOL", "BYTES", "DAYS", "HOURS", "KBYTES", 
   "MBYTES", "NUMBER", "IDENTIFIER", "MINUTES", "QSTRING", "SECONDS", 
   "WEEKS", "'{'", "'}'", "';'", "','", "'.'", "'='", "$accept", "conf", 
   "conf_block", "@1", "timespec_", "timespec", "sizespec_", "sizespec", 
