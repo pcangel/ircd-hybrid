@@ -49,7 +49,6 @@
 #include "mem/memory.h"
 #include "mem/dynlink.h"
 
-#include "net/inet_misc.h"
 #include "net/irc_getaddrinfo.h"
 #include "net/irc_getnameinfo.h"
 #include "net/hostmask.h"
