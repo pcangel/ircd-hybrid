@@ -41,6 +41,8 @@ static dlink_list watchTable[HASHSIZE];
 
 static BlockHeap *watch_heap = NULL;
 
+/*! \brief Initializes the watch table
+ */
 void
 watch_init(void)
 {
@@ -62,8 +64,7 @@ watch_init(void)
  *       |- client_p1
  */
 
-/*
- * count_watch_memory()
+/*! \brief Counts up memory used by watch list headers
  */
 void
 watch_count_memory(unsigned int *const count, size_t *const memory)
@@ -76,8 +77,10 @@ watch_count_memory(unsigned int *const count, size_t *const memory)
   *memory = *count * sizeof(struct Watch);
 }
 
-/*
- * hash_check_watch()
+/*! \brief Notifies all clients that have client_p's nick name on
+ *         their watch list.
+ * \param client_p pointer to Client struct
+ * \param reply numeric to send. Either RPL_LOGON or RPL_LOGOFF
  */
 void
 watch_check_hash(struct Client *client_p, int reply)
@@ -86,12 +89,12 @@ watch_check_hash(struct Client *client_p, int reply)
   dlink_node *ptr = NULL;
   assert(IsClient(client_p));
   if ((anptr = watch_find_hash(client_p->name)) == NULL)
-    return;    /* This nick isn't on watch */
+    return;    // This nick isn't on watch
 
-  /* Update the time of last change to item */
+  // Update the time of last change to item
   anptr->lasttime = CurrentTime;
 
-  /* Send notifies out to everybody on the list in header */
+  // Send notifies out to everybody on the list in header
   DLINK_FOREACH(ptr, anptr->watched_by.head)
   {
     struct Client *target_p = ptr->data;
@@ -103,8 +106,8 @@ watch_check_hash(struct Client *client_p, int reply)
   }
 }
 
-/*
- * hash_get_watch()
+/*! \brief Looks up the watch table for a given nick
+ * \param name nick name to look up
  */
 struct Watch *
 watch_find_hash(const char *name)
@@ -122,8 +125,9 @@ watch_find_hash(const char *name)
   return NULL;
 }
 
-/*
- * add_to_watch_hash_table()
+/*! \brief Adds a watch entry to client_p's watch list
+ * \param nick     nick name to add
+ * \param client_p Pointer to Client struct
  */
 void
 watch_add_to_hash_table(const char *nick, struct Client *client_p)
@@ -131,7 +135,7 @@ watch_add_to_hash_table(const char *nick, struct Client *client_p)
   struct Watch *anptr = NULL;
   dlink_node *ptr = NULL;
 
-  /* If found NULL (no header for this nick), make one... */
+  // If found NULL (no header for this nick), make one...
   if ((anptr = watch_find_hash(nick)) == NULL)
   {
     anptr = BlockHeapAlloc(watch_heap);
@@ -142,20 +146,21 @@ watch_add_to_hash_table(const char *nick, struct Client *client_p)
   }
   else
   {
-    /* Is this client already on the watch-list? */
+    // Is this client already on the watch-list?
     ptr = dlinkFind(&anptr->watched_by, client_p);
   }
 
   if (ptr == NULL)
   {
-    /* No it isn't, so add it in the bucket and client addint it */
+    // No it isn't, so add it in the bucket and client addint it
     dlinkAdd(client_p, make_dlink_node(), &anptr->watched_by);
     dlinkAdd(anptr, make_dlink_node(), &client_p->localClient->watches);
   }
 }
 
-/*
- * del_from_watch_hash_table()
+/*! \brief Removes a single entry from client_p's watch list
+ * \param nick     nick name to remove
+ * \param client_p Pointer to Client struct
  */
 void
 watch_del_from_hash_table(const char *nick, struct Client *client_p)
@@ -164,10 +169,10 @@ watch_del_from_hash_table(const char *nick, struct Client *client_p)
   dlink_node *ptr = NULL;
 
   if ((anptr = watch_find_hash(nick)) == NULL)
-    return;    /* No header found for that nick. i.e. it's not being watched */
+    return;    // No header found for that nick. i.e. it's not being watched
 
   if ((ptr = dlinkFind(&anptr->watched_by, client_p)) == NULL)
-    return;
+    return;    // This nick isn't being watched by client_p
 
   dlinkDelete(ptr, &anptr->watched_by);
   free_dlink_node(ptr);
@@ -175,7 +180,7 @@ watch_del_from_hash_table(const char *nick, struct Client *client_p)
   if ((ptr = dlinkFindDelete(&client_p->localClient->watches, anptr)))
     free_dlink_node(ptr);
 
-  /* In case this header is now empty of notices, remove it */
+  // In case this header is now empty of notices, remove it
   if (anptr->watched_by.head == NULL)
   {
     assert(dlinkFind(&watchTable[strhash(nick)], anptr) != NULL);
@@ -184,8 +189,9 @@ watch_del_from_hash_table(const char *nick, struct Client *client_p)
   }
 }
 
-/*
- * hash_del_watch_list()
+/*! \brief Removes all entries from client_p's watch list
+ *         and deletes headers that are no longer being watched.
+ * \param client_p Pointer to Client struct
  */
 void
 watch_del_watch_list(struct Client *client_p)
@@ -203,9 +209,7 @@ watch_del_watch_list(struct Client *client_p)
     if ((tmp = dlinkFindDelete(&anptr->watched_by, client_p)))
       free_dlink_node(tmp);
 
-    /*
-     * If this leaves a header without notifies, remove it.
-     */
+    // If this leaves a header without notifies, remove it.
     if (anptr->watched_by.head == NULL)
     {
       assert(dlinkFind(&watchTable[strhash(anptr->nick)], anptr) != NULL);

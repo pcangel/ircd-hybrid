@@ -28,12 +28,14 @@
 #ifndef INCLUDED_watch_h
 #define INCLUDED_watch_h
 
+/*! \brief Watch structure */
 struct Watch
 {
-  dlink_node node;
-  dlink_list watched_by;
-  char nick[NICKLEN];
-  time_t lasttime;
+  dlink_node node; /**< Embedded dlink_node used to link into watchTable */
+  dlink_list watched_by; /**< list of clients that have this
+                              entry on their watch list */
+  char nick[NICKLEN]; /**< nick name of the client to watch */
+  time_t lasttime; /**< last time the client was seen */
 };
 
 EXTERN void watch_init(void);
