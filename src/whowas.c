@@ -1,6 +1,5 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  whowas.c: WHOWAS user cache.
  *
  *  Copyright (C) 2005 by the past and present ircd coders, and others.
  *
@@ -18,8 +17,11 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
- *
- *  $Id$
+ */
+
+/*! \file whowas.c
+ * \brief Maintains a history of nick names
+ * \version $Id$
  */
 
 #include "stdinc.h"
@@ -33,6 +35,13 @@
 static struct Whowas WHOWAS[NICKNAMEHISTORYLENGTH];
 dlink_list WHOWASHASH[HASHSIZE];
 
+
+/*! \brief Adds the currently defined name of the client to history.
+ *         Usually called before changing to a new name (nick).
+ *         Client must be a fully registered user.
+ * \param client_p pointer to Client struct to add
+ * \param online   either 1 if it's a nick change or 0 on client exit
+ */
 void
 whowas_add_history(struct Client *client_p, int online)
 {
@@ -61,7 +70,7 @@ whowas_add_history(struct Client *client_p, int online)
    * NOTE: strcpy ok here, the sizes in the client struct MUST
    * match the sizes in the whowas struct
    */
-  strlcpy(who->name, client_p->name, sizeof(who->name));
+  strcpy(who->name, client_p->name);
   strcpy(who->username, client_p->username);
   strcpy(who->hostname, client_p->host);
   strcpy(who->realname, client_p->info);
@@ -79,6 +88,12 @@ whowas_add_history(struct Client *client_p, int online)
   dlinkAdd(who, &who->tnode, &WHOWASHASH[who->hashv]);
 }
 
+/*! \brief This must be called when the client structure is about to
+ *         be released. History mechanism keeps pointers to client
+ *         structures and it must know when they cease to exist. This
+ *         also implicitly calls AddHistory.
+ * \param client_p pointer to Client struct
+ */
 void
 whowas_off_history(struct Client *client_p)
 {
@@ -92,6 +107,12 @@ whowas_off_history(struct Client *client_p)
   }
 }
 
+/*! \brief Returns the current client that was using the given
+ *         nickname within the timelimit. Returns NULL, if no
+ *         one found...
+ * \param nick      name of the nick
+ * \param timelimit maximum age for a client since log-off
+ */
 struct Client *
 whowas_get_history(const char *nick, time_t timelimit)
 {
@@ -113,6 +134,8 @@ whowas_get_history(const char *nick, time_t timelimit)
   return NULL;
 }
 
+/*! \brief Initializes required whowas tables
+ */
 void
 whowas_init(void)
 {
