@@ -54,9 +54,9 @@ make_listener(int port, struct irc_ssaddr *addr)
   struct Listener *listener = MyMalloc(sizeof(struct Listener));
   assert(listener != 0);
 
-  listener->name = me.name; /* XXX - me.name can be uninitialized if a
-                             * listener{} block comes before serverinfo{} */
+  listener->name = me.name;
   listener->port = port;
+
   memcpy(&listener->addr, addr, sizeof(struct irc_ssaddr));
 
   return listener;
