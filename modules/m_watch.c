@@ -46,7 +46,7 @@ struct Message watch_msgtab = {
   { m_unregistered, m_watch, m_watch, m_ignore, m_watch, m_ignore }
 };
 
-INIT_MODULE(m_watch, "$Revision: $")
+INIT_MODULE(m_watch, "$Revision$")
 {
   mod_add_cmd(&watch_msgtab);
   add_isupport("WATCH", NULL, General.max_watch);
