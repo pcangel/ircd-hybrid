@@ -182,6 +182,17 @@ soft_reboot.c    --  If this module is mentioned in ircd.conf, you will be
                      able to perform a full server restart/upgrade without
                      disconnecting a single user or server (except SSL users).
 
+mysql_auth.c     --  This is an example how to implement an alternative
+                     authorization method.  Anyone who supplies a valid
+                     LOGIN:PASS string as the connection password will be
+                     allowed to enter the server -- regardless of ircd.conf
+                     settings, using class name and optionally a static UID,
+                     all specified in a MySQL database.
+
+                     This has NOT been tested thoroughly and could (will)
+                     crash your server.  You have been warned.  Add -lmysql
+                     to ".c.so" in Makefile before trying to compile it.
+
 example_module.c --  This is an example module template to help users create
                      their own modules.
 
