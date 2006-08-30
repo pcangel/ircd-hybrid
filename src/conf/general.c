@@ -181,7 +181,7 @@ stats_oper_only(void *list, void *var)
 static void
 set_message_locale(void *str, void *param)
 {
-  char *loc = (char *) param;
+  char *loc = (char *) str;
 
   if (strlen(loc) > LOCALE_LENGTH - 2)
     loc[LOCALE_LENGTH - 1] = 0;
@@ -389,7 +389,7 @@ init_general(void)
   add_conf_field(s, "opers_bypass_callerid", CT_BOOL, NULL,
     &General.opers_bypass_callerid);
   add_conf_field(s, "oper_pass_resv", CT_BOOL, NULL, &General.oper_pass_resv);
-  add_conf_field(s, "client_flood", CT_NUMBER, NULL, &General.client_flood);
+  add_conf_field(s, "client_flood", CT_SIZE, NULL, &General.client_flood);
   add_conf_field(s, "no_oper_flood", CT_BOOL, NULL, &General.no_oper_flood);
   add_conf_field(s, "true_no_oper_flood", CT_BOOL, NULL,
     &General.true_no_oper_flood);
