@@ -216,7 +216,7 @@ resv_nick(void *mask, void *unused)
     if (tmpreason)
       DupString(resv->reason, tmpreason);
 
-    if (has_wildcards(mask, NO))
+    if (!has_wildcards(mask, NO))
     {
       unsigned int hashv = hash_text(mask, RHSIZE);
       resv->hnext = nresv_hash[hashv];
@@ -239,7 +239,7 @@ resv_channel(void *mask, void *unused)
     if (tmpreason)
       DupString(resv->reason, tmpreason);
 
-    if (has_wildcards(mask, YES))
+    if (!has_wildcards(mask, YES))
     {
       unsigned int hashv = hash_text(mask, RHSIZE);
       resv->hnext = cresv_hash[hashv];

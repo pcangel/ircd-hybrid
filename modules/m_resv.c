@@ -264,7 +264,7 @@ parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
     conf = MyMalloc(sizeof(*conf));
     DupString(conf->mask, name);
     DupString(conf->reason, reason);
-    if (has_wildcards(name, YES))
+    if (!has_wildcards(name, YES))
     {
       unsigned int hashv = hash_text(name, RHSIZE);
       conf->hnext = cresv_hash[hashv];
@@ -329,7 +329,7 @@ parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
     conf = MyMalloc(sizeof(*conf));
     DupString(conf->mask, name);
     DupString(conf->reason, reason);
-    if (has_wildcards(name, NO))
+    if (!has_wildcards(name, NO))
     {
       unsigned int hashv = hash_text(name, RHSIZE);
       conf->hnext = nresv_hash[hashv];
@@ -392,7 +392,7 @@ remove_resv(struct Client *source_p, const char *name)
       return;
     }
 
-    if (has_wildcards(conf->mask, YES))
+    if (!has_wildcards(conf->mask, YES))
     {
       unsigned int hashv = hash_text(conf->mask, RHSIZE);
       if (cresv_hash[hashv] == conf)
@@ -432,7 +432,7 @@ remove_resv(struct Client *source_p, const char *name)
       return;
     }
 
-    if (has_wildcards(conf->mask, NO))
+    if (!has_wildcards(conf->mask, NO))
     {
       unsigned int hashv = hash_text(conf->mask, RHSIZE);
       if (nresv_hash[hashv] == conf)
