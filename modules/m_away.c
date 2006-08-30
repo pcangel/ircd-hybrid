@@ -31,9 +31,9 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "s_serv.h"
+#include "server.h"
 #include "packet.h"
-#include "s_user.h"
+#include "user.h"
 
 static void m_away(struct Client *, struct Client *, int, char *[]);
 static void mo_away(struct Client *, struct Client *, int, char *[]);

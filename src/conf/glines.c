@@ -27,7 +27,7 @@
 #include "client.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_serv.h"
+#include "server.h"
 
 int enable_glines = NO;
 time_t gline_duration;

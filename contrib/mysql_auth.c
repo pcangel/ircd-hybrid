@@ -37,8 +37,8 @@
 #include "common.h"
 #include "hash.h"
 #include "send.h"
-#include "s_user.h"
-#include "s_serv.h"
+#include "user.h"
+#include "server.h"
 #include "/usr/local/include/mysql/mysql.h"
 
 static MYSQL *mysql;

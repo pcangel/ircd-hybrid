@@ -31,7 +31,7 @@
 #include "ircd.h"
 #include "handlers.h"
 #include "numeric.h"
-#include "s_serv.h"
+#include "server.h"
 #include "packet.h"
 
 #define LOG_BUFSIZE 2048

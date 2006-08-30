@@ -78,9 +78,9 @@ SRCS = \
  restart.c \
  @SSL_SRCS_ENABLE@ \
  s_auth.c \
- s_user.c \
  send.c \
  server.c \
+ user.c \
  watch.c \
  whowas.c
 

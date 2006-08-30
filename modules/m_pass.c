@@ -31,7 +31,7 @@
 #include "msg.h"
 #include "parse.h"
 #include "conf/modules.h"
-#include "s_serv.h"
+#include "server.h"
 #include "hash.h"
 
 static void mr_pass(struct Client *, struct Client *, int, char **);

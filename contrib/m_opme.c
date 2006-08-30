@@ -29,7 +29,7 @@
 #include "client.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "s_serv.h"
+#include "server.h"
 #include "send.h"
 #include "whowas.h"
 #include "hash.h"
@@ -37,7 +37,7 @@
 #include "parse.h"
 #include "conf/modules.h"
 #include "common.h"
-#include "s_user.h"
+#include "user.h"
 
 // Change to #define to allow /OPME use on any channel, even if it's not opless
 #undef NO_OPLESS_CHECK

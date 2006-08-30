@@ -26,7 +26,7 @@
 #include "conf/conf.h"
 #include "ircd.h"
 #include "handlers.h"
-#include "s_user.h"
+#include "user.h"
 #include "client.h"
 #include "hash.h"       /* for find_client() */
 #include "numeric.h"

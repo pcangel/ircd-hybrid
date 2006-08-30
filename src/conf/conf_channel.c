@@ -26,7 +26,7 @@
 #include "conf/conf.h"
 #include "channel.h"
 #include "ircd.h"
-#include "s_user.h"
+#include "user.h"
 
 struct ChannelConf Channel;
 

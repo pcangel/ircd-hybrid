@@ -27,7 +27,7 @@
 #include "client.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "s_user.h"
+#include "user.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"

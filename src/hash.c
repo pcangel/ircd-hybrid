@@ -34,7 +34,7 @@
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_user.h"
+#include "user.h"
 
 static BlockHeap *userhost_heap = NULL;
 static BlockHeap *namehost_heap = NULL;

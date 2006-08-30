@@ -32,8 +32,8 @@
 #include "packet.h"
 #include "parse.h"
 #include "restart.h"
-#include "s_serv.h"
-#include "s_user.h"
+#include "server.h"
+#include "user.h"
 #include "send.h"
 #include "userhost.h"
 

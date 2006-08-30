@@ -33,7 +33,7 @@
 #include "msg.h"
 #include "parse.h"
 #include "restart.h"
-#include "s_user.h"
+#include "user.h"
 
 static void mo_die(struct Client *, struct Client *, int, char *[]);
 

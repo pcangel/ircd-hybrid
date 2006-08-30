@@ -38,8 +38,8 @@
 #include "motd.h"
 #include "numeric.h"
 #include "packet.h"
-#include "s_serv.h"
-#include "s_user.h"
+#include "server.h"
+#include "user.h"
 #include "send.h"
 #include "channel.h" /* chcap_usage_counts stuff...*/
 

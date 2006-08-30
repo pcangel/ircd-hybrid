@@ -32,7 +32,7 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "s_user.h"
+#include "user.h"
 #include "motd.h"
 
 static void mo_rehash(struct Client *, struct Client *, int, char *[]);

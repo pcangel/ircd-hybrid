@@ -34,7 +34,7 @@
 #include "rsa.h"
 #include "msg.h"
 #include "parse.h"
-#include "s_user.h"
+#include "user.h"
 
 static void failed_challenge_notice(struct Client *, const char *,
                                     const char *);

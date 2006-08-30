@@ -35,7 +35,7 @@
 #include "common.h"
 #include "msg.h"
 #include "parse.h"
-#include "s_serv.h"
+#include "server.h"
 
 static void ms_sjoin(struct Client *, struct Client *, int, char *[]);
 

@@ -29,12 +29,12 @@
 #include "hash.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "s_serv.h"
+#include "server.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
 #include "conf/modules.h"
-#include "s_user.h"
+#include "user.h"
 #include "userhost.h"
 
 static void mo_hash(struct Client *, struct Client *, int, char *[]);

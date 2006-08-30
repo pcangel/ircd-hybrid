@@ -37,13 +37,13 @@
 #include "common.h"     /* FALSE bleah */
 #include "ircd.h"
 #include "numeric.h"
-#include "s_serv.h"
+#include "server.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
 #include "conf/modules.h"
 #include "hash.h"
-#include "s_user.h"
+#include "user.h"
 
 /* enable logging of OPERSPY functions */
 #define OPERSPY_LOG

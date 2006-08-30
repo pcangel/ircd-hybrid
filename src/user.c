@@ -1,8 +1,8 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  s_user.c: User related functions.
+ *  user.c: User related functions.
  *
- *  Copyright (C) 2002 by the past and present ircd coders, and others.
+ *  Copyright (C) 2002-2006 by the past and present ircd coders, and others.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -33,8 +33,8 @@
 #include "listener.h"
 #include "motd.h"
 #include "numeric.h"
-#include "s_user.h"
-#include "s_serv.h"
+#include "user.h"
+#include "server.h"
 #include "send.h"
 #include "whowas.h"
 #include "packet.h"

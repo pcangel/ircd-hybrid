@@ -25,7 +25,7 @@
 #ifdef IN_IRCD
 #include "stdinc.h"
 #include "conf/conf.h"
-#include "s_user.h"
+#include "user.h"
 #include "ircd.h"
 #include "channel.h"
 #include "channel_mode.h"
@@ -42,7 +42,7 @@
 #include "restart.h"
 #include "s_auth.h"
 #include "parse_aline.h"
-#include "s_serv.h"
+#include "server.h"
 #include "send.h"
 #include "whowas.h"
 #include "motd.h"

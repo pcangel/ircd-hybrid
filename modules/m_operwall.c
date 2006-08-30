@@ -29,10 +29,10 @@
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_user.h"
+#include "user.h"
 #include "msg.h"
 #include "parse.h"
-#include "s_serv.h"
+#include "server.h"
 
 static void mo_operwall(struct Client *, struct Client *, int, char *[]);
 static void ms_operwall(struct Client *, struct Client *, int, char *[]);

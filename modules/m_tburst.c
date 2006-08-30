@@ -38,7 +38,7 @@
 #include "parse.h"
 #include "msg.h"
 #include "hash.h"
-#include "s_serv.h"
+#include "server.h"
 #include "channel.h"
 
 static void ms_tb(struct Client *, struct Client *, int, char *[]);

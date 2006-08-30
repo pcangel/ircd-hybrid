@@ -31,7 +31,7 @@
 #include "send.h"
 #include "hash.h"
 #include "msg.h"
-#include "s_serv.h"
+#include "server.h"
 #include "conf/modules.h"
 #include "channel_mode.h"
 #include "parse.h"

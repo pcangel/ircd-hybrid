@@ -42,7 +42,7 @@
 #include "parse.h"
 #include "common.h"      /* TRUE bleah */
 #include "hash.h"        /* add_to_client_hash_table */
-#include "s_serv.h"      /* server_estab, check_server, my_name_for_link */
+#include "server.h"      /* server_estab, check_server, my_name_for_link */
 #include "motd.h"
 
 static char *parse_cryptserv_args(struct Client *client_p,

@@ -24,7 +24,7 @@
 
 #include "stdinc.h"
 #include "conf/conf.h"
-#include "s_serv.h"
+#include "server.h"
 
 struct ServerHideConf ServerHide;
 

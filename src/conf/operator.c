@@ -28,7 +28,7 @@
 #include "client.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_serv.h"
+#include "server.h"
 
 dlink_list oper_confs = {NULL, NULL, 0};
 

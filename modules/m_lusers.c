@@ -28,8 +28,8 @@
 #include "client.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "s_serv.h"    /* hunt_server */
-#include "s_user.h"    /* show_lusers */
+#include "server.h"    /* hunt_server */
+#include "user.h"    /* show_lusers */
 #include "send.h"
 #include "msg.h"
 #include "parse.h"

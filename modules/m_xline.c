@@ -33,10 +33,10 @@
 #include "send.h"
 #include "hash.h"
 #include "handlers.h"
-#include "s_serv.h"
+#include "server.h"
 #include "msg.h"
 #include "parse.h"
-#include "s_user.h"
+#include "user.h"
 
 static void mo_xline(struct Client *, struct Client *, int, char *[]);
 static void ms_xline(struct Client *, struct Client *, int, char *[]);

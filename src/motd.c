@@ -28,7 +28,7 @@
 #include "send.h"
 #include "numeric.h"
 #include "client.h"
-#include "s_serv.h"
+#include "server.h"
 
 MessageFile motd, opermotd, linksfile;
 

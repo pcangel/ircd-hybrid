@@ -32,7 +32,7 @@
 #include "hash.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "s_serv.h"
+#include "server.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"

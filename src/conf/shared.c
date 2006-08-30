@@ -27,7 +27,7 @@
 #include "client.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_serv.h"
+#include "server.h"
 
 dlink_list cluster_confs = {0};
 dlink_list shared_confs = {0};

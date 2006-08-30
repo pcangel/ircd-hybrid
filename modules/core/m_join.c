@@ -33,7 +33,7 @@
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_serv.h"
+#include "server.h"
 #include "msg.h"
 #include "parse.h"
 

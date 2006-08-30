@@ -31,7 +31,7 @@
 #include "numeric.h"
 #include "handlers.h"
 #include "msg.h"
-#include "s_serv.h"     /* hunt_server */
+#include "server.h"     /* hunt_server */
 #include "parse.h"
 
 static void mr_motd(struct Client *, struct Client *, int, char **);

@@ -38,11 +38,11 @@
 #include "common.h"     /* FALSE bleah */
 #include "ircd.h"
 #include "numeric.h"
-#include "s_serv.h"
+#include "server.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "s_user.h"    /* send_umode_out() */
+#include "user.h"    /* send_umode_out() */
 
 static void m_flags(struct Client *, struct Client *, int, char *[]);
 static void mo_flags(struct Client *, struct Client *, int, char *[]);

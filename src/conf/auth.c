@@ -27,7 +27,7 @@
 #include "client.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_serv.h"
+#include "server.h"
 
 int acb_type_auth = -1;
 

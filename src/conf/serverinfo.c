@@ -27,8 +27,8 @@
 #include "client.h"
 #include "hash.h"
 #include "ircd.h"
-#include "s_serv.h"
-#include "s_user.h"
+#include "server.h"
+#include "user.h"
 
 struct ServerInfoConf ServerInfo = {0};
 

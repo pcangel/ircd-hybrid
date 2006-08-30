@@ -27,7 +27,7 @@
 #include "client.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_serv.h"
+#include "server.h"
 
 // TODO: Add callbacks for (r)kline.conf support with default handlers
 

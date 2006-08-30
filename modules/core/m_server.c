@@ -30,7 +30,7 @@
 #include "hash.h"        /* add_to_client_hash_table */
 #include "ircd.h"        /* me */
 #include "numeric.h"     /* ERR_xxx */
-#include "s_serv.h"      /* server_estab, check_server, my_name_for_link */
+#include "server.h"      /* server_estab, check_server, my_name_for_link */
 #include "send.h"        /* sendto_one */
 #include "motd.h"
 #include "msg.h"

@@ -31,8 +31,8 @@
 #include "hash.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "s_serv.h"             /* captab */
-#include "s_user.h"
+#include "server.h"             /* captab */
+#include "user.h"
 #include "send.h"
 #include "whowas.h"
 #include "msg.h"

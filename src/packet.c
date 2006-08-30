@@ -23,7 +23,7 @@
  */
 #include "stdinc.h"
 #include "conf/conf.h"
-#include "s_serv.h"
+#include "server.h"
 #include "client.h"
 #include "common.h"
 #include "ircd.h"

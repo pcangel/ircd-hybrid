@@ -33,8 +33,8 @@
 #include "hash.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "s_serv.h"             /* captab */
-#include "s_user.h"
+#include "server.h"             /* captab */
+#include "user.h"
 #include "send.h"
 
 dlink_list global_channel_list = { NULL, NULL, 0 };

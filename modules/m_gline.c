@@ -32,10 +32,10 @@
 #include "parse_aline.h"
 #include "send.h"
 #include "msg.h"
-#include "s_serv.h"
+#include "server.h"
 #include "hash.h"
 #include "parse.h"
-#include "s_user.h"
+#include "user.h"
 
 #define GLINE_NOT_PLACED     0
 #define GLINE_ALREADY_VOTED -1

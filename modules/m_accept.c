@@ -28,11 +28,11 @@
 #include "client.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "s_serv.h"
+#include "server.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "s_user.h"
+#include "user.h"
 
 static void m_accept(struct Client *, struct Client *, int, char *[]);
 static void add_accept(const struct split_nuh_item *, struct Client *);

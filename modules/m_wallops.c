@@ -28,11 +28,11 @@
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
-#include "s_user.h"
+#include "user.h"
 #include "msg.h"
 #include "parse.h"
 #include "conf/modules.h"
-#include "s_serv.h"
+#include "server.h"
 
 static void ms_wallops(struct Client *, struct Client *, int, char *[]);
 static void mo_wallops(struct Client *, struct Client *, int, char *[]);

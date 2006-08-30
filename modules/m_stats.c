@@ -34,8 +34,8 @@
 #include "msg.h"         /* Message */
 #include "numeric.h"     /* ERR_xxx */
 #include "send.h"        /* sendto_one */
-#include "s_serv.h"      /* hunt_server */
-#include "s_user.h"      /* show_opers */
+#include "server.h"      /* hunt_server */
+#include "user.h"      /* show_opers */
 #include "parse.h"
 #include "whowas.h"
 #include "watch.h"

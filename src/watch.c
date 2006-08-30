@@ -30,7 +30,7 @@
 #include "hash.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "s_user.h"
+#include "user.h"
 #include "send.h"
 #include "watch.h"
 #include "msg.h"

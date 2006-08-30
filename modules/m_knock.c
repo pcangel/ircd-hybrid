@@ -34,8 +34,8 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "s_serv.h"
-#include "s_user.h"
+#include "server.h"
+#include "user.h"
 #include "common.h"
 
 static void m_knock(struct Client *, struct Client *, int, char *[]);

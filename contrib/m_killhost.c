@@ -31,7 +31,7 @@
 #include "hash.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "s_serv.h"
+#include "server.h"
 #include "send.h"
 #include "whowas.h"
 #include "msg.h"

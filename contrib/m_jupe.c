@@ -29,14 +29,14 @@
 #include "client.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "s_serv.h"
+#include "server.h"
 #include "send.h"
 #include "whowas.h"
 #include "hash.h"
 #include "msg.h"
 #include "parse.h"
 #include "common.h"
-#include "s_user.h"
+#include "user.h"
 
 static void mo_jupe(struct Client *, struct Client *, int, char *[]);
 

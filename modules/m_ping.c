@@ -32,7 +32,7 @@
 #include "msg.h"
 #include "parse.h"
 #include "hash.h"
-#include "s_serv.h"
+#include "server.h"
 
 static void m_ping(struct Client *, struct Client *, int, char *[]);
 static void ms_ping(struct Client *, struct Client *, int, char *[]);

@@ -26,7 +26,7 @@
 #include "conf/conf.h"
 #include "ircd_defs.h"
 #include "parse_aline.h"
-#include "s_serv.h"
+#include "server.h"
 #include "channel.h"
 #include "client.h"
 #include "common.h"
@@ -36,7 +36,7 @@
 #include "numeric.h"
 #include "send.h"
 #include "userhost.h"
-#include "s_user.h"
+#include "user.h"
 
 static int find_user_host(struct Client *, char *, char *, char *, unsigned int);
 
@@ -217,7 +217,7 @@ parse_aline(const char *cmd, struct Client *source_p,
  *
  * inputs	- client sending the cluster
  *		- command name "KLINE" "XLINE" etc.
- *		- capab -- CAP_KLN etc. from s_serv.h
+ *		- capab -- CAP_KLN etc. from server.h
  *		- cluster type -- CLUSTER_KLINE etc. from s_conf.h
  *		- pattern and args to send along
  * output	- none

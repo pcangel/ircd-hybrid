@@ -30,13 +30,13 @@
 #include "client.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "s_serv.h"
+#include "server.h"
 #include "send.h"
 #include "common.h"   /* for NO */
 #include "channel.h"
 #include "msg.h"
 #include "parse.h"
-#include "s_user.h"
+#include "user.h"
 
 static void mo_set(struct Client *, struct Client *, int, char *[]);
 
