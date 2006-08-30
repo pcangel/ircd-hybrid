@@ -71,7 +71,7 @@ struct SocketInfo
 static void
 serverize(struct Client *client_p)
 {
-  struct ConnectConf *sconf = ref_link_by_ptr(MyMalloc(sizeof(*sconf)));
+  struct ConnectConf *sconf = MyMalloc(sizeof(*sconf));
   char *hub_mask;
 
   DupString(sconf->name, client_p->name);
