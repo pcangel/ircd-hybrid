@@ -399,6 +399,7 @@ restore_client(struct Client *client_p, char *capabs)
   if (Count.local > Count.max_loc)
     Count.max_loc = Count.local;
 
+  delete_user_host(client_p->username, client_p->host, 1);
   add_user_host(client_p->username, client_p->host, 0);
   SetUserHost(client_p);
 
