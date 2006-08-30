@@ -4,6 +4,11 @@ o) Brand new modular conf system. Various possible frontends
    (e.g. traditional ircd.conf, 7.x ircd.conf, MySQL etc.).
 o) Support for *.dll modules on win32.
 o) WATCH command is now implemented.
+o) contrib/recode.c - adds a "codepage" option to listen{} blocks.
+o) contrib/safe_reboot.c - a module which allows complete ircd restart
+   (even after recompiling to a new version etc.) without dropping a
+   single client/server connection, i.e. almost all the state is kept.
+o) contrib/mysql_auth.c - draft for authorization against a MySQL DB.
 
 
 -- ircd-hybrid-7.2 RELNOTES
