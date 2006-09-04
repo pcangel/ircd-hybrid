@@ -1328,7 +1328,7 @@ get_channel_access(va_list args)
   struct Membership *member = va_arg(args, struct Membership *);
   int *level = va_arg(args, int *);
 
-  /* Let hacked servers in for now... */
+  // Let hacked servers in for now...
   if (!MyClient(source_p))
   {
     *level = CHACCESS_CHANOP;
@@ -1341,7 +1341,7 @@ get_channel_access(va_list args)
     return NULL;
   }
 
-  /* just to be sure.. */
+  // just to be sure..
   assert(source_p == member->client_p);
 
   if (has_member_flags(member, CHFL_CHANOP))

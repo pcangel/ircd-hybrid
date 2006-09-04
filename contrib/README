@@ -193,6 +193,17 @@ mysql_auth.c     --  This is an example how to implement an alternative
                      crash your server.  You have been warned.  Add -lmysql
                      to ".c.so" in Makefile before trying to compile it.
 
+oper_override.c  --  Add this to your ircd.conf modules{} section to
+                     implement an additional oper flag called "override".
+                     Any oper marked with flags = ..., override; will be
+                     recognized as a chanop on all MODE commands (even
+                     when outside the channel).  This is generally considered
+                     a bad practice, please don't abuse this module.
+
+                     PS This has not been tested at all, and I'm not sure
+                     if using MODE outside a channel wouldn't cause ircd
+                     crash in some cases.
+
 example_module.c --  This is an example module template to help users create
                      their own modules.
 

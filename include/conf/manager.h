@@ -84,5 +84,6 @@ EXTERN struct ConfField *add_conf_field(struct ConfSection *, const char *,
   int, CONFF_HANDLER *, void *);
 EXTERN void delete_conf_field(struct ConfSection *, struct ConfField *);
 EXTERN void read_conf_files(int);
-EXTERN unsigned int register_conf_flag(FlagMap *, char, const char *);
-EXTERN void unregister_conf_flag(FlagMap *, unsigned int);
+EXTERN unsigned int register_conf_flag(struct FlagMapping *, char,
+  const char *);
+EXTERN void unregister_conf_flag(struct FlagMapping *, unsigned int);

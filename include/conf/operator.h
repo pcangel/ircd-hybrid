@@ -70,6 +70,7 @@ struct OperatorConf
 
 struct Client;
 
+EXTERN dlink_list oper_confs;
 EXTERN FlagMap oper_flag_map;
 
 EXTERN char *oper_privs_as_string(int);

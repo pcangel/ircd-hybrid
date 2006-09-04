@@ -315,12 +315,12 @@ delete_conf_field(struct ConfSection *section, struct ConfField *field)
  * output: bitmask representing the flag or 0 if no more slots
  */
 unsigned int
-register_conf_flag(FlagMap *map, char letter, const char *name)
+register_conf_flag(struct FlagMapping *map, char letter, const char *name)
 {
   struct FlagMapping *p;
   unsigned int used = 0, i;
 
-  for (p = *map; p->flag; p++)
+  for (p = map; p->flag; p++)
     used |= p->flag;
 
   for (i = 0; i < 32; i++)
@@ -345,11 +345,11 @@ register_conf_flag(FlagMap *map, char letter, const char *name)
  * output: none
  */
 void
-unregister_conf_flag(FlagMap *map, unsigned int flag)
+unregister_conf_flag(struct FlagMapping *map, unsigned int flag)
 {
   struct FlagMapping *p;
 
-  for (p = *map; p->flag; p++)
+  for (p = map; p->flag; p++)
     if (p->flag == flag)
     {
       p->letter = 0;

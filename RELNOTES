@@ -9,6 +9,7 @@ o) contrib/safe_reboot.c - a module which allows complete ircd restart
    (even after recompiling to a new version etc.) without dropping a
    single client/server connection, i.e. almost all the state is kept.
 o) contrib/mysql_auth.c - draft for authorization against a MySQL DB.
+o) Added oper_override to contrib
 
 
 -- ircd-hybrid-7.2 RELNOTES
