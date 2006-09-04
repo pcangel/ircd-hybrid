@@ -55,6 +55,7 @@ struct ConnectConf
 };
 
 EXTERN dlink_list connect_confs;
+EXTERN FlagMap connect_flag_map;
 
 struct Client;
 

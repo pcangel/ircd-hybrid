@@ -301,3 +301,60 @@ delete_conf_field(struct ConfSection *section, struct ConfField *field)
   dlinkDelete(&field->node, &section->fields);
   MyFree(field);
 }
+
+/*
+ * register_conf_flag()
+ *
+ * Allocates a flag for auth/connect/oper confs.
+ *
+ * inputs:
+ *   map     -  points to a FlagMapping array of size 33
+ *   letter  -  either 0 or a single character representing the flag;
+ *              if non-zero, flags=all will include this option.
+ *   name    -  either NULL or name of the option on flags= list.
+ * output: bitmask representing the flag or 0 if no more slots
+ */
+unsigned int
+register_conf_flag(FlagMap *map, char letter, const char *name)
+{
+  struct FlagMapping *p;
+  unsigned int used = 0, i;
+
+  for (p = *map; p->flag; p++)
+    used |= p->flag;
+
+  for (i = 0; i < 32; i++)
+    if (!(used & (1 << i)))
+    {
+      p->letter = letter;
+      p->name = name;
+      return p->flag = 1 << i;
+    }
+
+  return 0;
+}
+
+/*
+ * unregister_conf_flag()
+ *
+ * Deletes a previously allocated conf flag.
+ *
+ * inputs:
+ *   map   -  points to a FlagMapping array of size 33
+ *   flag  -  flag bitmask
+ * output: none
+ */
+void
+unregister_conf_flag(FlagMap *map, unsigned int flag)
+{
+  struct FlagMapping *p;
+
+  for (p = *map; p->flag; p++)
+    if (p->flag == flag)
+    {
+      p->letter = 0;
+      p->name = NULL;
+      p->flag = 0;
+      return;
+    }
+}

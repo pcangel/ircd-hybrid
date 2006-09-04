@@ -34,18 +34,15 @@ dlink_list connect_confs = {0};
 static dlink_node *hreset;
 static struct ConnectConf tmpconn = {0};
 
-// TODO: These should be modularised like acb_types
-static const struct FlagMapping {
-  const char *name;
-  unsigned int flag;
-} flag_mappings[] = {
-  {"compressed", LINK_COMPRESSED},
-  {"cryptlink", LINK_CRYPTLINK},
-  {"encrypted", LINK_CRYPTPWD},
-  {"autoconn", LINK_AUTOCONN},
-  {"burst_away", LINK_BURSTAWAY},
-  {"topicburst", LINK_TOPICBURST},
-  {NULL, 0}
+FlagMap connect_flag_map =
+{
+  {0, "compressed", LINK_COMPRESSED},
+  {0, "cryptlink", LINK_CRYPTLINK},
+  {0, "encrypted", LINK_CRYPTPWD},
+  {0, "autoconn", LINK_AUTOCONN},
+  {0, "burst_away", LINK_BURSTAWAY},
+  {0, "topicburst", LINK_TOPICBURST},
+  {0, NULL, 0}
 };
 
 /*
@@ -435,8 +432,8 @@ parse_flags(void *list, void *unused)
     const char *str = ptr->data;
     int found = NO;
 
-    for (p = flag_mappings; p->name; ++p)
-      if (!irccmp(str, p->name))
+    for (p = connect_flag_map; p->flag; ++p)
+      if (p->name && !irccmp(str, p->name))
       {
         found = YES;
         tmpconn.flags |= p->flag;

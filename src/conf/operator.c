@@ -35,11 +35,8 @@ dlink_list oper_confs = {NULL, NULL, 0};
 static dlink_node *hreset;
 static struct OperatorConf tmpoper = {0};
 
-static struct FlagMapping {
-  char letter;
-  const char *name;
-  unsigned int flag;
-} flag_mappings[32+1] = {
+FlagMap oper_flag_map =
+{
   {'A', "admin", OPER_FLAG_ADMIN},
   {'B', "remoteban", OPER_FLAG_REMOTEBAN},
   {'D', "die", OPER_FLAG_DIE},
@@ -59,60 +56,6 @@ static struct FlagMapping {
 };
 
 /*
- * alloc_oper_flag()
- *
- * Allocates an oper flag.
- *
- * inputs:
- *   letter  -  either 0 or a single character representing the flag;
- *              if non-zero, flags=all will include this option.
- *   name    -  either NULL or name of the option on flags= list.
- * output: bitmask representing the flag or 0 if no more slots
- */
-unsigned int
-alloc_oper_flag(char letter, const char *name)
-{
-  struct FlagMapping *p;
-  unsigned int used = 0, i;
-
-  for (p = flag_mappings; p->flag; p++)
-    used |= p->flag;
-
-  for (i = 0; i < 32; i++)
-    if (!(used & (1 << i)))
-    {
-      p->letter = letter;
-      p->name = name;
-      return p->flag = 1 << i;
-    }
-
-  return 0;
-}
-
-/*
- * free_oper_flag()
- *
- * Deletes a previously allocated oper flag.
- *
- * inputs: flag bitmask
- * output: none
- */
-void
-free_oper_flag(unsigned int flag)
-{
-  struct FlagMapping *p;
-
-  for (p = flag_mappings; p->flag; p++)
-    if (p->flag == flag)
-    {
-      p->letter = 0;
-      p->name = NULL;
-      p->flag = 0;
-      return;
-    }
-}
-
-/*
  * oper_privs_as_string()
  *
  * Translates an integer flags value to a string representation.
@@ -127,7 +70,7 @@ oper_privs_as_string(int flags)
   static char str[32];
   char *p = str;
 
-  for (m = flag_mappings; m->flag; m++)
+  for (m = oper_flag_map; m->flag; m++)
     if (m->letter)
     {
       if ((flags & m->flag) != 0)
@@ -485,7 +428,7 @@ parse_flag_list(void *list, void *where)
     const char *str = ptr->data;
     int found = NO, all = !irccmp(str, "all");
 
-    for (p = flag_mappings; p->flag; ++p)
+    for (p = oper_flag_map; p->flag; ++p)
       if (all || (p->name && !irccmp(str, p->name)))
       {
         found = YES;

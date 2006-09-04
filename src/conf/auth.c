@@ -34,12 +34,8 @@ int acb_type_auth = -1;
 static struct AuthConf tmpauth = {{0}, 0};
 static dlink_list tmpuh = {0};
 
-// TODO: These should be modularised like acb_types
-static const struct FlagMapping {
-  char letter;
-  const char *name;
-  unsigned int flag;
-} flag_mappings[] = {
+FlagMap auth_flag_map =
+{
   {'-', "no_tilde", AUTH_FLAG_NO_TILDE},
   {'+', "have_ident", AUTH_FLAG_NEED_IDENT},
   {'&', "need_password", AUTH_FLAG_NEED_PASSWORD},
@@ -182,8 +178,8 @@ iline_flags(void *list, void *unused)
     const char *str = ptr->data;
     int found = NO;
 
-    for (p = flag_mappings; p->name; ++p)
-      if (!irccmp(str, p->name))
+    for (p = auth_flag_map; p->flag; ++p)
+      if (p->name && !irccmp(str, p->name))
       {
         found = YES;
         tmpauth.flags |= p->flag;
@@ -318,15 +314,15 @@ static int
 do_report_auth(struct AuthConf *conf, struct Client *source_p)
 {
   const struct FlagMapping *m;
-  char prefix[sizeof(flag_mappings) / sizeof(flag_mappings[0])];
+  char prefix[33];
   char *p = prefix;
 
   if (conf->access.type != acb_type_auth ||
       (!MyOper(source_p) && conf->spoof))
     return 0;
 
-  for (m = flag_mappings; m->name; m++)
-    if ((conf->flags & m->flag))
+  for (m = auth_flag_map; m->flag; m++)
+    if (m->letter && (conf->flags & m->flag))
       *p++ = m->letter;
   *p = 0;
 
@@ -365,7 +361,7 @@ init_ilines(void)
   add_conf_field(s, "redirport", CT_NUMBER, NULL, &tmpauth.redirport);
 
   add_conf_field(s, "flags", CT_LIST, iline_flags, NULL);
-  for (p = flag_mappings; p->name; ++p)
+  for (p = auth_flag_map; p->name; ++p)
     add_conf_field(s, p->name, CT_BOOL, iline_flag,
                    (void *) (unsigned long) p->flag);
 

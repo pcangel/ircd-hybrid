@@ -46,6 +46,7 @@ struct AuthConf
 };
 
 EXTERN int acb_type_auth;
+EXTERN FlagMap auth_flag_map;
 
 struct Client;
 

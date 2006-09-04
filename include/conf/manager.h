@@ -42,7 +42,8 @@ struct ConfField {
   dlink_node node;
 };
 
-struct ConfSection {
+struct ConfSection
+{
   const char *name;
   CONFS_HANDLER *before;
   CONFS_HANDLER *after;
@@ -51,6 +52,15 @@ struct ConfSection {
   dlink_list fields;
   dlink_node node;
 };
+
+struct FlagMapping
+{
+  char letter;
+  const char *name;
+  unsigned int flag;
+};
+
+typedef struct FlagMapping FlagMap[32+1];
 
 void init_conf(void);
 void conf_clear_ident_list(void);
@@ -74,3 +84,5 @@ EXTERN struct ConfField *add_conf_field(struct ConfSection *, const char *,
   int, CONFF_HANDLER *, void *);
 EXTERN void delete_conf_field(struct ConfSection *, struct ConfField *);
 EXTERN void read_conf_files(int);
+EXTERN unsigned int register_conf_flag(FlagMap *, char, const char *);
+EXTERN void unregister_conf_flag(FlagMap *, unsigned int);

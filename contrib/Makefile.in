@@ -31,6 +31,7 @@ CPPFLAGS	= ${INCLUDES} @CPPFLAGS@
 
 SRCS = \
   ip_cloaking.c \
+  oper_override.c \
   recode.c      \
   soft_reboot.c \
   m_capture.c   \
