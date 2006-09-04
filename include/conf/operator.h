@@ -24,7 +24,7 @@
 
 struct OperatorConf
 {
-  int flags;
+  unsigned int flags;
   char *name;
   char *passwd;
   struct Class *class_ptr;
@@ -71,6 +71,8 @@ struct OperatorConf
 struct Client;
 
 EXTERN char *oper_privs_as_string(int);
+EXTERN unsigned int alloc_oper_flag(char, const char *);
+EXTERN void free_oper_flag(unsigned int);
 EXTERN struct OperatorConf *find_operconf(const char *, const char *,
   const char *, const struct irc_ssaddr *);
 EXTERN void report_oper(struct Client *);
