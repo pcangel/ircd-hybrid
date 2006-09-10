@@ -508,8 +508,6 @@ load_state(int transfd)
   unref_link(me.serv->sconf);
   me.serv->sconf = NULL;
 
-  fd_close(&me.localClient->fd);
-
   //
   // Read local client information
   //
@@ -578,6 +576,7 @@ load_state(int transfd)
     set_user_mode(client_p, client_p, 4, parv);
   }
 
+  fd_close(&me.localClient->fd);
   fclose(f);
   send_queued_all();
 }
