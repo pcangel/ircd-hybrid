@@ -1100,7 +1100,6 @@ AC_CONFIG_FILES(		\
 	etc/Makefile		\
 	servlink/Makefile	\
 	contrib/Makefile	\
-	contrib/help/Makefile	\
 	src/Makefile		\
 	messages/Makefile	\
 	modules/Makefile	\

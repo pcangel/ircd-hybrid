@@ -75,7 +75,7 @@ hpux_shared: $(OBJS) $(SLOBJS)
 ../modules/libmodules.a:
 	cd ../modules && ${MAKE}
 
-install: all install_@MOD_TARGET@ install_help
+install: all install_@MOD_TARGET@
 
 install_shared_modules: $(OBJS)
 	mkdir -p $(AUTOMODULEDIR)
@@ -90,9 +90,6 @@ install_hpux_shared: $(SLOBJS)
 	@for file in $(SLOBJS); do \
 		$(INSTALL_DATA) $$file $(AUTOMODULEDIR); \
 	done
-
-install_help:
-	cd help && ${MAKE} install || exit; cd ..; 
 
 install_libmodules.a:
 # Ye olde noop.
@@ -119,10 +116,8 @@ install_libmodules.a:
 
 clean:
 	${RM} -f *.so *.o *.sl *~ 
-	cd help && ${MAKE} clean || exit; cd ..;
 
 distclean: clean
 	${RM} -f Makefile .depend
-	cd help && ${MAKE} distclean || exit; cd ..;
 
-.PHONY: depend clean distclean install_hpux_shared install_libmodules.a install_help shared_modules install hpux_shared build
+.PHONY: depend clean distclean install_hpux_shared install_libmodules.a shared_modules install hpux_shared build

@@ -10805,7 +10805,7 @@ _ACEOF
 
 fi
 
-                                                                                                                                                                          ac_config_files="$ac_config_files Makefile etc/Makefile servlink/Makefile contrib/Makefile contrib/help/Makefile src/Makefile messages/Makefile modules/Makefile tools/Makefile doc/Makefile help/Makefile libio/Makefile libio/comm/Makefile libio/mem/Makefile libio/misc/Makefile libio/net/Makefile libio/string/Makefile"
+                                                                                                                                                                ac_config_files="$ac_config_files Makefile etc/Makefile servlink/Makefile contrib/Makefile src/Makefile messages/Makefile modules/Makefile tools/Makefile doc/Makefile help/Makefile libio/Makefile libio/comm/Makefile libio/mem/Makefile libio/misc/Makefile libio/net/Makefile libio/string/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -11337,7 +11337,6 @@ do
   "etc/Makefile" ) CONFIG_FILES="$CONFIG_FILES etc/Makefile" ;;
   "servlink/Makefile" ) CONFIG_FILES="$CONFIG_FILES servlink/Makefile" ;;
   "contrib/Makefile" ) CONFIG_FILES="$CONFIG_FILES contrib/Makefile" ;;
-  "contrib/help/Makefile" ) CONFIG_FILES="$CONFIG_FILES contrib/help/Makefile" ;;
   "src/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
   "messages/Makefile" ) CONFIG_FILES="$CONFIG_FILES messages/Makefile" ;;
   "modules/Makefile" ) CONFIG_FILES="$CONFIG_FILES modules/Makefile" ;;
