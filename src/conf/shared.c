@@ -37,12 +37,9 @@ static char *tmpserver = NULL;
 static char tmpuser[USERLEN + 1];
 static char tmphost[HOSTLEN + 1];
 static int tmpflags;
-// TODO: These should be modularised like acb_types
-static const struct FlagMapping {
-  char letter;
-  const char *name;
-  unsigned int flag;
-} flag_mappings[] = {
+
+FlagMap shared_flag_map =
+{
   {'K', "kline", SHARED_KLINE},
   {'k', "tkline", SHARED_TKLINE},
   {'U', "unkline", SHARED_UNKLINE},
@@ -71,7 +68,7 @@ shared_type_as_string(int type, char *str)
 {
   const struct FlagMapping *m;
 
-  for (m = flag_mappings; m->letter; m++)
+  for (m = shared_flag_map; m->letter; m++)
     if ((type & m->flag) != 0)
       *str++ = m->letter;
 
@@ -179,7 +176,7 @@ parse_type(void *list, void *unused)
     const char *str = ptr->data;
     int found = NO, all = !irccmp(str, "all");
 
-    for (p = flag_mappings; p->name; ++p)
+    for (p = shared_flag_map; p->name; ++p)
       if (all || !irccmp(str, p->name))
       {
         found = YES;
