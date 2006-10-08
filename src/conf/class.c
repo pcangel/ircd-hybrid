@@ -324,7 +324,8 @@ attach_class(struct Client *source_p, struct Class *cptr)
 
   source_p->localClient->class = ref_class_by_ptr(cptr);
   if (++cptr->cur_clients > cptr->max_number)
-    a_limit_reached++;
+    if (cptr->max_number > 0)
+      a_limit_reached++;
 
   if (!cidr_limit_reached(exempt, &source_p->localClient->ip, cptr))
     SetAddedCidr(source_p);
