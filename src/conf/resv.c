@@ -81,6 +81,8 @@ free_resvs(dlink_list *list, struct ResvConf **hash, const char *type,
         MyFree(resv->reason);
         MyFree(resv);
       }
+      else
+        prev = resv;
 
   DLINK_FOREACH_SAFE(ptr, ptr_next, list->head)
   {
