@@ -251,6 +251,7 @@ after_cluster(void)
     conf->server = tmpserver;
   else
     DupString(conf->server, "*");
+  tmpserver = NULL;
 
   conf->type = tmpflags;
   dlinkAddTail(conf, &conf->node, &cluster_confs);
