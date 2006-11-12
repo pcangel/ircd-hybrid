@@ -90,8 +90,7 @@ whowas_add_history(struct Client *client_p, int online)
 
 /*! \brief This must be called when the client structure is about to
  *         be released. History mechanism keeps pointers to client
- *         structures and it must know when they cease to exist. This
- *         also implicitly calls AddHistory.
+ *         structures and it must know when they cease to exist.
  * \param client_p pointer to Client struct
  */
 void

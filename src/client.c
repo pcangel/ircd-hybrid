@@ -1236,9 +1236,8 @@ set_initial_nick(struct Client *source_p, const char *nick)
      * USER already received, now we have NICK.
      * *NOTE* For servers "NICK" *must* precede the
      * user message (giving USER before NICK is possible
-     * only for local client connection!). register_user
+     * only for local client connection!). note that register_user
      * may reject the client and call exit_client for it
-     * --must test this and exit m_nick too!!!
      */
     register_local_user(source_p, buf);
   }
