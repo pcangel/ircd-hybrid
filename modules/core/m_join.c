@@ -321,11 +321,12 @@ m_join(struct Client *client_p, struct Client *source_p,
  *		  parv[2] = channel name
  *		  parv[3] = modes
  * output	- none
- * side effects	- handles remote JOIN's sent by servers. In TSora
+ * side effects	- handles remote JOIN's sent by servers. In TSora 5
  *		  remote clients are joined using SJOIN, hence a 
  *		  JOIN sent by a server on behalf of a client is an error.
  *		  here, the initial code is in to take an extra parameter
  *		  and use it for the TimeStamp on a new channel.
+ *		  In TSora version 6, UIDs are joined to existing channels with JOIN
  */
 static void 
 ms_join(struct Client *client_p, struct Client *source_p,
