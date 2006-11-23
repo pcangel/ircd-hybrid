@@ -115,7 +115,7 @@ ref_link_by_name(const char *name)
   DLINK_FOREACH(ptr, connect_confs.head)
   {
     conf = ptr->data;
-    if (match(conf->name, name))
+    if (match(name, conf->name))
       return ref_link_by_ptr(conf);
   }
 
