@@ -61,7 +61,7 @@ free_xlines(int expiring)
         sendto_realops_flags(UMODE_ALL, L_ALL,
           "Temporary %s for [%s] expired", "gecos ban", xline->mask);
 
-      dlinkDelete(ptr->data, &gecos_confs);
+      dlinkDelete(ptr, &gecos_confs);
       MyFree(xline->mask);
       MyFree(xline->reason);
       MyFree(xline->regex);
