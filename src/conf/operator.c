@@ -492,6 +492,8 @@ init_operator(void)
 {
   const char *alias[] = { "oper", "operator", NULL };
   const char **p = alias;
+  struct FlagMapping *f;
+  struct FlagSet *set = MyMalloc(sizeof(struct FlagSet));
 
   hreset = install_hook(reset_conf, reset_operator);
 
@@ -506,8 +508,17 @@ init_operator(void)
     add_conf_field(s, "class", CT_STRING, oper_class, NULL);
     add_conf_field(s, "password", CT_STRING, NULL, &tmpoper.passwd);
     add_conf_field(s, "encrypted", CT_BOOL, oper_encrypted, NULL);
-    add_conf_field(s, "rsa_public_keyfile", CT_STRING, oper_rsa_public_key_file, NULL);
+    add_conf_field(s, "rsa_public_key_file", CT_STRING, oper_rsa_public_key_file, NULL);
     add_conf_field(s, "flags", CT_LIST, parse_flag_list, NULL);
+    for(f = oper_flag_map; f->letter; f++)
+    {
+      set->map = oper_flag_map;
+      set->field = &tmpoper.flags;
+      add_conf_field(s, f->name, CT_FLAG,  NULL, set);
+    }
+    set->map = oper_flag_map;
+    set->field = &tmpoper.flags;
+    add_conf_field(s, "hidden_oper", CT_FLAG, NULL, set);
 
     s->after = after_operator;
   }

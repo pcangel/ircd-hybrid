@@ -30,6 +30,7 @@
 #define CT_STRING 4
 #define CT_LIST   5
 #define CT_NLIST  6
+#define CT_FLAG   7
 
 typedef void CONFS_HANDLER(void);
 typedef void CONFF_HANDLER(void *, void *);
@@ -61,6 +62,12 @@ struct FlagMapping
 };
 
 typedef struct FlagMapping FlagMap[32+1];
+
+struct FlagSet
+{
+  struct FlagMapping *map;
+  void *field;
+};
 
 void init_conf(void);
 void conf_clear_ident_list(void);

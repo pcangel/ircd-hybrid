@@ -207,6 +207,30 @@ conf_assign(int type, struct ConfField *field, void *value)
     if (field->handler != NULL)
       field->handler(&list, field->param);
   }
+  else if (type == CT_BOOL && field->type == CT_LIST)
+  {
+    dlink_list list = {NULL, NULL, 0};
+    dlink_node node;
+
+    dlinkAdd(*(int*)value ? "yes" : "no", &node, &list);
+
+    if (field->handler != NULL)
+      field->handler(&list, field->param);
+  }
+  else if (type == CT_BOOL && field->type == CT_FLAG)
+  {
+    struct FlagSet *s = (struct FlagSet *)field->param;
+    struct FlagMapping *p;
+
+    for (p = s->map; p->name != NULL; ++p)
+      if ((p->name && !irccmp(field->name, p->name)))
+      {
+        if(*(int*)value)
+          *(int *)s->field |= p->flag;
+        else
+          *(int *)s->field &= ~p->flag;
+      }
+  }
   else
     parse_error("type mismatch, expected %s", field_types[type]);
 }
@@ -272,6 +296,9 @@ add_conf_field(struct ConfSection *section, const char *name, int type,
         break;
       case CT_STRING:
         handler = conf_assign_string;
+        break;
+      case CT_FLAG:
+        handler = NULL;
         break;
       default:
         assert(0);

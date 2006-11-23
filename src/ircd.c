@@ -501,6 +501,7 @@ main(int argc, char *argv[])
   init_channel_modes();
   server_init();
   init_conf();
+  modules_init();
   read_conf_files(YES); // cold start init conf files
   init_uid();
   initialize_global_set_options();

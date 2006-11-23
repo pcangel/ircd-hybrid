@@ -394,25 +394,6 @@ parse_cipherpref(void *value, void *unused)
 }
 
 /*
- * parse_flag()
- *
- * Parses an old-style switch.
- *
- * inputs:
- *   state  -  YES/NO casted to void
- *   flag   -  flag value casted to void
- * output: none
- */
-static void
-parse_flag(void *state, void *flag)
-{
-  if (*(int *) state)
-    tmpconn.flags |= (unsigned long) flag;
-  else
-    tmpconn.flags &= ~((unsigned long) flag);
-}
-
-/*
  * parse_flags()
  *
  * Handles "flags=" list.
@@ -568,6 +549,8 @@ void
 init_connect(void)
 {
   struct ConfSection *s = add_conf_section("connect", 2);
+  struct FlagSet *set = MyMalloc(sizeof(struct FlagSet));
+  struct FlagMapping *f;
 
   hreset = install_hook(reset_conf, reset_connect);
 
@@ -591,11 +574,12 @@ init_connect(void)
   add_conf_field(s, "rsa_public_key_file", CT_STRING, parse_rsa_pkfile, NULL);
   add_conf_field(s, "cipher_preference", CT_STRING, parse_cipherpref, NULL);
   add_conf_field(s, "flags", CT_LIST, parse_flags, NULL);
-  add_conf_field(s, "encrypted", CT_BOOL, parse_flag, (void *) LINK_CRYPTPWD);
-  add_conf_field(s, "cryptlink", CT_BOOL, parse_flag, (void *) LINK_CRYPTLINK);
-  add_conf_field(s, "compressed", CT_BOOL, parse_flag, (void *)
-    LINK_COMPRESSED);
-  add_conf_field(s, "autoconn", CT_BOOL, parse_flag, (void *) LINK_AUTOCONN);
+  for(f = connect_flag_map; f->name != NULL; f++)
+  {
+    set->map = connect_flag_map;
+    set->field = &tmpconn.flags;
+    add_conf_field(s, f->name, CT_FLAG,  NULL, set);
+  }
 
   s->after = after_connect;
 }
