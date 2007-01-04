@@ -239,10 +239,16 @@ add_nameserver(const char *arg)
   hints.ai_flags    = AI_PASSIVE | AI_NUMERICHOST;
 
   if (irc_getaddrinfo(arg, "domain", &hints, &res))
+  {
+    ilog(L_WARN, "Failed to add nameserver %s", arg);
     return;
+  }
 
   if (res == NULL)
+  {
+    ilog(L_WARN, "Failed to add nameserver %s", arg);
     return;
+  }
 
   memcpy(&irc_nsaddr_list[irc_nscount].ss, res->ai_addr, res->ai_addrlen);
   irc_nsaddr_list[irc_nscount].ss_len = res->ai_addrlen;
