@@ -1021,22 +1021,16 @@ server_estab(struct Client *client_p)
              (me.id[0] ? TS_CURRENT : 5), TS_MIN,
              (unsigned long)CurrentTime);
 
-  if (IsCapable(client_p, CAP_TS6))
-    hash_add_id(client_p);
-
-  /* *WARNING*
-  **    In the following code in place of plain server's
-  **    name we send what is returned by get_client_name
-  **    which may add the "sockhost" after the name. It's
-  **    *very* *important* that there is a SPACE between
-  **    the name and sockhost (if present). The receiving
-  **    server will start the information field from this
-  **    first blank and thus puts the sockhost into info.
-  **    ...a bit tricky, but you have been warned, besides
-  **    code is more neat this way...  --msa
-  */
   client_p->servptr = &me;
 
+  /* if IsClosing(client_p) is true, that means somewhere up to this,
+   * someone (indirectly) called exit_client(client_p). That means that
+   * anything needing cleanup that we did between that exit_client call
+   * and now will not get cleaned up. This is bad.
+   * However, fixing this will take some lengthy searching of what in the
+   * above (or calling) code may cause exit_client calls. Just be aware of it
+   * and don't place stuff that requires cleanup above this line. -- Bear
+   */
   if (IsClosing(client_p))
     return;
 
@@ -1057,6 +1051,9 @@ server_estab(struct Client *client_p)
 
   dlinkAdd(client_p, make_dlink_node(), &global_serv_list);
   hash_add_client(client_p);
+
+  if (IsCapable(client_p, CAP_TS6))
+    hash_add_id(client_p);
 
   // doesnt duplicate client_p->serv if this struct is allocated already
   make_server(client_p);

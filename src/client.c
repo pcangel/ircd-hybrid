@@ -120,6 +120,7 @@ make_client(struct Client *from)
     client_p->from = from;
 
   client_p->hnext  = client_p;
+  client_p->idhnext  = client_p;
   client_p->status = STAT_UNKNOWN;
   strcpy(client_p->username, "unknown");
 
@@ -139,6 +140,7 @@ free_client(struct Client *client_p)
   assert(client_p != NULL);
   assert(client_p != &me);
   assert(client_p->hnext == client_p);
+  assert(client_p->idhnext == client_p);
   assert(client_p->channel.head == NULL);
   assert(dlink_list_length(&client_p->channel) == 0);
 
