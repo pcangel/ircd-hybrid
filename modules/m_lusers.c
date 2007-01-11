@@ -54,13 +54,8 @@ CLEANUP_MODULE
 
 /* m_lusers - LUSERS message handler
  * parv[0] = sender
- * parv[1] = host/server mask.
+ * parv[1] = ignored, once was host/server mask.
  * parv[2] = server to query
- * 
- * 199970918 JRL hacked to ignore parv[1] completely and require parc > 3
- * to cause a force
- *
- * 2003 hacked parv[1] back in, by request of efnet admins/opers -Dianora
  */
 static void
 m_lusers(struct Client *client_p, struct Client *source_p,
@@ -86,7 +81,7 @@ m_lusers(struct Client *client_p, struct Client *source_p,
 
 /* ms_lusers - LUSERS message handler for servers and opers
  * parv[0] = sender
- * parv[1] = host/server mask.
+ * parv[1] = ignored, once was host/server mask.
  * parv[2] = server to query
  */
 static void
