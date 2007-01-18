@@ -683,34 +683,37 @@ can_send(struct Channel *chptr, struct Client *source_p, struct Membership *ms)
       if (!find_channel_resv(chptr->chname) == Channel.restrict_channels)
         return CAN_SEND_NO;
 
-  if (ms != NULL || (ms = find_channel_link(source_p, chptr)))
+  if (ms == NULL)
+    ms = find_channel_link(source_p, chptr);
+
+  if (ms)
   {
     if (ms->flags & (CHFL_CHANOP|CHFL_HALFOP|CHFL_VOICE))
       return CAN_SEND_OPV;
-
-    // cache can send if quiet_on_ban and banned
-    if (Channel.quiet_on_ban && MyClient(source_p))
-    {
-      if (ms->flags & CHFL_BAN_SILENCED)
-        return CAN_SEND_NO;
-
-      if (!(ms->flags & CHFL_BAN_CHECKED))
-      {
-        if (is_banned(chptr, source_p))
-        {
-          ms->flags |= (CHFL_BAN_CHECKED|CHFL_BAN_SILENCED);
-          return CAN_SEND_NO;
-        }
-
-        ms->flags |= CHFL_BAN_CHECKED;
-      }
-    }
   }
   else if (chptr->mode.mode & MODE_NOPRIVMSGS)
     return CAN_SEND_NO;
 
   if (chptr->mode.mode & MODE_MODERATED)
     return CAN_SEND_NO;
+
+  // cache can send if possible and quiet_on_ban is enabled
+  if (Channel.quiet_on_ban && MyClient(source_p))
+  {
+    if (! (ms && (ms->flags & CHFL_BAN_CHECKED)))
+    { // have to check
+      if (is_banned(chptr, source_p))
+      {
+        if (ms)
+          ms->flags |= (CHFL_BAN_CHECKED|CHFL_BAN_SILENCED);
+        return CAN_SEND_NO;
+      }
+      if (ms)
+        ms->flags |= CHFL_BAN_CHECKED;
+    }
+    else if (ms && (ms->flags & CHFL_BAN_SILENCED))
+      return CAN_SEND_NO;
+  }
 
   return CAN_SEND_NONOP;
 }

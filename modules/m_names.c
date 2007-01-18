@@ -70,6 +70,7 @@ static void
 m_names(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
 { 
+  static time_t last_used = 0;
   struct Channel *chptr = NULL;
   char *s;
   char *para = parc > 1 ? parv[1] : NULL;
@@ -93,6 +94,18 @@ m_names(struct Client *client_p, struct Client *source_p,
   }
   else
   {
+    /* These loops look kinda expensive. throttle. --bear */
+    if (!IsOper(source_p))
+    {
+      if ((last_used + ConfigFileEntry.pace_wait_simple) > CurrentTime)
+      {
+        sendto_one(source_p, form_str(RPL_LOAD2HI),
+                   me.name, source_p->name);
+        return;
+      }
+      last_used = CurrentTime;
+    }
+
     names_all_visible_channels(source_p);
     names_non_public_non_secret(source_p);
     sendto_one(source_p, form_str(RPL_ENDOFNAMES),
