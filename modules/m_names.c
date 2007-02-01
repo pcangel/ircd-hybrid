@@ -24,6 +24,7 @@
 
 #include "stdinc.h"
 #include "conf/modules.h"
+#include "conf/general.h"
 #include "handlers.h"
 #include "channel.h"
 #include "channel_mode.h"
@@ -97,7 +98,7 @@ m_names(struct Client *client_p, struct Client *source_p,
     /* These loops look kinda expensive. throttle. --bear */
     if (!IsOper(source_p))
     {
-      if ((last_used + ConfigFileEntry.pace_wait_simple) > CurrentTime)
+      if ((last_used + General.pace_wait_simple) > CurrentTime)
       {
         sendto_one(source_p, form_str(RPL_LOAD2HI),
                    me.name, source_p->name);
