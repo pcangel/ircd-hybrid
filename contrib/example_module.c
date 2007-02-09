@@ -26,8 +26,10 @@
 #include "stdinc.h"
 #include "client.h"   /* Required for IsClient, etc. */
 #include "send.h"     /* sendto_one, most useful function of all time */
-#include "conf/modules.h"  /* includes msg.h; use for the msgtab */
+#include "conf/modules.h"  /* some #define's */
 #include "handlers.h" /* m_ignore */
+#include "msg.h"      /* msgtab */
+#include "parse.h"    /* mod_{add,del}_cmd */
 
 /* OTHER USEFUL INCLUDES:
  * 
