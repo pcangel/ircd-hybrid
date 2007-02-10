@@ -93,8 +93,11 @@ static void
 clear_temp(void)
 {
   free_interior(&tmpconn);
+
   memset(&tmpconn, 0, sizeof(tmpconn));
   tmpconn.aftype = AF_INET;
+
+  conf_flags = 0;
 }
 
 /*
@@ -408,6 +411,8 @@ parse_flags(void *list, void *unused)
   int errors = NO;
   dlink_node *ptr;
 
+  conf_flags = 0;
+
   DLINK_FOREACH(ptr, ((dlink_list *) list)->head)
   {
     const char *str = ptr->data;
@@ -417,7 +422,7 @@ parse_flags(void *list, void *unused)
       if (p->name && !irccmp(str, p->name))
       {
         found = YES;
-        tmpconn.flags |= p->flag;
+        conf_flags |= p->flag;
         break;
       }
 
@@ -460,6 +465,8 @@ after_connect(void)
 
   conf = MyMalloc(sizeof(*conf));
   memcpy(conf, &tmpconn, sizeof(*conf));
+  conf->flags = conf_flags;
+
   dlinkAdd(conf, &conf->node, &connect_confs);
   ref_link_by_ptr(conf);
 
@@ -549,8 +556,6 @@ void
 init_connect(void)
 {
   struct ConfSection *s = add_conf_section("connect", 2);
-  struct FlagSet *set = MyMalloc(sizeof(struct FlagSet));
-  struct FlagMapping *f;
 
   hreset = install_hook(reset_conf, reset_connect);
 
@@ -574,12 +579,7 @@ init_connect(void)
   add_conf_field(s, "rsa_public_key_file", CT_STRING, parse_rsa_pkfile, NULL);
   add_conf_field(s, "cipher_preference", CT_STRING, parse_cipherpref, NULL);
   add_conf_field(s, "flags", CT_LIST, parse_flags, NULL);
-  for(f = connect_flag_map; f->name != NULL; f++)
-  {
-    set->map = connect_flag_map;
-    set->field = &tmpconn.flags;
-    add_conf_field(s, f->name, CT_FLAG,  NULL, set);
-  }
+  import_conf_flags(s, connect_flag_map);
 
   s->after = after_connect;
 }

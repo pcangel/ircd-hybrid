@@ -30,7 +30,6 @@
 #define CT_STRING 4
 #define CT_LIST   5
 #define CT_NLIST  6
-#define CT_FLAG   7
 
 typedef void CONFS_HANDLER(void);
 typedef void CONFF_HANDLER(void *, void *);
@@ -49,6 +48,7 @@ struct ConfSection
   CONFS_HANDLER *before;
   CONFS_HANDLER *after;
   struct ConfField *def_field;
+  unsigned int *flags;
   int pass;
   dlink_list fields;
   dlink_node node;
@@ -63,12 +63,6 @@ struct FlagMapping
 
 typedef struct FlagMapping FlagMap[32+1];
 
-struct FlagSet
-{
-  struct FlagMapping *map;
-  void *field;
-};
-
 void init_conf(void);
 void conf_clear_ident_list(void);
 
@@ -76,6 +70,7 @@ EXTERN int conf_pass, conf_cold;
 EXTERN struct Callback *reset_conf;
 EXTERN struct Callback *verify_conf;
 EXTERN struct Callback *switch_conf_pass;
+EXTERN unsigned int conf_flags;
 
 EXTERN void parse_error(const char *, ...);
 EXTERN void parse_fatal(const char *, ...);
@@ -94,3 +89,4 @@ EXTERN void read_conf_files(int);
 EXTERN unsigned int register_conf_flag(struct FlagMapping *, char,
   const char *);
 EXTERN void unregister_conf_flag(struct FlagMapping *, unsigned int);
+EXTERN void import_conf_flags(struct ConfSection *, FlagMap);

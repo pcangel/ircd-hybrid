@@ -217,20 +217,6 @@ conf_assign(int type, struct ConfField *field, void *value)
     if (field->handler != NULL)
       field->handler(&list, field->param);
   }
-  else if (type == CT_BOOL && field->type == CT_FLAG)
-  {
-    struct FlagSet *s = (struct FlagSet *)field->param;
-    struct FlagMapping *p;
-
-    for (p = s->map; p->name != NULL; ++p)
-      if ((p->name && !irccmp(field->name, p->name)))
-      {
-        if(*(int*)value)
-          *(int *)s->field |= p->flag;
-        else
-          *(int *)s->field &= ~p->flag;
-      }
-  }
   else
     parse_error("type mismatch, expected %s", field_types[type]);
 }
@@ -262,6 +248,15 @@ conf_assign_string(void *value, void *var)
 {
   MyFree(*(char **) var);
   DupString(*(char **) var, (char *) value);
+}
+
+void
+conf_assign_flag(void *value, void *var)
+{
+  if (*(int *) value)
+    conf_flags |= (unsigned int) var;
+  else
+    conf_flags &= ~(unsigned int) var;
 }
 
 /*
@@ -296,9 +291,6 @@ add_conf_field(struct ConfSection *section, const char *name, int type,
         break;
       case CT_STRING:
         handler = conf_assign_string;
-        break;
-      case CT_FLAG:
-        handler = NULL;
         break;
       default:
         assert(0);
@@ -384,4 +376,25 @@ unregister_conf_flag(struct FlagMapping *map, unsigned int flag)
       p->flag = 0;
       return;
     }
+}
+
+/*
+ * import_conf_flags()
+ *
+ * Adds boolean fields whose names are listed in a FlagMapping array.
+ * They will control appropriate bits of conf_flags global variable.
+ *
+ * inputs:
+ *   section  -  pointer to ConfSection structure
+ *   map      -  a FlagMap array which describes available flags
+ * output: none
+ */
+void
+import_conf_flags(struct ConfSection *section, FlagMap map)
+{
+  struct FlagMapping *p;
+
+  for (p = map; p->name; p++)
+    add_conf_field(section, p->name, CT_BOOL, conf_assign_flag,
+                   (void *) p->flag);
 }

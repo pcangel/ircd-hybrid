@@ -254,7 +254,7 @@ static void
 before_operator(void)
 {
   clear_operconf(&tmpoper);
-  tmpoper.flags |= OPER_FLAG_ENCRYPTED;
+  conf_flags = OPER_FLAG_ENCRYPTED;
 }
 
 /*
@@ -295,24 +295,8 @@ after_operator(void)
   memcpy(oper, &tmpoper, sizeof(*oper));
   memset(&tmpoper, 0, sizeof(tmpoper));
 
+  oper->flags = conf_flags;
   dlinkAddTail(oper, &oper->node, &oper_confs);
-}
-
-/*
- * oper_encrypted()
- *
- * Parses the "encrypted=" directive.
- *
- * inputs: binary value (given as a pointer)
- * output: none
- */
-static void
-oper_encrypted(void *value, void *where)
-{
-  if (*(int *) value)
-    tmpoper.flags |= OPER_FLAG_ENCRYPTED;
-  else
-    tmpoper.flags &= ~OPER_FLAG_ENCRYPTED;
 }
 
 /*
@@ -421,7 +405,7 @@ parse_flag_list(void *list, void *where)
   int errors = NO;
   dlink_node *ptr;
 
-  tmpoper.flags &= OPER_FLAG_ENCRYPTED;
+  conf_flags = 0;
 
   DLINK_FOREACH(ptr, ((dlink_list *)list)->head)
   {
@@ -433,7 +417,7 @@ parse_flag_list(void *list, void *where)
       {
         found = YES;
         if (!all || p->letter)
-          tmpoper.flags |= p->flag;
+          conf_flags |= p->flag;
         if (!all || !p->letter)
           break;
       }
@@ -492,8 +476,6 @@ init_operator(void)
 {
   const char *alias[] = { "oper", "operator", NULL };
   const char **p = alias;
-  struct FlagMapping *f;
-  struct FlagSet *set = MyMalloc(sizeof(struct FlagSet));
 
   hreset = install_hook(reset_conf, reset_operator);
 
@@ -507,18 +489,9 @@ init_operator(void)
     add_conf_field(s, "user", CT_STRING, oper_user, NULL);
     add_conf_field(s, "class", CT_STRING, oper_class, NULL);
     add_conf_field(s, "password", CT_STRING, NULL, &tmpoper.passwd);
-    add_conf_field(s, "encrypted", CT_BOOL, oper_encrypted, NULL);
     add_conf_field(s, "rsa_public_key_file", CT_STRING, oper_rsa_public_key_file, NULL);
     add_conf_field(s, "flags", CT_LIST, parse_flag_list, NULL);
-    for(f = oper_flag_map; f->letter; f++)
-    {
-      set->map = oper_flag_map;
-      set->field = &tmpoper.flags;
-      add_conf_field(s, f->name, CT_FLAG,  NULL, set);
-    }
-    set->map = oper_flag_map;
-    set->field = &tmpoper.flags;
-    add_conf_field(s, "hidden_oper", CT_FLAG, NULL, set);
+    import_conf_flags(s, oper_flag_map);
 
     s->after = after_operator;
   }
