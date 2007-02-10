@@ -290,6 +290,8 @@ send_queued_write(struct Client *to)
 #ifdef _WIN32
         errno = WSAGetLastError();
 #endif
+        if (errno == EINTR)
+          continue;
         break;
       }
 
@@ -622,7 +624,7 @@ sendto_common_channels_local(struct Client *user, int touser,
       assert(target_p != NULL);
       if (!MyConnect(target_p))
         continue;
-      if (target_p == user || IsDefunct(target_p) ||
+      if (target_p == user || IsDefunct(target_p) || !IsOper(target_p) ||
           target_p->localClient->serial == current_serial)
         continue;
 
