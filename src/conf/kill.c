@@ -29,13 +29,24 @@
 #include "send.h"
 #include "server.h"
 
-// TODO: Add callbacks for (r)kline.conf support with default handlers
-
 dlink_list rkline_confs = {NULL, NULL, 0};
 int acb_type_kline;
 
 static struct KillConf tmpkill = {{0}, 0};
-static dlink_node *hreset, *hexpire, *hbanned;
+static dlink_node *hreset, *hexpire, *hbanned, *hverify;
+static struct ConfStoreField kline_fields[] =
+{
+  { "user", CSF_STRING },
+  { "host", CSF_STRING },
+  { "reason", CSF_STRING },
+  { "oper_reason", CSF_STRING },
+  { NULL, CSF_STRING },
+  { "oper", CSF_STRING },
+  { "added", CSF_NUMBER },
+  { NULL, 0 }
+};
+static struct ConfStore kline_store = {"kline", kline_fields};
+static struct ConfStore rkline_store = {"rkline", kline_fields};
 
 static void do_report_kline(struct KillConf *, struct Client *);
 static void do_report_tkline(struct KillConf *, struct Client *);
@@ -384,6 +395,103 @@ is_client_klined(va_list args)
 }
 
 /*
+ * load_klines()
+ *
+ * Loads permanent klines from external storage.
+ *
+ * inputs: none
+ * output: none
+ */
+static void *
+load_klines(va_list args)
+{
+  struct KillConf *kline;
+  const char *errptr = NULL;
+
+  tmpkill.access.type = acb_type_kline;
+  while (execute_callback(read_conf_store, kline_store, &tmpkill.access.user,
+                          &tmpkill.access.host, &tmpkill.reason,
+                          &tmpkill.oper_reason, NULL, NULL, NULL))
+  {
+    kline = MyMalloc(sizeof(*kline));
+    memcpy(kline, &tmpkill, sizeof(*kline));
+    add_access_conf(&kline->access);
+  }
+
+  tmpkill.access.type = -1;
+  while (execute_callback(read_conf_store, rkline_store, &tmpkill.access.user,
+                          &tmpkill.access.host, &tmpkill.reason,
+                          &tmpkill.oper_reason, NULL, NULL, NULL))
+    if ((tmpkill.regexuser = ircd_pcre_compile(tmpkill.access.user, &errptr)) &&
+        (tmpkill.regexhost = ircd_pcre_compile(tmpkill.access.host, &errptr)))
+    {
+      kline = MyMalloc(sizeof(*kline));
+      memcpy(kline, &tmpkill, sizeof(*kline));
+      kline->access.precedence == curprec--;
+      dlinkAddTail(kline, &kline->node, &rkline_confs);
+    }
+    else
+    {
+      ilog(L_ERROR, "Failed to add regular expression based K-line: %s", errptr);
+      before_kline();
+    }
+
+  return pass_callback(hverify);
+}
+
+/*
+ * write_perm_kline()
+ *
+ * Saves a permanent K-line into an external store.
+ *
+ * inputs:
+ *   conf     -  pointer to struct KillConf
+ *   curdate  -  cached smalldate(CurrentTime)
+ *   oper     -  oper who issued the K-line
+ * output: 0 on error
+ */
+int
+write_perm_kline(struct KillConf *conf, const char *curdate, const char *oper)
+{
+  struct ConfStore *store;
+
+  if (conf->access.type == acb_type_kline)
+    store = &kline_store;
+  else if (conf->access.type == -1)
+    store = &rkline_store;
+  else
+    return 0;
+
+  return !!execute_callback(append_conf_store, store, conf->access.user,
+                            conf->access.host, conf->reason, conf->oper_reason,
+                            curdate, oper, CurrentTime);
+}
+
+/*
+ * delete_perm_kline()
+ *
+ * Deletes a permanent K-line from an external store.
+ *
+ * inputs: pointer to struct KillConf
+ * output: 0 on error
+ */
+int
+delete_perm_kline(struct KillConf *conf)
+{
+  struct ConfStore *store;
+
+  if (conf->access.type == acb_type_kline)
+    store = &kline_store;
+  else if (conf->access.type == -1)
+    store = &rkline_store;
+  else
+    return 0;
+
+  return !!execute_callback(delete_conf_store, store, conf->access.user,
+                            conf->access.host, NULL, NULL, NULL, NULL, NULL);
+}
+
+/*
  * init_kill()
  *
  * Defines the kill{} conf section.
@@ -408,4 +516,6 @@ init_kill(void)
   add_conf_field(s, "reason", CT_STRING, NULL, &tmpkill.reason);
 
   s->after = after_kline;
+
+  hverify = install_hook(verify_conf, load_klines);
 }
