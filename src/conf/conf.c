@@ -31,6 +31,7 @@
 #include "send.h"
 
 int conf_pass, conf_cold = YES;
+unsigned int conf_flags;
 
 struct Callback *reset_conf = NULL;
 struct Callback *verify_conf = NULL;

@@ -32,7 +32,6 @@ struct ConfParserContext {
 
 EXTERN struct ConfParserContext conf_curctx;
 EXTERN char conf_linebuf[];
-EXTERN int conf_include_sptr;
 
 EXTERN int conf_yy_input(char *, int);
 EXTERN void yyerror(const char *);
