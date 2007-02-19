@@ -78,7 +78,7 @@ unsigned int user_modes[256] =
   0,                  /* @ */
   0,                  /* A */
   0,                  /* B */
-  0,                  /* C */
+  UMODE_CCONN_FULL,   /* C */
   UMODE_DEAF,         /* D */
   0,                  /* E */
   0,                  /* F */
@@ -550,6 +550,18 @@ register_local_user(struct Client *source_p, const char *username)
                        "255.255.255.255" : source_p->sockhost,
                        cptr->name, source_p->info);
 
+  sendto_realops_flags(UMODE_CCONN_FULL, L_ALL,
+                       "CLICONN %s %s %s %s %s %s %s 0 %s",
+                       source_p->name, source_p->username, source_p->host,
+                       General.hide_spoof_ips && IsIPSpoof(source_p) ?
+                       "255.255.255.255" : source_p->sockhost,
+		       cptr->name,
+		       General.hide_spoof_ips && IsIPSpoof(source_p) ?
+                           "<hidden>" : source_p->client_host,
+		       General.hide_spoof_ips && IsIPSpoof(source_p) ?
+                           "<hidden>" : source_p->client_server,
+                       source_p->info);
+
   if (General.invisible_on_connect)
   {
     source_p->umodes |= UMODE_INVISIBLE;
@@ -615,6 +627,10 @@ register_remote_user(struct Client *client_p, struct Client *source_p,
   strlcpy(source_p->host, host, sizeof(source_p->host)); 
   strlcpy(source_p->info, realname, sizeof(source_p->info));
   strlcpy(source_p->username, username, sizeof(source_p->username));
+
+  /* stash for later */
+  strlcpy(source_p->client_host, host, sizeof(source_p->client_host));
+  strlcpy(source_p->client_server, server, sizeof(source_p->client_server));
 
   /*
    * coming from another server, take the servers word for it

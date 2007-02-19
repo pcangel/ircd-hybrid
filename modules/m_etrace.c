@@ -35,7 +35,8 @@
 #include "msg.h"
 #include "parse.h"
 
-#define FORM_STR_RPL_ETRACE	":%s 709 %s %s %s %s %s %s :%s"
+#define FORM_STR_RPL_ETRACE	 ":%s 709 %s %s %s %s %s %s :%s"
+#define FORM_STR_RPL_ETRACE_FULL ":%s 708 %s %s %s %s %s %s %s %s :%s"
 
 static void *do_etrace(va_list);
 static void mo_etrace(struct Client *, struct Client *, int, char *[]);
@@ -59,7 +60,7 @@ CLEANUP_MODULE
   uninstall_hook(etrace_cb, do_etrace);
 }
 
-static void report_this_status(struct Client *, struct Client *);
+static void report_this_status(struct Client *, struct Client *, int );
 
 /*
  * do_etrace()
@@ -74,9 +75,20 @@ do_etrace(va_list args)
   struct Client *target_p = NULL;
   int wilds = 0;
   int do_all = 0;
+  int full_etrace = 0;
   dlink_node *ptr;
 
-  if (parc > 0)
+  if (parc > 1)
+  {
+    if (irccmp(parv[1], "-full") == 0)
+    {
+      parv++;
+      parc--;
+      full_etrace = 1;
+    }
+  }
+
+  if (parc > 1)
   {
     tname = parv[1];
     if (tname != NULL)
@@ -95,7 +107,7 @@ do_etrace(va_list args)
     target_p = find_client(tname);
 
     if (target_p && MyClient(target_p))
-      report_this_status(source_p, target_p);
+      report_this_status(source_p, target_p, full_etrace);
       
     sendto_one(source_p, form_str(RPL_ENDOFTRACE), me.name, 
 	       source_p->name, tname);
@@ -109,10 +121,10 @@ do_etrace(va_list args)
     if (wilds)
     {
       if (match(tname, target_p->name) || match(target_p->name, tname))
-        report_this_status(source_p, target_p);
+        report_this_status(source_p, target_p, full_etrace);
     }
     else
-      report_this_status(source_p, target_p);
+      report_this_status(source_p, target_p, full_etrace);
   }
 
   sendto_one(source_p, form_str(RPL_ENDOFTRACE), me.name,
@@ -134,31 +146,68 @@ mo_etrace(struct Client *client_p, struct Client *source_p,
 /* report_this_status()
  *
  * inputs   - pointer to client to report to
- * 	        - pointer to client to report about
+ * 	    - pointer to client to report about
+ *	    - report full etrace or not
  * output   - NONE
  * side effects - NONE
  */
 static void
-report_this_status(struct Client *source_p, struct Client *target_p)
+report_this_status(struct Client *source_p, struct Client *target_p,
+		   int full_etrace)
 {
   const char *class_name = target_p->localClient->class->name;
 
   if (target_p->status == STAT_CLIENT)
   {
-    if (General.hide_spoof_ips)
-      sendto_one(source_p, FORM_STR_RPL_ETRACE,
-		 me.name, source_p->name,
-		 IsOper(target_p) ? "Oper" : "User",
-		 class_name,
-		 target_p->name, target_p->username,
-		 IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost,
-		 target_p->info);
+    if (full_etrace)
+    {
+      if (General.hide_spoof_ips)
+	sendto_one(source_p, FORM_STR_RPL_ETRACE_FULL,
+		   me.name,
+		   source_p->name,
+		   IsOper(target_p) ? "Oper" : "User",
+		   class_name,
+		   target_p->name,
+		   target_p->username,
+		   IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost,
+		   IsIPSpoof(target_p) ? "<hidden>" : target_p->client_host,
+		   IsIPSpoof(target_p) ? "<hidden>" : target_p->client_server,
+		   target_p->info);
+      else
+	sendto_one(source_p, FORM_STR_RPL_ETRACE_FULL,
+		   me.name,
+		   source_p->name, 
+		   IsOper(target_p) ? "Oper" : "User", 
+		   class_name,
+		   target_p->name,
+		   target_p->username,
+		   target_p->sockhost,
+		   target_p->client_host,
+		   target_p->client_server,
+		   target_p->info);
+    }
     else
-      sendto_one(source_p, FORM_STR_RPL_ETRACE,
-		 me.name, source_p->name, 
-		 IsOper(target_p) ? "Oper" : "User", 
-		 class_name,
-		 target_p->name, target_p->username, target_p->sockhost,
-		 target_p->info);
+    {
+      if (General.hide_spoof_ips)
+	sendto_one(source_p, FORM_STR_RPL_ETRACE,
+		   me.name,
+		   source_p->name,
+		   IsOper(target_p) ? "Oper" : "User",
+		   class_name,
+		   target_p->name,
+		   target_p->username,
+		   IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost,
+		   target_p->info);
+      else
+	sendto_one(source_p, FORM_STR_RPL_ETRACE,
+		   me.name,
+		   source_p->name, 
+		   IsOper(target_p) ? "Oper" : "User", 
+		   class_name,
+		   target_p->name,
+		   target_p->username,
+		   target_p->sockhost,
+		   target_p->info);
+    }
   }
 }
