@@ -39,6 +39,7 @@ EXTERN struct AccessConf *find_exempt(const struct irc_ssaddr *);
 EXTERN void report_deny(struct Client *);
 EXTERN void report_tdeny(struct Client *);
 EXTERN void report_exempt(struct Client *);
+EXTERN void add_dline(struct Client *, char *, char *, char *, int);
 
 #ifdef IN_CONF_C
 void init_deny(void);

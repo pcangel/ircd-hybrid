@@ -246,6 +246,53 @@ cluster_a_line(struct Client *source_p, const char *command,
   }
 }
 
+void
+announce_a_line(struct Client *source_p, char *type, int expires,
+                char *reason, char *oper_reason, char *pattern, ...)
+{
+  va_list args;
+  char what[IRCD_BUFSIZE], buf[IRCD_BUFSIZE];
+
+  va_start(args, pattern);
+  vsnprintf(what, sizeof(what), pattern, args);
+  va_end(args);
+
+  if (expires)
+  {
+    snprintf(buf, sizeof(buf), "temporary %d min. %s", expires/60, type);
+    type=buf;
+
+    // Permanent ones have been announced when they were stored
+    sendto_one(source_p, ":%s NOTICE %s :Added %s [%s]", type, what);
+  }
+
+  sendto_realops_flags(UMODE_ALL, L_ALL, "%s added %s for [%s] [%s%s%s]",
+                       get_oper_name(source_p), type, what, reason,
+                       oper_reason?"|":"", oper_reason?oper_reason:"");
+  ilog(L_TRACE, "%s added %s for [%s] [%s%s%s]",
+       get_oper_name(source_p), type, what, reason,
+       oper_reason?"|":"", oper_reason?oper_reason:"");
+
+  // TODO: Fix _TYPE here (add a param)
+  log_oper_action(LOG_KLINE_TYPE, source_p, "[%s] [%s%s%s]\n", what, reason,
+                  oper_reason?"|":"", oper_reason?oper_reason:"");
+}
+
+char *
+a_line_format_reason(char *reason, char *type, int tkline_time)
+{
+  char buf[IRCD_BUFSIZE], *result;
+  if (tkline_time)
+    ircsprintf(buf, "Temporary %s %d min. - %s (%s)",
+               type, tkline_time/60, reason, smalldate(CurrentTime));
+  else
+    ircsprintf(buf, "%s (%s)",
+               reason, smalldate(CurrentTime));
+
+  DupString(result, reason);
+  return result;
+}
+
 /* valid_comment()
  *
  * inputs       - pointer to client

@@ -44,7 +44,8 @@ EXTERN struct KillConf *find_exact_kline(const char *, const char *);
 EXTERN struct KillConf *find_exact_rkline(const char *, const char *);
 EXTERN void report_klines(struct Client *);
 EXTERN void report_tklines(struct Client *);
-EXTERN int write_perm_kline(struct KillConf *, const char *, const char *);
+EXTERN void add_rkline(struct Client *, char *, char *, char *, char *, int);
+EXTERN void add_kline(struct Client *, char *, char *, char *, char *, int);
 EXTERN int delete_perm_kline(struct KillConf *);
 
 #ifdef IN_CONF_C

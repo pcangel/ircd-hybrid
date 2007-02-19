@@ -46,11 +46,7 @@ static void mo_unkline(struct Client *, struct Client *, int, char *[]);
 static void ms_unkline(struct Client *, struct Client *, int, char *[]);
 static void mo_undline(struct Client *, struct Client *, int, char *[]);
 
-static char buffer[IRCD_BUFSIZE];
-
 static int already_placed_kline(struct Client *, const char *, const char *, int);
-static void apply_kline(struct Client *, struct KillConf *, const char *, time_t);
-static void apply_tkline(struct Client *, struct KillConf *, int);
 
 
 struct Message kline_msgtab = {
@@ -123,11 +119,8 @@ mo_kline(struct Client *client_p, struct Client *source_p,
   char *oper_reason;
   char *user = NULL;
   char *host = NULL;
-  const char *current_date;
   char *target_server = NULL;
-  struct KillConf *conf;
   time_t tkline_time = 0;
-  time_t cur_time;
 
   if (!IsOperK(source_p))
   {
@@ -174,31 +167,7 @@ mo_kline(struct Client *client_p, struct Client *source_p,
   if ((oper_reason = strchr(reason, '|')) != NULL)
     *oper_reason++ = '\0';
 
-  cur_time = CurrentTime;
-  current_date = smalldate(cur_time);
-  conf = MyMalloc(sizeof(struct KillConf));
-  DupString(conf->access.user, user);
-  DupString(conf->access.host, host);
-
-  if (tkline_time != 0)
-  {
-    ircsprintf(buffer, "Temporary K-line %d min. - %s (%s)",
-               (int)(tkline_time/60), reason, current_date);
-    DupString(conf->reason, buffer);
-
-    if (oper_reason != NULL)
-      DupString(conf->oper_reason, oper_reason);
-    apply_tkline(source_p, conf, tkline_time);
-  }
-  else
-  {
-    ircsprintf(buffer, "%s (%s)", reason, current_date);
-    DupString(conf->reason, buffer);
-
-    if (oper_reason != NULL)
-      DupString(conf->oper_reason, oper_reason);
-    apply_kline(source_p, conf, current_date, cur_time);
-  }
+  add_kline(source_p, user, host, reason, oper_reason, tkline_time);
 }
 
 /* me_kline - handle remote kline. no propagation */
@@ -206,10 +175,7 @@ static void
 me_kline(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
-  struct KillConf *conf;
   int tkline_time;
-  const char* current_date;
-  time_t cur_time;
   char *kuser, *khost, *kreason, *oper_reason;
 
   if (parc != 6 || EmptyString(parv[5]))
@@ -226,9 +192,6 @@ me_kline(struct Client *client_p, struct Client *source_p,
   if ((oper_reason = strchr(kreason, '|')) != NULL)
     *oper_reason++ = '\0';
 
-  cur_time = CurrentTime;
-  current_date = smalldate(cur_time);
-
   if (find_shared(source_p->servptr->name, source_p->username, source_p->host,
                   source_p->sockhost, SHARED_KLINE))
   {
@@ -236,29 +199,7 @@ me_kline(struct Client *client_p, struct Client *source_p,
         already_placed_kline(source_p, kuser, khost, YES))
       return;
 
-    conf = MyMalloc(sizeof(*conf));
-    DupString(conf->access.user, kuser);
-    DupString(conf->access.host, khost);
-
-    if (tkline_time != 0)
-    {
-      ircsprintf(buffer, "Temporary K-line %d min. - %s (%s)",
-                 (int)(tkline_time/60), kreason, current_date);
-      DupString(conf->reason, buffer);
-
-      if (oper_reason != NULL)
-        DupString(conf->oper_reason, oper_reason);
-      apply_tkline(source_p, conf, tkline_time);
-    }
-    else
-    {
-      ircsprintf(buffer, "%s (%s)", kreason, current_date);
-      DupString(conf->reason, buffer);
-
-      if (oper_reason != NULL)
-        DupString(conf->oper_reason, oper_reason);
-      apply_kline(source_p, conf, current_date, cur_time);
-    }
+    add_kline(source_p, kuser, khost, kreason, oper_reason, tkline_time);
   }
 }
 
@@ -296,110 +237,6 @@ ms_kline(struct Client *client_p, struct Client *source_p,
   me_kline(client_p, source_p, parc, parv);
 }
 
-/* apply_kline()
- *
- * inputs	-
- * output	- NONE
- * side effects	- kline as given, is added to the hashtable
- *		  and conf file
- */
-static void 
-apply_kline(struct Client *source_p, struct KillConf *conf,
-            const char *current_date, time_t cur_time)
-{
-  FBFILE *out = NULL;
-  conf->access.type = acb_type_kline;
-  add_access_conf(&conf->access);
-
-// TBD - don't keep the *line in memory if we cannot open the conf file
-  if ((out = fbopen(ServerState.klinefile, "a")) == NULL)
-    sendto_realops_flags(UMODE_ALL, L_ALL,
-                         "*** Problem opening %s", ServerState.klinefile);
-  else
-    write_csv_line(out, "%s%s%s%s%s%s%d",
-                   conf->access.user, conf->access.host,
-                   conf->reason, conf->oper_reason, current_date,
-                   get_oper_name(source_p), cur_time);
-
-  sendto_realops_flags(UMODE_ALL, L_ALL,
-                       "%s added K-Line for [%s@%s] [%s]",
-                       get_oper_name(source_p),
-                       conf->access.user, conf->access.host, conf->reason);
-  sendto_one(source_p, ":%s NOTICE %s :Added K-Line [%s@%s] to %s",
-             MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
-             source_p->name, conf->access.user, conf->access.host,
-             ServerState.klinefile);
-  ilog(L_TRACE, "%s added K-Line for [%s@%s] [%s]",
-       get_oper_name(source_p), conf->access.user, conf->access.host,
-       conf->reason);
-  log_oper_action(LOG_KLINE_TYPE, source_p, "[%s@%s] [%s]\n",
-                  conf->access.user, conf->access.host, conf->reason);
-
-  // Now, activate kline against current online clients
-  rehashed_klines = 1;
-}
-
-/* apply_tkline()
- *
- * inputs	-
- * output	- NONE
- * side effects	- tkline as given is placed
- */
-static void
-apply_tkline(struct Client *source_p, struct KillConf *conf,
-             int tkline_time)
-{
-  conf->access.type = acb_type_kline;
-  conf->access.expires = CurrentTime + tkline_time;
-  add_access_conf(&conf->access);
-
-  sendto_realops_flags(UMODE_ALL, L_ALL,
-                       "%s added temporary %d min. K-Line for [%s@%s] [%s]",
-                       get_oper_name(source_p), tkline_time/60,
-                       conf->access.user, conf->access.host, conf->reason);
-  sendto_one(source_p, ":%s NOTICE %s :Added temporary %d min. K-Line [%s@%s]",
-             MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
-             source_p->name, tkline_time/60, conf->access.user,
-             conf->access.host);
-  ilog(L_TRACE, "%s added temporary %d min. K-Line for [%s@%s] [%s]",
-       get_oper_name(source_p), tkline_time/60,
-       conf->access.user, conf->access.host, conf->reason);
-  log_oper_action(LOG_TEMP_KLINE_TYPE, source_p, "[%s@%s] [%s]\n",
-                  conf->access.user, conf->access.host, conf->reason);
-
-  rehashed_klines = 1;
-}
-
-/* apply_tdline()
- *
- * inputs	-
- * output	- NONE
- * side effects	- tkline as given is placed
- */
-static void
-apply_tdline(struct Client *source_p, struct DenyConf *conf,
-             const char *current_date, int tkline_time)
-{
-  conf->access.type = acb_type_deny;
-  conf->access.expires = CurrentTime + tkline_time;
-  add_access_conf(&conf->access);
-
-  sendto_realops_flags(UMODE_ALL, L_ALL,
-                       "%s added temporary %d min. D-Line for [%s] [%s]",
-                       get_oper_name(source_p), tkline_time/60,
-                       conf->access.host, conf->reason);
-  sendto_one(source_p, ":%s NOTICE %s :Added temporary %d min. D-Line [%s]",
-             MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
-             source_p->name, tkline_time/60, conf->access.host);
-  ilog(L_TRACE, "%s added temporary %d min. D-Line for [%s] [%s]",
-       get_oper_name(source_p), tkline_time/60, conf->access.host,
-       conf->reason);
-  log_oper_action(LOG_TEMP_DLINE_TYPE, source_p, "[%s@%s] [%s]\n",
-                  conf->access.user, conf->access.host, conf->reason);
-
-  rehashed_klines = 1;
-}
-
 /* mo_dline()
  *
  * inputs	- pointer to server
@@ -421,10 +258,7 @@ mo_dline(struct Client *client_p, struct Client *source_p,
   struct DenyConf *conf;
   time_t tkline_time = 0;
   int bits, t;
-  const char *current_date = NULL;
-  time_t cur_time;
   char hostip[HOSTIPLEN];
-  FBFILE *out = NULL;
 
   if (!IsOperK(source_p))
   {
@@ -498,9 +332,6 @@ mo_dline(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  cur_time = CurrentTime;
-  current_date = smalldate(cur_time);
-
   // Look for an oper reason
   if ((oper_reason = strchr(reason, '|')) != NULL)
     *oper_reason++ = '\0';
@@ -508,53 +339,7 @@ mo_dline(struct Client *client_p, struct Client *source_p,
   if (!valid_comment(source_p, reason, YES))
     return;
 
-  conf = MyMalloc(sizeof(*conf));
-  DupString(conf->access.host, dlhost);
-
-  if (tkline_time != 0)
-  {
-    ircsprintf(buffer, "Temporary D-line %d min. - %s (%s)",
-               (int)(tkline_time/60), reason, current_date);
-    DupString(conf->reason, buffer);
-
-    if (oper_reason != NULL)
-      DupString(conf->oper_reason, oper_reason);
-
-    apply_tdline(source_p, conf, current_date, tkline_time);
-  }
-  else
-  {
-    ircsprintf(buffer, "%s (%s)", reason, current_date);
-    DupString(conf->reason, buffer);
-
-    if (oper_reason != NULL)
-      DupString(conf->oper_reason, oper_reason);
-
-    conf->access.type = acb_type_deny;
-    add_access_conf(&conf->access);
-
-    if ((out = fbopen(ServerState.dlinefile, "a")) == NULL)
-      sendto_realops_flags(UMODE_ALL, L_ALL,
-                           "*** Problem opening %s", ServerState.dlinefile);
-    else
-      write_csv_line(out, "%s%s%s%s%s%d",
-                     conf->access.host, conf->reason, conf->oper_reason,
-                     current_date, get_oper_name(source_p), cur_time);
-// TBD - don't keep the *line in memory if we cannot open the conf file
-    sendto_realops_flags(UMODE_ALL, L_ALL,
-                         "%s added D-Line for [%s] [%s]",
-                         get_oper_name(source_p), conf->access.host,
-                         conf->reason);
-    sendto_one(source_p, ":%s NOTICE %s :Added D-Line [%s] to %s",
-               me.name, source_p->name, conf->access.host,
-               ServerState.dlinefile);
-    ilog(L_TRACE, "%s added D-Line for [%s] [%s]",
-         get_oper_name(source_p), conf->access.host, conf->reason);
-    log_oper_action(LOG_DLINE_TYPE, source_p, "[%s] [%s]\n",
-                    conf->access.host, conf->reason);
-  }
-
-  rehashed_klines = 1;
+  add_dline(source_p, dlhost, reason, oper_reason, tkline_time);
 }
 
 /* already_placed_kline()

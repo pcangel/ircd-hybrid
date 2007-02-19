@@ -41,4 +41,8 @@ EXTERN int parse_aline(const char *, struct Client *, int, char **,
 		       int, char **, char **, time_t *, char **, char **);
 EXTERN int valid_comment(struct Client *, char *, int);
 
+EXTERN void announce_a_line(struct Client *, char *, int, char *, char *,
+                            char *, ...);
+EXTERN char *a_line_format_reason(char *, char *, int);
+
 #endif /* INCLUDED_parse_aline_h */

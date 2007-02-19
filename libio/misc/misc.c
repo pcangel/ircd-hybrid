@@ -89,11 +89,18 @@ const char *
 smalldate(time_t lclock)
 {
   static char buf[MAX_DATE_STRING];
+  static time_t last_time = 0;
   struct tm *lt, *gm;
   struct tm gmbuf;
 
   if (!lclock)
     lclock = CurrentTime;
+
+  // Check if our cache still applies
+  if (lclock == last_time)
+    return buf;
+
+  last_time = lclock;
 
   gm = gmtime(&lclock);
   memcpy(&gmbuf, gm, sizeof(gmbuf));

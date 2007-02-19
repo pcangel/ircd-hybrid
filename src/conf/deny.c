@@ -28,14 +28,28 @@
 #include "numeric.h"
 #include "send.h"
 #include "server.h"
-
-// TODO: Add callbacks for dline.conf support with default handlers
+#include "ircd.h"
+#include "parse_aline.h"
+#include "user.h"
 
 int acb_type_deny, acb_type_exempt;
 
 static struct DenyConf tmpdeny = {{0}};
 static struct AccessConf tmpexempt = {0};
-static dlink_node *hbanned;
+static dlink_node *hbanned, *hverify;
+static struct ConfStoreField dline_fields[] =
+{
+  { "host", CSF_STRING },
+  { "reason", CSF_STRING },
+  { "oper_reason", CSF_STRING },
+  { NULL, CSF_STRING },
+  { "oper", CSF_STRING },
+  { "added", CSF_NUMBER },
+  { NULL, 0 }
+};
+static struct ConfStore dline_store = {"dline", dline_fields};
+
+static int write_perm_dline(struct DenyConf *, const char *);
 
 static int do_report_deny(struct AccessConf *, void *);
 static int do_report_tdeny(struct AccessConf *, void *);
@@ -58,24 +72,6 @@ free_dline(struct DenyConf *dline)
 }
 
 /*
- * before_deny()
- *
- * Called before parsing a single deny{} block.
- *
- * inputs: none
- * output: none
- */
-static void
-before_deny(void)
-{
-  MyFree(tmpdeny.reason);
-  MyFree(tmpdeny.oper_reason);
-  MyFree(tmpdeny.access.host);
-  memset(&tmpdeny, 0, sizeof(tmpdeny));
-  tmpdeny.access.type = acb_type_deny;
-}
-
-/*
  * before_exempt()
  *
  * Called before parsing a single exempt{ block.
@@ -89,6 +85,43 @@ before_exempt(void)
   MyFree(tmpexempt.host);
   memset(&tmpexempt, 0, sizeof(tmpexempt));
   tmpexempt.type = acb_type_exempt;
+}
+
+/*
+ * free_tmpdeny()
+ *
+ * Called before parsing a single deny{} block.
+ *
+ * inputs: none
+ * output: none
+ */
+static void
+free_tmpdeny(void)
+{
+  MyFree(tmpdeny.reason);
+  MyFree(tmpdeny.oper_reason);
+  MyFree(tmpdeny.access.host);
+  memset(&tmpdeny, 0, sizeof(tmpdeny));
+  tmpdeny.access.type = acb_type_deny;
+}
+
+static void
+commit_tmpdeny(void)
+{
+  struct DenyConf *conf;
+
+  if (tmpdeny.access.host == NULL ||
+      parse_netmask(tmpdeny.access.host, NULL, NULL) == HM_HOST)
+  {
+    free_tmpdeny();
+    return;
+  }
+
+  conf = MyMalloc(sizeof(*conf));
+  memcpy(conf, &tmpdeny, sizeof(*conf));
+  add_access_conf(&conf->access);
+
+  memset(&tmpdeny, 0, sizeof(tmpdeny));
 }
 
 /*
@@ -119,32 +152,6 @@ parse_ip(void *value, void *where)
 }
 
 /*
- * after_deny()
- *
- * Called after parsing a single deny{} block.
- *
- * inputs: none
- * output: none
- */
-static void
-after_deny(void)
-{
-  struct DenyConf *conf;
-
-  if (tmpdeny.access.host == NULL ||
-      parse_netmask(tmpdeny.access.host, NULL, NULL) == HM_HOST)
-  {
-    before_deny();
-    return;
-  }
-
-  conf = MyMalloc(sizeof(*conf));
-  memcpy(conf, &tmpdeny, sizeof(*conf));
-  memset(&tmpdeny, 0, sizeof(tmpdeny));
-  add_access_conf(&conf->access);
-}
-
-/*
  * after_exempt()
  *
  * Called after parsing a single exempt{} block.
@@ -167,6 +174,49 @@ after_exempt(void)
   memcpy(conf, &tmpexempt, sizeof(*conf));
   memset(&tmpexempt, 0, sizeof(tmpexempt));
   add_access_conf(conf);
+}
+
+static void *
+load_dlines(va_list args)
+{
+  while (execute_callback(read_conf_store, dline_store, &tmpdeny.access.host,
+                          &tmpdeny.reason, &tmpdeny.oper_reason,
+                          NULL, NULL, NULL))
+  {
+    tmpdeny.access.type = acb_type_deny;
+    commit_tmpdeny();
+  }
+
+  return pass_callback(hverify);
+}
+
+void
+add_dline(struct Client *source_p, char *host,
+          char *reason, char *oper_reason, int tdline_time)
+{
+  DupString(tmpdeny.access.host, host);
+  tmpdeny.reason = a_line_format_reason(reason, "D-Line", tdline_time);
+  DupString(tmpdeny.oper_reason, oper_reason);
+  tmpdeny.access.expires = CurrentTime + tdline_time;
+
+  if (! tdline_time && write_perm_dline(&tmpdeny, get_oper_name(source_p)))
+    sendto_one(source_p, ":%s NOTICE %s :Added D-Line [%s] to storage",
+               me.name, source_p->name, host);
+
+  // TBD: should we still add it to memory if we can't store it?
+  commit_tmpdeny();
+  announce_a_line(source_p, "D-Line", tdline_time, reason, oper_reason,
+                  "%s", host);
+
+  rehashed_klines = 1;
+}
+
+static int
+write_perm_dline(struct DenyConf *conf, const char *oper)
+{
+  return !!execute_callback(append_conf_store, dline_store, conf->access.host,
+                            conf->reason, conf->oper_reason,
+                            smalldate(CurrentTime), oper, CurrentTime);
 }
 
 /*
@@ -307,7 +357,7 @@ init_deny(void)
   acb_type_exempt = register_acb_type("exempt",
     (ACB_FREE_HANDLER *) acb_generic_free);
 
-  s->before = before_deny;
+  s->before = free_tmpdeny;
   s2->before = before_exempt;
 
   s->def_field = add_conf_field(s, "ip", CT_STRING, parse_ip,
@@ -316,6 +366,8 @@ init_deny(void)
     &tmpexempt.host);
   add_conf_field(s, "reason", CT_STRING, NULL, &tmpdeny.reason);
 
-  s->after = after_deny;
+  s->after = commit_tmpdeny;
   s2->after = after_exempt;
+
+  hverify = install_hook(verify_conf, load_dlines);
 }
