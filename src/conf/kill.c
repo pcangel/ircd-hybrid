@@ -43,6 +43,9 @@ static struct ConfStoreField kline_fields[] =
   { "host", CSF_STRING },
   { "reason", CSF_STRING },
   { "oper_reason", CSF_STRING },
+  { NULL, CSF_STRING },
+  { "oper", CSF_STRING },
+  { "added", CSF_NUMBER },
   { NULL, 0 }
 };
 static struct ConfStore kline_store =
@@ -217,7 +220,7 @@ load_klines(va_list args)
 
   while (execute_callback(read_conf_store, kline_store, &tmpkill.access.user,
                           &tmpkill.access.host, &tmpkill.reason,
-                          &tmpkill.oper_reason))
+                          &tmpkill.oper_reason, NULL, NULL, NULL))
   {
     tmpkill.access.type = acb_type_kline;
     if (! commit_tmpkill(&errptr))
@@ -226,7 +229,7 @@ load_klines(va_list args)
 
   while (execute_callback(read_conf_store, rkline_store, &tmpkill.access.user,
                           &tmpkill.access.host, &tmpkill.reason,
-                          &tmpkill.oper_reason))
+                          &tmpkill.oper_reason, NULL, NULL, NULL))
   {
     tmpkill.access.type = -1;
     if (! commit_tmpkill(&errptr))
@@ -303,7 +306,8 @@ write_perm_kline(struct KillConf *conf, struct Client *source_p)
 
   return !!execute_callback(append_conf_store, store, source_p,
                             conf->access.user, conf->access.host,
-                            conf->reason, conf->oper_reason);
+                            conf->reason, conf->oper_reason,
+                            smalldate(CurrentTime), oper, CurrentTime);
 }
 
 /*
@@ -327,7 +331,7 @@ delete_perm_kline(struct KillConf *conf)
     return 0;
 
   return !!execute_callback(delete_conf_store, store, conf->access.user,
-                            conf->access.host, NULL, NULL);
+                            conf->access.host, NULL, NULL, NULL, NULL, NULL);
 }
 
 /*
