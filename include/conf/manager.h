@@ -77,6 +77,7 @@ struct ConfStoreField
 struct ConfStore
 {
   const char *name;
+  const char **file;
   struct ConfStoreField *fields;
 };
 

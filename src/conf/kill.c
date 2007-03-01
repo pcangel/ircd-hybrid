@@ -43,15 +43,14 @@ static struct ConfStoreField kline_fields[] =
   { "host", CSF_STRING },
   { "reason", CSF_STRING },
   { "oper_reason", CSF_STRING },
-  { NULL, CSF_STRING },
-  { "oper", CSF_STRING },
-  { "added", CSF_NUMBER },
   { NULL, 0 }
 };
-static struct ConfStore kline_store = {"kline", kline_fields};
-static struct ConfStore rkline_store = {"rkline", kline_fields};
+static struct ConfStore kline_store =
+  {"kline", &ServerState.klinefile, kline_fields};
+static struct ConfStore rkline_store =
+  {"rkline", &ServerState.rklinefile, kline_fields};
 
-static int write_perm_kline(struct KillConf *, const char *);
+static int write_perm_kline(struct KillConf *, struct Client *);
 
 static void do_report_kline(struct KillConf *, struct Client *);
 static void do_report_tkline(struct KillConf *, struct Client *);
@@ -218,7 +217,7 @@ load_klines(va_list args)
 
   while (execute_callback(read_conf_store, kline_store, &tmpkill.access.user,
                           &tmpkill.access.host, &tmpkill.reason,
-                          &tmpkill.oper_reason, NULL, NULL, NULL))
+                          &tmpkill.oper_reason))
   {
     tmpkill.access.type = acb_type_kline;
     if (! commit_tmpkill(&errptr))
@@ -227,7 +226,7 @@ load_klines(va_list args)
 
   while (execute_callback(read_conf_store, rkline_store, &tmpkill.access.user,
                           &tmpkill.access.host, &tmpkill.reason,
-                          &tmpkill.oper_reason, NULL, NULL, NULL))
+                          &tmpkill.oper_reason))
   {
     tmpkill.access.type = -1;
     if (! commit_tmpkill(&errptr))
@@ -251,7 +250,7 @@ add_line(struct Client *source_p, char *type, char *user, char *host,
   tmpkill.access.expires = CurrentTime + tkline_time;
 
   // We have to do this first, as commit_tmpkill() zeroes out tmpkill :/
-  if (!tkline_time && write_perm_kline(&tmpkill, get_oper_name(source_p)))
+  if (!tkline_time && write_perm_kline(&tmpkill, source_p))
     sendto_one(source_p, ":%s NOTICE %s :Added %s [%s@%s] to storage",
                me.name, source_p->name, type, user, host);
 
@@ -291,7 +290,7 @@ add_kline(struct Client *source_p, char *user, char *host, char *reason,
  * output: 0 on error
  */
 static int
-write_perm_kline(struct KillConf *conf, const char *oper)
+write_perm_kline(struct KillConf *conf, struct Client *source_p)
 {
   struct ConfStore *store;
 
@@ -302,9 +301,9 @@ write_perm_kline(struct KillConf *conf, const char *oper)
   else
     return 0;
 
-  return !!execute_callback(append_conf_store, store, conf->access.user,
-                            conf->access.host, conf->reason, conf->oper_reason,
-                            smalldate(CurrentTime), oper, CurrentTime);
+  return !!execute_callback(append_conf_store, store, source_p,
+                            conf->access.user, conf->access.host,
+                            conf->reason, conf->oper_reason);
 }
 
 /*
@@ -328,7 +327,7 @@ delete_perm_kline(struct KillConf *conf)
     return 0;
 
   return !!execute_callback(delete_conf_store, store, conf->access.user,
-                            conf->access.host, NULL, NULL, NULL, NULL, NULL);
+                            conf->access.host, NULL, NULL);
 }
 
 /*

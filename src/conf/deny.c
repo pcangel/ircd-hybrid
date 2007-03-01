@@ -42,14 +42,12 @@ static struct ConfStoreField dline_fields[] =
   { "host", CSF_STRING },
   { "reason", CSF_STRING },
   { "oper_reason", CSF_STRING },
-  { NULL, CSF_STRING },
-  { "oper", CSF_STRING },
-  { "added", CSF_NUMBER },
   { NULL, 0 }
 };
-static struct ConfStore dline_store = {"dline", dline_fields};
+static struct ConfStore dline_store =
+  {"dline", &ServerState.dlinefile, dline_fields};
 
-static int write_perm_dline(struct DenyConf *, const char *);
+static int write_perm_dline(struct DenyConf *, struct Client *);
 
 static int do_report_deny(struct AccessConf *, void *);
 static int do_report_tdeny(struct AccessConf *, void *);
@@ -180,8 +178,7 @@ static void *
 load_dlines(va_list args)
 {
   while (execute_callback(read_conf_store, dline_store, &tmpdeny.access.host,
-                          &tmpdeny.reason, &tmpdeny.oper_reason,
-                          NULL, NULL, NULL))
+                          &tmpdeny.reason, &tmpdeny.oper_reason))
   {
     tmpdeny.access.type = acb_type_deny;
     commit_tmpdeny();
@@ -199,7 +196,7 @@ add_dline(struct Client *source_p, char *host,
   DupString(tmpdeny.oper_reason, oper_reason);
   tmpdeny.access.expires = CurrentTime + tdline_time;
 
-  if (! tdline_time && write_perm_dline(&tmpdeny, get_oper_name(source_p)))
+  if (! tdline_time && write_perm_dline(&tmpdeny, source_p))
     sendto_one(source_p, ":%s NOTICE %s :Added D-Line [%s] to storage",
                me.name, source_p->name, host);
 
@@ -212,11 +209,10 @@ add_dline(struct Client *source_p, char *host,
 }
 
 static int
-write_perm_dline(struct DenyConf *conf, const char *oper)
+write_perm_dline(struct DenyConf *conf, struct Client *source_p)
 {
-  return !!execute_callback(append_conf_store, dline_store, conf->access.host,
-                            conf->reason, conf->oper_reason,
-                            smalldate(CurrentTime), oper, CurrentTime);
+  return !!execute_callback(append_conf_store, dline_store, source_p,
+                            conf->access.host, conf->reason, conf->oper_reason);
 }
 
 /*
