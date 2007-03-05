@@ -31,6 +31,7 @@
 #include "msg.h"
 #include "parse.h"
 #include "conf/modules.h"
+#include "string/strbuf.h"
 
 static void do_ison(struct Client *, struct Client *, int, char *[]);
 static void m_ison(struct Client *, struct Client *, int, char *[]);
@@ -73,14 +74,12 @@ do_ison(struct Client *client_p, struct Client *source_p,
   struct Client *target_p = NULL;
   char *nick;
   char *p;
-  char *current_insert_point = NULL;
-  char buf[IRCD_BUFSIZE];
-  int len;
+  struct strbuf buf;
   int i;
-  int done = 0;
 
-  len = ircsprintf(buf, form_str(RPL_ISON), me.name, parv[0]);
-  current_insert_point = buf + len;
+  buf_init(&buf, buf_cb_sendto_one, source_p);
+  buf_add(&buf, form_str(RPL_ISON), me.name, source_p->name);
+  buf_mark(&buf);
 
   /* rfc1459 is ambigious about how to handle ISON
    * this should handle both interpretations.
@@ -91,25 +90,8 @@ do_ison(struct Client *client_p, struct Client *source_p,
          nick = strtoken(&p, NULL,    " "))
     {
       if ((target_p = find_person(client_p, nick)))
-      {
-        len = strlen(target_p->name);
-
-        if ((current_insert_point + (len + 5)) < (buf + sizeof(buf)))
-        {
-          memcpy(current_insert_point, target_p->name, len);
-          current_insert_point += len;
-          *current_insert_point++ = ' ';
-        }
-        else
-        {
-          done = 1;
-          break;
-        }
-      }
+	buf_add(&buf, "%s ", target_p->name);
     }
-
-    if (done)
-      break;
   }
 
   /*  current_insert_point--;
@@ -117,7 +99,5 @@ do_ison(struct Client *client_p, struct Client *source_p,
    *  --Rodder
    */
 
-  *current_insert_point = '\0';
-
-  sendto_one(source_p, "%s", buf);
+  buf_flush(&buf);
 }
