@@ -31,3 +31,5 @@ void buf_mark(struct strbuf *);
 void buf_set_sep(struct strbuf *, char *);
 void buf_add(struct strbuf *, char *, ...);
 void buf_flush(struct strbuf *);
+void buf_init_and_set_sep(struct strbuf *buf, buf_callback callback,
+			  void *cb_param, char *sep);

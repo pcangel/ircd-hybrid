@@ -36,10 +36,13 @@
 static void do_flush(struct strbuf *);
 
 /* Should be called for initialization before using a buffer.
- * params:
- *        the buffer
- *        callback function to call whenever the buffer is flushed
- *        param to be passed to callback
+ * buf_init
+ *
+ * inputs       - pointer to the buffer
+ *              - callback function to call whenever the buffer is flushed
+ *  		- param to be passed to callback
+ * Output	- none
+ * Side effects	-
  */
 void
 buf_init(struct strbuf *buf, buf_callback callback, void *cb_param)
@@ -51,8 +54,13 @@ buf_init(struct strbuf *buf, buf_callback callback, void *cb_param)
   buf->sep_len = 0;
 }
 
-/* Marks the current position in a buffer as the place
- * where flushes will rewind to
+/* 
+ * buf_mark
+ *
+ * Inputs	- pointer to struct strbuf
+ * Output	- none
+ * Side effects	- Marks the current position in a buffer as the place
+ * 		  where flushes will rewind to
  */
 void
 buf_mark(struct strbuf *buf)
@@ -60,8 +68,13 @@ buf_mark(struct strbuf *buf)
   buf->mark = buf->pos;
 }
 
-/* Sets a separator string  to be inserted automatically between two messages,
- * but not before the first or after the last
+/*
+ * Inputs	- pointer to struct strbuf
+ * 		- pointer to separator char
+ * Output	- none
+ * Side effects	- Sets a separator string  to be inserted
+ * 		  automatically between two messages,
+ * 		  but not before the first or after the last
  */
 void
 buf_set_sep(struct strbuf *buf, char *sep)
@@ -70,7 +83,27 @@ buf_set_sep(struct strbuf *buf, char *sep)
   buf->sep_len = strlen(sep);
 }
 
-/* Appends a message to the buffer
+/*
+ * Inputs	- pointer to struct strbuf
+ * 		- pointer to separator char
+ * Output	- none
+ * Side effects	- Combines buf_init and buf_set_sep
+ */
+void
+buf_init_and_set_sep(struct strbuf *buf, buf_callback callback,
+		     void *cb_param, char *sep)
+{
+  buf_init(buf, callback, cb_param);
+  buf_set_sep(buf, sep);
+}
+
+/* buf_add
+ *
+ * Inputs	- pointer to strbuf buf
+ *		- format string to add
+ * Output	- none
+ * Side effects	- Appends a message to the buffer
+ * Bugs		- 
  * TBD: Should we provide a cheaper version for add_buf(&b, "%s", str) ?
  */
 void
@@ -118,13 +151,27 @@ buf_add(struct strbuf *buf, char *format, ...)
   }
 }
 
+/*
+ * do_flush internal
+ *
+ * Inputs	- pointer to struct strbuf
+ * Output	- none
+ * Side effects	- flushes to output anything left in buffer
+ */
 static void
 do_flush(struct strbuf *buf)
 {
   buf->callback(buf->buf, buf->cb_param);
 }
 
-/* Flushes a buffer: call the callback, and rewind to last mark */
+/*
+ * buf_flush user callable
+ *
+ * Inputs	- pointer to struct strbuf
+ * Output	- none
+ * Side effects	- Flushes a buffer: 
+ * 		  call the callback, and rewind to last mark 
+ */
 void
 buf_flush(struct strbuf *buf)
 {
