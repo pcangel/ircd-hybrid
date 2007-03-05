@@ -296,6 +296,8 @@ static int
 write_perm_kline(struct KillConf *conf, struct Client *source_p)
 {
   struct ConfStore *store;
+/* XXX */
+char *oper;
 
   if (conf->access.type == acb_type_kline)
     store = &kline_store;

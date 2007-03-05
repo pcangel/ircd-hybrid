@@ -37,6 +37,7 @@
 #include "server.h"
 #include "msg.h"
 #include "parse.h"
+#include "string/strbuf.h"
 
 static void names_all_visible_channels(struct Client *);
 static void names_non_public_non_secret(struct Client *);
@@ -142,19 +143,16 @@ names_all_visible_channels(struct Client *source_p)
 static void
 names_non_public_non_secret(struct Client *source_p)
 {
-  int mlen, tlen, cur_len;
-  int reply_to_send = NO;
   int shown_already;
   dlink_node *gc2ptr, *lp;
   struct Client *c2ptr;
   struct Channel *ch3ptr = NULL;
-  char buf[IRCD_BUFSIZE];
-  char *t;
+  struct strbuf buf;
 
-  mlen = ircsprintf(buf, form_str(RPL_NAMREPLY),
-                    me.name, source_p->name, "*", "*");
-  cur_len = mlen;
-  t = buf + mlen;
+  buf_init(&buf, buf_cb_sendto_one, source_p);
+  buf_add(&buf, form_str(RPL_NAMREPLY), me.name, source_p->name, "*","*");
+  buf_mark(&buf);
+  buf_set_sep(&buf, " ");
 
   /* Second, do all non-public, non-secret channels in one big sweep */
   DLINK_FOREACH(gc2ptr, global_client_list.head)
@@ -182,25 +180,8 @@ names_non_public_non_secret(struct Client *source_p)
     if (shown_already)
       continue;
 
-    tlen = strlen(c2ptr->name);
-    if (cur_len + tlen + 1 > IRCD_BUFSIZE - 2)
-    {
-      sendto_one(source_p, "%s", buf);
-      cur_len = mlen;
-      t = buf + mlen;
-    }
-
-    strcpy(t, c2ptr->name);
-    t += tlen;
-
-    *t++ = ' ';
-    *t = 0;
-
-    cur_len += tlen + 1;
-
-    reply_to_send = YES;
+    buf_add(&buf, "%s", c2ptr->name);
   }
 
-  if (reply_to_send)
-    sendto_one(source_p, "%s", buf);
+  buf_flush(&buf);
 }

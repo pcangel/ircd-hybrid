@@ -12,6 +12,8 @@
  * Now have fun, and leave the lawyers in the dog pen, next to the politicians.
  */
 
+#include "../include/ircd_defs.h"
+
 typedef void (*buf_callback)(char *, void *);
 
 struct strbuf {
@@ -29,5 +31,3 @@ void buf_mark(struct strbuf *);
 void buf_set_sep(struct strbuf *, char *);
 void buf_add(struct strbuf *, char *, ...);
 void buf_flush(struct strbuf *);
-
-void buf_cb_sendto_one(char *, void *);

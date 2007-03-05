@@ -87,6 +87,7 @@ EXTERN void kill_client(struct Client *, struct Client *,
 EXTERN void kill_client_ll_serv_butone(struct Client *, struct Client *,
                                        const char *, ...) AFP(3, 4);
 
+void buf_cb_sendto_one(char *, void *);
 
 #define ALL_MEMBERS  0
 #define NON_CHANOPS  1

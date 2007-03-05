@@ -10,7 +10,8 @@ INSTALL		= @INSTALL@
 INSTALL_BIN	= @INSTALL_PROGRAM@
 INSTALL_DATA	= @INSTALL_DATA@
 CFLAGS		= @IRC_CFLAGS@
-LDFLAGS   	= @LDFLAGS@
+# XXX -undefined force strbuf objects to be linked in
+LDFLAGS   	= @LDFLAGS@,-undefined=buf_init
 MKDEP		= @MKDEP@
 STDOUT		= @STDOUT@
 MV		= @MV@

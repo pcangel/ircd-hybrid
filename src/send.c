@@ -1169,3 +1169,18 @@ kill_client_ll_serv_butone(struct Client *one, struct Client *source_p,
       send_message(client_p, buf_nick, len_nick);
   }
 } 
+
+/* buf_cb_sendto_one
+ *
+ * inputs	- pointer to message
+ *		- params
+ * output	- NONE
+ * side effects	- Used as a callback by strbuf
+ *		  perhaps useful elsewhere.
+ */
+void
+buf_cb_sendto_one(char *message, void *param)
+{
+  struct Client *target_p = param;
+  sendto_one(target_p, "%s", message);
+}

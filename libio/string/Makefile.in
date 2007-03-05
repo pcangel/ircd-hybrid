@@ -25,6 +25,7 @@ SRCS = \
   pcre_try_flipped.c \
   @SNPRINTF_C@ \
   sprintf_irc.c \
+  strbuf.c \
   string.c
 
 OBJS = ${SRCS:.c=.o}

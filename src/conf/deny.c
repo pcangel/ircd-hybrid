@@ -215,6 +215,8 @@ add_dline(struct Client *source_p, char *host,
 static int
 write_perm_dline(struct DenyConf *conf, struct Client *source_p)
 {
+/* XXX */
+char *oper;
   return !!execute_callback(append_conf_store, dline_store, source_p,
                             conf->access.host, conf->reason, conf->oper_reason,
                             smalldate(CurrentTime), oper, CurrentTime);

@@ -139,10 +139,3 @@ buf_flush(struct strbuf *buf)
   /* rewind to last mark */
   buf->pos = buf->mark;
 }
-
-void
-buf_cb_sendto_one(char *message, void *param)
-{
-  struct Client *target_p = param;
-  sendto_one(target_p, "%s", message);
-}
