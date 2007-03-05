@@ -36,6 +36,7 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
+#include "string/strbuf.h"
 
 static void *do_whois(va_list);
 static int single_whois(struct Client *, struct Client *);
@@ -317,16 +318,11 @@ single_whois(struct Client *source_p, struct Client *target_p)
 static void
 whois_person(struct Client *source_p, struct Client *target_p)
 {
-  char buf[IRCD_BUFSIZE];
+  struct strbuf buf;
   dlink_node *lp;
   const struct Client *server_p = NULL;
   struct Channel *chptr;
   struct Membership *ms;
-  int cur_len = 0;
-  int mlen;
-  char *t = NULL;
-  int tlen;
-  int reply_to_send = NO;
 
   server_p = target_p->servptr;
 
@@ -334,9 +330,11 @@ whois_person(struct Client *source_p, struct Client *target_p)
              me.name, source_p->name, target_p->name,
              target_p->username, target_p->host, target_p->info);
 
-  cur_len = mlen = ircsprintf(buf, form_str(RPL_WHOISCHANNELS),
-             me.name, source_p->name, target_p->name, "");
-  t = buf + mlen;
+  buf_init(&buf, buf_cb_sendto_one, source_p);
+  buf_add(&buf, form_str(RPL_WHOISCHANNELS), me.name, 
+	  source_p->name, target_p->name, "");
+  buf_mark(&buf);
+  buf_set_sep(&buf, " ");
 
   DLINK_FOREACH(lp, target_p->channel.head)
   {
@@ -349,27 +347,11 @@ whois_person(struct Client *source_p, struct Client *target_p)
       if (!MyConnect(source_p) && (chptr->chname[0] == '&'))
         continue;
 
-      if ((cur_len + 3 + strlen(chptr->chname) + 1) > (IRCD_BUFSIZE - 2))
-      {
-        *(t - 1) = '\0';
-        sendto_one(source_p, "%s", buf);
-        cur_len = mlen;
-        t = buf + mlen;
-      }
-
-      tlen = ircsprintf(t, "%s%s ", get_member_status(ms, YES), chptr->chname);
-      t += tlen;
-      cur_len += tlen;
-      reply_to_send = YES;
+      buf_add(&buf, "%s%s", get_member_status(ms, YES), chptr->chname);
     }
   }
 
-  if (reply_to_send)
-  {
-    *(t - 1) = '\0';
-    sendto_one(source_p, "%s", buf);
-  }
-
+  buf_flush(&buf);
   if (IsOper(source_p) || !ServerHide.hide_servers || target_p == source_p)
     sendto_one(source_p, form_str(RPL_WHOISSERVER),
                me.name, source_p->name, target_p->name,
