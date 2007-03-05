@@ -33,6 +33,7 @@
 #include "msg.h"
 #include "parse.h"
 #include "user.h"
+#include "string/strbuf.h"
 
 static void m_accept(struct Client *, struct Client *, int, char *[]);
 static void add_accept(const struct split_nuh_item *, struct Client *);
@@ -177,38 +178,23 @@ static void
 list_accepts(struct Client *source_p)
 {
   struct Accept *acceptvar = NULL;
-  int len = 0;
-  char nuh_list[IRCD_BUFSIZE] = { '\0' };
-  char *t = NULL;
+  struct strbuf buf;
   const dlink_node *ptr = NULL;
 
-  len = ircsprintf(nuh_list, form_str(RPL_ACCEPTLIST),
-                   me.name, source_p->name);
-  t = nuh_list + len;
+  buf_init(&buf, buf_cb_sendto_one, source_p);
+  buf_add(&buf, form_str(RPL_ACCEPTLIST), me.name, source_p->name);
+  buf_mark(&buf);
+  buf_set_sep(&buf, " ");
 
   DLINK_FOREACH(ptr, source_p->localClient->acceptlist.head)
   {
     acceptvar = ptr->data;
 
-    if ((t - nuh_list) + (strlen(acceptvar->nick) + 1 + strlen(acceptvar->user) + 1 +
-        strlen(acceptvar->host)) > IRCD_BUFSIZE)
-    {
-      *(t - 1) = '\0';
-      sendto_one(source_p, "%s", nuh_list);
-      t = nuh_list + len;
-    }
-
-    t += ircsprintf(t, "%s!%s@%s ",
-		    acceptvar->nick, acceptvar->user, acceptvar->host);
+    buf_add(&buf, "%s!%s@%s",
+	    acceptvar->nick, acceptvar->user, acceptvar->host);
   }
 
-  if (t - nuh_list > len)
-  {
-    *(t - 1) = '\0';
-    sendto_one(source_p, form_str(RPL_ACCEPTLIST),
-               me.name, source_p->name, nuh_list);
-  }
-
+  buf_flush(&buf);
   sendto_one(source_p, form_str(RPL_ENDOFACCEPT),
              me.name, source_p->name);
 }
