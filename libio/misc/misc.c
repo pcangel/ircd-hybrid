@@ -381,10 +381,11 @@ libio_init(int daemonn)
     close_standard_fds();
 #endif
 
-  /* It ain't random, but it ought to be a little harder to guess */
+  set_time();
+
+  // It ain't random, but it ought to be a little harder to guess
   srand(SystemTime.tv_sec ^ (SystemTime.tv_usec | (getpid() << 20)));
 
-  set_time();
   eventInit();
   fdlist_init();
   init_comm();
