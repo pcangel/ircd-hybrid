@@ -46,5 +46,6 @@
 #include "conf/serverhide.h"
 #include "conf/serverinfo.h"
 #include "conf/shared.h"
+#include "conf/stores.h"
 
 #endif

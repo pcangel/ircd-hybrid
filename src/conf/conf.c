@@ -36,9 +36,6 @@ unsigned int conf_flags;
 struct Callback *reset_conf = NULL;
 struct Callback *verify_conf = NULL;
 struct Callback *switch_conf_pass = NULL;
-struct Callback *read_conf_store = NULL;
-struct Callback *append_conf_store = NULL;
-struct Callback *delete_conf_store = NULL;
 
 static dlink_list conf_section_list = {NULL, NULL, 0};
 
@@ -56,9 +53,6 @@ init_conf(void)
   reset_conf = register_callback("reset_conf", NULL);
   verify_conf = register_callback("verify_conf", NULL);
   switch_conf_pass = register_callback("switch_conf_pass", NULL);
-  read_conf_store = register_callback("read_conf_store", NULL);
-  append_conf_store = register_callback("append_conf_store", NULL);
-  delete_conf_store = register_callback("delete_conf_store", NULL);
 
   init_serverinfo();
   init_access();

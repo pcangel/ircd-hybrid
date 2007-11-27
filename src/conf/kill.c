@@ -43,15 +43,11 @@ static struct ConfStoreField kline_fields[] =
   { "host", CSF_STRING },
   { "reason", CSF_STRING },
   { "oper_reason", CSF_STRING },
-  { NULL, CSF_STRING },
+  { NULL, CSF_STRING }, /* Legacy date string */
   { "oper", CSF_STRING },
   { "added", CSF_NUMBER },
   { NULL, 0 }
 };
-static struct ConfStore kline_store =
-  {"kline", &ServerState.klinefile, kline_fields};
-static struct ConfStore rkline_store =
-  {"rkline", &ServerState.rklinefile, kline_fields};
 
 static int write_perm_kline(struct KillConf *, struct Client *);
 
@@ -217,24 +213,39 @@ static void *
 load_klines(va_list args)
 {
   const char *errptr = NULL;
+  struct ConfStoreHandle *handle;
 
-  while (execute_callback(read_conf_store, kline_store, &tmpkill.access.user,
+  if ((handle = open_conf_store(ServerState.klinefile, &kline_fields)) != NULL)
+  {
+    while (read_conf_store(handle, &tmpkill.access.user,
                           &tmpkill.access.host, &tmpkill.reason,
                           &tmpkill.oper_reason, NULL, NULL, NULL))
-  {
-    tmpkill.access.type = acb_type_kline;
-    if (! commit_tmpkill(&errptr))
-      ilog(L_ERROR, "Failed to load K-line from conf store: %s", errptr);
-  }
+    {
+      tmpkill.access.type = acb_type_kline;
+      if (! commit_tmpkill(&errptr))
+        ilog(L_ERROR, "Failed to load K-line from conf store: %s", errptr);
+    }
 
-  while (execute_callback(read_conf_store, rkline_store, &tmpkill.access.user,
+    close_conf_store(handle);
+  }
+  else
+    ilog(L_ERROR, "Failed to open K-line store: %s", ServerState.klinefile);
+
+  if ((handle = open_conf_store(ServerState.rklinefile, &kline_fields)) != NULL)
+  {
+    while (read_conf_store(handle, &tmpkill.access.user,
                           &tmpkill.access.host, &tmpkill.reason,
                           &tmpkill.oper_reason, NULL, NULL, NULL))
-  {
-    tmpkill.access.type = -1;
-    if (! commit_tmpkill(&errptr))
-      ilog(L_ERROR, "Failed to load RK-line from conf store: %s", errptr);
+    {
+      tmpkill.access.type = -1;
+      if (! commit_tmpkill(&errptr))
+        ilog(L_ERROR, "Failed to load RK-line from conf store: %s", errptr);
+    }
+
+    close_conf_store(handle);
   }
+  else
+    ilog(L_ERROR, "Failed to open RK-line store: %s", ServerState.rklinefile);
 
   return pass_callback(hverify);
 }
@@ -295,21 +306,20 @@ add_kline(struct Client *source_p, char *user, char *host, char *reason,
 static int
 write_perm_kline(struct KillConf *conf, struct Client *source_p)
 {
-  struct ConfStore *store;
-/* XXX */
-char *oper;
+  char *filename;
 
   if (conf->access.type == acb_type_kline)
-    store = &kline_store;
+    filename = ServerState.klinefile;
   else if (conf->access.type == -1)
-    store = &rkline_store;
+    filename = ServerState.rklinefile;
   else
     return 0;
 
-  return !!execute_callback(append_conf_store, store, source_p,
+  return !append_conf_store(filename, &kline_fields,
                             conf->access.user, conf->access.host,
                             conf->reason, conf->oper_reason,
-                            smalldate(CurrentTime), oper, CurrentTime);
+                            smalldate(CurrentTime), get_oper_name(source_p),
+                            CurrentTime);
 }
 
 /*
@@ -323,17 +333,18 @@ char *oper;
 int
 delete_perm_kline(struct KillConf *conf)
 {
-  struct ConfStore *store;
+  char *filename;
 
   if (conf->access.type == acb_type_kline)
-    store = &kline_store;
+    filename = ServerState.klinefile;
   else if (conf->access.type == -1)
-    store = &rkline_store;
+    filename = ServerState.rklinefile;
   else
     return 0;
 
-  return !!execute_callback(delete_conf_store, store, conf->access.user,
-                            conf->access.host, NULL, NULL, NULL, NULL, NULL);
+  return 0 <= delete_csv(filename, &kline_fields,
+                         &conf->access.user, &conf->access.host,
+                         NULL, NULL, NULL, NULL, NULL);
 }
 
 /*

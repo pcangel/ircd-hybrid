@@ -63,24 +63,6 @@ struct FlagMapping
 
 typedef struct FlagMapping FlagMap[32+1];
 
-#define CSF_NONE                0
-#define CSF_STRING              1
-#define CSF_STRING_MATCH_CASE   2
-#define CSF_NUMBER              3
-
-struct ConfStoreField
-{
-  const char *name;
-  char type;
-};
-
-struct ConfStore
-{
-  const char *name;
-  const char **file;
-  struct ConfStoreField *fields;
-};
-
 void init_conf(void);
 void conf_clear_ident_list(void);
 
@@ -88,9 +70,6 @@ EXTERN int conf_pass, conf_cold;
 EXTERN struct Callback *reset_conf;
 EXTERN struct Callback *verify_conf;
 EXTERN struct Callback *switch_conf_pass;
-EXTERN struct Callback *read_conf_store;
-EXTERN struct Callback *append_conf_store;
-EXTERN struct Callback *delete_conf_store;
 EXTERN unsigned int conf_flags;
 
 EXTERN void parse_error(const char *, ...);
