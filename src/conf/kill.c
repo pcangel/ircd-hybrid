@@ -39,14 +39,11 @@ static struct KillConf tmpkill = {{0}, 0};
 static dlink_node *hreset, *hexpire, *hbanned, *hverify;
 static struct ConfStoreField kline_fields[] =
 {
-  { "user", CSF_STRING },
-  { "host", CSF_STRING },
-  { "reason", CSF_STRING },
-  { "oper_reason", CSF_STRING },
-  { NULL, CSF_STRING }, /* Legacy date string */
-  { "oper", CSF_STRING },
-  { "added", CSF_NUMBER },
-  { NULL, 0 }
+  { "user", CSF_STRING, CSF_MATCH },
+  { "host", CSF_STRING, CSF_MATCH },
+  { "reason", CSF_STRING, CSF_NOMATCH },
+  { "oper_reason", CSF_STRING, CSF_NOMATCH },
+  { NULL, 0 , 0}
 };
 
 static int write_perm_kline(struct KillConf *, struct Client *);
@@ -219,7 +216,7 @@ load_klines(va_list args)
   {
     while (read_conf_store(handle, &tmpkill.access.user,
                           &tmpkill.access.host, &tmpkill.reason,
-                          &tmpkill.oper_reason, NULL, NULL, NULL))
+                          &tmpkill.oper_reason))
     {
       tmpkill.access.type = acb_type_kline;
       if (! commit_tmpkill(&errptr))
@@ -235,7 +232,7 @@ load_klines(va_list args)
   {
     while (read_conf_store(handle, &tmpkill.access.user,
                           &tmpkill.access.host, &tmpkill.reason,
-                          &tmpkill.oper_reason, NULL, NULL, NULL))
+                          &tmpkill.oper_reason))
     {
       tmpkill.access.type = -1;
       if (! commit_tmpkill(&errptr))
@@ -315,11 +312,9 @@ write_perm_kline(struct KillConf *conf, struct Client *source_p)
   else
     return 0;
 
-  return !append_conf_store(filename, &kline_fields,
+  return !append_conf_store(filename, &kline_fields, source_p,
                             conf->access.user, conf->access.host,
-                            conf->reason, conf->oper_reason,
-                            smalldate(CurrentTime), get_oper_name(source_p),
-                            CurrentTime);
+                            conf->reason, conf->oper_reason);
 }
 
 /*
@@ -343,8 +338,7 @@ delete_perm_kline(struct KillConf *conf)
     return 0;
 
   return 0 <= delete_csv(filename, &kline_fields,
-                         &conf->access.user, &conf->access.host,
-                         NULL, NULL, NULL, NULL, NULL);
+                         conf->access.user, conf->access.host);
 }
 
 /*

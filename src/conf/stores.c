@@ -25,7 +25,7 @@
 static struct ConfStoreHandle *open_fail(char *, struct ConfStoreField *);
 static int read_fail(struct ConfStoreHandle *, va_list);
 static int close_fail(struct ConfStoreHandle *);
-static int append_fail(char *, struct ConfStoreField *, va_list);
+static int append_fail(char *, struct ConfStoreField *, struct Client *, va_list);
 static int delete_fail(char *, struct ConfStoreField *, va_list);
 
 static struct ConfStoreFunctions no_store = {
@@ -86,7 +86,7 @@ close_fail(struct ConfStoreHandle *handle)
 }
 
 static int
-append_fail(char *name, struct ConfStoreField *fields, va_list args)
+append_fail(char *name, struct ConfStoreField *fields, struct Client *setter, va_list args)
 {
   return -1;
 }
@@ -170,16 +170,18 @@ close_conf_store(struct ConfStoreHandle *handle)
  * inputs:
  *     name   - name to store to (see description under open_ )
  *     fields - how to store (ditto)
+ *     setter - source that caused the conf line to get set, or NULL.
  *     ...    - the data to store
  */
 int
-append_conf_store(char *name, struct ConfStoreField *fields, ...)
+append_conf_store(char *name, struct ConfStoreField *fields,
+                  struct Client *setter, ...)
 {
   va_list args;
   int result;
 
-  va_start(args, fields);
-  result = backend->append(name, fields, args);
+  va_start(args, setter);
+  result = backend->append(name, fields, setter, args);
   va_end(args);
 
   return result;
@@ -189,8 +191,7 @@ append_conf_store(char *name, struct ConfStoreField *fields, ...)
  *
  * Attempts to delete an item from a store
  *
- * Note: do NOT pass direct types (char*, int, time_t, ...) but pointers to
- * them. This allows for NULL to specify a wildcard.
+ * Only specify arguments for the CSF_MATCH items
  *
  * returns the number of items deleted, or -1 on error.
  */

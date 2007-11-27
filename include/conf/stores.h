@@ -22,17 +22,23 @@
  *  $Id$
  */
 
-/* Except for CSF_NONE, each take the indicated type on append_,
- * and a pointer to it on read and delete (in the latter,
- * NULL specifies a wildcard)
+/* Except for CSF_NONE, each take the indicated type on append_ and delete_
+ * and a pointer to it on read
  */
 enum CsfType {
   CSF_NONE,              /* void* on read and write */
   CSF_STRING,            /* char*  */
-  CSF_STRING_MATCH_CASE, /* char*  */
   CSF_NUMBER,            /* int    */
   CSF_DATETIME,          /* time_t */
 }
+
+/* To define whether or not a field should be honored by delete_conf_store().
+ * Fields with CSF_NOMATCH must come last and must not be specified in calls
+ * to delete_conf_store().
+ */
+#define CSF_NOMATCH    0x00 /* Ignore field for deletes */
+#define CSF_MATCH      0x01 /* Honor field for deletes */
+#define CSF_MATCHEXACT 0x02 /* Do it exactly (e.g. strict case for strings) */
 
 /* These take a va_list so we can at some point chain them more easily,
  * if desired.
@@ -53,6 +59,7 @@ struct ConfStoreField
 {
   const char *name; /* The name, for e.g. SQL column names */
   enum CsfType type;
+  unsigned char matchType;
 };
 
 
@@ -63,5 +70,5 @@ EXTERN struct ConfStoreHandle *open_conf_store(char *, struct ConfStoreField *);
 EXTERN int read_conf_store(struct ConfStoreHandle *, ...);
 EXTERN int close_conf_store(struct ConfStoreHandle *);
 
-EXTERN int append_conf_store(char *, struct ConfStoreField *, ...);
+EXTERN int append_conf_store(char *, struct ConfStoreField *, struct Client *, ...);
 EXTERN int delete_conf_store(char *, struct ConfStoreField *, ...);

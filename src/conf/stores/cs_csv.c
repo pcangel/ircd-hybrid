@@ -6,7 +6,8 @@ static char *getfield(char *);
 static struct ConfStoreHandle *open_csv(char *, struct ConfStoreField *);
 static int read_csv(struct ConfStoreHandle *, va_list);
 static int close_csv(struct ConfStoreHandle *);
-static int append_csv(char *, struct ConfStoreField *, va_list);
+static int append_csv(char *, struct ConfStoreField *, struct Client *,
+                      va_list);
 static int delete_csv(char *, struct ConfStoreField *, va_list);
 
 struct ConfStoreHandle {
@@ -69,21 +70,20 @@ read_csv(struct ConfStoreHandle *handle, va_list args)
   if ((nextfield = strchr(buf, '\n')) != NULL)
     *nextfield = '\0';
 
-  for(i=0, nextfield=buf; store[i].type && nextfield; i++)
+  for(i=0, nextfield=buf; fields[i].type && nextfield; i++)
   {
     char *field = nextfield;
 
     // Note: this also removes escapes from the current field.
     nextfield = getfield(field);
 
-    switch(store[i].type)
+    switch(fields[i].type)
     {
     case CSF_NONE:
       (void) va_arg(args, void *); // Throw it away
       break;
 
     case CSF_STRING:
-    case CSF_STRING_MATCH_CASE:
       strval = va_arg(args, char **);
       if (strval != NULL)
         DupString(*strval, field);
@@ -119,7 +119,8 @@ close_csv(struct ConfStoreHandle *handle)
 }
 
 static int
-append_csv(char *name, struct ConfStoreField *fields, va_list args)
+append_csv(char *name, struct ConfStoreField *fields, struct Client *setter,
+           va_list args)
 {
   char *out, buf[2*IRCD_BUFSIZE]; // paranoia
   int i;
@@ -135,28 +136,39 @@ append_csv(char *name, struct ConfStoreField *fields, va_list args)
     if (i > 0)
       *out++ = ',';
 
-    switch(store[i].type)
+    switch(fields[i].type)
     {
     case CSF_NONE:
       (void) va_arg(args, void *); // Throw it away
       break;
 
     case CSF_STRING:
-    case CSF_STRING_MATCH_CASE:
       strval = va_arg(args, char *);
       out += escape_csv(out, strval);
       break;
 
     case CSF_NUMBER:
       intval = va_arg(args, int);
-      out += sprintf(buf, "%d", intval);
+      out += sprintf(out, "%d", intval);
       break;
 
     case CSF_DATETIME:
       timeval = va_arg(args, time_t);
-      out += sprintf(buf, "%lu", timeval);
+      out += sprintf(out, "%lu", timeval);
     }
   }
+
+#ifdef CSV_COMPAT
+  if (name != ServerState.nresvfile && name != ServerState.cresvfile)
+  {
+#endif
+    out += escape_csv(out, smalldate(CurrentTime));
+    // TBD: should this support servers as sources too?
+    out += escape_csv(out, source_p ? get_oper_name(source_p) : "<unknown source>");
+    out += sprintf(out, "%d", CurrentTime);
+#ifdef CSV_COMPAT
+  }
+#endif
 
   *out++ = '\n';
   *out = '\0';
@@ -173,9 +185,13 @@ delete_csv(char *name, struct ConfStoreField *fields, va_list args)
   char buf[2*IRCD_BUFSIZE], buff[2*IRCD_BUFSIZE], temppath[IRCD_BUFSIZE];
   int i, oldumask, matches=0;
   char **strval, *nextfield;
-  int *intval;
-  time_t *timeval;
-  static FBFILE *outfile, *infile = fbopen(*store->file, "rt");
+  static FBFILE *outfile, *infile = fbopen(*name, "rt");
+  union {
+    char *strval;
+    int intval;
+    time_t timeval;
+  } pattern[32];  /* FIXME: constant size? */
+
   if (infile == NULL)
     return -1; // Error opening file
 
@@ -190,6 +206,29 @@ delete_csv(char *name, struct ConfStoreField *fields, va_list args)
     return -1;
   }
 
+  /* Saner than doing insane amounts of va_copy ;) */
+  for(i=0; fields[i].matchType != CSF_NOMATCH; i++)
+  {
+    switch(fields[i].type)
+    {
+    case CSF_NONE:
+      (void) va_arg(args, void *); // Throw it away
+      break;
+
+    case CSF_STRING:
+      pattern[i].strval = va_arg(args, char *);
+      break;
+
+    case CSF_NUMBER:
+      pattern[i].intval = va_arg(args, int );
+      break;
+
+    case CSF_DATETIME:
+      pattern[i].timeval = va_arg(args, time_t);
+      break;
+    }
+  }
+
   while(fbgets(buf, sizeof(buf), infile) != NULL)
   {
     int isMatch=1;
@@ -201,39 +240,38 @@ delete_csv(char *name, struct ConfStoreField *fields, va_list args)
     if ((nextfield = strchr(buf, '\n')) != NULL)
       *nextfield = '\0';
 
-    // see read_csv() for more info about this loop
-    for(i=0, nextfield=buf; matches && store[i].type && nextfield; i++)
+    for(i=0, nextfield=buf;
+        isMatch && (fields[i].matchType != CSF_NOMATCH) && nextfield;
+        i++)
     {
       char *field = nextfield;
       nextfield = getfield(nextfield);
 
-      switch(store[i].type)
+      switch(fields[i].type)
       {
       case CSF_NONE:
-        (void) va_arg(args, void *); // Throw it away
         break;
 
       case CSF_STRING:
-        strval = va_arg(args, char **);
-        if ((strval != NULL) && irccmp(*strval, field))
-          isMatch = 0;
-        break;
-
-      case CSF_STRING_MATCH_CASE:
-        strval = va_arg(args, char **);
-        if ((strval != NULL) && strcmp(*strval, field))
-          isMatch = 0;
+        if (fields[i].matchType & CSF_MATCH_EXACT)
+        {
+          if ((pattern[i].strval != NULL) && strcmp(pattern[i].strval, field))
+            isMatch = 0;
+        }
+        else
+        {
+          if ((pattern[i].strval != NULL) && irccmp(pattern[i].strval, field))
+            isMatch = 0;
+        }
         break;
 
       case CSF_NUMBER:
-        intval = va_arg(args, int *);
-        if ((intval != NULL) && (*intval != atoi(field)))
+        if (pattern[i].intval != atoi(field))
           isMatch = 0;
         break;
 
       case CSF_DATETIME:
-        timeval = va_arg(args, time_t *);
-        if ((timeval != NULL) && (*timeval != atoi(field)))
+        if (pattern[i].timeval != atol(field))
           isMatch = 0;
         break;
       }
