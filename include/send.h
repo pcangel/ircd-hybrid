@@ -25,15 +25,7 @@
 #ifndef INCLUDED_send_h
 #define INCLUDED_send_h
 
-
-/* For those unfamiliar with GNU format attributes, a is the 1 based
- * argument number of the format string, and b is the 1 based argument
- * number of the variadic ... */
-#if 0 /* __GNUC__ */
-#define AFP(a,b) __attribute__((format (printf, a, b)))
-#else
-#define AFP(a,b)
-#endif
+#include "fdlist.h"
 
 /*
  * struct decls
@@ -43,51 +35,49 @@ struct Channel;
 struct Client;
 struct dlink_list;
 
-void *iosend_default(va_list);
-void sendq_unblocked(fde_t *, struct Client *);
-EXTERN struct Callback *iosend_cb;
-EXTERN struct Callback *iosendctrl_cb;
+extern void *iosend_default(va_list);
+extern struct Callback *iosend_cb;
+extern struct Callback *iosendctrl_cb;
 
 /* send.c prototypes */
 
-EXTERN void send_queued_write(struct Client *);
-EXTERN void send_queued_slink_write(struct Client *);
-EXTERN void send_queued_all(void);
-EXTERN void sendto_one(struct Client *, const char *, ...) AFP(2, 3);
-EXTERN void sendto_channel_butone(struct Client *, struct Client *,
+extern void sendq_unblocked(fde_t *, struct Client *);
+extern void send_queued_write(struct Client *);
+extern void send_queued_slink_write(struct Client *);
+extern void send_queued_all(void);
+extern void sendto_one(struct Client *, const char *, ...);
+extern void sendto_channel_butone(struct Client *, struct Client *,
                                   struct Channel *, const char *,
-                                  const char *, ...) AFP(5, 6);
-EXTERN void sendto_common_channels_local(struct Client *, int,
-                                         const char *, ...) AFP(3, 4);
-EXTERN void sendto_channel_local(int, int, struct Channel *,
-                                 const char *, ...) AFP(4, 5);
-EXTERN void sendto_channel_local_butone(struct Client *, int, struct Channel *,
-                                        const char *, ...) AFP(4, 5);
-EXTERN void sendto_channel_remote(struct Client *, struct Client *, int,
-                                  int, int, struct Channel *,
-                                  const char *, ...) AFP(7, 8);
-EXTERN void sendto_server(struct Client *, struct Client *,
-                          struct Channel *, unsigned long,
-                          unsigned long,
-                          const char *, ...) AFP(7, 8);
-EXTERN void sendto_match_butone(struct Client *, struct Client *, 
-                                char *, int, const char *, ...) AFP(5, 6);
-EXTERN void sendto_match_servs(struct Client *, const char *, int,
-                               const char *, ...) AFP(4, 5);
-EXTERN void sendto_realops_flags(unsigned int, int,
-                                 const char *, ...) AFP(3, 4);
-EXTERN void sendto_wallops_flags(unsigned int, struct Client *,
-                                 const char *, ...) AFP(3, 4);
-EXTERN void ts_warn(const char *, ...) AFP(1, 2);
+                                  const char *, ...);
+extern void sendto_common_channels_local(struct Client *, int,
+                                         const char *, ...);
+extern void sendto_channel_local(int, int, struct Channel *,
+                                 const char *, ...);
+extern void sendto_channel_local_butone(struct Client *, int, struct Channel *,
+                                        const char *, ...);
+extern void sendto_channel_remote(struct Client *, struct Client *, int,
+                                  const unsigned int, const unsigned int,
+                                  struct Channel *, const char *, ...);
+extern void sendto_server(struct Client *, const struct Channel *,
+                          const unsigned int,
+                          const unsigned int, const char *, ...);
+extern void sendto_match_butone(struct Client *, struct Client *, 
+                                char *, int, const char *, ...);
+extern void sendto_match_servs(struct Client *, const char *, int,
+                               const char *, ...);
+extern void sendto_realops_flags(unsigned int, int,
+                                 const char *, ...);
+extern void sendto_wallops_flags(unsigned int, struct Client *,
+                                 const char *, ...);
+extern void ts_warn(const char *, ...);
 
-EXTERN void sendto_anywhere(struct Client *, struct Client *, 
-                            const char *, ...) AFP(3, 4);
-EXTERN void kill_client(struct Client *, struct Client *,
-                        const char *, ... ) AFP(3, 4);
-EXTERN void kill_client_ll_serv_butone(struct Client *, struct Client *,
-                                       const char *, ...) AFP(3, 4);
+extern void sendto_anywhere(struct Client *, struct Client *, 
+                            const char *, ...);
+extern void kill_client(struct Client *, struct Client *,
+                        const char *, ... );
+extern void kill_client_ll_serv_butone(struct Client *, struct Client *,
+                                       const char *, ...);
 
-void buf_cb_sendto_one(char *, void *);
 
 #define ALL_MEMBERS  0
 #define NON_CHANOPS  1

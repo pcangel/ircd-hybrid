@@ -23,17 +23,17 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "server.h"
-#include "user.h"
+#include "s_conf.h"
+#include "s_serv.h"
+#include "s_user.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "motd.h"
+#include "modules.h"
 
 static char *confopts(struct Client *);
 static void m_version(struct Client *, struct Client *, int, char *[]);
@@ -60,15 +60,21 @@ struct Message version_msgtab = {
   { m_unregistered, m_version, ms_version, m_ignore, mo_version, m_ignore }
 };
 
-INIT_MODULE(m_version, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&version_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&version_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
 
 /*
  * m_version - VERSION command handler
@@ -81,25 +87,27 @@ m_version(struct Client *client_p, struct Client *source_p,
 {
   static time_t last_used = 0;
 
-  if ((last_used + General.pace_wait_simple) > CurrentTime)
+  if ((last_used + ConfigFileEntry.pace_wait_simple) > CurrentTime)
   {
     /* safe enough to give this on a local connect only */
     sendto_one(source_p, form_str(RPL_LOAD2HI),
                me.name, source_p->name);
     return;
   }
+  else
+    last_used = CurrentTime;
 
-  last_used = CurrentTime;
-
-  if (!General.disable_remote_commands)
-    if (hunt_server(source_p, ":%s VERSION :%s",
+  if (!ConfigFileEntry.disable_remote)
+  {
+    if (hunt_server(client_p, source_p, ":%s VERSION :%s",
                     1, parc, parv) != HUNTED_ISME)
       return;
+  }
 
   sendto_one(source_p, form_str(RPL_VERSION),
              me.name, source_p->name, ircd_version, serno,
              me.name, confopts(source_p), serveropts);
-  send_message_file(source_p, isupportFile);
+  show_isupport(source_p);
 }
 
 /*
@@ -112,14 +120,14 @@ mo_version(struct Client *client_p, struct Client *source_p,
            int parc, char *parv[])
 {
   
-  if (hunt_server(source_p, ":%s VERSION :%s", 
+  if (hunt_server(client_p, source_p, ":%s VERSION :%s", 
 		  1, parc, parv) != HUNTED_ISME)
     return;
 
   sendto_one(source_p, form_str(RPL_VERSION), me.name, parv[0], ircd_version, 
   	     serno, me.name, confopts(source_p), serveropts);
 
-  send_message_file(source_p, isupportFile);
+  show_isupport(source_p);
 }
 
 /*
@@ -131,16 +139,16 @@ static void
 ms_version(struct Client *client_p, struct Client *source_p,
            int parc, char *parv[])
 {
-  if (hunt_server(source_p, ":%s VERSION :%s", 
-                  1, parc, parv) != HUNTED_ISME)
-    return;
-
-  sendto_one(source_p, form_str(RPL_VERSION),
-             ID_or_name(&me, client_p),
-             ID_or_name(source_p, client_p),
-             ircd_version, serno,
-             me.name, confopts(source_p), serveropts);
-  send_message_file(source_p, isupportFile);
+  if (hunt_server(client_p, source_p, ":%s VERSION :%s", 
+                  1, parc, parv) == HUNTED_ISME)
+  {
+    sendto_one(source_p, form_str(RPL_VERSION),
+               ID_or_name(&me, client_p),
+               ID_or_name(source_p, client_p),
+               ircd_version, serno,
+               me.name, confopts(source_p), serveropts);
+    show_isupport(source_p);
+  }
 }
 
 /* confopts()
@@ -155,26 +163,26 @@ confopts(struct Client *source_p)
   static char result[12];
   char *p = result;
 
-  if (Channel.use_except)
+  if (ConfigChannel.use_except)
     *p++ = 'e';
-  if (enable_glines)
+  if (ConfigFileEntry.glines)
     *p++ = 'G';
   *p++ = 'g';
 
   /* might wanna hide this :P */
   if (ServerInfo.hub && 
-      (!General.disable_remote_commands || IsOper(source_p)))
+      (!ConfigFileEntry.disable_remote || IsOper(source_p)))
   {
     *p++ = 'H';
   }
 
-  if (Channel.use_invex)
+  if (ConfigChannel.use_invex)
     *p++ = 'I';
-  if (Channel.use_knock)
+  if (ConfigChannel.use_knock)
     *p++ = 'K';
   *p++ = 'M';
 
-  if (General.ignore_bogus_ts)
+  if (ConfigFileEntry.ignore_bogus_ts)
     *p++ = 'T';
 #ifdef USE_SYSLOG
   *p++ = 'Y';

@@ -37,9 +37,9 @@ struct NumericInfo
 /* form_str - return a format string for a message number
  * messages are defined below
  */
-EXTERN const char *form_str(int);
-EXTERN void set_locale(const char *);
-EXTERN const char *get_locale(void);
+extern const char *form_str(int);
+extern void set_locale(const char *);
+extern const char *get_locale(void);
 
 /*
  * Reserve numerics 000-099 for server-client connections where the client
@@ -385,6 +385,7 @@ EXTERN const char *get_locale(void);
 #define ERR_NOPRIVILEGES     481
 #define ERR_CHANOPRIVSNEEDED 482
 #define ERR_CANTKILLSERVER   483
+#define ERR_RESTRICTED       484
 /*	ERR_DESYNC	     484	 Dalnet,PTlink */
 /*	ERR_ATTACKDENY	     484	 unreal */
 /*	ERR_RESTRICTED	     484	   IRCnet extension */
@@ -410,8 +411,8 @@ EXTERN const char *get_locale(void);
  * moved to 999
  */
 
-#define ERR_TOOMANYWATCH     512
 
+#define ERR_TOOMANYWATCH     512
 #define ERR_WRONGPONG	     513
 /*	ERR_TOOMANYDCC	     514	dalnet */
 /*	ERR_NOINVITE	     518	unreal */
@@ -437,8 +438,7 @@ EXTERN const char *get_locale(void);
 #define RPL_WATCHLIST        606
 #define RPL_ENDOFWATCHLIST   607
 
-/*
-	RPL_MAPMORE          610	unreal
+/*	RPL_MAPMORE          610	unreal
 
 	RPL_MAPMORE          615	PTlink
 	

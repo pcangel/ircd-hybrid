@@ -23,42 +23,52 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
+#include "list.h"
 #include "ircd.h"
 #include "handlers.h"
-#include "user.h"
+#include "s_user.h"
 #include "client.h"
 #include "hash.h"       /* for find_client() */
 #include "numeric.h"
+#include "s_conf.h"
 #include "send.h"
+#include "irc_string.h"
 #include "msg.h"
 #include "parse.h"
+#include "modules.h"
 
-static void mr_pong(struct Client *, struct Client *, int, char *[]);
-static void ms_pong(struct Client *, struct Client *, int, char *[]);
+static void mr_pong(struct Client *, struct Client *, int, char **);
+static void ms_pong(struct Client *, struct Client *, int, char **);
 
 struct Message pong_msgtab = {
   "PONG", 0, 0, 1, 0, MFLG_SLOW | MFLG_UNREG, 0,
-  { mr_pong, m_ignore, ms_pong, m_ignore, m_ignore, m_ignore }
+  {mr_pong, m_ignore, ms_pong, m_ignore, m_ignore, m_ignore}
 };
 
-INIT_MODULE(m_pong, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&pong_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&pong_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
 
 static void
 ms_pong(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
 {
-  const char *origin = NULL, *destination = NULL;
+  struct Client *target_p;
+  const char *origin, *destination;
 
-  if (*parv[1] == '\0')
+  if (parc < 2 || *parv[1] == '\0')
   {
     sendto_one(source_p, form_str(ERR_NOORIGIN),
                me.name, parv[0]);
@@ -68,8 +78,7 @@ ms_pong(struct Client *client_p, struct Client *source_p,
   origin = parv[1];
   destination = parv[2];
 
-  /*
-   * Now attempt to route the PONG, comstud pointed out routable PING
+  /* Now attempt to route the PONG, comstud pointed out routable PING
    * is used for SPING.  routable PING should also probably be left in
    *        -Dianora
    * That being the case, we will route, but only for registered clients (a
@@ -78,15 +87,16 @@ ms_pong(struct Client *client_p, struct Client *source_p,
   if (!EmptyString(destination) && !match(destination, me.name) &&
       irccmp(destination, me.id))
   {
-    struct Client *target_p = NULL;
-
-    if ((target_p = find_client(destination)) ||
-        (target_p = find_server(destination)))
-      sendto_one(target_p, ":%s PONG %s %s",
-                 parv[0], origin, destination);
-    else
-      sendto_one(source_p, form_str(ERR_NOSUCHSERVER),
-                 me.name, parv[0], destination);
+      if ((target_p = find_client(destination)) ||
+          (target_p = find_server(destination)))
+        sendto_one(target_p,":%s PONG %s %s",
+                   parv[0], origin, destination);
+      else
+        {
+          sendto_one(source_p, form_str(ERR_NOSUCHSERVER),
+                     me.name, parv[0], destination);
+          return;
+        }
   }
 }
 
@@ -98,9 +108,9 @@ mr_pong(struct Client *client_p, struct Client *source_p,
 
   if (parc == 2 && *parv[1] != '\0')
   {
-    if (General.ping_cookie && !source_p->localClient->registration)
+    if (ConfigFileEntry.ping_cookie && !source_p->localClient->registration)
     {
-      unsigned long incoming_ping = strtoul(parv[1], NULL, 10);
+      unsigned int incoming_ping = strtoul(parv[1], NULL, 10);
 
       if (incoming_ping)
       {
@@ -110,7 +120,7 @@ mr_pong(struct Client *client_p, struct Client *source_p,
 
           strlcpy(buf, source_p->username, sizeof(buf));
           SetPingCookie(source_p);
-          register_local_user(source_p, buf);
+          register_local_user(client_p, source_p, source_p->name, buf);
         }
         else
         {
@@ -124,3 +134,4 @@ mr_pong(struct Client *client_p, struct Client *source_p,
   else
     sendto_one(source_p, form_str(ERR_NOORIGIN), me.name, parv[0]);
 }
+

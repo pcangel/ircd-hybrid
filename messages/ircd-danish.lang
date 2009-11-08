@@ -85,6 +85,7 @@ ERR_BADCHANNAME:         :%s 479 %s %s :Illegalt navn for et Rum
 ERR_NOPRIVILEGES:        :%s 481 %s :Udf›relse N‘gtet - Du er ikke en IRC operator
 ERR_CHANOPRIVSNEEDED:    :%s 482 %s %s :Du er ikke operator i dette rum
 ERR_CANTKILLSERVER:      :%s 483 %s :Du kan ikke KILL (dr‘be) en server!
+ERR_RESTRICTED:          :%s 484 %s :Du er begr‘nset
 ERR_NOOPERHOST:          :%s 491 %s :Kun f† d›delige kan pr›ve at tr‘de ind i tudsm›rket
 ERR_UMODEUNKNOWNFLAG:    :%s 501 %s :Ukendt MODE flag
 ERR_USERSDONTMATCH:      :%s 502 %s :Kan ikke ‘ndre mode for andre brugere

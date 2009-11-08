@@ -1,6 +1,5 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
- *  m_admin.c: Sends administrative information to a user.
  *
  *  Copyright (C) 2002 by the past and present ircd coders, and others.
  *
@@ -18,46 +17,65 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
- *
- *  $Id$
+ */
+
+/*! \file m_admin.c
+ * \brief Includes required functions for processing the ADMIN command.
+ * \version $Id$
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "server.h"
+#include "s_conf.h"
+#include "s_serv.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
+#include "hook.h"
+#include "modules.h"
+#include "irc_string.h"
 
 static void m_admin(struct Client *, struct Client *, int, char *[]);
 static void mr_admin(struct Client *, struct Client *, int, char *[]);
 static void ms_admin(struct Client *, struct Client *, int, char *[]);
-static void *do_admin(va_list);
+static void do_admin(struct Client *);
 
 struct Message admin_msgtab = {
   "ADMIN", 0, 0, 0, 0, MFLG_SLOW | MFLG_UNREG, 0, 
-  { mr_admin, m_admin, ms_admin, m_ignore, ms_admin, m_ignore }
+  {mr_admin, m_admin, ms_admin, m_ignore, ms_admin, m_ignore}
 };
 
-static struct Callback *admin_cb = NULL;
+#ifndef STATIC_MODULES
+static struct Callback *admin_cb;
+const char *_version = "$Revision$";
 
-INIT_MODULE(m_admin, "$Revision$")
+static void *
+va_admin(va_list args)
 {
-  admin_cb = register_callback("doing_admin", do_admin);
+  do_admin(va_arg(args, struct Client *));
+  return NULL;
+}
+
+void
+_modinit(void)
+{
+  admin_cb = register_callback("doing_admin", va_admin);
   mod_add_cmd(&admin_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&admin_msgtab);
-  uninstall_hook(admin_cb, do_admin);
+  uninstall_hook(admin_cb, va_admin);
 }
+#endif
 
-/*! \brief ADMIN command handler (called for unregistered clients only)
+/*! \brief ADMIN command handler (called by unregistered,
+ *         locally connected clients)
  *
  * \param client_p Pointer to allocated Client struct with physical connection
  *                 to this server, i.e. with an open socket connected.
@@ -68,7 +86,6 @@ CLEANUP_MODULE
  *                 pointers.
  * \note Valid arguments for this command are:
  *      - parv[0] = sender prefix
- *      - parv[1] = name of target (rejected for unregistered clients)
  */
 static void
 mr_admin(struct Client *client_p, struct Client *source_p,
@@ -76,7 +93,9 @@ mr_admin(struct Client *client_p, struct Client *source_p,
 {
   static time_t last_used = 0;
 
-  if ((last_used + General.pace_wait_simple) > CurrentTime)
+  ClearCap(client_p, CAP_TS6);
+
+  if ((last_used + ConfigFileEntry.pace_wait_simple) > CurrentTime)
   {
     sendto_one(source_p, form_str(RPL_LOAD2HI),
                me.name, EmptyString(parv[0]) ? "*" : parv[0]);
@@ -85,10 +104,15 @@ mr_admin(struct Client *client_p, struct Client *source_p,
 
   last_used = CurrentTime;
 
+#ifdef STATIC_MODULES
+  do_admin(client_p);
+#else
   execute_callback(admin_cb, source_p, parc, parv);
+#endif
 }
 
-/*! \brief ADMIN command handler (called for local clients only)
+/*! \brief NICK command handler (called by already registered,
+ *         locally connected clients)
  *
  * \param client_p Pointer to allocated Client struct with physical connection
  *                 to this server, i.e. with an open socket connected.
@@ -99,8 +123,7 @@ mr_admin(struct Client *client_p, struct Client *source_p,
  *                 pointers.
  * \note Valid arguments for this command are:
  *      - parv[0] = sender prefix
- *      - parv[1] = name of target (optional; string can be a nick or server
- *                  and can also include wildcards)
+ *      - parv[1] = nickname/servername
  */
 static void
 m_admin(struct Client *client_p, struct Client *source_p,
@@ -108,7 +131,7 @@ m_admin(struct Client *client_p, struct Client *source_p,
 {
   static time_t last_used = 0;
 
-  if ((last_used + General.pace_wait_simple) > CurrentTime)
+  if ((last_used + ConfigFileEntry.pace_wait_simple) > CurrentTime)
   {
     sendto_one(source_p,form_str(RPL_LOAD2HI),
                me.name, source_p->name);
@@ -117,15 +140,20 @@ m_admin(struct Client *client_p, struct Client *source_p,
 
   last_used = CurrentTime;
 
-  if (!General.disable_remote_commands)
-    if (hunt_server(source_p, ":%s ADMIN :%s", 1,
+  if (!ConfigFileEntry.disable_remote)
+    if (hunt_server(client_p, source_p, ":%s ADMIN :%s", 1,
                     parc, parv) != HUNTED_ISME)
       return;
 
+#ifdef STATIC_MODULES
+  do_admin(client_p);
+#else
   execute_callback(admin_cb, source_p, parc, parv);
+#endif
 }
 
-/*! \brief ADMIN command handler (called for remote clients and servers)
+/*! \brief ADMIN command handler (called by operators and
+ *         remotely connected clients)
  *
  * \param client_p Pointer to allocated Client struct with physical connection
  *                 to this server, i.e. with an open socket connected.
@@ -136,31 +164,31 @@ m_admin(struct Client *client_p, struct Client *source_p,
  *                 pointers.
  * \note Valid arguments for this command are:
  *      - parv[0] = sender prefix
- *      - parv[1] = name of target (optional; string can be a nick or server
- *                  and can also include wildcards)
+ *      - parv[1] = nickname/servername
  */
 static void
 ms_admin(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
-  if (hunt_server(source_p, ":%s ADMIN :%s", 1,
-                  parc, parv) != HUNTED_ISME)
+  if (hunt_server(client_p, source_p, ":%s ADMIN :%s", 1, parc, parv)
+                  != HUNTED_ISME)
     return;
 
   if (IsClient(source_p))
+#ifdef STATIC_MODULES
+    do_admin(source_p);
+#else
     execute_callback(admin_cb, source_p, parc, parv);
+#endif
 }
 
-/* do_admin()
+/*! \brief Sends administrative information about this server.
  *
- * inputs	- pointer to client to report to
- * output	- none
- * side effects	- admin info is sent to client given
+ * \param source_p Pointer to client to report to
  */
-static void *
-do_admin(va_list args)
+static void
+do_admin(struct Client *source_p)
 {
-  struct Client *source_p = va_arg(args, struct Client *);
   const char *me_name;
   const char *nick;
 
@@ -168,16 +196,14 @@ do_admin(va_list args)
   nick = ID_or_name(source_p, source_p->from);
 
   sendto_one(source_p, form_str(RPL_ADMINME),
-             me_name, nick, me.name);
-  if (Admin.name != NULL)
+	     me_name, nick, me.name);
+  if (AdminInfo.name != NULL)
     sendto_one(source_p, form_str(RPL_ADMINLOC1),
-               me_name, nick, Admin.name);
-  if (Admin.description != NULL)
+	       me_name, nick, AdminInfo.name);
+  if (AdminInfo.description != NULL)
     sendto_one(source_p, form_str(RPL_ADMINLOC2),
-               me_name, nick, Admin.description);
-  if (Admin.email != NULL)
+	       me_name, nick, AdminInfo.description);
+  if (AdminInfo.email != NULL)
     sendto_one(source_p, form_str(RPL_ADMINEMAIL),
-               me_name, nick, Admin.email);
-
-  return NULL;
+	       me_name, nick, AdminInfo.email);
 }

@@ -24,39 +24,44 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
-#include "common.h"
-#include "hash.h"
+#include "irc_string.h"
+#include "sprintf_irc.h"
 #include "ircd.h"
-#include "ircd_defs.h"
 #include "numeric.h"
-#include "server.h"
-#include "user.h"
+#include "s_conf.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
+#include "modules.h"
+#include "s_user.h"
 #include "watch.h"
 
 static void m_watch(struct Client *, struct Client *, int, char *[]);
 
 struct Message watch_msgtab = {
   "WATCH", 0, 0, 0, 0, MFLG_SLOW, 0,
-  { m_unregistered, m_watch, m_watch, m_ignore, m_watch, m_ignore }
+  { m_unregistered, m_watch, m_ignore, m_ignore, m_watch, m_ignore }
 };
 
-INIT_MODULE(m_watch, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&watch_msgtab);
-  add_isupport("WATCH", NULL, General.max_watch);
+  add_isupport("WATCH", NULL, ConfigFileEntry.max_watch);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
-  delete_isupport("WATCH");
   mod_del_cmd(&watch_msgtab);
+  delete_isupport("WATCH");
 }
+
+const char *_version = "$Revision$";
+#endif
 
 /*
  * RPL_NOWON        - Online at the moment (Succesfully added to WATCH-list)
@@ -93,6 +98,7 @@ m_watch(struct Client *client_p, struct Client *source_p, int parc, char *parv[]
   char *p = NULL;
   char *user;
   char def[2] = "l";
+  unsigned int list_requested = 0;
 
   /*
    * Default to 'l' - list who's currently online
@@ -115,10 +121,10 @@ m_watch(struct Client *client_p, struct Client *source_p, int parc, char *parv[]
       if (*(s + 1) != '\0')
       {
         if (dlink_list_length(&source_p->localClient->watches) >=
-            General.max_watch)
+            ConfigFileEntry.max_watch)
         {
           sendto_one(source_p, form_str(ERR_TOOMANYWATCH), me.name,
-                     source_p->name, s + 1, General.max_watch);
+                     source_p->name, s + 1, ConfigFileEntry.max_watch);
           continue;
         }
 
@@ -160,6 +166,11 @@ m_watch(struct Client *client_p, struct Client *source_p, int parc, char *parv[]
       char buf[IRCD_BUFSIZE] = { '\0' };
       const struct Watch *anptr = NULL;
       unsigned int count = 0;
+
+      if (list_requested & 0x1)
+        continue;
+
+      list_requested |= 0x1;
 
       /*
        * Send a list of how many users they have on their WATCH list
@@ -221,6 +232,11 @@ m_watch(struct Client *client_p, struct Client *source_p, int parc, char *parv[]
     if (*s == 'L' || *s == 'l')
     {
       const struct Client *target_p = NULL;
+
+      if (list_requested & 0x2)
+        continue;
+
+      list_requested |= 0x2;
 
       DLINK_FOREACH(ptr, source_p->localClient->watches.head)
       {

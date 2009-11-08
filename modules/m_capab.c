@@ -25,10 +25,12 @@
 #include "stdinc.h"
 #include "handlers.h"
 #include "client.h"
-#include "server.h"
+#include "irc_string.h"
+#include "s_serv.h"
+#include "s_conf.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
+#include "modules.h"
 
 static void mr_capab(struct Client *, struct Client *, int, char *[]);
 
@@ -37,45 +39,40 @@ struct Message capab_msgtab = {
   { mr_capab, m_ignore, m_ignore, m_ignore, m_ignore, m_ignore }
 };
 
-INIT_MODULE(m_capab, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&capab_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&capab_msgtab);
 }
 
-/*! \brief CAPAB command handler (called for unregistered connections only)
+const char *_version = "$Revision$";
+#endif
+
+/*
+ * mr_capab - CAPAB message handler
+ *      parv[0] = sender prefix
+ *      parv[1] = space-separated list of capabilities
  *
- * \param client_p Pointer to allocated Client struct with physical connection
- *                 to this server, i.e. with an open socket connected.
- * \param source_p Pointer to allocated Client struct from which the message
- *                 originally comes from.  This can be a local or remote client.
- * \param parc     Integer holding the number of supplied arguments.
- * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
- *                 pointers.
- * \note Valid arguments for this command are:
- *      - parv[0] = sender prefix
- *      - parv[1] = space-separated list of capabilities
  */
 static void
 mr_capab(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
-  int i = 0;
-  int cap = 0;
+  int i;
+  int cap;
   char *p = NULL;
   char *s = NULL;
 #ifdef HAVE_LIBCRYPTO
-  struct EncCapability *ecap = NULL;
+  const struct EncCapability *ecap;
   unsigned int cipher = 0;
 #endif
-
-  /* ummm, this shouldn't happen. Could argue this should be logged etc. */
-  if (client_p->localClient == NULL)
-    return;
 
   if (client_p->localClient->caps && !(IsCapable(client_p, CAP_TS6)))
   {
@@ -85,10 +82,10 @@ mr_capab(struct Client *client_p, struct Client *source_p,
 
   SetCapable(client_p, CAP_CAP);
 
-  for (i = 1; i < parc; i++)
+  for (i = 1; i < parc; ++i)
   {
     for (s = strtoken(&p, parv[i], " "); s;
-         s = strtoken(&p, NULL,    " "))
+         s = strtoken(&p,    NULL, " "))
     {
 #ifdef HAVE_LIBCRYPTO
       if (!strncmp(s, "ENC:", 4))
@@ -99,7 +96,7 @@ mr_capab(struct Client *client_p, struct Client *source_p,
         /* Check the remaining portion against the list of ciphers we
          * have available (CipherTable).
          */
-        for (ecap = CipherTable; ecap->name; ecap++)
+        for (ecap = CipherTable; ecap->name; ++ecap)
         {
           if (!irccmp(ecap->name, s) && (ecap->cap & CAP_ENC_MASK))
           {
@@ -107,6 +104,7 @@ mr_capab(struct Client *client_p, struct Client *source_p,
             break;
           }
         }
+
         /* Since the name and capabilities matched, use it. */
         if (cipher != 0)
         {
@@ -117,7 +115,7 @@ mr_capab(struct Client *client_p, struct Client *source_p,
         {
           /* cipher is still zero; we didn't find a matching entry. */
           exit_client(client_p, client_p,
-                      "Cipher selected is not available here.");
+	              "Cipher selected is not available here.");
           return;
         }
       }

@@ -26,14 +26,25 @@
  */
 
 #include "stdinc.h"
+#include "list.h"
+#include "balloc.h"
+#include "s_user.h"
+#include "s_misc.h"
 #include "client.h"
 #include "hash.h"
+#include "irc_string.h"
+#include "sprintf_irc.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "user.h"
+#include "s_conf.h"
+#include "s_serv.h"
 #include "send.h"
+#include "supported.h"
+#include "whowas.h"
+#include "memory.h"
+#include "packet.h"
+#include "s_misc.h"
 #include "watch.h"
-#include "msg.h"
 
 #define WATCH_HEAP_SIZE 32
 
@@ -67,7 +78,7 @@ watch_init(void)
 /*! \brief Counts up memory used by watch list headers
  */
 void
-watch_count_memory(unsigned int *const count, size_t *const memory)
+watch_count_memory(unsigned int *const count, uint64_t *const memory)
 {
   unsigned int idx;
 

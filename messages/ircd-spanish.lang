@@ -90,6 +90,7 @@ ERR_BADCHANNAME:         :%s 479 %s %s :El nombre del canal es Ilegal o invalido
 ERR_NOPRIVILEGES:        :%s 481 %s :Permiso Negado - Tu no eres un Operador de IRC
 ERR_CHANOPRIVSNEEDED:    :%s 482 %s %s :Tu no eres un operador del canal
 ERR_CANTKILLSERVER:      :%s 483 %s :Tu no puedes matar un servidor!
+ERR_RESTRICTED:          :%s 484 %s :Estas Restringido
 ERR_NOOPERHOST:          :%s 491 %s :Solamente algunos mortales pueden tratar de entrar al mundo de.. twilight zone
 ERR_UMODEUNKNOWNFLAG:    :%s 501 %s :Flag MODE desconosida
 ERR_USERSDONTMATCH:      :%s 502 %s :No puedes cambiar los modes de otros usuarios

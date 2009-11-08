@@ -23,34 +23,42 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
+#include "irc_string.h"
 #include "msg.h"
 #include "parse.h"
+#include "modules.h"
 #include "hash.h"
-#include "server.h"
+#include "s_conf.h"
+#include "s_serv.h"
 
-static void m_ping(struct Client *, struct Client *, int, char *[]);
-static void ms_ping(struct Client *, struct Client *, int, char *[]);
+static void m_ping(struct Client*, struct Client*, int, char**);
+static void ms_ping(struct Client*, struct Client*, int, char**);
 
 struct Message ping_msgtab = {
   "PING", 0, 0, 1, 0, MFLG_SLOW, 0,
-  { m_unregistered, m_ping, ms_ping, m_ignore, m_ping, m_ping }
+  {m_unregistered, m_ping, ms_ping, m_ignore, m_ping, m_ping}
 };
 
-INIT_MODULE(m_ping, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&ping_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&ping_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
 
 /*
 ** m_ping
@@ -74,7 +82,7 @@ m_ping(struct Client *client_p, struct Client *source_p,
   origin = parv[1];
   destination = parv[2]; /* Will get NULL or pointer (parc >= 2!!) */
 
-  if (General.disable_remote_commands && !IsOper(source_p))
+  if (ConfigFileEntry.disable_remote && !IsOper(source_p))
   {
     sendto_one(source_p,":%s PONG %s :%s", me.name,
               (destination) ? destination : me.name, origin);
@@ -86,7 +94,6 @@ m_ping(struct Client *client_p, struct Client *source_p,
     /* We're sending it across servers.. origin == client_p->name --fl_ */
     origin = client_p->name;
 
-    /* XXX - sendto_server() ? --fl_ */
     if ((target_p = find_server(destination)) != NULL)
     {
       sendto_one(target_p,":%s PING %s :%s", parv[0],

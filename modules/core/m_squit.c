@@ -23,17 +23,21 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
+#include "list.h"
 #include "handlers.h"
 #include "client.h"
 #include "common.h"      /* FALSE bleah */
 #include "hash.h"
+#include "irc_string.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "server.h"
+#include "s_conf.h"
+#include "s_log.h"
+#include "s_serv.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
+#include "modules.h"
 
 
 static void ms_squit(struct Client *, struct Client *, int, char *[]);
@@ -41,18 +45,24 @@ static void mo_squit(struct Client *, struct Client *, int, char *[]);
 
 struct Message squit_msgtab = {
   "SQUIT", 0, 0, 1, 0, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, ms_squit, m_ignore, mo_squit, m_ignore }
+  {m_unregistered, m_not_oper, ms_squit, m_ignore, mo_squit, m_ignore}
 };
 
-INIT_MODULE(m_squit, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&squit_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&squit_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
 
 /* mo_squit - SQUIT message handler
  *  parv[0] = sender prefix
@@ -164,10 +174,10 @@ ms_squit(struct Client *client_p, struct Client *source_p,
   {
     sendto_wallops_flags(UMODE_WALLOP, &me, "Remote SQUIT %s from %s (%s)",
                          target_p->name, source_p->name, comment);
-    sendto_server(NULL, NULL, NULL, CAP_TS6, NOCAPS,
+    sendto_server(NULL, NULL, CAP_TS6, NOCAPS,
                   ":%s WALLOPS :Remote SQUIT %s from %s (%s)",
                   me.id, target_p->name, source_p->name, comment);
-    sendto_server(NULL, NULL, NULL, NOCAPS, CAP_TS6,
+    sendto_server(NULL, NULL, NOCAPS, CAP_TS6,
                   ":%s WALLOPS :Remote SQUIT %s from %s (%s)",
                   me.name, target_p->name, source_p->name, comment);
     ilog(L_TRACE, "SQUIT From %s : %s (%s)", parv[0],
@@ -177,4 +187,3 @@ ms_squit(struct Client *client_p, struct Client *source_p,
 
    exit_client(target_p, source_p, comment);
 }
-

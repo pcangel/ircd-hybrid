@@ -1,6 +1,5 @@
 $Id$
 
-
 - dynamically extensible parser for modules
 
 - modularize channel, network code etc (not just commands)
@@ -43,7 +42,6 @@ Little things to be done given enough time and initiative -Hwy
 
 -- Josh's list
 * Find out the status of the build with IRIX64/MIPSpro.
-* Make modules.c more flexible in anticipation of Win32 modules usability.
 * TENDRA IS BROKEN! (Not quite our fault)
 * Fix lack of error message for oper initiating /connect that fails because
 it's a leaf.
@@ -65,10 +63,8 @@ it's a leaf.
 * implement ND/CD split logic
 * implement /nick 0 and uid addressing
 * more I/O backends (ports)
-* make STATIC_MODULES more flexible
 * get rid of conf attaching as much as possible
 
 
 -- metalrock's list
 * Fix that missing server connection timed out notice.
-* Add support for global ungline.

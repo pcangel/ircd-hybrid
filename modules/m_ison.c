@@ -25,31 +25,40 @@
 #include "stdinc.h"
 #include "handlers.h"
 #include "client.h"
+#include "irc_string.h"
+#include "sprintf_irc.h"
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
-#include "string/strbuf.h"
+#include "modules.h"
+#include "s_conf.h" /* ConfigFileEntry */
 
 static void do_ison(struct Client *, struct Client *, int, char *[]);
 static void m_ison(struct Client *, struct Client *, int, char *[]);
 
 struct Message ison_msgtab = {
   "ISON", 0, 0, 1, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_ison, m_ignore, m_ignore, m_ison, m_ignore }
+  {m_unregistered, m_ison, m_ignore, m_ignore, m_ison, m_ignore}
 };
 
-INIT_MODULE(m_ison, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&ison_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&ison_msgtab);
 }
+const char *_version = "$Revision$";
+#endif
+
+
 
 /*
  * m_ison added by Darren Reed 13/8/91 to act as an efficent user indicator
@@ -73,31 +82,53 @@ do_ison(struct Client *client_p, struct Client *source_p,
 {
   struct Client *target_p = NULL;
   char *nick;
-  char *p;
-  struct strbuf buf;
+  char *p = NULL;
+  char *current_insert_point = NULL;
+  char buf[IRCD_BUFSIZE];
+  int len;
   int i;
+  int done = 0;
 
-  buf_init(&buf, buf_cb_sendto_one, source_p);
-  buf_add(&buf, form_str(RPL_ISON), me.name, source_p->name);
-  buf_mark(&buf);
+  len = ircsprintf(buf, form_str(RPL_ISON), me.name, parv[0]);
+  current_insert_point = buf + len;
 
-  /* rfc1459 is ambigious about how to handle ISON
+  /*
+   * rfc1459 is ambigious about how to handle ISON
    * this should handle both interpretations.
    */
   for (i = 1; i < parc; i++)
   {
     for (nick = strtoken(&p, parv[i], " "); nick;
-         nick = strtoken(&p, NULL,    " "))
+         nick = strtoken(&p,    NULL, " "))
     {
       if ((target_p = find_person(client_p, nick)))
-	buf_add(&buf, "%s ", target_p->name);
+      {
+        len = strlen(target_p->name);
+
+        if ((current_insert_point + (len + 5)) < (buf + sizeof(buf)))
+        {
+          memcpy(current_insert_point, target_p->name, len);
+          current_insert_point += len;
+          *current_insert_point++ = ' ';
+        }
+        else
+        {
+          done = 1;
+          break;
+        }
+      }
     }
+
+    if (done)
+      break;
   }
 
-  /*  current_insert_point--;
+  /*
+   *  current_insert_point--;
    *  Do NOT take out the trailing space, it breaks ircII
    *  --Rodder
    */
+  *current_insert_point  = '\0';
 
-  buf_flush(&buf);
+  sendto_one(source_p, "%s", buf);
 }

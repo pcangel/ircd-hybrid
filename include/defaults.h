@@ -30,14 +30,14 @@
 
 /* 
  * Directory paths and filenames for UNIX systems.
- * IRCD_PREFIX is set using ./configure --prefix, see INSTALL.
+ * PREFIX is set using ./configure --prefix, see INSTALL.
  * The other defaults should be fine.
  *
  * NOTE: CHANGING THESE WILL NOT ALTER THE DIRECTORY THAT FILES WILL
  *       BE INSTALLED TO.  IF YOU CHANGE THESE, DO NOT USE MAKE INSTALL,
  *       BUT COPY THE FILES MANUALLY TO WHERE YOU WANT THEM.
  *
- * IRCD_PREFIX = prefix for all directories
+ * PREFIX = prefix for all directories
  * DPATH       = root directory of installation
  * BINPATH     = directory for binary files
  * MSGPATH     = directory for language files
@@ -48,16 +48,19 @@
  */
 
 /* dirs */
-#define DPATH       IRCD_PREFIX                                                     
-#define BINPATH     IRCD_PREFIX "/bin/"
-#define MSGPATH     IRCD_PREFIX "/messages/"
-#define ETCPATH     IRCD_PREFIX "/etc"
-#define LOGPATH     IRCD_PREFIX "/logs"
-#define MODPATH     IRCD_PREFIX "/modules"
-#define AUTOMODPATH IRCD_PREFIX "/modules/autoload"
+#define DPATH       PREFIX                                                     
+#define SBINPATH    PREFIX "/sbin/"
+#define BINPATH     PREFIX "/bin/"
+#define	MSGPATH		  DATADIR "/" PACKAGE "/messages"
+#define MODPATH		  LIBDIR "/" PACKAGE "/modules/"
+#define HPATH		    DATADIR "/" PACKAGE "/help/opers"
+#define UHPATH		  DATADIR "/" PACKAGE "/help/users"
+#define AUTOMODPATH	MODPATH "/autoload/"
+#define ETCPATH     SYSCONFDIR
+#define	LOGPATH		  LOCALSTATEDIR "/log"
 
 /* files */
-#define SPATH   BINPATH "/ircd"                 /* ircd executable */
+#define SPATH   SBINPATH "/ircd"                /* ircd executable */
 #define SLPATH  BINPATH "/servlink"             /* servlink executable */
 #define CPATH   ETCPATH "/ircd.conf"            /* ircd.conf file */
 #define KPATH   ETCPATH "/kline.conf"           /* kline file */
@@ -70,7 +73,7 @@
 #define RKPATH  ETCPATH "/rkline.conf"
 #define MPATH   ETCPATH "/ircd.motd"            /* MOTD file */
 #define LPATH   LOGPATH "/ircd.log"             /* ircd logfile */
-#define PPATH   ETCPATH "/ircd.pid"             /* pid file */
+#define PPATH   LOCALSTATEDIR "/ircd.pid"             /* pid file */
 #define OPATH   ETCPATH "/opers.motd"           /* oper MOTD file */
 #define LIPATH  ETCPATH "/links.txt"            /* cached links file */
 
@@ -78,8 +81,10 @@
  * values for things which are now configurable at runtime.
  */
 
+#define HANGONRETRYDELAY 60     /* Recommended value: 30-60 seconds */
 #define HYBRID_SOMAXCONN 25
 #define MAX_TDKLINE_TIME	(24*60*10)
+#define HANGONGOODLINK 3600     /* Recommended value: 30-60 minutes */
 
 /* tests show that about 7 fds are not registered by fdlist.c, these
  * include std* descriptors + some others (by OpenSSL etc.). Note this is
@@ -94,10 +99,11 @@
 /* class {} default values */
 #define DEFAULT_SENDQ 9000000           /* default max SendQ */
 #define PORTNUM 6667                    /* default outgoing portnum */
-#define DEFAULT_PINGFREQUENCY    35     /* Ping frequency for unknowns */
+#define DEFAULT_PINGFREQUENCY    120    /* Default ping frequency */
 #define DEFAULT_CONNECTFREQUENCY 600    /* Default connect frequency */
-#define CONNECTTIMEOUT           30     /* Connect timeout for auth */
 
+#define WATCHSIZE_MIN 1
+#define WATCHSIZE_DEFAULT 32
 #define TS_MAX_DELTA_MIN      10        /* min value for ts_max_delta */
 #define TS_MAX_DELTA_DEFAULT  600       /* default for ts_max_delta */
 #define TS_WARN_DELTA_MIN     10        /* min value for ts_warn_delta */
@@ -120,6 +126,7 @@
 
 #define INIT_LOG_LEVEL L_NOTICE         /* default for log_level */
 
+#define CONNECTTIMEOUT  30      /* Recommended value: 30 */
 #define IDENT_TIMEOUT 10
 
 #define MIN_JOIN_LEAVE_TIME  60
@@ -129,8 +136,5 @@
 
 #define MIN_SPAM_NUM 5
 #define MIN_SPAM_TIME 60
-
-#define WATCHSIZE_MIN 1
-#define WATCHSIZE_DEFAULT 32
 
 #endif /* INCLUDED_defaults_h */

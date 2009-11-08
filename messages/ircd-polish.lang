@@ -1,5 +1,5 @@
 ; ircd-hybrid-7 custom message file
-; Copyright (C) 2003-2006, Piotr Ni¿yñski <adx@irc7.pl>
+; Copyright (C) 2003-2005, Piotr Ni¿yñski <adx@irc7.pl>
 ; Coding: ISO-8859-2 * CP-1250
 ; $Id$
 
@@ -44,7 +44,7 @@ RPL_ENDOFWHOWAS:        :%s 369 %s %s :Koniec /WHOWAS
 RPL_INFOSTART:          :%s 373 %s :Informacje o serwerze
 RPL_ENDOFINFO:          :%s 374 %s :Koniec listy /INFO.
 RPL_ENDOFMOTD:          :%s 376 %s :Koniec komendy /MOTD.
-RPL_HOSTHIDDEN:		:%s 396 %s %s :zastêpuje teraz Twój host
+RPL_HOSTHIDDEN:         :%s 396 %s %s :zastêpuje teraz Twój host
 ERR_NOSUCHNICK:         :%s 401 %s %s :Nie ma takiego nicka/kana³u
 ERR_NOSUCHSERVER:       :%s 402 %s %s :Nie ma takiego serwera
 ERR_NOSUCHCHANNEL:      :%s 403 %s %s :Nie ma takiego kana³u
@@ -85,12 +85,13 @@ ERR_BANLISTFULL:        :%s 478 %s %s %s :Lista banów kana³owych jest przepe³nio
 ERR_BADCHANNAME:        :%s 479 %s %s :Niedopuszczalna nazwa kana³u
 ERR_NOPRIVILEGES:       :%s 481 %s :Brak uprawnieñ - nie jestes IRC Operatorem
 ERR_CHANOPRIVSNEEDED:   :%s 482 %s %s :Nie jestes operatorem kana³u
+ERR_RESTRICTED:         :%s 484 %s :Twoje po³aczenie jest objête restrykcja
 ERR_NOOPERHOST:         :%s 491 %s :Tylko nieliczni smiertelnicy moga uzyskaæ prawa IRC Operatora
 ERR_UMODEUNKNOWNFLAG:   :%s 501 %s :Nieznana flaga MODE
 ERR_USERSDONTMATCH:     :%s 502 %s :Nie mo¿esz zmieniaæ trybów innych u¿ytkowników
 ERR_GHOSTEDCLIENT:      :%s 503 %s :Wiadomosc dla %s nie mo¿e byæ dostarczona
 ERR_USERNOTONSERV:      :%s 504 %s %s :U¿ytkownik nie korzysta z tego serwera
-ERR_WRONGPONG:          :%s 513 %s :Aby siê po³aczyæ, wpisz /QUOTE PONG %u
+ERR_WRONGPONG:          :%s 513 %s :Aby siê po³aczyæ, wpisz /QUOTE PONG %lu
 ERR_LISTSYNTAX:         :%s 521 %s :Z³a sk³adnia dla LIST, wpisz /QUOTE HELP LIST
 ERR_HELPNOTFOUND:       :%s 524 %s %s :Nie odnaleziono pomocy
 RPL_ENDOFHELP:          :%s 706 %s %s :Koniec /HELP.

@@ -22,15 +22,19 @@
  *  $Id$
  */
 #include "stdinc.h"
-#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "common.h"     /* TRUE bleah */
+#include "irc_string.h"
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
+#include "s_conf.h"
+#include "s_log.h"
 #include "msg.h"
 #include "parse.h"
+#include "modules.h"
+
 
 static void ms_svinfo(struct Client*, struct Client*, int, char**);
 
@@ -39,16 +43,21 @@ struct Message svinfo_msgtab = {
   {m_unregistered, m_ignore, ms_svinfo, m_ignore, m_ignore, m_ignore}
 };
 
-INIT_MODULE(m_svinfo, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&svinfo_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&svinfo_msgtab);
 }
 
+const char *_version = "$Revision$";
+#endif
 /*
  * ms_svinfo - SVINFO message handler
  *      parv[0] = sender prefix
@@ -97,7 +106,7 @@ ms_svinfo(struct Client *client_p, struct Client *source_p,
   theirtime = atol(parv[4]);
   deltat = abs(theirtime - CurrentTime);
 
-  if (deltat > General.ts_max_delta)
+  if (deltat > ConfigFileEntry.ts_max_delta)
     {
       sendto_realops_flags(UMODE_ALL, L_ADMIN,
           "Link %s dropped, excessive TS delta (my TS=%lu, their TS=%lu, delta=%d)",
@@ -121,7 +130,7 @@ ms_svinfo(struct Client *client_p, struct Client *source_p,
       return;
     }
 
-  if (deltat > General.ts_warn_delta)
+  if (deltat > ConfigFileEntry.ts_warn_delta)
     { 
       sendto_realops_flags(UMODE_ALL, L_ALL,
                 "Link %s notable TS delta (my TS=%lu, their TS=%lu, delta=%d)",

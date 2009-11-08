@@ -23,34 +23,42 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "server.h"
+#include "s_misc.h"
+#include "s_conf.h"
+#include "s_serv.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
+#include "modules.h"
 #include "packet.h"
 
-static void m_time(struct Client*, struct Client*, int, char**);
-static void mo_time(struct Client*, struct Client*, int, char**);
+static void m_time(struct Client *, struct Client *, int, char *[]);
+static void mo_time(struct Client *, struct Client *, int, char *[]);
 
 struct Message time_msgtab = {
   "TIME", 0, 0, 0, 0, MFLG_SLOW, 0,
-  {m_unregistered, m_time, mo_time, m_ignore, mo_time, m_ignore}
+  { m_unregistered, m_time, mo_time, m_ignore, mo_time, m_ignore }
 };
 
-INIT_MODULE(m_time, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&time_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&time_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
 
 /*
  * m_time
@@ -62,13 +70,12 @@ m_time(struct Client *client_p, struct Client *source_p,
        int parc, char *parv[])
 {
   /* this is not rate limited, so end the grace period */
-  if (MyClient(source_p) && !IsFloodDone(source_p))
+  if (!IsFloodDone(source_p))
     flood_endgrace(source_p);
 
   /* This is safe enough to use during non hidden server mode */
-  if (!General.disable_remote_commands)
-    if (hunt_server(source_p, ":%s TIME :%s",
-                    1, parc, parv) != HUNTED_ISME)
+  if (!ConfigFileEntry.disable_remote)
+    if (hunt_server(client_p,source_p,":%s TIME :%s",1,parc,parv) != HUNTED_ISME)
       return;
 
   sendto_one(source_p, form_str(RPL_TIME), me.name,
@@ -82,12 +89,9 @@ m_time(struct Client *client_p, struct Client *source_p,
  */
 static void
 mo_time(struct Client *client_p, struct Client *source_p,
-	int parc, char *parv[])
+        int parc, char *parv[])
 {
-  if (hunt_server(source_p, ":%s TIME :%s",
-                  1, parc, parv) != HUNTED_ISME)
-    return;
-
-  sendto_one(source_p, form_str(RPL_TIME), me.name,
-             source_p->name, me.name, date(0));
+  if (hunt_server(client_p,source_p,":%s TIME :%s",1,parc,parv) == HUNTED_ISME)
+    sendto_one(source_p, form_str(RPL_TIME), me.name,
+               source_p->name, me.name, date(0));
 }

@@ -23,38 +23,45 @@
  */
 
 #include "stdinc.h"
+#include "list.h"
 #include "handlers.h"
 #include "channel.h"
 #include "channel_mode.h"
-#include "common.h"
 #include "client.h"
+#include "irc_string.h"
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
 #include "msg.h"
-#include "conf/modules.h"
+#include "modules.h"
 #include "parse.h"
 #include "hash.h"
 #include "packet.h"
-#include "server.h"
+#include "s_serv.h"
 
 
 static void m_kick(struct Client *, struct Client *, int, char *[]);
 
 struct Message kick_msgtab = {
   "KICK", 0, 0, 3, 0, MFLG_SLOW, 0,
-  { m_unregistered, m_kick, m_kick, m_ignore, m_kick, m_ignore }
+  {m_unregistered, m_kick, m_kick, m_ignore, m_kick, m_ignore}
 };
 
-INIT_MODULE(m_kick, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&kick_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&kick_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
 
 /* m_kick()
  *  parv[0] = sender prefix
@@ -88,7 +95,7 @@ m_kick(struct Client *client_p, struct Client *source_p,
     to = source_p->name;
   }
 
-  if (*parv[2] == '\0')
+  if (EmptyString(parv[2]))
   {
     sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
                from, to, "KICK");
@@ -106,7 +113,7 @@ m_kick(struct Client *client_p, struct Client *source_p,
   while (*name == ',')
     name++;
 
-  if ((p = strchr(name, ',')) != NULL)
+  if ((p = strchr(name,',')) != NULL)
     *p = '\0';
   if (*name == '\0')
     return;
@@ -183,7 +190,7 @@ m_kick(struct Client *client_p, struct Client *source_p,
   if (*user == '\0')
     return;
 
-  if ((who = find_chasing(source_p, user, &chasing)) == NULL)
+  if ((who = find_chasing(client_p, source_p, user, &chasing)) == NULL)
     return;
 
   if ((ms_target = find_channel_link(who, chptr)) != NULL)
@@ -192,7 +199,7 @@ m_kick(struct Client *client_p, struct Client *source_p,
     /* half ops cannot kick other halfops on private channels */
     if (has_member_flags(ms, CHFL_HALFOP) && !has_member_flags(ms, CHFL_CHANOP))
     {
-      if (((chptr->mode.mode & MODE_PARANOID) && has_member_flags(ms_target,
+      if (((chptr->mode.mode & MODE_PRIVATE) && has_member_flags(ms_target,
         CHFL_CHANOP|CHFL_HALFOP)) || has_member_flags(ms_target, CHFL_CHANOP))
       {
         sendto_one(source_p, form_str(ERR_CHANOPRIVSNEEDED),
@@ -210,17 +217,17 @@ m_kick(struct Client *client_p, struct Client *source_p,
      *   be sent anyways.  Just waiting for some oper to abuse it...
      */
     if (IsServer(source_p))
-      sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s KICK %s %s :%s",
+      sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s KICK %s %s :%s",
                            source_p->name, name, who->name, comment);
     else
-      sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s!%s@%s KICK %s %s :%s",
+      sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s!%s@%s KICK %s %s :%s",
                            source_p->name, source_p->username,
                            source_p->host, name, who->name, comment);
 
-    sendto_server(client_p, NULL, chptr, CAP_TS6, NOCAPS,
+    sendto_server(client_p, chptr, CAP_TS6, NOCAPS,
                   ":%s KICK %s %s :%s",
                   ID(source_p), chptr->chname, ID(who), comment);
-    sendto_server(client_p, NULL, chptr, NOCAPS, CAP_TS6,
+    sendto_server(client_p, chptr, NOCAPS, CAP_TS6,
                   ":%s KICK %s %s :%s", source_p->name, chptr->chname,
                   who->name, comment);
 

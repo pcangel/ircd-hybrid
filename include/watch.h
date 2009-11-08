@@ -34,15 +34,15 @@ struct Watch
   dlink_node node; /**< Embedded dlink_node used to link into watchTable */
   dlink_list watched_by; /**< list of clients that have this
                               entry on their watch list */
-  char nick[NICKLEN]; /**< nick name of the client to watch */
   time_t lasttime; /**< last time the client was seen */
+  char nick[NICKLEN]; /**< nick name of the client to watch */
 };
 
-EXTERN void watch_init(void);
-EXTERN void watch_add_to_hash_table(const char *, struct Client *);
-EXTERN void watch_del_from_hash_table(const char *, struct Client *);
-EXTERN void watch_check_hash(struct Client *, int);
-EXTERN void watch_del_watch_list(struct Client *);
-EXTERN void watch_count_memory(unsigned int *const, size_t *const);
-EXTERN struct Watch *watch_find_hash(const char *);
+extern void watch_init(void);
+extern void watch_add_to_hash_table(const char *, struct Client *);
+extern void watch_del_from_hash_table(const char *, struct Client *);
+extern void watch_check_hash(struct Client *, int);
+extern void watch_del_watch_list(struct Client *);
+extern void watch_count_memory(unsigned int *const, uint64_t *const);
+extern struct Watch *watch_find_hash(const char *);
 #endif

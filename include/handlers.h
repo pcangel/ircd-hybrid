@@ -87,10 +87,11 @@
 struct Client;
 
 /* generic handlers */
-EXTERN void m_ignore(struct Client *, struct Client *, int, char *[]);
-EXTERN void m_not_oper(struct Client *, struct Client *, int, char *[]);
-EXTERN void m_registered(struct Client *, struct Client *, int, char *[]);
-EXTERN void m_unregistered(struct Client *, struct Client *, int, char *[]);
+extern void rfc1459_command_send_error(struct Client *, struct Client *,int, char *[]);
+extern void m_ignore(struct Client *, struct Client *, int, char *[]);
+extern void m_not_oper(struct Client *, struct Client *, int, char *[]);
+extern void m_registered(struct Client *, struct Client *, int, char *[]);
+extern void m_unregistered(struct Client *, struct Client *, int, char *[]);
 
 #endif /* INCLUDED_handlers_h */
 

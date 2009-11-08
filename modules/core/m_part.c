@@ -23,19 +23,22 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
+#include "list.h"
 #include "handlers.h"
 #include "channel.h"
 #include "channel_mode.h"
 #include "client.h"
 #include "common.h"  
 #include "hash.h"
+#include "irc_string.h"
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
-#include "server.h"
+#include "s_serv.h"
 #include "msg.h"
 #include "parse.h"
+#include "modules.h"
+#include "s_conf.h"
 #include "packet.h"
 
 static void m_part(struct Client *, struct Client *, int, char *[]);
@@ -45,15 +48,22 @@ struct Message part_msgtab = {
   { m_unregistered, m_part, m_part, m_ignore, m_part, m_ignore }
 };
 
-INIT_MODULE(m_part, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&part_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&part_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
+
 
 /* part_one_client()
  *
@@ -65,7 +75,7 @@ CLEANUP_MODULE
  */
 static void
 part_one_client(struct Client *client_p, struct Client *source_p,
-                char *name, char *reason)
+                const char *name, const char *reason)
 {
   struct Channel *chptr = NULL;
   struct Membership *ms = NULL;
@@ -93,13 +103,13 @@ part_one_client(struct Client *client_p, struct Client *source_p,
    */
   if (reason[0] && (!MyConnect(source_p) ||
       ((can_send(chptr, source_p, ms) &&
-       (source_p->firsttime + General.anti_spam_exit_message_time)
+       (source_p->firsttime + ConfigFileEntry.anti_spam_exit_message_time)
         < CurrentTime))))
   {
-    sendto_server(client_p, NULL, chptr, CAP_TS6, NOCAPS,
+    sendto_server(client_p, chptr, CAP_TS6, NOCAPS,
                   ":%s PART %s :%s", ID(source_p), chptr->chname,
                   reason);
-    sendto_server(client_p, NULL, chptr, NOCAPS, CAP_TS6,
+    sendto_server(client_p, chptr, NOCAPS, CAP_TS6,
                   ":%s PART %s :%s", source_p->name, chptr->chname,
                   reason);
     sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s!%s@%s PART %s :%s",
@@ -108,9 +118,9 @@ part_one_client(struct Client *client_p, struct Client *source_p,
   }
   else
   {
-    sendto_server(client_p, NULL, chptr, CAP_TS6, NOCAPS,
+    sendto_server(client_p, chptr, CAP_TS6, NOCAPS,
                   ":%s PART %s", ID(source_p), chptr->chname);
-    sendto_server(client_p, NULL, chptr, NOCAPS, CAP_TS6,
+    sendto_server(client_p, chptr, NOCAPS, CAP_TS6,
                   ":%s PART %s", source_p->name, chptr->chname);
     sendto_channel_local(ALL_MEMBERS, NO, chptr, ":%s!%s@%s PART %s",
                          source_p->name, source_p->username,
@@ -130,33 +140,27 @@ static void
 m_part(struct Client *client_p, struct Client *source_p,
        int parc, char *parv[])
 {
-  char *p, *name;
-  char reason[KICKLEN + 1];
+  char *p = NULL, *name = NULL;
+  char reason[KICKLEN + 1] = { '\0' };
 
   if (IsServer(source_p))
     return;
 
-  if (*parv[1] == '\0')
+  if (EmptyString(parv[1]))
   {
     sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
                me.name, source_p->name, "PART");
     return;
   }
 
-  reason[0] = '\0';
-
   if (parc > 2)
     strlcpy(reason, parv[2], sizeof(reason));
-
-  name = strtoken(&p, parv[1], ",");
 
   /* Finish the flood grace period... */
   if (MyClient(source_p) && !IsFloodDone(source_p))
     flood_endgrace(source_p);
 
-  while (name)
-  {
+  for (name = strtoken(&p, parv[1], ","); name;
+       name = strtoken(&p,    NULL, ","))
     part_one_client(client_p, source_p, name, reason);
-    name = strtoken(&p, NULL, ",");
-  }
 }

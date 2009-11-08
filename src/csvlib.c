@@ -9,10 +9,29 @@
  *  $Id$
  */
 
+#include "config.h"
+#ifdef HAVE_LIBPCRE
+#include <pcre.h>
+#endif
 #include "stdinc.h"
+#include "list.h"
+#include "s_log.h"
+#include "s_conf.h"
+#include "hostmask.h"
+#include "client.h"
+#include "irc_string.h"
+#include "sprintf_irc.h"
+#include "memory.h"
+#include "send.h"
+#include "resv.h"
+#include "s_serv.h"
 
-// refuses to compile on win32 (unknown types and such),
-// wouldn't work anyway, to be restored later.
+/* Fix "statement not reached" warnings on Sun WorkShop C */
+#ifdef __SUNPRO_C
+#   pragma error_messages(off, E_STATEMENT_NOT_REACHED)
+#endif
+
+
 static void parse_csv_line(char *, ...);
 static int write_csv_line(FBFILE *, const char *, ...);
 static int flush_write(struct Client *, FBFILE *, FBFILE *, 
@@ -64,7 +83,7 @@ parse_csv_file(FBFILE *file, ConfType conf_type)
       if (aconf->host != NULL)
 	add_conf_by_address(CONF_KILL, aconf);
       break;
-
+#ifdef HAVE_LIBPCRE
     case RKLINE_TYPE:
     {
       const char *errptr = NULL;
@@ -98,16 +117,22 @@ parse_csv_file(FBFILE *file, ConfType conf_type)
 
     }
       break;
-
+#endif
     case DLINE_TYPE:
       parse_csv_line(line, &host_field, &reason_field, NULL);
-      conf = make_conf_item(DLINE_TYPE);
-      aconf = (struct AccessItem *)map_to_conf(conf);
-      if (host_field != NULL)
-	DupString(aconf->host, host_field);
-      if (reason_field != NULL)
-	DupString(aconf->reason, reason_field);
-      conf_add_d_conf(aconf);
+
+      if (host_field && parse_netmask(host_field, NULL, NULL) != HM_HOST)
+      {
+        aconf = map_to_conf(make_conf_item(DLINE_TYPE));
+        DupString(aconf->host, host_field);
+
+        if (reason_field != NULL)
+          DupString(aconf->reason, reason_field);
+        else
+          DupString(aconf->reason, "No reason");
+        add_conf_by_address(CONF_DLINE, aconf);
+      }
+
       break;
 
     case XLINE_TYPE:
@@ -119,7 +144,7 @@ parse_csv_file(FBFILE *file, ConfType conf_type)
       if (reason_field != NULL)
 	DupString(match_item->reason, reason_field);
       break;
-
+#ifdef HAVE_LIBPCRE
     case RXLINE_TYPE:
     {
       const char *errptr = NULL;
@@ -148,7 +173,7 @@ parse_csv_file(FBFILE *file, ConfType conf_type)
         DupString(match_item->reason, "No reason");
     }
       break;
-
+#endif
     case CRESV_TYPE:
       parse_csv_line(line, &name_field, &reason_field, NULL);
       (void)create_channel_resv(name_field, reason_field, 0);
@@ -171,6 +196,7 @@ parse_csv_file(FBFILE *file, ConfType conf_type)
     case ULINE_TYPE:
     case EXEMPTDLINE_TYPE:
     case CLASS_TYPE:
+    default:
       break;
     }
   }
@@ -220,7 +246,7 @@ parse_csv_line(char *line, ...)
  * - Dianora
  */
 void 
-write_conf_line(struct ConfItem *conf,
+write_conf_line(struct Client *source_p, struct ConfItem *conf,
 		const char *current_date, time_t cur_time)
 {
   FBFILE *out;
@@ -271,7 +297,7 @@ write_conf_line(struct ConfItem *conf,
 		   aconf->reason, aconf->oper_reason, current_date,
 		   get_oper_name(source_p), cur_time);
     break;
-
+#ifdef HAVE_LIBPCRE
   case RKLINE_TYPE:
     aconf = map_to_conf(conf);
     sendto_realops_flags(UMODE_ALL, L_ALL,
@@ -289,7 +315,7 @@ write_conf_line(struct ConfItem *conf,
                    aconf->reason, aconf->oper_reason, current_date,
                    get_oper_name(source_p), cur_time);
     break;
-
+#endif
   case DLINE_TYPE:
     aconf = (struct AccessItem *)map_to_conf(conf);
     sendto_realops_flags(UMODE_ALL, L_ALL,
@@ -323,7 +349,7 @@ write_conf_line(struct ConfItem *conf,
 		   conf->name, xconf->reason, xconf->oper_reason,
 		   current_date, get_oper_name(source_p), cur_time);
     break;
-
+#ifdef HAVE_LIBPCRE
   case RXLINE_TYPE:
     xconf = (struct MatchItem *)map_to_conf(conf);
     sendto_realops_flags(UMODE_ALL, L_ALL,
@@ -340,7 +366,7 @@ write_conf_line(struct ConfItem *conf,
                    conf->name, xconf->reason, xconf->oper_reason,
                    current_date, get_oper_name(source_p), cur_time);
     break;
-
+#endif
   case CRESV_TYPE:
     cresv_p = (struct ResvChannel *)map_to_conf(conf);
 

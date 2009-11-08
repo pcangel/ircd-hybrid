@@ -23,22 +23,37 @@
  */
 
 #include "stdinc.h"
+#include "list.h"
 #include "restart.h"
-#include "common.h"
+#include "fdlist.h"
 #include "ircd.h"
+#include "irc_string.h"
 #include "send.h"
+#include "s_log.h"
 #include "client.h" /* for UMODE_ALL */
+#include "memory.h"
 
-struct Callback *ircd_shutdown = NULL;
-
-static void *
-do_server_die(va_list args)
+void
+restart(const char *mesg)
 {
-  const char *mesg = va_arg(args, const char *);
-  int rboot = va_arg(args, int);
+  static int was_here = 0; /* redundant due to restarting flag below */
+
+  if (was_here++)
+    abort();
+
+  server_die(mesg, 1);
+}
+
+void
+server_die(const char *mesg, int rboot)
+{
   char buffer[IRCD_BUFSIZE];
   dlink_node *ptr = NULL;
   struct Client *target_p = NULL;
+  static int was_here = 0;
+
+  if (rboot && was_here++)
+    abort();
 
   if (EmptyString(mesg))
     snprintf(buffer, sizeof(buffer), "Server %s",
@@ -67,7 +82,7 @@ do_server_die(va_list args)
   send_queued_all();
   close_fds(NULL);
 
-  unlink(ServerState.pidfile);
+  unlink(pidFileName);
 
   if (rboot)
   {
@@ -76,27 +91,4 @@ do_server_die(va_list args)
   }
   else
     exit(0);
-}
-
-void
-server_die(const char *mesg, int rboot)
-{
-  static int was_here = 0;
-
-  if (rboot && was_here++)
-    abort();
-
-  execute_callback(ircd_shutdown, mesg, rboot);
-}
-
-void
-ircd_outofmemory(void)
-{
-  server_die("Out of memory", YES);
-}
-
-void
-init_restart(void)
-{
-  ircd_shutdown = register_callback("ircd_shutdown", do_server_die);
 }

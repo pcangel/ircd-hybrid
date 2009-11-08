@@ -27,6 +27,12 @@
 
 #define LISTENER_SSL    0x1
 #define LISTENER_HIDDEN 0x2
+#define LISTENER_SERVER 0x4
+
+#include "ircd_defs.h"  
+#include "fdlist.h"
+
+struct Client;
 
 struct Listener
 {
@@ -41,11 +47,9 @@ struct Listener
   unsigned int      flags;
 };
 
-EXTERN const dlink_list *listener_get_list(void);
-EXTERN void add_listener(int, const char *, unsigned int);
-EXTERN void close_listeners(void);
-EXTERN const char *get_listener_name(const struct Listener *const);
-EXTERN void free_listener(struct Listener *);
-EXTERN struct Listener *find_listener(int, struct irc_ssaddr *);
-
+extern void add_listener(int, const char *, unsigned int);
+extern void close_listeners(void);
+extern const char *get_listener_name(const struct Listener *);
+extern void show_ports(struct Client *);
+extern void free_listener(struct Listener *);
 #endif /* INCLUDED_listener_h */

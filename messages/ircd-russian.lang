@@ -77,11 +77,12 @@ ERR_BADCHANNAME:         :%s 479 %s %s :Недопустимое имя канала
 ERR_NOPRIVILEGES:        :%s 481 %s :В доступе отказано - Вы не IRC Оператор
 ERR_CHANOPRIVSNEEDED:    :%s 482 %s %s :Вы не оператор канала
 ERR_CANTKILLSERVER:      :%s 483 %s :Вы не можете убить сервер!
+ERR_RESTRICTED:          :%s 484 %s :Вы ограничены
 ERR_UMODEUNKNOWNFLAG:    :%s 501 %s :Неизвестный MODE флаг
 ERR_USERSDONTMATCH:      :%s 502 %s :Вы не можете изменить режим другого пользователя
 ERR_GHOSTEDCLIENT:       :%s 503 %s :Невозможно доставить сообщение для %s
 ERR_USERNOTONSERV:       :%s 504 %s %s :Пользователь не находится на этом сервере
-ERR_WRONGPONG:           :%s 513 %s :Для соединения введите /QUOTE PONG %u
+ERR_WRONGPONG:           :%s 513 %s :Для соединения введите /QUOTE PONG %lu
 ERR_HELPNOTFOUND:        :%s 524 %s %s :Файл помощи не найден
 RPL_ENDOFMODLIST:        :%s 703 %s :Завершение вывода /MODLIST.
 RPL_ENDOFHELP            :%s 706 %s %s :Завершение вывода /HELP.

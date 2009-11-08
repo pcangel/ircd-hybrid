@@ -30,21 +30,30 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
+#ifdef HAVE_LIBCRYPTO
+
+#include "list.h"
 #include "handlers.h"
 #include "client.h"      /* client struct */
 #include "ircd.h"        /* me */
+#include "modules.h"
 #include "numeric.h"     /* ERR_xxx */
 #include "send.h"        /* sendto_one */
 #include <openssl/rsa.h> /* rsa.h is implicit when building this */
 #include "rsa.h"
 #include "msg.h"
 #include "parse.h"
+#include "irc_string.h"  /* strncpy_irc */
+#include "memory.h"
 #include "common.h"      /* TRUE bleah */
+#include "event.h"
 #include "hash.h"        /* add_to_client_hash_table */
-#include "server.h"      /* server_estab, check_server, my_name_for_link */
+#include "s_conf.h"      /* struct AccessItem */
+#include "s_log.h"       /* log level defines */
+#include "s_serv.h"      /* server_estab, check_server, my_name_for_link */
 #include "motd.h"
 
+static int bogus_host(char *host);
 static char *parse_cryptserv_args(struct Client *client_p,
                                   char *parv[], int parc, char *info,
                                   char *key);
@@ -55,7 +64,7 @@ static void cryptlink_auth(struct Client *, struct Client *, int, char **);
 
 struct Message cryptlink_msgtab = {
   "CRYPTLINK", 0, 0, 4, 0, MFLG_SLOW | MFLG_UNREG, 0,
-  {mr_cryptlink, m_ignore, m_ignore, m_ignore, m_ignore, m_ignore}
+  {mr_cryptlink, m_ignore, rfc1459_command_send_error, m_ignore, m_ignore, m_ignore}
 };
 
 struct CryptLinkStruct
@@ -70,18 +79,25 @@ static struct CryptLinkStruct cryptlink_cmd_table[] =
   { "AUTH",	cryptlink_auth,	},
   { "SERV",	cryptlink_serv,	},
   /* End of table */
-  { (char *)0,	(void (*)())0,	}
+  { NULL,	NULL,	}
 };
 
-INIT_MODULE(m_cryptlink, "$Revision$")
+#ifndef STATIC_MODULES
+void 
+_modinit(void)
 {
   mod_add_cmd(&cryptlink_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&cryptlink_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
+
 
 /* mr_cryptlink - CRYPTLINK message handler
  *      parv[0] == CRYPTLINK
@@ -127,7 +143,8 @@ cryptlink_auth(struct Client *client_p, struct Client *source_p,
                int parc, char *parv[])
 {
   struct EncCapability *ecap;
-  struct ConnectConf *conf;
+  struct ConfItem *conf;
+  struct AccessItem *aconf;
   int   enc_len;
   int   len;
   unsigned char *enc;
@@ -207,18 +224,21 @@ cryptlink_auth(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  conf = client_p->serv->sconf;
+  conf = find_conf_name(&client_p->localClient->confs,
+                         client_p->name, SERVER_TYPE);
 
   if (conf == NULL)
   {
     cryptlink_error(client_p, "AUTH",
-                    "Lost connect block for server",
-                    "Lost connect block");
+                    "Lost C-line for server",
+                    "Lost C-line");
     return;
   }
 
+  aconf = (struct AccessItem *)map_to_conf(conf);
+
   if (!(client_p->localClient->out_cipher ||
-      (client_p->localClient->out_cipher = check_cipher(client_p, conf))))
+      (client_p->localClient->out_cipher = check_cipher(client_p, aconf))))
   {
     cryptlink_error(client_p, "AUTH",
                     "Couldn't find compatible cipher",
@@ -251,7 +271,8 @@ cryptlink_serv(struct Client *client_p, struct Client *source_p,
   struct Client *target_p;
   char *key = client_p->localClient->out_key;
   unsigned char *b64_key;
-  struct ConnectConf *conf;
+  struct ConfItem *conf;
+  struct AccessItem *aconf;
   char *encrypted;
   const char *p;
   int enc_len;
@@ -289,7 +310,7 @@ cryptlink_serv(struct Client *client_p, struct Client *source_p,
   switch (check_server(name, client_p, CHECK_SERVER_CRYPTLINK))
   {
     case -1:
-      if (General.warn_no_nline)
+      if (ConfigFileEntry.warn_no_nline)
       {
         cryptlink_error(client_p, "SERV",
           "Unauthorized server connection attempt: No entry for server",
@@ -332,13 +353,13 @@ cryptlink_serv(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  conf = client_p->serv->sconf;
-
+  conf = find_conf_name(&client_p->localClient->confs,
+			name, SERVER_TYPE);
   if (conf == NULL)
   {
     cryptlink_error(client_p, "AUTH",
-                    "Lost connect block for server",
-                    "Lost connect block" );
+                    "Lost C-line for server",
+                    "Lost C-line" );
     return;
   }
 
@@ -367,8 +388,10 @@ cryptlink_serv(struct Client *client_p, struct Client *source_p,
   strlcpy(client_p->info, p, sizeof(client_p->info));
   client_p->hopcount = 0;
 
+  aconf = (struct AccessItem *)map_to_conf(conf);
+
   if (!(client_p->localClient->out_cipher ||
-      (client_p->localClient->out_cipher = check_cipher(client_p, conf))))
+      (client_p->localClient->out_cipher = check_cipher(client_p, aconf))))
   {
     cryptlink_error(client_p, "AUTH",
                     "Couldn't find compatible cipher",
@@ -380,7 +403,7 @@ cryptlink_serv(struct Client *client_p, struct Client *source_p,
   enc_len   = RSA_public_encrypt(client_p->localClient->out_cipher->keylen,
                                (unsigned char *)key,
                                (unsigned char *)encrypted,
-                               conf->rsa_public_key,
+                               aconf->rsa_public_key,
                                RSA_PKCS1_PADDING);
 
   if (enc_len <= 0)
@@ -481,9 +504,38 @@ parse_cryptserv_args(struct Client *client_p, char *parv[],
   MyFree(out);
 
   strlcpy(info, parv[4], REALLEN + 1);
-  /* XXX: bogus_host() should take care of this case */
+
   if (strlen(name) > HOSTLEN)
     name[HOSTLEN] = '\0';
 
   return(name);
 }
+
+/* bogus_host()
+ *
+ * inputs	- hostname
+ * output	- 1 if a bogus hostname input, 0 if its valid
+ * side effects	- none
+ */
+static int
+bogus_host(char *host)
+{
+  unsigned int length = 0;
+  unsigned int dots   = 0;
+  char *s = host;
+
+  for (; *s; s++)
+  {
+    if (!IsServChar(*s))
+      return(1);
+
+    ++length;
+
+    if ('.' == *s)
+      ++dots;
+  }
+
+  return(!dots || length > HOSTLEN);
+}
+
+#endif

@@ -23,17 +23,19 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "common.h"
+#include "irc_string.h"
+#include "sprintf_irc.h"
 #include "ircd.h"
 #include "numeric.h"
+#include "s_conf.h"
 #include "restart.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "user.h"
+#include "modules.h"
 
 static void mo_restart(struct Client *, struct Client *, int, char *[]);
 
@@ -42,15 +44,21 @@ struct Message restart_msgtab = {
   { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_restart, m_ignore }
 };
 
-INIT_MODULE(m_restart, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&restart_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&restart_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
 
 /*
  * mo_restart
@@ -85,5 +93,5 @@ mo_restart(struct Client *client_p, struct Client *source_p,
 
   ircsprintf(buf, "received RESTART command from %s",
              get_oper_name(source_p));
-  server_die(buf, 1);
+  server_die(buf, YES);
 }

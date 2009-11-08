@@ -23,19 +23,28 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
+#include "list.h"
+#include "channel.h"
 #include "client.h"
 #include "common.h"
+#include "irc_string.h"
+#include "sprintf_irc.h"
 #include "ircd.h"
+#include "hostmask.h"
 #include "numeric.h"
-#include "parse_aline.h"
+#include "fdlist.h"
+#include "s_bsd.h"
+#include "s_conf.h"
+#include "s_log.h"
+#include "s_misc.h"
 #include "send.h"
 #include "hash.h"
 #include "handlers.h"
-#include "server.h"
+#include "s_serv.h"
 #include "msg.h"
+#include "s_gline.h"
 #include "parse.h"
-#include "user.h"
+#include "modules.h"
 
 static void me_rkline(struct Client *, struct Client *, int, char *[]);
 static void mo_rkline(struct Client *, struct Client *, int, char *[]);
@@ -46,10 +55,11 @@ static void mo_unrkline(struct Client *, struct Client *, int, char *[]);
 static void ms_unrkline(struct Client *, struct Client *, int, char *[]);
 /* Local function prototypes */
 static int already_placed_rkline(struct Client *, const char *, const char *);
-static void apply_rkline(struct Client *, struct KillConf *, const char *, time_t);
-static void apply_trkline(struct Client *, struct KillConf *, int);
+static void apply_rkline(struct Client *, struct ConfItem *, const char *, time_t);
+static void apply_trkline(struct Client *, struct ConfItem *, int);
 
 static char buffer[IRCD_BUFSIZE];
+static int remove_trkline_match(const char *, const char *);
 
 struct Message rkline_msgtab = {
   "RKLINE", 0, 0, 2, 0, MFLG_SLOW, 0,
@@ -61,17 +71,23 @@ struct Message unrkline_msgtab = {
    {m_unregistered, m_not_oper, ms_unrkline, me_unrkline, mo_unrkline, m_ignore}
 };
 
-INIT_MODULE(m_rkline, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&rkline_msgtab);
   mod_add_cmd(&unrkline_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
-  mod_del_cmd(&unrkline_msgtab);
   mod_del_cmd(&rkline_msgtab);
+  mod_del_cmd(&unrkline_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
 
 /* mo_rkline()
  *
@@ -86,7 +102,7 @@ static void
 mo_rkline(struct Client *client_p, struct Client *source_p,
           int parc, char *parv[])
 {
-  pcre *exp_user = NULL, *exp_host = NULL;
+  void *exp_user = NULL, *exp_host = NULL;
   const char *errptr = NULL;
   char *reason = NULL;
   char *oper_reason = NULL;
@@ -94,7 +110,8 @@ mo_rkline(struct Client *client_p, struct Client *source_p,
   char *host = NULL;
   const char *current_date = NULL;
   char *target_server = NULL;
-  struct KillConf *conf;
+  struct ConfItem *conf = NULL;
+  struct AccessItem *aconf = NULL;
   time_t tkline_time = 0;
   time_t cur_time = 0;
 
@@ -113,22 +130,22 @@ mo_rkline(struct Client *client_p, struct Client *source_p,
   {
     if (HasID(source_p))
     {
-      sendto_server(NULL, source_p, NULL, CAP_KLN|CAP_TS6, NOCAPS,
+      sendto_server(NULL, NULL, CAP_KLN|CAP_TS6, NOCAPS,
                     ":%s RKLINE %s %lu %s %s :%s",
                     source_p->id, target_server, (unsigned long)tkline_time,
                     user, host, reason);
-      sendto_server(NULL, source_p, NULL, CAP_KLN, CAP_TS6,
+      sendto_server(NULL, NULL, CAP_KLN, CAP_TS6,
                     ":%s RKLINE %s %lu %s %s :%s",
                     source_p->name, target_server, (unsigned long)tkline_time,
                     user, host, reason);
     }
     else
-      sendto_server(NULL, source_p, NULL, CAP_KLN, NOCAPS,
+      sendto_server(NULL, NULL, CAP_KLN, NOCAPS,
                     ":%s RKLINE %s %lu %s %s :%s",
                     source_p->name, target_server, (unsigned long)tkline_time,
                     user, host, reason);
 
-    // Allow ON to apply local kline as well if it matches
+    /* Allow ON to apply local kline as well if it matches */
     if (!match(target_server, me.name))
       return;
   }
@@ -141,7 +158,7 @@ mo_rkline(struct Client *client_p, struct Client *source_p,
   if (already_placed_rkline(source_p, user, host))
     return;
 
-  // Look for an oper reason
+  /* Look for an oper reason */
   if ((oper_reason = strchr(reason, '|')) != NULL)
     *oper_reason++ = '\0';
 
@@ -155,30 +172,32 @@ mo_rkline(struct Client *client_p, struct Client *source_p,
 
   cur_time = CurrentTime;
   current_date = smalldate(cur_time);
-  conf = MyMalloc(sizeof(*conf));
-  DupString(conf->access.user, user);
-  DupString(conf->access.host, host);
+  conf = make_conf_item(RKLINE_TYPE);
+  aconf = map_to_conf(conf);
 
-  conf->regexuser = exp_user;
-  conf->regexhost = exp_host;
+  DupString(aconf->host, host);
+  DupString(aconf->user, user);
+
+  aconf->regexuser = exp_user;
+  aconf->regexhost = exp_host;
 
   if (tkline_time != 0)
   {
     ircsprintf(buffer, "Temporary RK-line %d min. - %s (%s)",
                (int)(tkline_time/60), reason, current_date);
-    DupString(conf->reason, buffer);
+    DupString(aconf->reason, buffer);
 
     if (oper_reason != NULL)
-      DupString(conf->oper_reason, oper_reason);
+      DupString(aconf->oper_reason, oper_reason);
     apply_trkline(source_p, conf, tkline_time);
   }
   else
   {
     ircsprintf(buffer, "%s (%s)", reason, current_date);
-    DupString(conf->reason, buffer);
+    DupString(aconf->reason, buffer);
 
     if (oper_reason != NULL)
-      DupString(conf->oper_reason, oper_reason);
+      DupString(aconf->oper_reason, oper_reason);
     apply_rkline(source_p, conf, current_date, cur_time);
   }
 }
@@ -188,7 +207,8 @@ static void
 me_rkline(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
-  struct KillConf *conf;
+  struct ConfItem *conf = NULL;
+  struct AccessItem *aconf = NULL;
   int tkline_time;
   const char *current_date = NULL;
   time_t cur_time;
@@ -211,10 +231,11 @@ me_rkline(struct Client *client_p, struct Client *source_p,
   cur_time = CurrentTime;
   current_date = smalldate(cur_time);
 
-  if (find_shared(source_p->servptr->name, source_p->username, source_p->host,
-                  source_p->sockhost, SHARED_KLINE))
+  if (find_matching_name_conf(ULINE_TYPE, source_p->servptr->name,
+                              source_p->username, source_p->host,
+                              SHARED_KLINE))
   {
-    pcre *exp_user = NULL, *exp_host = NULL;
+    void *exp_user = NULL, *exp_host = NULL;
     const char *errptr = NULL;
 
     if (!IsClient(source_p) ||
@@ -229,30 +250,31 @@ me_rkline(struct Client *client_p, struct Client *source_p,
       return;
     }
 
-    conf = MyMalloc(sizeof(*conf));
-    DupString(conf->access.user, kuser);
-    DupString(conf->access.host, khost);
+    conf = make_conf_item(RKLINE_TYPE);
+    aconf = map_to_conf(conf);
+    DupString(aconf->host, khost);
+    DupString(aconf->user, kuser);
 
-    conf->regexuser = exp_user;
-    conf->regexhost = exp_host;
+    aconf->regexuser = exp_user;
+    aconf->regexhost = exp_host;
 
     if (tkline_time)
     {
       ircsprintf(buffer, "Temporary RK-line %d min. - %s (%s)",
                  (int)(tkline_time/60), kreason, current_date);
-      DupString(conf->reason, buffer);
+      DupString(aconf->reason, buffer);
 
       if (oper_reason != NULL)
-        DupString(conf->oper_reason, oper_reason);
+        DupString(aconf->oper_reason, oper_reason);
       apply_trkline(source_p, conf, tkline_time);
     }
     else
     {
       ircsprintf(buffer, "%s (%s)", kreason, current_date);
-      DupString(conf->reason, buffer);
+      DupString(aconf->reason, buffer);
 
       if (oper_reason != NULL)
-        DupString(conf->oper_reason, oper_reason);
+        DupString(aconf->oper_reason, oper_reason);
       apply_rkline(source_p, conf, current_date, cur_time);
     }
   }
@@ -282,38 +304,11 @@ ms_rkline(struct Client *client_p, struct Client *source_p,
  *		  and conf file
  */
 static void 
-apply_rkline(struct Client *source_p, struct KillConf *conf,
+apply_rkline(struct Client *source_p, struct ConfItem *conf,
              const char *current_date, time_t cur_time)
 {
-  FBFILE *out = NULL;
-  conf->access.type = -1;
-  dlinkAdd(conf, &conf->node, &rkline_confs);
-
-// TBD - don't keep the *line in memory if we cannot open the conf file
-  if ((out = fbopen(ServerState.rklinefile, "a")) == NULL)
-    sendto_realops_flags(UMODE_ALL, L_ALL,
-                         "*** Problem opening %s", ServerState.rklinefile);
-  else
-    write_csv_line(out, "%s%s%s%s%s%s%d",
-                   conf->access.user, conf->access.host,
-                   conf->reason, conf->oper_reason, current_date,
-                   get_oper_name(source_p), cur_time);
-
-  sendto_realops_flags(UMODE_ALL, L_ALL,
-                       "%s added RK-Line for [%s@%s] [%s]",
-                       get_oper_name(source_p),
-                       conf->access.user, conf->access.host, conf->reason);
-  sendto_one(source_p, ":%s NOTICE %s :Added RK-Line [%s@%s] to %s",
-             MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
-             source_p->name, conf->access.user, conf->access.host,
-             ServerState.rklinefile);
-  ilog(L_TRACE, "%s added K-Line for [%s@%s] [%s]",
-       get_oper_name(source_p), conf->access.user, conf->access.host,
-       conf->reason);
-  log_oper_action(LOG_RKLINE_TYPE, source_p, "[%s@%s] [%s]\n",
-                  conf->access.user, conf->access.host, conf->reason);
-
-  // Now, activate kline against current online clients
+  write_conf_line(source_p, conf, current_date, cur_time);
+  /* Now, activate kline against current online clients */
   rehashed_klines = 1;
 }
 
@@ -324,25 +319,24 @@ apply_rkline(struct Client *source_p, struct KillConf *conf,
  * side effects	- tkline as given is placed
  */
 static void
-apply_trkline(struct Client *source_p, struct KillConf *conf,
+apply_trkline(struct Client *source_p, struct ConfItem *conf,
              int tkline_time)
 {
-  conf->access.type = -1;
-  conf->access.expires = CurrentTime + tkline_time;
-  dlinkAdd(conf, &conf->node, &rkline_confs);
+  struct AccessItem *aconf = map_to_conf(conf);
 
+  aconf->hold = CurrentTime + tkline_time;
+  add_temp_line(conf);
   sendto_realops_flags(UMODE_ALL, L_ALL,
 		       "%s added temporary %d min. RK-Line for [%s@%s] [%s]",
 		       get_oper_name(source_p), tkline_time/60,
-		       conf->access.user, conf->access.host, conf->reason);
+		       aconf->user, aconf->host,
+		       aconf->reason);
   sendto_one(source_p, ":%s NOTICE %s :Added temporary %d min. RK-Line [%s@%s]",
              MyConnect(source_p) ? me.name : ID_or_name(&me, source_p->from),
-             source_p->name, tkline_time/60, conf->access.user,
-             conf->access.host);
+             source_p->name, tkline_time/60, aconf->user, aconf->host);
   ilog(L_TRACE, "%s added temporary %d min. RK-Line for [%s@%s] [%s]",
-       get_oper_name(source_p), tkline_time/60,
-       conf->access.user, conf->access.host, conf->reason);
-
+       source_p->name, tkline_time/60,
+       aconf->user, aconf->host, aconf->reason);
   rehashed_klines = 1;
 }
 
@@ -354,15 +348,21 @@ apply_trkline(struct Client *source_p, struct KillConf *conf,
 static int
 already_placed_rkline(struct Client *source_p, const char *user, const char *host)
 {
-  struct KillConf *conf = find_exact_rkline(user, host);
+  const dlink_node *ptr = NULL;
 
-  if (conf)
+  DLINK_FOREACH(ptr, rkconf_items.head)
   {
-    sendto_one(source_p,
-               ":%s NOTICE %s :[%s@%s] already RK-Lined by [%s@%s] - %s",
-               me.name, source_p->name, user, host, conf->access.user,
-               conf->access.host, conf->reason ? conf->reason : "No reason");
-    return 1;
+    struct AccessItem *aptr = map_to_conf(ptr->data);
+
+    if (!strcmp(user, aptr->user) &&
+        !strcmp(aptr->host, host))
+    {
+      sendto_one(source_p,
+                 ":%s NOTICE %s :[%s@%s] already RK-Lined by [%s@%s] - %s",
+                 me.name, source_p->name, user, host, aptr->user,
+                 aptr->host, aptr->reason ? aptr->reason : "No reason");
+      return 1;
+    }
   }
 
   return 0;
@@ -379,7 +379,6 @@ mo_unrkline(struct Client *client_p,struct Client *source_p,
 {
   char *target_server = NULL;
   char *user, *host;
-  struct KillConf *conf;
 
   if (!IsAdmin(source_p) || !IsOperUnkline(source_p))
   {
@@ -388,7 +387,7 @@ mo_unrkline(struct Client *client_p,struct Client *source_p,
     return;
   }
 
-  if (EmptyString(parv[1]))
+  if (parc < 2 || *parv[1] == '\0')
   {
     sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
                me.name, source_p->name, "UNRKLINE");
@@ -405,7 +404,7 @@ mo_unrkline(struct Client *client_p,struct Client *source_p,
                        "UNRKLINE %s %s %s",
                        target_server, user, host);
 
-    // Allow ON to apply local unkline as well if it matches
+    /* Allow ON to apply local unkline as well if it matches */
     if (!match(target_server, me.name))
       return;
   }
@@ -415,15 +414,7 @@ mo_unrkline(struct Client *client_p,struct Client *source_p,
                    "%s %s", user, host);
 #endif
 
-  conf = find_exact_rkline(user, host);
-  if (!conf)
-  {
-    sendto_one(source_p, ":%s NOTICE %s :No RK-Line for [%s@%s] found", 
-               me.name, source_p->name, user, host);
-    return;
-  }
-
-  if (conf->access.expires)
+  if (remove_trkline_match(host, user))
   {
     sendto_one(source_p,
                ":%s NOTICE %s :Un-klined [%s@%s] from temporary RK-Lines",
@@ -432,9 +423,11 @@ mo_unrkline(struct Client *client_p,struct Client *source_p,
                          "%s has removed the temporary RK-Line for: [%s@%s]",
                          get_oper_name(source_p), user, host);
     ilog(L_NOTICE, "%s removed temporary RK-Line for [%s@%s]",
-         get_oper_name(source_p), user, host);
+         source_p->name, user, host);
+    return;
   }
-  else
+
+  if (remove_conf_line(RKLINE_TYPE, source_p, user, host) > 0)
   {
     sendto_one(source_p, ":%s NOTICE %s :RK-Line for [%s@%s] is removed", 
                me.name, source_p->name, user,host);
@@ -442,13 +435,11 @@ mo_unrkline(struct Client *client_p,struct Client *source_p,
                          "%s has removed the RK-Line for: [%s@%s]",
                          get_oper_name(source_p), user, host);
     ilog(L_NOTICE, "%s removed RK-Line for [%s@%s]",
-         get_oper_name(source_p), user, host);
-    remove_conf_line(source_p, 123, user, host);
+         source_p->name, user, host);
   }
-
-  dlinkDelete(&conf->node, &rkline_confs);
-  free_kline(conf);
-  MyFree(conf);
+  else
+    sendto_one(source_p, ":%s NOTICE %s :No RK-Line for [%s@%s] found", 
+               me.name, source_p->name, user, host);
 }
 
 /* me_unrkline()
@@ -466,7 +457,6 @@ me_unrkline(struct Client *client_p, struct Client *source_p,
            int parc, char *parv[])
 {
   const char *user = NULL, *host = NULL;
-  struct KillConf *conf;
 
   if (parc != 4 || EmptyString(parv[3]))
     return;
@@ -477,18 +467,11 @@ me_unrkline(struct Client *client_p, struct Client *source_p,
   if (!IsClient(source_p) || !match(parv[1], me.name))
     return;
 
-  if (find_shared(source_p->servptr->name, source_p->username, source_p->host,
-                  source_p->sockhost, SHARED_UNKLINE))
+  if (find_matching_name_conf(ULINE_TYPE, source_p->servptr->name,
+                              source_p->username, source_p->host,
+                              SHARED_UNKLINE))
   {
-    conf = find_exact_rkline(user, host);
-    if (!conf)
-    {
-      sendto_one(source_p, ":%s NOTICE %s :No RK-Line for [%s@%s] found",
-                 me.name, source_p->name, user, host);
-      return;
-    }
-
-    if (conf->access.expires)
+    if (remove_trkline_match(host, user))
     {
       sendto_one(source_p,
                  ":%s NOTICE %s :Un-klined [%s@%s] from temporary RK-Lines",
@@ -497,9 +480,11 @@ me_unrkline(struct Client *client_p, struct Client *source_p,
                            "%s has removed the temporary RK-Line for: [%s@%s]",
                            get_oper_name(source_p), user, host);
       ilog(L_NOTICE, "%s removed temporary RK-Line for [%s@%s]",
-           get_oper_name(source_p), user, host);
+           source_p->name, user, host);
+      return;
     }
-    else
+
+    if (remove_conf_line(RKLINE_TYPE, source_p, user, host) > 0)
     {
       sendto_one(source_p, ":%s NOTICE %s :RK-Line for [%s@%s] is removed",
                  me.name, source_p->name, user, host);
@@ -508,17 +493,15 @@ me_unrkline(struct Client *client_p, struct Client *source_p,
                            get_oper_name(source_p), user, host);
 
       ilog(L_NOTICE, "%s removed RK-Line for [%s@%s]",
-           get_oper_name(source_p), user, host);
-      remove_conf_line(source_p, 123, user, host);
+           source_p->name, user, host);
     }
-
-    dlinkDelete(&conf->node, &rkline_confs);
-    free_kline(conf);
-    MyFree(conf);
+    else
+      sendto_one(source_p, ":%s NOTICE %s :No RK-Line for [%s@%s] found",
+                 me.name, source_p->name, user, host);
   }
 }
 
-// ms_unrkline - propagates and handles a remote unrkline message
+/* ms_unrkline - propagates and handles a remote unrkline message */
 static void
 ms_unrkline(struct Client *client_p, struct Client *source_p,
            int parc, char *parv[])
@@ -531,4 +514,33 @@ ms_unrkline(struct Client *client_p, struct Client *source_p,
                      parv[1], parv[2], parv[3]);
 
   me_unrkline(client_p, source_p, parc, parv);
+}
+
+/* static int remove_rtkline_match(const char *host, const char *user)
+ * Input: A hostname, a username to unrkline.
+ * Output: returns YES on success, NO if no trkline removed.
+ * Side effects: Any matching trklines are removed.
+ */
+static int
+remove_trkline_match(const char *const host,
+                     const char *const user)
+{
+  dlink_node *ptr = NULL;
+
+  DLINK_FOREACH(ptr, temporary_rklines.head)
+  {
+    struct ConfItem *conf = ptr->data;
+    struct AccessItem *aptr = map_to_conf(ptr->data);
+
+    if (!strcmp(user, aptr->user) &&
+        !strcmp(aptr->host, host))
+    {
+      dlinkDelete(ptr, &temporary_rklines);
+      free_dlink_node(ptr);
+      delete_conf_item(conf);
+      return 1;
+    }
+  }
+
+  return 0;
 }

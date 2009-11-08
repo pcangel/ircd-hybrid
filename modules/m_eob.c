@@ -27,49 +27,47 @@
 #include "client.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "server.h"
+#include "s_conf.h"
+#include "s_serv.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
+#include "modules.h"
 #include <stdlib.h>
 
-static void ms_eob(struct Client *, struct Client *, int, char *[]);
+static void ms_eob(struct Client*, struct Client*, int, char**);
 
 struct Message eob_msgtab = {
   "EOB", 0, 0, 0, 0, MFLG_SLOW | MFLG_UNREG, 0, 
-  { m_unregistered, m_ignore, ms_eob, m_ignore, m_ignore, m_ignore }
+  {m_unregistered, m_ignore, ms_eob, m_ignore, m_ignore, m_ignore}
 };
-
-INIT_MODULE(m_eob, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&eob_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&eob_msgtab);
 }
 
-/*! \brief EOB command handler (called for servers only)
- *
- * \param client_p Pointer to allocated Client struct with physical connection
- *                 to this server, i.e. with an open socket connected.
- * \param source_p Pointer to allocated Client struct from which the message
- *                 originally comes from.  This can be a local or remote client.
- * \param parc     Integer holding the number of supplied arguments.
- * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
- *                 pointers.
- * \note Valid arguments for this command are:
- *      - parv[0] = sender prefix
+const char *_version = "$Revision$";
+#endif
+
+/*
+ * ms_eob - EOB command handler
+ *      parv[0] = sender prefix   
+ *      parv[1] = servername   
  */
 static void
 ms_eob(struct Client *client_p, struct Client *source_p,
        int parc, char *parv[])
 {
-  assert(source_p == client_p);
-  sendto_realops_flags(UMODE_ALL, L_ALL, "End of burst from %s (%u seconds)",
-                       source_p->name,
-                       (unsigned int)(CurrentTime - source_p->firsttime));
-  SetEob(source_p);
+   sendto_realops_flags(UMODE_ALL, L_ALL, "End of burst from %s (%u seconds)",
+                        source_p->name, 
+			(unsigned int)(CurrentTime - source_p->firsttime));
+   SetEob(client_p);
 }

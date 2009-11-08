@@ -27,28 +27,38 @@
 #include "client.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "server.h"
+#include "s_serv.h"
 #include "send.h"
+#include "irc_string.h"
+#include "sprintf_irc.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
+#include "modules.h"
+#include "s_conf.h"
+
 
 static void m_userhost(struct Client *, struct Client *, int, char *[]);
 
 struct Message userhost_msgtab = {
   "USERHOST", 0, 0, 1, 0, MFLG_SLOW, 0,
-  { m_unregistered, m_userhost, m_userhost, m_ignore, m_userhost, m_ignore }
+  {m_unregistered, m_userhost, m_userhost, m_ignore, m_userhost, m_ignore}
 };
 
-INIT_MODULE(m_userhost, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&userhost_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&userhost_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
 
 /*
  * m_userhost added by Darren Reed 13/8/91 to aid clients and reduce
@@ -59,7 +69,7 @@ static void
 m_userhost(struct Client *client_p, struct Client *source_p,
            int parc, char *parv[])
 {
-  const struct Client *target_p = NULL;
+  struct Client *target_p;
   char buf[IRCD_BUFSIZE];
   char response[NICKLEN*2+USERLEN+HOSTLEN+30];
   char *t;
@@ -67,11 +77,10 @@ m_userhost(struct Client *client_p, struct Client *source_p,
   int cur_len;
   int rl;
 
-  cur_len = ircsprintf(buf,form_str(RPL_USERHOST),
-                       me.name, source_p->name, "");
+  cur_len = ircsprintf(buf,form_str(RPL_USERHOST),me.name, parv[0], "");
   t = buf + cur_len;
 
-  for (i = 0; i < 5; ++i)
+  for (i = 0; i < 5; i++)
   {
     if (parv[i + 1] == NULL)
       break;
@@ -105,7 +114,7 @@ m_userhost(struct Client *client_p, struct Client *source_p,
 
       if ((rl + cur_len) < (IRCD_BUFSIZE - 10))
       {
-        ircsprintf(t,"%s",response);
+        ircsprintf(t, "%s", response);
         t += rl;
         cur_len += rl;
       }

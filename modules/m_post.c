@@ -27,11 +27,12 @@
 #include "client.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "server.h"
+#include "s_serv.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
+#include "modules.h"
+#include "s_conf.h"
 
 static void mr_dumb_proxy(struct Client*, struct Client*, int, char**);
 
@@ -50,19 +51,26 @@ struct Message put_msgtab = {
   {mr_dumb_proxy, m_ignore, m_ignore, m_ignore, m_ignore, m_ignore}
 };
 
-INIT_MODULE(m_post, "$Revision$")
+
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&post_msgtab);
   mod_add_cmd(&get_msgtab);
   mod_add_cmd(&put_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
-  mod_del_cmd(&put_msgtab);
-  mod_del_cmd(&get_msgtab);
   mod_del_cmd(&post_msgtab);
+  mod_del_cmd(&get_msgtab);
+  mod_del_cmd(&put_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
 
 /*
 ** mr_dumb_proxy

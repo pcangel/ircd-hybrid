@@ -23,7 +23,10 @@
  */
 
 #include "stdinc.h"
-#include "conf/modules.h"
+#ifndef STATIC_MODULES
+#include "list.h"
+#include "modules.h"
+#include "hook.h"
 #include "client.h"
 #include "ircd.h"
 #include "send.h"
@@ -33,17 +36,21 @@ static dlink_node *prev_hook;
 
 static void *show_admin(va_list);
 
-INIT_MODULE(spy_admin_notice, "$Revision$")
+void
+_modinit(void)
 {
   if ((admin_cb = find_callback("doing_admin")))
     prev_hook = install_hook(admin_cb, show_admin);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   if (admin_cb)
     uninstall_hook(admin_cb, show_admin);
 }
+
+const char *_version = "$Revision$";
 
 static void *
 show_admin(va_list args)
@@ -60,3 +67,4 @@ show_admin(va_list args)
 
   return pass_callback(prev_hook, source_p, parc, parv);
 }
+#endif

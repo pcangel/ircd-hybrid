@@ -23,24 +23,33 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
+#include "list.h"
+#include "balloc.h"
+#include "s_conf.h"
 #include "channel.h"
 #include "channel_mode.h"
 #include "client.h"
 #include "common.h"
 #include "handlers.h"
+#include "modules.h"
 #include "hash.h"
+#include "resv.h"
+#include "rng_mt.h"
 #include "userhost.h"
+#include "irc_string.h"
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
-#include "user.h"
+#include "memory.h"
+#include "dbuf.h"
+#include "s_user.h"
+
 
 static BlockHeap *userhost_heap = NULL;
 static BlockHeap *namehost_heap = NULL;
 static struct UserHost *find_or_add_userhost(const char *);
 
-static unsigned int ircd_random_key = 0;
+static unsigned int hashf_xor_key = 0;
 
 /* The actual hash tables, They MUST be of the same HASHSIZE, variable
  * size tables could be supported but the rehash routine should also
@@ -53,16 +62,6 @@ static struct Channel *channelTable[HASHSIZE];
 static struct UserHost *userhostTable[HASHSIZE];
 static struct ResvChannel *resvchannelTable[HASHSIZE];
 
-/* usually, with hash tables, you use a prime number...
- * but in this case I am dealing with ip addresses,
- * not ascii strings.
- */
-#define IP_HASH_SIZE 0x1000
-
-static struct ip_entry *ip_hash_table[IP_HASH_SIZE] = {0};
-static BlockHeap *ip_entry_heap = NULL;
-static int ip_entries_count = 0;
-
 
 /* init_hash()
  *
@@ -72,7 +71,7 @@ static int ip_entries_count = 0;
  *                functions and clear the tables
  */
 void
-hash_init(void)
+init_hash(void)
 {
   unsigned int i;
 
@@ -83,9 +82,9 @@ hash_init(void)
   userhost_heap = BlockHeapCreate("userhost", sizeof(struct UserHost), CLIENT_HEAP_SIZE);
   namehost_heap = BlockHeapCreate("namehost", sizeof(struct NameHost), CLIENT_HEAP_SIZE);
 
-  ircd_random_key = rand() % 256;  /* better than nothing --adx */
+  hashf_xor_key = genrand_int32() % 256;  /* better than nothing --adx */
 
-  // Clear the hash tables first
+  /* Clear the hash tables first */
   for (i = 0; i < HASHSIZE; ++i)
   {
     idTable[i]          = NULL;
@@ -94,10 +93,6 @@ hash_init(void)
     userhostTable[i]    = NULL;
     resvchannelTable[i] = NULL;
   }
-
-  // Initialize IP hashing
-  ip_entry_heap = BlockHeapCreate("ip", sizeof(struct ip_entry),
-                                  hard_fdlimit * 2);
 }
 
 /*
@@ -119,10 +114,10 @@ strhash(const char *name)
   {
     hval += (hval << 1) + (hval <<  4) + (hval << 7) +
             (hval << 8) + (hval << 24);
-    hval ^= (ToLower(*p) ^ ircd_random_key);
+    hval ^= (ToLower(*p) ^ hashf_xor_key);
   }
 
-  return (hval >> FNV1_32_BITS) ^ (hval & ((1 << FNV1_32_BITS) -1));
+  return (hval >> FNV1_32_BITS) ^ (hval & ((1 << FNV1_32_BITS) - 1));
 }
 
 /************************** Externally visible functions ********************/
@@ -170,6 +165,15 @@ hash_add_channel(struct Channel *chptr)
 
   chptr->hnextch = channelTable[hashv];
   channelTable[hashv] = chptr;
+}
+
+void
+hash_add_resv(struct ResvChannel *chptr)
+{
+  unsigned int hashv = strhash(chptr->name);
+
+  chptr->hnext = resvchannelTable[hashv];
+  resvchannelTable[hashv] = chptr;
 }
 
 void
@@ -323,6 +327,33 @@ hash_del_channel(struct Channel *chptr)
   }
 }
 
+void
+hash_del_resv(struct ResvChannel *chptr)
+{
+  unsigned int hashv = strhash(chptr->name);
+  struct ResvChannel *tmp = resvchannelTable[hashv];
+
+  if (tmp != NULL)
+  {
+    if (tmp == chptr)
+    {
+      resvchannelTable[hashv] = chptr->hnext;
+      chptr->hnext = chptr;
+    }
+    else
+    {
+      while (tmp->hnext != chptr)
+      {
+        if ((tmp = tmp->hnext) == NULL)
+          return;
+      }
+
+      tmp->hnext = tmp->hnext->hnext;
+      chptr->hnext = chptr;
+    }
+  }
+}
+
 /* find_client()
  *
  * inputs       - pointer to name
@@ -367,13 +398,13 @@ hash_find_id(const char *name)
 
   if ((client_p = idTable[hashv]) != NULL)
   {
-    if (irccmp(name, client_p->id))
+    if (strcmp(name, client_p->id))
     {
       struct Client *prev;
 
       while (prev = client_p, (client_p = client_p->idhnext) != NULL)
       {
-        if (!irccmp(name, client_p->id))
+        if (!strcmp(name, client_p->id))
         {
           prev->idhnext = client_p->idhnext;
           client_p->idhnext = idTable[hashv];
@@ -538,6 +569,42 @@ hash_get_bucket(int type, unsigned int hashv)
   return NULL;
 }
 
+/* hash_find_resv()
+ *
+ * inputs       - pointer to name
+ * output       - NONE
+ * side effects - New semantics: finds a reserved channel whose name is 'name',
+ *                if can't find one returns NULL, if can find it moves
+ *                it to the top of the list and returns it.
+ */
+struct ResvChannel *
+hash_find_resv(const char *name)
+{
+  unsigned int hashv = strhash(name);
+  struct ResvChannel *chptr;
+
+  if ((chptr = resvchannelTable[hashv]) != NULL)
+  {
+    if (irccmp(name, chptr->name))
+    {
+      struct ResvChannel *prev;
+
+      while (prev = chptr, (chptr = chptr->hnext) != NULL)
+      {
+        if (!irccmp(name, chptr->name))
+        {
+          prev->hnext = chptr->hnext;
+          chptr->hnext = resvchannelTable[hashv];
+          resvchannelTable[hashv] = chptr;
+          break;
+        }
+      }
+    }
+  }
+
+  return chptr;
+}
+
 struct UserHost *
 hash_find_userhost(const char *host)
 {
@@ -570,17 +637,16 @@ hash_find_userhost(const char *host)
  *
  * inputs	- user name
  *		- hostname
+ *		- int flag 1 if global, 0 if local
  * 		- pointer to where global count should go
- *      - same as above, but counts all *@host
  *		- pointer to where local count should go
- *		- pointer to where global ~*@host count should go
- *      - pointer to where local ~*@host count should go
+ *		- pointer to where identd count should go (local clients only)
  * output	- none
  * side effects	-
  */
 void
-count_user_host(const char *user, const char *host, int *globuh,
-                int *globhost, int *locuh, int *globnonid, int *locnonid)
+count_user_host(const char *user, const char *host, int *global_p,
+                int *local_p, int *icount_p)
 {
   dlink_node *ptr;
   struct UserHost *found_userhost;
@@ -589,23 +655,18 @@ count_user_host(const char *user, const char *host, int *globuh,
   if ((found_userhost = hash_find_userhost(host)) == NULL)
     return;
 
-  if (globhost)
-    *globhost = found_userhost->total_clients;
-  if (globnonid)
-    *globnonid = found_userhost->total_nonident;
-  if (locnonid)
-    *locnonid = found_userhost->local_nonident;
-
-  DLINK_FOREACH(ptr, found_userhost->names.head)
+  DLINK_FOREACH(ptr, found_userhost->list.head)
   {
     nameh = ptr->data;
 
     if (!irccmp(user, nameh->name))
     {
-      if (globuh)
-        *globuh = nameh->total;
-      if (locuh)
-        *locuh = nameh->local;
+      if (global_p != NULL)
+        *global_p = nameh->gcount;
+      if (local_p != NULL)
+        *local_p  = nameh->lcount;
+      if (icount_p != NULL)
+        *icount_p = nameh->icount;
       return;
     }
   }
@@ -625,29 +686,30 @@ add_user_host(const char *user, const char *host, int global)
   dlink_node *ptr;
   struct UserHost *found_userhost;
   struct NameHost *nameh;
+  int hasident = 1;
+
+  if (*user == '~')
+  {
+    hasident = 0;
+    ++user;
+  }
 
   if ((found_userhost = find_or_add_userhost(host)) == NULL)
     return;
 
-  found_userhost->total_clients++;
-
-  if (*user == '~')
-  {
-    found_userhost->total_nonident++;
-    if (!global)
-      found_userhost->local_nonident++;
-    user++;
-  }
-
-  DLINK_FOREACH(ptr, found_userhost->names.head)
+  DLINK_FOREACH(ptr, found_userhost->list.head)
   {
     nameh = ptr->data;
 
     if (!irccmp(user, nameh->name))
     {
-      nameh->total++;
+      nameh->gcount++;
       if (!global)
-        nameh->local++;
+      {
+	if (hasident)
+	  nameh->icount++;
+	nameh->lcount++;
+      }
       return;
     }
   }
@@ -655,11 +717,15 @@ add_user_host(const char *user, const char *host, int global)
   nameh = BlockHeapAlloc(namehost_heap);
   strlcpy(nameh->name, user, sizeof(nameh->name));
 
-  nameh->total = 1;
+  nameh->gcount = 1;
   if (!global)
-    nameh->local = 1;
+  {
+    if (hasident)
+      nameh->icount = 1;
+    nameh->lcount = 1;
+  }
 
-  dlinkAdd(nameh, &nameh->node, &found_userhost->names);
+  dlinkAdd(nameh, &nameh->node, &found_userhost->list);
 }
 
 /* delete_user_host()
@@ -673,46 +739,46 @@ add_user_host(const char *user, const char *host, int global)
 void
 delete_user_host(const char *user, const char *host, int global)
 {
-  dlink_node *ptr;
+  dlink_node *ptr = NULL, *next_ptr = NULL;
+  struct UserHost *found_userhost;
   struct NameHost *nameh;
-  struct UserHost *found_userhost = hash_find_userhost(host);
-
-  if (!found_userhost)
-    return;
-
-  found_userhost->total_clients--;
+  int hasident = 1;
 
   if (*user == '~')
   {
-    found_userhost->total_nonident--;
-    if (!global)
-      found_userhost->local_nonident--;
-    user++;
+    hasident = 0;
+    ++user;
   }
 
-  DLINK_FOREACH(ptr, found_userhost->names.head)
+  if ((found_userhost = hash_find_userhost(host)) == NULL)
+    return;
+
+  DLINK_FOREACH_SAFE(ptr, next_ptr, found_userhost->list.head)
   {
     nameh = ptr->data;
 
     if (!irccmp(user, nameh->name))
     {
-      if (nameh->total > 0 && (global || nameh->local > 0))
+      if (nameh->gcount > 0)
+        nameh->gcount--;
+      if (!global)
       {
-        nameh->total--;
-        if (!global)
-          nameh->local--;
+	if (nameh->lcount > 0)
+	  nameh->lcount--;
+	if (hasident && nameh->icount > 0)
+	  nameh->icount--;
       }
 
-      if (!nameh->total && !nameh->local)
+      if (nameh->gcount == 0 && nameh->lcount == 0)
       {
-        dlinkDelete(&nameh->node, &found_userhost->names);
-        BlockHeapFree(namehost_heap, nameh);
+	dlinkDelete(&nameh->node, &found_userhost->list);
+	BlockHeapFree(namehost_heap, nameh);
       }
 
-      if (dlink_list_length(&found_userhost->names) == 0)
+      if (dlink_list_length(&found_userhost->list) == 0)
       {
-        hash_del_userhost(found_userhost);
-        BlockHeapFree(userhost_heap, found_userhost);
+	hash_del_userhost(found_userhost);
+	BlockHeapFree(userhost_heap, found_userhost);
       }
 
       return;
@@ -741,209 +807,164 @@ find_or_add_userhost(const char *host)
   return userhost;
 }
 
-/* garbage_collect_ip_entries()
+/*
+ * Safe list code.
  *
- * input    - NONE
- * output   - NONE
- * side effects - free up all ip entries with no connections
+ * The idea is really quite simple. As the link lists pointed to in
+ * each "bucket" of the channel hash table are traversed atomically
+ * there is no locking needed. Overall, yes, inconsistent reported
+ * state can still happen, but normally this isn't a big deal.
+ * I don't like sticking the code into hash.c but oh well. Moreover,
+ * if a hash isn't used in future, oops.
+ *
+ * - Dianora
  */
-static void
-garbage_collect_ip_entries(void)
-{
-  struct ip_entry *ptr;
-  struct ip_entry *last_ptr;
-  struct ip_entry *next_ptr;
-  int i;
 
-  for (i = 0; i < IP_HASH_SIZE; i++)
-  {
-    last_ptr = NULL;
-
-    for (ptr = ip_hash_table[i]; ptr; ptr = next_ptr)
-    {
-      next_ptr = ptr->next;
-
-      if (ptr->count == 0 && (CurrentTime - ptr->last_attempt) >=
-          General.throttle_time)
-      {
-        if (last_ptr != NULL)
-          last_ptr->next = ptr->next;
-        else
-          ip_hash_table[i] = ptr->next;
-        BlockHeapFree(ip_entry_heap, ptr);
-        ip_entries_count--;
-      }
-      else
-        last_ptr = ptr;
-    }
-  }
-}
-
-/* find_or_add_ip()
+/* exceeding_sendq()
  *
- * inputs       - pointer to struct irc_ssaddr
- * output       - pointer to a struct ip_entry
+ * inputs       - pointer to client to check
+ * output	- 1 if client is in danger of blowing its sendq
+ *		  0 if it is not.
  * side effects -
  *
- * If the ip # was not found, a new struct ip_entry is created, and the ip
- * count set to 0.
+ * Sendq limit is fairly conservative at 1/2 (In original anyway)
  */
-struct ip_entry *
-find_or_add_ip(const struct irc_ssaddr *ip_in)
+static int
+exceeding_sendq(struct Client *to)
 {
-  struct ip_entry *ptr = NULL, *last = NULL;
-  unsigned int hash_index = hash_ip(ip_in, -1, IP_HASH_SIZE), res;
-  const struct sockaddr_in *v4 = (const struct sockaddr_in *)ip_in, *ptr_v4;
-#ifdef IPV6
-  const struct sockaddr_in6 *v6 = (const struct sockaddr_in6 *)ip_in, *ptr_v6;
-#endif
-
-  for (ptr = ip_hash_table[hash_index]; ptr; last = ptr, ptr = ptr->next)
-  {
-#ifdef IPV6
-    if (ptr->ip.ss.sin_family != ip_in->ss.sin_family)
-      continue;
-    if (ip_in->ss.sin_family == AF_INET6)
-    {
-      ptr_v6 = (struct sockaddr_in6 *)&ptr->ip;
-      res = memcmp(&v6->sin6_addr, &ptr_v6->sin6_addr, sizeof(struct in6_addr));
-    }
-    else
-#endif
-    {
-      ptr_v4 = (struct sockaddr_in *)&ptr->ip;
-      res = memcmp(&v4->sin_addr, &ptr_v4->sin_addr, sizeof(struct in_addr));
-    }
-
-    if (res == 0)
-    {
-      // Found entry already in hash, return it.
-      return ptr;
-    }
-  }
-
-  if (ip_entries_count >= 2 * hard_fdlimit)
-    garbage_collect_ip_entries();
-
-  ptr = BlockHeapAlloc(ip_entry_heap);
-  ++ip_entries_count;
-  memcpy(&ptr->ip, ip_in, sizeof(struct irc_ssaddr));
-
-  ptr->next = ip_hash_table[hash_index];
-  ip_hash_table[hash_index] = ptr;
-
-  return ptr;
+  if (dbuf_length(&to->localClient->buf_sendq) > (get_sendq(to) / 2))
+    return 1;
+  else
+    return 0;
 }
 
-/* remove_one_ip()
+void
+free_list_task(struct ListTask *lt, struct Client *source_p)
+{
+  dlink_node *dl, *dln;
+
+  if ((dl = dlinkFindDelete(&listing_client_list, source_p)) != NULL)
+    free_dlink_node(dl);
+
+  DLINK_FOREACH_SAFE(dl, dln, lt->show_mask.head)
+  {
+    MyFree(dl->data);
+    free_dlink_node(dl);
+  }
+
+  DLINK_FOREACH_SAFE(dl, dln, lt->hide_mask.head)
+  {
+    MyFree(dl->data);
+    free_dlink_node(dl);
+  }
+
+  MyFree(lt);
+
+  if (MyConnect(source_p))
+    source_p->localClient->list_task = NULL;
+}
+
+/* list_allow_channel()
  *
- * inputs        - unsigned long IP address value
- * output        - NONE
- * side effects  - The ip address given, is looked up in ip hash table
- *                 and number of ip#'s for that ip decremented.
- *                 If ip # count reaches 0 and has expired,
- *         the struct ip_entry is returned to the ip_entry_heap
+ * inputs       - channel name
+ *              - pointer to a list task
+ * output       - 1 if the channel is to be displayed
+ *                0 otherwise
+ * side effects -
+ */
+static int
+list_allow_channel(const char *chname, struct ListTask *lt)
+{
+  dlink_node *dl = NULL;
+
+  DLINK_FOREACH(dl, lt->show_mask.head)
+    if (!match_chan(dl->data, chname))
+      return 0;
+
+  DLINK_FOREACH(dl, lt->hide_mask.head)
+    if (match_chan(dl->data, chname))
+      return 0;
+
+  return 1;
+}
+
+/* list_one_channel()
+ *
+ * inputs       - client pointer to return result to
+ *              - pointer to channel to list
+ *              - pointer to ListTask structure
+ * output	- none
+ * side effects -
+ */
+static void
+list_one_channel(struct Client *source_p, struct Channel *chptr,
+                 struct ListTask *list_task)
+{
+  if (SecretChannel(chptr) && !IsMember(source_p, chptr))
+    return;
+  if (dlink_list_length(&chptr->members) < list_task->users_min ||
+      dlink_list_length(&chptr->members) > list_task->users_max ||
+      (chptr->channelts != 0 &&
+       ((unsigned int)chptr->channelts < list_task->created_min ||
+        (unsigned int)chptr->channelts > list_task->created_max)) ||
+      (unsigned int)chptr->topic_time < list_task->topicts_min ||
+      (chptr->topic_time ? (unsigned int)chptr->topic_time : UINT_MAX) >
+      list_task->topicts_max)
+    return;
+
+  if (!list_allow_channel(chptr->chname, list_task))
+    return;
+  sendto_one(source_p, form_str(RPL_LIST), me.name, source_p->name,
+             chptr->chname, dlink_list_length(&chptr->members),
+             chptr->topic == NULL ? "" : chptr->topic);
+}
+
+/* safe_list_channels()
+ *
+ * inputs	- pointer to client requesting list
+ * output	- 0/1
+ * side effects	- safely list all channels to source_p
+ *
+ * Walk the channel buckets, ensure all pointers in a bucket are
+ * traversed before blocking on a sendq. This means, no locking is needed.
+ *
+ * N.B. This code is "remote" safe, but is not currently used for
+ * remote clients.
+ *
+ * - Dianora
  */
 void
-remove_one_ip(struct irc_ssaddr *ip_in)
+safe_list_channels(struct Client *source_p, struct ListTask *list_task,
+                   int only_unmasked_channels)
 {
-  struct ip_entry *ptr;
-  struct ip_entry *last_ptr = NULL;
-  unsigned int hash_index = hash_ip(ip_in, -1, IP_HASH_SIZE), res;
-  struct sockaddr_in *v4 = (struct sockaddr_in *)ip_in, *ptr_v4;
-#ifdef IPV6
-  struct sockaddr_in6 *v6 = (struct sockaddr_in6 *)ip_in, *ptr_v6;
-#endif
+  struct Channel *chptr = NULL;
 
-  for (ptr = ip_hash_table[hash_index]; ptr; ptr = ptr->next)
+  if (!only_unmasked_channels)
   {
-#ifdef IPV6
-    if (ptr->ip.ss.sin_family != ip_in->ss.sin_family)
-      continue;
-    if (ip_in->ss.sin_family == AF_INET6)
+    unsigned int i;
+
+    for (i = list_task->hash_index; i < HASHSIZE; ++i)
     {
-      ptr_v6 = (struct sockaddr_in6 *)&ptr->ip;
-      res = memcmp(&v6->sin6_addr, &ptr_v6->sin6_addr, sizeof(struct in6_addr));
-    }
-    else
-#endif
-    {
-      ptr_v4 = (struct sockaddr_in *)&ptr->ip;
-      res = memcmp(&v4->sin_addr, &ptr_v4->sin_addr, sizeof(struct in_addr));
-    }
-    if (res)
-      continue;
-    if (ptr->count > 0)
-      ptr->count--;
-    if (ptr->count == 0 && (CurrentTime - ptr->last_attempt) >=
-        General.throttle_time)
-    {
-      if (last_ptr != NULL)
-        last_ptr->next = ptr->next;
-      else
-        ip_hash_table[hash_index] = ptr->next;
+      if (exceeding_sendq(source_p->from))
+      {
+        list_task->hash_index = i;
+        return;    /* still more to do */
+      }
 
-      BlockHeapFree(ip_entry_heap, ptr);
-      ip_entries_count--;
-      return;
-    }
-    last_ptr = ptr;
-  }
-}
-
-/* ip_connect_allowed()
- *
- * inputs   - pointer to inaddr
- *      - int type ipv4 or ipv6
- * output   - BANNED or accepted
- * side effects - none
- */
-int
-ip_connect_allowed(const struct irc_ssaddr *addr)
-{
-  struct ip_entry *ip_found = NULL;
-
-  if (find_dline(addr))
-    return BANNED_CLIENT;
-
-  ip_found = find_or_add_ip(addr);
-
-  if ((CurrentTime - ip_found->last_attempt) < General.throttle_time &&
-      !find_exempt(addr))
-  {
-    ip_found->last_attempt = CurrentTime;
-    return TOO_FAST;
-  }
-
-  ip_found->last_attempt = CurrentTime;
-  return 0;
-}
-
-/* count_ip_hash()
- *
- * inputs        - pointer to counter of number of ips hashed
- *               - pointer to memory used for ip hash
- * output        - returned via pointers input
- * side effects  - NONE
- *
- * number of hashed ip #'s is counted up, plus the amount of memory
- * used in the hash.
- */
-void
-count_ip_hash(int *number_ips_stored, size_t *mem_ips_stored)
-{
-  struct ip_entry *ptr;
-  int i;
-
-  *number_ips_stored = 0;
-  *mem_ips_stored    = 0;
-
-  for (i = 0; i < IP_HASH_SIZE; i++)
-  {
-    for (ptr = ip_hash_table[i]; ptr; ptr = ptr->next)
-    {
-      *number_ips_stored += 1;
-      *mem_ips_stored += sizeof(struct ip_entry);
+      for (chptr = channelTable[i]; chptr; chptr = chptr->hnextch)
+        list_one_channel(source_p, chptr, list_task);
     }
   }
+  else
+  {
+    dlink_node *dl;
+
+    DLINK_FOREACH(dl, list_task->show_mask.head)
+      if ((chptr = hash_find_channel(dl->data)) != NULL)
+        list_one_channel(source_p, chptr, list_task);
+  }
+
+  free_list_task(list_task, source_p);
+  sendto_one(source_p, form_str(RPL_LISTEND),
+             me.name, source_p->name);
 }

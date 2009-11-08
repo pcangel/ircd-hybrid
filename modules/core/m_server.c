@@ -23,47 +23,61 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
+#include "list.h"
 #include "handlers.h"    /* m_server prototype */
 #include "client.h"      /* client struct */
 #include "common.h"      /* TRUE bleah */
+#include "event.h"
 #include "hash.h"        /* add_to_client_hash_table */
+#include "irc_string.h" 
 #include "ircd.h"        /* me */
 #include "numeric.h"     /* ERR_xxx */
-#include "server.h"      /* server_estab, check_server, my_name_for_link */
+#include "s_conf.h"      /* struct AccessItem */
+#include "s_log.h"       /* log level defines */
+#include "s_serv.h"      /* server_estab, check_server, my_name_for_link */
 #include "send.h"        /* sendto_one */
 #include "motd.h"
 #include "msg.h"
 #include "parse.h"
+#include "modules.h"
 
-static void mr_server(struct Client *, struct Client *, int, char *[]);
-static void ms_server(struct Client *, struct Client *, int, char *[]);
-static void ms_sid(struct Client *, struct Client *, int, char *[]);
 
+static void mr_server(struct Client *, struct Client *, int, char **);
+static void ms_server(struct Client *, struct Client *, int, char **);
+static void ms_sid(struct Client *, struct Client *, int, char **);
+
+static int bogus_host(char *host);
 static void set_server_gecos(struct Client *, char *);
-static struct Client *server_exists(const char *);
+static struct Client *server_exists(char *);
 
 struct Message server_msgtab = {
   "SERVER", 0, 0, 4, 0, MFLG_SLOW | MFLG_UNREG, 0,
-  { mr_server, m_registered, ms_server, m_ignore, m_registered, m_ignore }
+  {mr_server, m_registered, ms_server, m_ignore, m_registered, m_ignore}
 };
 
 struct Message sid_msgtab = {
   "SID", 0, 0, 5, 0, MFLG_SLOW, 0,
-  { m_ignore, m_ignore, ms_sid, m_ignore, m_ignore, m_ignore }
+  {rfc1459_command_send_error, m_ignore, ms_sid, m_ignore, m_ignore, m_ignore}
 };
 
-INIT_MODULE(m_server, "$Revision$")
+#ifndef STATIC_MODULES
+void 
+_modinit(void)
 {
   mod_add_cmd(&server_msgtab);
   mod_add_cmd(&sid_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&server_msgtab);
   mod_del_cmd(&sid_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
+
 
 /* mr_server()
  *  parv[0] = sender prefix
@@ -110,12 +124,12 @@ mr_server(struct Client *client_p, struct Client *source_p,
   }
 
   /* Now we just have to call check_server and everything should
-   * be checked for us... -A1kmm.
+   * be check for us... -A1kmm.
    */
   switch (check_server(name, client_p, CHECK_SERVER_NOCRYPTLINK))
   {
     case -1:
-      if (General.warn_no_nline)
+      if (ConfigFileEntry.warn_no_nline)
       {
         sendto_realops_flags(UMODE_ALL, L_ADMIN,
            "Unauthorized server connection attempt from %s: No entry for "
@@ -231,7 +245,8 @@ ms_server(struct Client *client_p, struct Client *source_p,
   char *name;
   struct Client *target_p;
   struct Client *bclient_p;
-  struct ConnectConf *conf;
+  struct ConfItem *conf;
+  struct MatchItem *match_item;
   int hop;
   int hlined = 0;
   int llined = 0;
@@ -241,9 +256,9 @@ ms_server(struct Client *client_p, struct Client *source_p,
   if (!IsServer(source_p))
     return;
 
-  if (*parv[3] == '\0')
+  if (parc < 4)
   {
-    sendto_one(client_p, "ERROR :No server info specified for %s", parv[1]);
+    sendto_one(client_p, "ERROR :No servername");
     return;
   }
 
@@ -296,7 +311,27 @@ ms_server(struct Client *client_p, struct Client *source_p,
     if (target_p != client_p)
       exit_client(target_p, &me, "Overridden");
 
-  if (strlen(name) > HOSTLEN || strchr(name, '.') == NULL)
+  /* User nicks never have '.' in them and server names
+   * must always have '.' in them.
+   */
+  if (strchr(name, '.') == NULL)
+  {
+    /* Server trying to use the same name as a person. Would
+     * cause a fair bit of confusion. Enough to make it hellish
+     * for a while and servers to send stuff to the wrong place.
+     */
+    sendto_one(client_p,"ERROR :Nickname %s already exists!", name);
+    sendto_realops_flags(UMODE_ALL, L_ADMIN,
+			   "Link %s cancelled: Server/nick collision on %s",
+		/* inpath */ get_client_name(client_p, HIDE_IP), name);
+    sendto_realops_flags(UMODE_ALL, L_OPER,
+          "Link %s cancelled: Server/nick collision on %s",
+	  get_client_name(client_p, MASK_IP), name);
+    exit_client(client_p, client_p, "Nick as Server");
+    return;
+  }
+
+  if (strlen(name) > HOSTLEN)
   {
     sendto_realops_flags(UMODE_ALL, L_ADMIN,
                          "Link %s introduced server with invalid servername %s",
@@ -308,22 +343,44 @@ ms_server(struct Client *client_p, struct Client *source_p,
     return;
   }
 
+  /* Server is informing about a new server behind
+   * this link. Create REMOTE server structure,
+   * add it to list and propagate word to my other
+   * server links...
+   */
+  if (parc == 1 || info[0] == '\0')
+  {
+    sendto_one(client_p, "ERROR :No server info specified for %s", name);
+    return;
+  }
+
   /* See if the newly found server is behind a guaranteed
    * leaf. If so, close the link.
    */
-  DLINK_FOREACH(ptr, client_p->serv->sconf->leaf_list.head)
-    if (match(ptr->data, name))
-    {
-      llined++;
-      break;
-    }
+  DLINK_FOREACH(ptr, leaf_items.head)
+  {
+    conf = ptr->data;
 
-  DLINK_FOREACH(ptr, client_p->serv->sconf->hub_list.head)
-    if (match(ptr->data, name))
+    if (match(conf->name, client_p->name))
     {
-      hlined++;
-      break;
+      match_item = (struct MatchItem *)map_to_conf(conf);
+      if (match(match_item->host, name))
+	llined++;
     }
+  }
+
+  DLINK_FOREACH(ptr, hub_items.head)
+  {
+    conf = ptr->data;
+
+    if (match(conf->name, client_p->name))
+    {
+      match_item = (struct MatchItem *)map_to_conf(conf);
+
+      if (match(match_item->host, name))
+	hlined++;
+    }
+  }
 
   /* Ok, this way this works is
    *
@@ -348,7 +405,7 @@ ms_server(struct Client *client_p, struct Client *source_p,
    * .edu's
    */
 
-  /* Ok, check client_p can hub the new server. */
+  /* Ok, check client_p can hub the new server */
   if (!hlined)
   {
     /* OOOPs nope can't HUB */
@@ -370,37 +427,59 @@ ms_server(struct Client *client_p, struct Client *source_p,
     sendto_realops_flags(UMODE_ALL, L_OPER,
 			 "Link %s introduced leafed server %s.",
                          client_p->name, name);
-    /* If it is new, we are probably misconfigured, so split the
-     * non-hub server introducing this. Otherwise, split the new
-     * server. -A1kmm.
-     */
-    /* wastes too much bandwidth, generates too many errors on
-     * larger networks, dont bother. --fl_
-     */
-    exit_client(client_p, &me, "Leafed Server.");
-    return;
+      /* If it is new, we are probably misconfigured, so split the
+       * non-hub server introducing this. Otherwise, split the new
+       * server. -A1kmm.
+       */
+      /* wastes too much bandwidth, generates too many errors on
+       * larger networks, dont bother. --fl_
+       */
+      exit_client(client_p, &me, "Leafed Server.");
+      return;
   }
 
   target_p = make_client(client_p);
   make_server(target_p);
-
   target_p->hopcount = hop;
-  target_p->servptr = source_p;
 
   strlcpy(target_p->name, name, sizeof(target_p->name));
 
   set_server_gecos(target_p, info);
 
+  target_p->servptr = source_p;
+
   SetServer(target_p);
 
-  dlinkAdd(target_p, &target_p->node, &global_client_list);
-  dlinkAdd(target_p, make_dlink_node(), &global_serv_list);
-  dlinkAdd(target_p, &target_p->lnode, &target_p->servptr->serv->server_list);
+  if ((target_p->node.prev != NULL) || (target_p->node.next != NULL))
+  {
+    sendto_realops_flags(UMODE_ALL, L_OPER,
+			 "already linked %s at %s:%d", target_p->name,
+			 __FILE__, __LINE__);
+    ilog(L_ERROR, "already linked client %s at %s:%d", target_p->name,
+	 __FILE__, __LINE__);
+    assert(0==1);
+  }
+  else
+  {
+    dlinkAdd(target_p, &target_p->node, &global_client_list);
+    dlinkAdd(target_p, make_dlink_node(), &global_serv_list);
+  }
 
   hash_add_client(target_p);
+  /* XXX test that target_p->lnode.prev and .next are NULL as well? */
+  if ((target_p->lnode.prev != NULL) || (target_p->lnode.next != NULL))
+  {
+    sendto_realops_flags(UMODE_ALL, L_OPER,
+			 "already lnode linked %s at %s:%d", target_p->name,
+			 __FILE__, __LINE__);
+    ilog(L_ERROR, "already lnode linked %s at %s:%d", target_p->name,
+	 __FILE__, __LINE__);
+    assert(0==2);
+  }
+  else
+    dlinkAdd(target_p, &target_p->lnode, &target_p->servptr->serv->server_list);
 
-  /*
-   * Old sendto_serv_but_one() call removed because we now
+  /* Old sendto_serv_but_one() call removed because we now
    * need to send different names to different servers
    * (domain name matching)
    */
@@ -451,7 +530,8 @@ ms_sid(struct Client *client_p, struct Client *source_p,
   char info[REALLEN + 1];
   struct Client *target_p;
   struct Client *bclient_p;
-  struct ConnectConf *conf;
+  struct ConfItem *conf;
+  struct MatchItem *match_item;
   int hlined = 0;
   int llined = 0;
   dlink_node *ptr, *ptr_next;
@@ -540,19 +620,30 @@ ms_sid(struct Client *client_p, struct Client *source_p,
   /* See if the newly found server is behind a guaranteed
    * leaf. If so, close the link.
    */
-  DLINK_FOREACH(ptr, client_p->serv->sconf->leaf_list.head)
-    if (match(ptr->data, SID_NAME))
-    {
-      llined++;
-      break;
-    }
+  DLINK_FOREACH(ptr, leaf_items.head)
+  {
+    conf = ptr->data;
 
-  DLINK_FOREACH(ptr, client_p->serv->sconf->hub_list.head)
-    if (match(ptr->data, SID_NAME))
+    if (match(conf->name, client_p->name))
     {
-      hlined++;
-      break;
+      match_item = (struct MatchItem *)map_to_conf(conf);
+      if (match(match_item->host, SID_NAME))
+	llined++;
     }
+  }
+
+  DLINK_FOREACH(ptr, hub_items.head)
+  {
+    conf = ptr->data;
+
+    if (match(conf->name, client_p->name))
+    {
+      match_item = (struct MatchItem *)map_to_conf(conf);
+
+      if (match(match_item->host, SID_NAME))
+	hlined++;
+    }
+  }
 
   /* Ok, this way this works is
    *
@@ -577,7 +668,7 @@ ms_sid(struct Client *client_p, struct Client *source_p,
    * .edu's
    */
 
-  /* Ok, check client_p can hub the new server. */
+  /* Ok, check client_p can hub the new server, and make sure it's not a LL */
   if (!hlined)
   {
     /* OOOPs nope can't HUB */
@@ -616,11 +707,35 @@ ms_sid(struct Client *client_p, struct Client *source_p,
 
   SetServer(target_p);
 
-  dlinkAdd(target_p, &target_p->node, &global_client_list);
-  dlinkAdd(target_p, make_dlink_node(), &global_serv_list);
-  dlinkAdd(target_p, &target_p->lnode, &target_p->servptr->serv->server_list);
+  if ((target_p->node.prev != NULL) || (target_p->node.next != NULL))
+  {
+    sendto_realops_flags(UMODE_ALL, L_ADMIN,
+			 "already linked %s at %s:%d", target_p->name,
+			 __FILE__, __LINE__);
+    ilog(L_ERROR, "already linked %s at %s:%d", target_p->name,
+	 __FILE__, __LINE__);
+    assert(0==3);
+  }
+  else
+  {
+    dlinkAdd(target_p, &target_p->node, &global_client_list);
+    dlinkAdd(target_p, make_dlink_node(), &global_serv_list);
+  }
 
   hash_add_client(target_p);
+  /* XXX test that target_p->lnode.prev and next are NULL as well? */
+  if ((target_p->lnode.prev != NULL) || (target_p->lnode.next != NULL))
+  {
+    sendto_realops_flags(UMODE_ALL, L_OPER,
+			 "already lnode linked %s at %s:%d", target_p->name,
+			 __FILE__, __LINE__);
+    ilog(L_ERROR, "already lnode linked %s at %s:%d", target_p->name,
+	 __FILE__, __LINE__);
+    assert(0==4);
+  }
+  else
+    dlinkAdd(target_p, &target_p->lnode, &target_p->servptr->serv->server_list);
+
   hash_add_id(target_p);
 
   DLINK_FOREACH_SAFE(ptr, ptr_next, serv_list.head)
@@ -732,24 +847,50 @@ set_server_gecos(struct Client *client_p, char *info)
     strlcpy(client_p->info, "(Unknown Location)", sizeof(client_p->info));
 }
 
+/* bogus_host()
+ *
+ * inputs	- hostname
+ * output	- 1 if a bogus hostname input,
+ *              - 0 if its valid
+ * side effects	- none
+ */
+static int
+bogus_host(char *host)
+{
+  unsigned int dots = 0;
+  char *s;
+
+  for (s = host; *s; s++)
+  {
+    if (!IsServChar(*s))
+      return(1);
+
+    if ('.' == *s)
+      ++dots;
+  }
+
+  return(!dots);
+}
+
 /* server_exists()
  *
  * inputs	- servername
  * output	- 1 if server exists, 0 if doesnt exist
  */
 static struct Client *
-server_exists(const char *servername)
+server_exists(char *servername)
 {
-  dlink_node *ptr = NULL;
+  struct Client *target_p;
+  dlink_node *ptr;
 
   DLINK_FOREACH(ptr, global_serv_list.head)
   {
-    struct Client *target_p = ptr->data;
+    target_p = ptr->data;
 
     if (match(target_p->name, servername) || 
         match(servername, target_p->name))
-      return target_p;
+      return(target_p);
   }
 
-  return NULL;
+  return(NULL);
 }

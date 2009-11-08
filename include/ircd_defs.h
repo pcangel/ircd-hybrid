@@ -27,23 +27,25 @@
  * Otherwise there are no user servicable part here. 
  *
  */
- /*
-  * ircd_defs.h - Global size definitions for record entries used
-  * througout ircd.  DON'T EVER CHANGE ANYTHING IN THIS FILE!!
-  */
+ /* ircd_defs.h - Global size definitions for record entries used
+ * througout ircd. Please think 3 times before adding anything to this
+ * file.
+ */
 #ifndef INCLUDED_ircd_defs_h
 #define INCLUDED_ircd_defs_h
+#include "inet_misc.h"
 
 /* Right out of the RFC */
-#define IRCD_BUFSIZE    512    /* Maximum allowed length of a message (510 + CR-LF) */
-#define IRCD_MAXPARA    15     /* Maximum allowed parameters a command may have */
-
+#define IRCD_BUFSIZE    512     /* WARNING: *DONT* CHANGE THIS!!!!         */
+#define HOSTLEN          63     /* Length of hostname. Updated to comply
+                                   with RFC 1123 */
+#define USERLEN          10
 #define PORTNAMELEN 6  /* ":31337" */
 
 #define REALLEN         50
 #define KILLLEN         90
-#define CHANNELLEN      200
 #define LOCAL_CHANNELLEN 50
+#define CHANNELLEN      200
 #define REASONLEN       120
 #define KICKLEN         160
 #define AWAYLEN         160
@@ -53,6 +55,24 @@
 #define OPERNICKLEN     NICKLEN*2 /* Length of OPERNICKs. */
 
 #define USERHOST_REPLYLEN       (NICKLEN+HOSTLEN+USERLEN+5)
+#define MAX_DATE_STRING 32      /* maximum string length for a date string */
+#define IRCD_MAXNS      2       /* Maximum number of nameservers in 
+                                   /etc/resolv.conf we care about */
+
+#define LOWEST_SAFE_FD  4	/* skip stdin, stdout, stderr, and profiler */
+
+#define PLATFORMLEN     200     /* platform string used in info response */
+
+
+/* This is to get around the fact that some implementations have ss_len and
+ * others do not
+ */
+struct irc_ssaddr
+{
+  struct sockaddr_storage ss;
+  unsigned char   ss_len;
+  in_port_t       ss_port;
+};
 
 #define REJECT_HOLD_TIME GlobalSetOptions.rejecttime
 

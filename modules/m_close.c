@@ -23,6 +23,7 @@
  */
 
 #include "stdinc.h"
+#include "list.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -30,7 +31,7 @@
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
+#include "modules.h"
 
 static void mo_close(struct Client *, struct Client *, int, char *[]);
 
@@ -39,34 +40,33 @@ struct Message close_msgtab = {
   { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_close, m_ignore }
 };
 
-INIT_MODULE(m_close, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&close_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&close_msgtab);
 }
 
-/*! \brief CLOSE command handler (called for operators only)
- *
- * \param client_p Pointer to allocated Client struct with physical connection
- *                 to this server, i.e. with an open socket connected.
- * \param source_p Pointer to allocated Client struct from which the message
- *                 originally comes from.  This can be a local or remote client.
- * \param parc     Integer holding the number of supplied arguments.
- * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
- *                 pointers.
- * \note Valid arguments for this command are:
- *      - parv[0] = sender prefix
+const char *_version = "$Revision$";
+#endif
+
+/*
+ * mo_close - CLOSE message handler
+ *  - added by Darren Reed Jul 13 1992.
  */
 static void
 mo_close(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
   dlink_node *ptr = NULL, *ptr_next = NULL;
-  unsigned int closed = 0;
+  unsigned int closed = dlink_list_length(&unknown_list);
+
 
   DLINK_FOREACH_SAFE(ptr, ptr_next, unknown_list.head)
   {
@@ -74,12 +74,12 @@ mo_close(struct Client *client_p, struct Client *source_p,
 
     sendto_one(source_p, form_str(RPL_CLOSING), me.name, source_p->name,
                get_client_name(target_p, SHOW_IP), target_p->status);
+
     /*
      * exit here is safe, because it is guaranteed not to be source_p
      * because it is unregistered and source_p is an oper.
      */
     exit_client(target_p, target_p, "Oper Closing");
-    ++closed;
   }
 
   sendto_one(source_p, form_str(RPL_CLOSEEND),

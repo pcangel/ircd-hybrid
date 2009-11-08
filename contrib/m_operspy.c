@@ -30,20 +30,27 @@
  */
 
 #include "stdinc.h"
+#include "list.h"
+#include "irc_string.h"
 #include "handlers.h"
 #include "channel.h"
 #include "channel_mode.h"
 #include "client.h"
 #include "common.h"     /* FALSE bleah */
 #include "ircd.h"
+#include "sprintf_irc.h"
 #include "numeric.h"
-#include "server.h"
+#include "fdlist.h"
+#include "s_bsd.h"
+#include "s_conf.h"
+#include "s_log.h"
+#include "s_serv.h"
+#include "s_misc.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
+#include "modules.h"
 #include "hash.h"
-#include "user.h"
 
 /* enable logging of OPERSPY functions */
 #define OPERSPY_LOG
@@ -93,7 +100,7 @@ static void operspy_whois(struct Client *, int, char *[]);
 
 struct Message operspy_msgtab = {
   "OPERSPY", 0, 0, 3, 4, MFLG_SLOW, 0,
-  { m_ignore, m_not_oper, ms_operspy, ms_operspy, mo_operspy, m_ignore }
+  {m_ignore, m_not_oper, ms_operspy, ms_operspy, mo_operspy, m_ignore}
 };
 
 static const struct operspy_s {
@@ -121,15 +128,20 @@ static const struct operspy_s {
   { NULL, NULL }
 };
 
-INIT_MODULE(m_operspy, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&operspy_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&operspy_msgtab);
 }
+const char *_version = "$Revision$";
+#endif
 
 #ifdef OPERSPY_LOG
 static void operspy_log(struct Client *, const char *, const char *);
@@ -230,6 +242,11 @@ operspy_mode(struct Client *client_p, int parc, char *parv[])
 
   if ((chptr_mode = hash_find_channel(parv[2])) == NULL)
   {
+    /*
+     * according to m_mode.c, the channel *could* exist on the uplink still,
+     * but I don't see how.  Even if it does, we won't be able to spy without
+     * info.
+     */ 
     sendto_one(client_p, form_str(ERR_NOSUCHCHANNEL),
                me.name, client_p->name, parv[2]);
     return;
@@ -249,10 +266,10 @@ operspy_mode(struct Client *client_p, int parc, char *parv[])
   channel_modes(chptr_mode, client_p, modebuf, parabuf);
   client_p->status = c_status;
 
-  sendto_one(client_p, form_str(RPL_CHANNELMODEIS), me.name,
-             client_p->name, parv[2], modebuf, parabuf);
-  sendto_one(client_p, form_str(RPL_CREATIONTIME), me.name,
-             client_p->name, parv[2], chptr_mode->channelts);
+  sendto_one(client_p, form_str(RPL_CHANNELMODEIS),
+             me.name, client_p->name, parv[2], modebuf, parabuf);
+  sendto_one(client_p, form_str(RPL_CREATIONTIME),
+             me.name, client_p->name, parv[2], chptr_mode->channelts);
 }
 
 static void
@@ -278,7 +295,7 @@ operspy_names(struct Client *client_p, int parc, char *parv[])
    * we can also list +i users.  an unfortunate side-effect of this
    * is that your nickname shows up in the list.  for now, there is
    * no easy way around it.
-   */
+   */ 
   if (IsMember(client_p, chptr_names))
     channel_member_names(client_p, chptr_names, 1);
   else {
@@ -399,7 +416,7 @@ operspy_who(struct Client *client_p, int parc, char *parv[])
 #endif
 
   /* /who 0 */
-  if (!irccmp(mask, "0"))
+  if ((*(mask + 1) == '\0') && (*mask == '0'))
     who_global(client_p, NULL, server_oper);
   else
     who_global(client_p, mask, server_oper);
@@ -426,7 +443,7 @@ operspy_whois(struct Client *client_p, int parc, char *parv[])
   int cur_len = 0;
   int reply_to_send = NO;
 
-  if (has_wildcards(parv[2], NO))
+  if (strchr(parv[2], '?') || strchr(parv[2], '*'))
   {
     sendto_one(client_p, ":%s NOTICE %s :Do not use wildcards with this.",
                me.name, client_p->name);
@@ -577,9 +594,11 @@ do_who_on_channel(struct Client *source_p, struct Channel *chptr,
 static void
 operspy_log(struct Client *source_p, const char *command, const char *target)
 {
+  struct ConfItem *conf = NULL;
 #ifdef OPERSPY_LOGFILE
   size_t nbytes = 0;
   FBFILE *operspy_fb;
+  dlink_node *cnode;
   const char *opername = source_p->name;
   char linebuf[IRCD_BUFSIZE], logfile[IRCD_BUFSIZE];
 #endif
@@ -588,7 +607,15 @@ operspy_log(struct Client *source_p, const char *command, const char *target)
 
 #ifdef OPERSPY_LOGFILE
   if (IsOper(source_p) && MyClient(source_p))
-    opername = source_p->localClient->auth_oper;
+  {
+    DLINK_FOREACH(cnode, source_p->localClient->confs.head)
+    {
+      conf = cnode->data;
+
+      if (conf->type == OPER_TYPE)
+        opername = conf->name;
+    }
+  }
   else if (!MyClient(source_p))
     opername = "remote";
 

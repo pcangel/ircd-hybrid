@@ -23,23 +23,32 @@
  */
 
 #include "stdinc.h"
-#include "conf/modules.h"
+#ifndef STATIC_MODULES
+#include "list.h"
+#include "modules.h"
+#include "hook.h"
 #include "client.h"
 #include "ircd.h"
 #include "send.h"
 
-static struct Callback *trace_cb = NULL;
+static struct Callback *trace_cb = NULL, *ltrace_cb = NULL;
 static struct Callback *ctrace_cb = NULL, *etrace_cb = NULL;
-static dlink_node *prev_trace, *prev_ctrace, *prev_etrace;
+static dlink_node *prev_trace, *prev_ltrace;
+static dlink_node *prev_ctrace, *prev_etrace;
 
 static void *show_trace(va_list);
+static void *show_ltrace(va_list);
 static void *show_ctrace(va_list);
 static void *show_etrace(va_list);
 
-INIT_MODULE(spy_trace_notice, "$Revision$")
+void
+_modinit(void)
 {
   if ((trace_cb = find_callback("doing_trace")))
     prev_trace = install_hook(trace_cb, show_trace);
+
+  if ((ltrace_cb = find_callback("doing_ltrace")))
+    prev_ltrace = install_hook(ltrace_cb, show_ltrace);
 
   if ((ctrace_cb = find_callback("doing_ctrace")))
     prev_ctrace = install_hook(ctrace_cb, show_ctrace);
@@ -48,10 +57,14 @@ INIT_MODULE(spy_trace_notice, "$Revision$")
     prev_etrace = install_hook(etrace_cb, show_etrace);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   if (trace_cb)
     uninstall_hook(trace_cb, show_trace);
+
+  if (ltrace_cb)
+    uninstall_hook(ltrace_cb, show_ltrace);
 
   if (ctrace_cb)
     uninstall_hook(ctrace_cb, show_ctrace);
@@ -59,6 +72,8 @@ CLEANUP_MODULE
   if (etrace_cb)
     uninstall_hook(etrace_cb, show_etrace);
 }
+
+const char *_version = "$Revision$";
 
 static void *
 show_trace(va_list args)
@@ -74,6 +89,22 @@ show_trace(va_list args)
                          source_p->host, source_p->servptr->name);
 
   return pass_callback(prev_trace, source_p, parc, parv);
+}
+
+static void *
+show_ltrace(va_list args)
+{
+  struct Client *source_p = va_arg(args, struct Client *);
+  int parc = va_arg(args, int);
+  char **parv = va_arg(args, char **);
+
+  if (IsClient(source_p))
+    sendto_realops_flags(UMODE_SPY, L_ALL,
+                         "ltrace requested by %s (%s@%s) [%s]",
+                         source_p->name, source_p->username,
+                         source_p->host, source_p->servptr->name);
+
+  return pass_callback(prev_ltrace, source_p, parc, parv);
 }
 
 static void *
@@ -107,3 +138,4 @@ show_etrace(va_list args)
 
   return pass_callback(prev_etrace, source_p, parc, parv);
 }
+#endif

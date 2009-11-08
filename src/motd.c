@@ -2,7 +2,7 @@
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
  *  motd.c: Message of the day functions.
  *
- *  Copyright (C) 2002-2006 by the past and present ircd coders, and others.
+ *  Copyright (C) 2002 by the past and present ircd coders, and others.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,18 +23,25 @@
  */
 
 #include "stdinc.h"
+#include "list.h"
 #include "motd.h"
 #include "ircd.h"
+#include "fdlist.h"
+#include "s_bsd.h"
+#include "fileio.h"
+#include "s_conf.h"
 #include "send.h"
 #include "numeric.h"
 #include "client.h"
-#include "server.h"
-
-MessageFile motd, opermotd, linksfile;
+#include "irc_string.h"
+#include "sprintf_irc.h"
+#include "memory.h"
+#include "s_serv.h"
 
 /*
- * init_message_file()
- */
+** init_message_file
+**
+*/
 void
 init_message_file(MotdType motdType, const char *fileName, MessageFile *motd)
 {
@@ -45,11 +52,11 @@ init_message_file(MotdType motdType, const char *fileName, MessageFile *motd)
 }
 
 /*
- * send_message_file()
- *
- * This function split off so a server notice could be generated on a
- * user requested motd, but not on each connecting client.
- */
+** send_message_file
+**
+** This function split off so a server notice could be generated on a
+** user requested motd, but not on each connecting client.
+*/
 int
 send_message_file(struct Client *source_p, MessageFile *motdToPrint)
 {
@@ -58,7 +65,7 @@ send_message_file(struct Client *source_p, MessageFile *motdToPrint)
   const char *from, *to;
 
   if (motdToPrint == NULL)
-    return -1;
+    return(-1);
 
   motdType = motdToPrint->motdType;
 
@@ -72,55 +79,69 @@ send_message_file(struct Client *source_p, MessageFile *motdToPrint)
         sendto_one(source_p, form_str(ERR_NOMOTD), from, to);
       else
       {
-        sendto_one(source_p, form_str(RPL_MOTDSTART),
-                   from, to, me.name);
+	sendto_one(source_p, form_str(RPL_MOTDSTART),
+		   from, to, me.name);
 
-        for (linePointer = motdToPrint->contentsOfFile; linePointer;
-             linePointer = linePointer->next)
-          sendto_one(source_p, form_str(RPL_MOTD),
-                     from, to, linePointer->line);
+	for (linePointer = motdToPrint->contentsOfFile; linePointer;
+	     linePointer = linePointer->next)
+	{
+	  sendto_one(source_p, form_str(RPL_MOTD),
+		     from, to, linePointer->line);
+	}
 
-        sendto_one(source_p, form_str(RPL_ENDOFMOTD), from, to);
+	sendto_one(source_p, form_str(RPL_ENDOFMOTD), from, to);
       }
       break;
 
     case USER_LINKS:
       if (motdToPrint->contentsOfFile != NULL)
       {
-        for (linePointer = motdToPrint->contentsOfFile; linePointer;
-             linePointer = linePointer->next)
-          sendto_one(source_p, ":%s 364 %s %s", /* XXX */
-                     from, to, linePointer->line);
+	for (linePointer = motdToPrint->contentsOfFile; linePointer;
+	     linePointer = linePointer->next)
+	{
+	  sendto_one(source_p, ":%s 364 %s %s", /* XXX */
+		     from, to, linePointer->line);
+	}
       }
       break;
 
     case OPER_MOTD:
       if (motdToPrint->contentsOfFile != NULL)
       {
-        sendto_one(source_p, form_str(RPL_OMOTDSTART),
-                   me.name, source_p->name, me.name);
+	sendto_one(source_p, form_str(RPL_OMOTDSTART),
+		   me.name, source_p->name, me.name);
 
-        sendto_one(source_p, form_str(RPL_OMOTD),
-                   me.name, source_p->name, motdToPrint->lastChangedDate);
+	sendto_one(source_p, form_str(RPL_OMOTD),
+		   me.name, source_p->name, motdToPrint->lastChangedDate);
 
-        for (linePointer = motdToPrint->contentsOfFile; linePointer;
-             linePointer = linePointer->next)
-          sendto_one(source_p, form_str(RPL_OMOTD),
-                     me.name, source_p->name, linePointer->line);
-        sendto_one(source_p, form_str(RPL_ENDOFOMOTD),
-                   me.name, source_p->name);
+	for (linePointer = motdToPrint->contentsOfFile; linePointer;
+	     linePointer = linePointer->next)
+	{
+	  sendto_one(source_p, form_str(RPL_OMOTD),
+		     me.name, source_p->name, linePointer->line);
+	}
+	sendto_one(source_p, form_str(RPL_ENDOFOMOTD),
+		   me.name, source_p->name);
       }
       break;
 
-    case ISSUPPORT:
+  case ISSUPPORT:
       if (motdToPrint->contentsOfFile != NULL)
-        for (linePointer = motdToPrint->contentsOfFile; linePointer;
-             linePointer = linePointer->next)
-          sendto_one(source_p, form_str(RPL_ISUPPORT),
-                     me.name, source_p->name, linePointer->line);
+      {
+	for (linePointer = motdToPrint->contentsOfFile; linePointer;
+	     linePointer = linePointer->next)
+	{
+	  sendto_one(source_p, form_str(RPL_ISUPPORT),
+		     me.name, source_p->name, linePointer->line);
+	}
+      }
+    break;
+
+    default:
+      break;
   }
 
-  return 0;
+  return(0);
 }
 
 /*
@@ -135,12 +156,15 @@ read_message_file(MessageFile *MessageFileptr)
 {
   struct stat sb;
   struct tm *local_tm;
-  // used to clear out old MessageFile entries
+
+  /* used to clear out old MessageFile entries */
   MessageFileLine *mptr = 0;
   MessageFileLine *next_mptr = 0;
-  // used to add new MessageFile entries
+
+  /* used to add new MessageFile entries */
   MessageFileLine *newMessageLine = 0;
   MessageFileLine *currentMessageLine = 0;
+
   char buffer[MESSAGELINELEN];
   char *p;
   FBFILE *file;
@@ -154,7 +178,7 @@ read_message_file(MessageFile *MessageFileptr)
   MessageFileptr->contentsOfFile = NULL;
 
   if (stat(MessageFileptr->fileName, &sb) < 0)
-    return -1;
+    return(-1);
 
   local_tm = localtime(&sb.st_mtime);
 
@@ -168,7 +192,7 @@ read_message_file(MessageFile *MessageFileptr)
                local_tm->tm_min);
 
   if ((file = fbopen(MessageFileptr->fileName, "r")) == NULL)
-    return -1;
+    return(-1);
 
   while (fbgets(buffer, sizeof(buffer), file))
   {
@@ -194,11 +218,11 @@ read_message_file(MessageFile *MessageFileptr)
   }
 
   fbclose(file);
-  return 0;
+  return(0);
 }
 
 /*
- * init_MessageLine()
+ * init_MessageLine
  *
  * inputs	- NONE
  * output	- pointer to new MessageFile
@@ -207,6 +231,7 @@ read_message_file(MessageFile *MessageFileptr)
  *		  is init'ed, but must have content added to it through
  *		  addto_MessageLine()
  */
+
 MessageFile *
 init_MessageLine(void)
 {
@@ -214,22 +239,23 @@ init_MessageLine(void)
   MessageFileLine *mptr = NULL;
 
   mf = MyMalloc(sizeof(MessageFile));
-  mf->motdType = ISSUPPORT;	 // XXX maybe pass it alone in args?
+  mf->motdType = ISSUPPORT;	/* XXX maybe pass it alone in args? */
   mptr = MyMalloc(sizeof(MessageFileLine));
   mf->contentsOfFile = mptr;
-  return mf;
+  return(mf);
 }
 
 /*
- * addto_MessageLine()
+ * addto_MessageLine
  *
  * inputs	- Pointer to existing MessageFile
- *          - New string to add to this MessageFile
+ *		- New string to add to this MessageFile
  * output	- NONE
  * side effects	- Use this when an internal MessageFile is wanted
- *                without reading an actual file. Content is added
- *                to this MessageFile through this function.
+ *		  without reading an actual file. Content is added
+ *		  to this MessageFile through this function.
  */
+
 void
 addto_MessageLine(MessageFile *mf, const char *str)
 {
@@ -257,7 +283,8 @@ addto_MessageLine(MessageFile *mf, const char *str)
  *
  * inputs	- pointer to the MessageFile to destroy
  * output	- NONE
- * side effects	- All the MessageLines attached to the given mf are freed
+ * side effects	- All the MessageLines attached to the given mf
+ *		  Are freed then one MessageLine is recreated
  */
 void
 destroy_MessageLine(MessageFile *mf)
@@ -273,26 +300,5 @@ destroy_MessageLine(MessageFile *mf)
     nmptr = mptr->next;
     MyFree(mptr);
   } 
-
   mf->contentsOfFile = NULL;
-}
-
-/*
- * init_motd()
- *
- * Initializes ircd message files.
- *
- * inputs: none
- * output: none
- */
-void
-init_motd(void)
-{
-  init_message_file(USER_MOTD, MPATH, &motd);
-  init_message_file(OPER_MOTD, OPATH, &opermotd);
-  init_message_file(USER_LINKS, LIPATH, &linksfile);
-
-  read_message_file(&motd);
-  read_message_file(&opermotd);
-  read_message_file(&linksfile);
 }

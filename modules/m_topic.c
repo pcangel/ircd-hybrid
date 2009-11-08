@@ -23,37 +23,46 @@
  */
 
 #include "stdinc.h"
+#include "list.h"
 #include "handlers.h"
 #include "channel.h"
 #include "channel_mode.h"
 #include "client.h"
 #include "hash.h"
+#include "irc_string.h"
+#include "sprintf_irc.h"
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
-#include "server.h"
+#include "s_conf.h"
+#include "s_serv.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
+#include "modules.h"
 #include "packet.h"
-#include "common.h"
 
 static void m_topic(struct Client *, struct Client *, int, char *[]);
 
 struct Message topic_msgtab = {
   "TOPIC", 0, 0, 2, 0, MFLG_SLOW, 0,
-  { m_unregistered, m_topic, m_topic, m_ignore, m_topic, m_ignore }
+  {m_unregistered, m_topic, m_topic, m_ignore, m_topic, m_ignore}
 };
 
-INIT_MODULE(m_topic, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&topic_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&topic_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
 
 /* m_topic()
  *  parv[0] = sender prefix
@@ -65,13 +74,7 @@ m_topic(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
 {
   struct Channel *chptr = NULL;
-  char *p = NULL;
-  struct Membership *ms = NULL;
-  const char *from = NULL, *to = NULL;
-
-  /* Servers do not use TOPIC, they communicate via TBURST/TB instead */
-  if (!IsClient(source_p))
-    return;
+  const char *from, *to;
 
   if (!MyClient(source_p) && IsCapable(source_p->from, CAP_TS6) && HasID(source_p))
   {
@@ -84,10 +87,7 @@ m_topic(struct Client *client_p, struct Client *source_p,
     to = source_p->name;
   }
 
-  if ((p = strchr(parv[1], ',')) != NULL)
-    *p = '\0';
-
-  if (*parv[1] == '\0')
+  if (EmptyString(parv[1]))
   {
     sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
                from, to, "TOPIC");
@@ -107,10 +107,12 @@ m_topic(struct Client *client_p, struct Client *source_p,
   /* setting topic */
   if (parc > 2)
   {
+    struct Membership *ms;
+
     if ((ms = find_channel_link(source_p, chptr)) == NULL)
     {
-      sendto_one(source_p, form_str(ERR_NOTONCHANNEL),
-                 from, to, parv[1]);
+      sendto_one(source_p, form_str(ERR_NOTONCHANNEL), from,
+                 to, parv[1]);
       return;
     }
 
@@ -119,19 +121,19 @@ m_topic(struct Client *client_p, struct Client *source_p,
     {
       char topic_info[USERHOST_REPLYLEN]; 
 
-      ircsprintf(topic_info, "%s!%s@%s",
-                 source_p->name, source_p->username, source_p->host);
+      ircsprintf(topic_info, "%s!%s@%s", source_p->name,
+                 source_p->username, source_p->host);
       set_channel_topic(chptr, parv[2], topic_info, CurrentTime);
 
-      sendto_server(client_p, NULL, chptr, CAP_TS6, NOCAPS,
+      sendto_server(client_p, chptr, CAP_TS6, NOCAPS,
                     ":%s TOPIC %s :%s",
                     ID(source_p), chptr->chname,
                     chptr->topic == NULL ? "" : chptr->topic);
-      sendto_server(client_p, NULL, chptr, NOCAPS, CAP_TS6,
+      sendto_server(client_p, chptr, NOCAPS, CAP_TS6,
                     ":%s TOPIC %s :%s",
                     source_p->name, chptr->chname,
                     chptr->topic == NULL ? "" : chptr->topic);
-      sendto_channel_local(ALL_MEMBERS, NO,
+      sendto_channel_local(ALL_MEMBERS, 0,
                            chptr, ":%s!%s@%s TOPIC %s :%s",
                            source_p->name,
                            source_p->username,
@@ -162,9 +164,7 @@ m_topic(struct Client *client_p, struct Client *source_p,
       }
     }
     else
-    {
       sendto_one(source_p, form_str(ERR_NOTONCHANNEL),
                  from, to, chptr->chname);
-    }
   }
 }

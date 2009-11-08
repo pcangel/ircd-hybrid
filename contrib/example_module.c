@@ -23,13 +23,15 @@
  * These ones are necessary to build THIS module...
  */
 
-#include "stdinc.h"
-#include "client.h"   /* Required for IsClient, etc. */
-#include "send.h"     /* sendto_one, most useful function of all time */
-#include "conf/modules.h"  /* some #define's */
+#include "stdinc.h" /* includes setup.h, for STATIC_MODULES */
+
+#include "client.h" /* Required for IsClient, etc. */
+
+#include "send.h" /* sendto_one, most useful function of all time */
+
+#include "modules.h" /* includes msg.h; use for the msgtab */
+
 #include "handlers.h" /* m_ignore */
-#include "msg.h"      /* msgtab */
-#include "parse.h"    /* mod_{add,del}_cmd */
 
 /* OTHER USEFUL INCLUDES:
  * 
@@ -41,6 +43,7 @@
  * Examples are strewn all across the ircd code, so just grep a bit to
  * find one!
  *
+ * #include "irc_string.h" <-- best to include this if you use *any*
  * string comparison or parsing functions, although they may be available
  * natively for your OS the prototypes in irc_string.h may be required for
  * others. */
@@ -96,6 +99,7 @@ struct Message test_msgtab = {
   * m_unregistered: prevent the client using this if unregistered
   * m_not_oper:     tell the client it requires being an operator
   * m_ignore:       ignore the command when it comes from certain types
+  * rfc1459_command_send_error: give an error when the command comes from certain types
   */
   { mr_test, m_test, ms_test, m_ignore, mo_test, m_ignore }
 
@@ -107,19 +111,27 @@ struct Message test_msgtab = {
 };
 /* That's the msgtab finished */
 
+#ifndef STATIC_MODULES
 /* Here we tell it what to do when the module is loaded */
-INIT_MODULE(example_module, "$Revision: 33 $")
+void
+_modinit(void)
 {
   /* This will add the commands in test_msgtab (which is above) */
   mod_add_cmd(&test_msgtab);
 }
 
 /* here we tell it what to do when the module is unloaded */
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   /* This will remove the commands in test_msgtab (which is above) */
   mod_del_cmd(&test_msgtab);
 }
+
+/* When we last modified the file (shown in /modlist), this is usually:
+ */
+const char *_version = "$Revision$";
+#endif
 
 /*
  * mr_test

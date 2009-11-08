@@ -22,53 +22,49 @@
  */
 
 #include "stdinc.h"
+#include "list.h"
 #include "handlers.h"
 #include "channel.h"
 #include "channel_mode.h"
 #include "client.h"
 #include "hash.h"
+#include "irc_string.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "server.h"
+#include "s_conf.h"
+#include "s_serv.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
-#include "user.h"
+#include "modules.h"
+#include "s_user.h"
+#include "resv.h"
 #include "userhost.h"
 
 static void mo_hash(struct Client *, struct Client *, int, char *[]);
+
 
 struct Message hash_msgtab = {
  "HASH", 0, 0, 0, 0, MFLG_SLOW, 0,
   { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_hash, m_ignore }
 };
 
-INIT_MODULE(m_hash, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&hash_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&hash_msgtab);
 }
 
-/*! \brief HASH command handler (called for operators only)
- *
- * Returns various information such as maxmimum entries, slots that
- * are in use and collision count
- *
- * \param client_p Pointer to allocated Client struct with physical connection
- *                 to this server, i.e. with an open socket connected.
- * \param source_p Pointer to allocated Client struct from which the message
- *                 originally comes from.  This can be a local or remote client.
- * \param parc     Integer holding the number of supplied arguments.
- * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
- *                 pointers.
- * \note Valid arguments for this command are:
- *      - parv[0] = sender prefix
- */
+const char *_version = "$Revision$";
+#endif
+
 static void
 mo_hash(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
@@ -81,6 +77,7 @@ mo_hash(struct Client *client_p, struct Client *source_p,
   struct Client *icl;
   struct Channel *ch;
   struct UserHost *ush;
+  struct ResvChannel *rch;
 
   for (i = 0; i < HASHSIZE; ++i)
   {
@@ -121,6 +118,29 @@ mo_hash(struct Client *client_p, struct Client *source_p,
   }
 
   sendto_one(source_p, ":%s NOTICE %s :Channel: entries: %d buckets: %d "
+             "max chain: %d", me.name, source_p->name, count, buckets,
+             max_chain);
+
+  count     = 0;
+  buckets   = 0;
+  max_chain = 0;
+
+  for (i = 0; i < HASHSIZE; ++i)
+  {
+    if ((rch = hash_get_bucket(HASH_TYPE_RESERVED, i)) != NULL)
+    {
+      int len = 0;
+
+      ++buckets;
+      for (; rch != NULL; rch = rch->hnext)
+        ++len;
+      if (len > max_chain)
+        max_chain = len;
+      count += len;
+    }
+  }
+
+  sendto_one(source_p, ":%s NOTICE %s :Resv: entries: %d buckets: %d "
              "max chain: %d", me.name, source_p->name, count, buckets,
              max_chain);
 

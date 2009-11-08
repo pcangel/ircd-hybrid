@@ -25,7 +25,7 @@
 #ifndef INCLUDED_m_info_h
 #define INCLUDED_m_info_h
 
-#include "setup.h"
+#include "config.h"
 #include "defaults.h"
 
 typedef struct Information
@@ -120,7 +120,7 @@ Info MyInformation[] = {
   { "PPATH", "NONE", 0, "Path to Pid File" },
 #endif /* PPATH */
 
-  { "SELECT_TYPE", SELECT_TYPE, 0, "Method of Multiplexed I/O" },
+  { "SELECT_TYPE", "This needs to be done another way XXX TODO", 0, "Method of Multiplexed I/O" },
 
 #ifdef SPATH
   { "SPATH", SPATH, 0, "Path to Server Executable" },

@@ -23,65 +23,108 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
+#include "list.h"	 /* dlink_node/dlink_list */
+#include "balloc.h"
 #include "handlers.h"    /* m_pass prototype */
 #include "client.h"      /* Client */
 #include "common.h"      /* TRUE/FALSE */
-#include "hash.h"
+#include "irc_string.h"  
 #include "ircd.h"        /* me */
 #include "listener.h"    /* show_ports */
+#include "s_gline.h"
 #include "ircd_handler.h"
 #include "msg.h"         /* Message */
+#include "hostmask.h"
 #include "numeric.h"     /* ERR_xxx */
 #include "send.h"        /* sendto_one */
-#include "server.h"      /* hunt_server */
-#include "user.h"      /* show_opers */
+#include "fdlist.h"      /* PF and friends */
+#include "s_bsd.h"       /* highest_fd */
+#include "s_conf.h"      /* AccessItem, report_configured_links */
+#include "s_misc.h"      /* serv_info */
+#include "s_serv.h"      /* hunt_server */
+#include "s_user.h"      /* show_opers */
+#include "event.h"	 /* events */
+#include "dbuf.h"
 #include "parse.h"
+#include "modules.h"
+#include "hook.h"
+#include "resv.h"  /* report_resv */
 #include "whowas.h"
 #include "watch.h"
-#include "channel.h"
 
-static void *do_stats(va_list args);
+static void do_stats(struct Client *, int, char **);
 static void m_stats(struct Client *, struct Client *, int, char *[]);
 static void mo_stats(struct Client *, struct Client *, int, char *[]);
+static void ms_stats(struct Client *, struct Client *, int, char *[]);
 
 struct Message stats_msgtab = {
   "STATS", 0, 0, 2, 0, MFLG_SLOW, 0,
-  { m_unregistered, m_stats, mo_stats, m_ignore, mo_stats, m_ignore }
+  { m_unregistered, m_stats, ms_stats, m_ignore, mo_stats, m_ignore }
 };
 
+#ifndef STATIC_MODULES
+const char *_version = "$Revision$";
 static struct Callback *stats_cb;
 
-INIT_MODULE(m_stats, "$Revision$")
+static void *
+va_stats(va_list args)
 {
-  stats_cb = register_callback("doing_stats", do_stats);
+  struct Client *source_p = va_arg(args, struct Client *);
+  int parc = va_arg(args, int);
+  char **parv = va_arg(args, char **);
+
+  do_stats(source_p, parc, parv);
+  return NULL;
+}
+
+void
+_modinit(void)
+{
+  stats_cb = register_callback("doing_stats", va_stats);
   mod_add_cmd(&stats_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&stats_msgtab);
-  uninstall_hook(stats_cb, do_stats);
+  uninstall_hook(stats_cb, va_stats);
 }
+#endif
 
 static char *parse_stats_args(int, char **, int *, int *);
 static void stats_L(struct Client *, char *, int, int, char);
 static void stats_L_list(struct Client *s, char *, int, int, dlink_list *, char);
 
 static void stats_dns_servers(struct Client *);
+static void stats_connect(struct Client *);
+static void stats_deny(struct Client *);
+static void stats_tdeny(struct Client *);
+static void stats_exempt(struct Client *);
 static void stats_events(struct Client *);
+static void stats_pending_glines(struct Client *);
+static void stats_glines(struct Client *);
+static void stats_gdeny(struct Client *);
+static void stats_hubleaf(struct Client *);
+static void stats_auth(struct Client *);
+static void stats_tklines(struct Client *);
+static void stats_klines(struct Client *);
+static void stats_messages(struct Client *);
+static void stats_oper(struct Client *);
 static void stats_operedup(struct Client *);
 static void stats_ports(struct Client *);
+static void stats_resv(struct Client *);
 static void stats_usage(struct Client *);
 static void stats_tstats(struct Client *);
 static void stats_uptime(struct Client *);
+static void stats_shared(struct Client *);
 static void stats_servers(struct Client *);
+static void stats_gecos(struct Client *);
+static void stats_class(struct Client *);
 static void stats_memory(struct Client *);
 static void stats_servlinks(struct Client *);
 static void stats_ltrace(struct Client *, int, char **);
 static void stats_ziplinks(struct Client *);
-static void stats_hooks(struct Client *);
-static void fd_dump(struct Client *);
 
 /* This table contains the possible stats items, in order:
  * /stats name,  function to call, operonly? adminonly? /stats letter
@@ -93,61 +136,58 @@ static const struct StatsStruct
   const unsigned int need_oper;
   const unsigned int need_admin;
 } stats_cmd_table[] = {
-  // letter     function            need_oper need_admin
-  { 'a',	stats_dns_servers,      1,	1,	},
-  { 'A',	stats_dns_servers,      1,	1,	},
-  { 'c',	report_connect,         1,	0,	},
-  { 'C',	report_connect,         1,	0,	},
-  { 'd',	report_tdeny,           1,	0,	},
-  { 'D',	report_deny,            1,	0,	},
-  { 'e', 	report_exempt,          1,	0,	},
-  { 'E',	stats_events,           1,	1,	},
-  { 'f',	fd_dump,                1,	1,	},
-  { 'F',	fd_dump,                1,	1,	},
-  { 'g',	report_pending_glines,	1,	0,	},
-  { 'G',	report_glines,          1,	0,	},
-  { 'h',	stats_hooks,            1,	1,	},
-  { 'H',	report_hubleaf,         1,	0,	},
-  { 'i',	report_auth,            0,	0,	},
-  { 'I',	report_auth,            0,	0,	},
-  { 'k',	report_tklines,     	0,	0,	},
-  { 'K',	report_klines,          0,	0,	},
-  { 'l',	stats_ltrace,           1,	0,	},
-  { 'L',	stats_ltrace,           1,	0,	},
-  { 'm',	report_messages,        0,	0,	},
-  { 'M',	report_messages,        0,	0,	},
-  { 'o',	report_oper,            0,	0,	},
-  { 'O',	report_oper,            0,	0,	},
-  { 'p',	stats_operedup,         0,	0,	},
-  { 'P',	stats_ports,            0,	0,	},
-  { 'q',	report_resv,            1,	0,	},
-  { 'Q',	report_resv,            1,	0,	},
-  { 'r',	stats_usage,            1,	0,	},
-  { 'R',	stats_usage,            1,	0,	},
-  { 't',	stats_tstats,           1,	0,	},
-  { 'T',	stats_tstats,           1,	0,	},
-  { 'u',	stats_uptime,           0,	0,	},
-  { 'U',	report_shared,          1,	0,	},
-  { 'v',	stats_servers,          1,	0,	},
-  { 'V',	report_gline_deny,      1,	0,	},
-  { 'x',	report_gecos,           1,	0,	},
-  { 'X',	report_gecos,           1,	0,	},
-  { 'y',	report_class,           1,	0,	},
-  { 'Y',	report_class,           1,	0,	},
-  { 'z',	stats_memory,           1,	0,	},
-  { 'Z',	stats_ziplinks,         1,	0,	},
-  { '?',	stats_servlinks,        0,	0,	},
-  { 0, NULL, 0, 0, }
+  /* letter     function            need_oper need_admin */
+  { 'a',	stats_dns_servers,	1,	1,	},
+  { 'A',	stats_dns_servers,	1,	1,	},
+  { 'c',	stats_connect,		1,	0,	},
+  { 'C',	stats_connect,		1,	0,	},
+  { 'd',	stats_tdeny,		1,	0,	},
+  { 'D',	stats_deny,		1,	0,	},
+  { 'e', 	stats_exempt,		1,	0,	},
+  { 'E',	stats_events,		1,	1,	},
+  { 'f',	fd_dump,		1,	1,	},
+  { 'F',	fd_dump,		1,	1,	},
+  { 'g',	stats_pending_glines,	1,	0,	},
+  { 'G',	stats_glines,		1,	0,	},
+  { 'h',	stats_hooks,		1,	1,	},
+  { 'H',	stats_hubleaf,		1,	0,	},
+  { 'i',	stats_auth,		0,	0,	},
+  { 'I',	stats_auth,		0,	0,	},
+  { 'k',	stats_tklines,		0,	0,	},
+  { 'K',	stats_klines,		0,	0,	},
+  { 'l',	stats_ltrace,		1,	0,	},
+  { 'L',	stats_ltrace,		1,	0,	},
+  { 'm',	stats_messages,		0,	0,	},
+  { 'M',	stats_messages,		0,	0,	},
+  { 'o',	stats_oper,		0,	0,	},
+  { 'O',	stats_oper,		0,	0,	},
+  { 'p',	stats_operedup,		0,	0,	},
+  { 'P',	stats_ports,		0,	0,	},
+  { 'q',	stats_resv,		1,	0,	},
+  { 'Q',	stats_resv,		1,	0,	},
+  { 'r',	stats_usage,		1,	0,	},
+  { 'R',	stats_usage,		1,	0,	},
+  { 't',	stats_tstats,		1,	0,	},
+  { 'T',	stats_tstats,		1,	0,	},
+  { 'u',	stats_uptime,		0,	0,	},
+  { 'U',	stats_shared,		1,	0,	},
+  { 'v',	stats_servers,		1,	0,	},
+  { 'V',	stats_gdeny,		1,	0,	},
+  { 'x',	stats_gecos,		1,	0,	},
+  { 'X',	stats_gecos,		1,	0,	},
+  { 'y',	stats_class,		1,	0,	},
+  { 'Y',	stats_class,		1,	0,	},
+  { 'z',	stats_memory,		1,	0,	},
+  { 'Z',	stats_ziplinks,		1,	0,	},
+  { '?',	stats_servlinks,	0,	0,	},
+  { '\0',       NULL,		        0,	0,	}
 };
 
 const char *from, *to;
 
-static void *
-do_stats(va_list args)
+static void
+do_stats(struct Client *source_p, int parc, char **parv)
 {
-  struct Client *source_p = va_arg(args, struct Client *);
-  int parc = va_arg(args, int);
-  char **parv = va_arg(args, char **);
   char statchar = *parv[1];
   int i;
 
@@ -155,7 +195,7 @@ do_stats(va_list args)
   {
     sendto_one(source_p, form_str(RPL_ENDOFSTATS),
                from, to, '*');
-    return NULL;
+    return;
   }
 
   for (i = 0; stats_cmd_table[i].handler; i++)
@@ -183,7 +223,6 @@ do_stats(va_list args)
 
   sendto_one(source_p, form_str(RPL_ENDOFSTATS),
              from, to, statchar);
-  return NULL;
 }
 
 /*
@@ -202,9 +241,8 @@ m_stats(struct Client *client_p, struct Client *source_p,
   static time_t last_used = 0;
 
   /* Is the stats meant for us? */
-  if (!General.disable_remote_commands)
-    if (hunt_server(source_p, ":%s STATS %s :%s", 2,
-                    parc, parv) != HUNTED_ISME)
+  if (!ConfigFileEntry.disable_remote)
+    if (hunt_server(client_p,source_p,":%s STATS %s :%s",2,parc,parv) != HUNTED_ISME)
       return;
 
   if (!MyClient(source_p) && IsCapable(source_p->from, CAP_TS6) && HasID(source_p))
@@ -219,16 +257,20 @@ m_stats(struct Client *client_p, struct Client *source_p,
   }
 
   /* Check the user is actually allowed to do /stats, and isnt flooding */
-  if ((last_used + General.pace_wait) > CurrentTime)
+  if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
   {
     sendto_one(source_p,form_str(RPL_LOAD2HI),
                from, to);
     return;
   }
+  else
+    last_used = CurrentTime;
 
-  last_used = CurrentTime;
-
+#ifdef STATIC_MODULES
+  do_stats(source_p, parc, parv);
+#else
   execute_callback(stats_cb, source_p, parc, parv);
+#endif
 }
 
 /*
@@ -244,10 +286,7 @@ static void
 mo_stats(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
-  if (!IsClient(source_p))
-    return;
-
-  if (hunt_server(source_p, ":%s STATS %s :%s", 2,
+  if (hunt_server(client_p, source_p, ":%s STATS %s :%s", 2,
                   parc, parv) != HUNTED_ISME)
      return;
 
@@ -262,7 +301,11 @@ mo_stats(struct Client *client_p, struct Client *source_p,
     to = source_p->name;
   }
 
+#ifdef STATIC_MODULES
+  do_stats(source_p, parc, parv);
+#else
   execute_callback(stats_cb, source_p, parc, parv);
+#endif
 }
 
 /*
@@ -273,13 +316,12 @@ mo_stats(struct Client *client_p, struct Client *source_p,
  * -avalon
  */
 static void
-stats_usage(struct Client *source_p)
+send_usage(struct Client *source_p)
 {
-#ifndef _WIN32
   struct rusage rus;
   time_t secs;
   time_t rup;
-#ifdef hz
+#ifdef  hz
 # define hzz hz
 #else
 # ifdef HZ
@@ -327,51 +369,57 @@ stats_usage(struct Client *source_p)
   sendto_one(source_p, ":%s %d %s R :Signals %d Context Vol. %d Invol %d",
              me.name, RPL_STATSDEBUG, source_p->name, (int)rus.ru_nsignals,
              (int)rus.ru_nvcsw, (int)rus.ru_nivcsw);
-#endif
 }
 
 static void
-stats_memory(struct Client *source_p)
+count_memory(struct Client *source_p)
 {
   const dlink_node *gptr = NULL;
   const dlink_node *dlink = NULL;
 
-  int users_counted = 0;   /* real Clients counted, i.e. not a server */
+  unsigned int local_client_conf_count = 0;      /* local client conf links */
+  unsigned int users_counted = 0;                /* user structs */
 
-  int channel_users = 0; /* XXX */
+  unsigned int channel_members = 0;
   unsigned int channel_invites = 0;
-  int channel_bans = 0;
-  int channel_except = 0;
-  int channel_invex = 0;
+  unsigned int channel_bans = 0;
+  unsigned int channel_except = 0;
+  unsigned int channel_invex = 0;
 
-  int class_count = 0;          /* classes */
-  int aways_counted = 0;
-  int number_ips_stored;        /* number of ip addresses hashed */
+  unsigned int wwu = 0;                  /* whowas users */
+  unsigned int class_count = 0;          /* classes */
+  unsigned int aways_counted = 0;
+  unsigned int number_ips_stored;        /* number of ip addresses hashed */
 
-  size_t channel_memory = 0;
-  size_t channel_ban_memory = 0;
-  size_t channel_except_memory = 0;
-  size_t channel_invex_memory = 0;
+  uint64_t channel_memory = 0;
+  uint64_t channel_ban_memory = 0;
+  uint64_t channel_except_memory = 0;
+  uint64_t channel_invex_memory = 0;
 
   unsigned int safelist_count = 0;
-  size_t safelist_memory = 0;
+  uint64_t safelist_memory = 0;
 
-  size_t away_memory = 0;       /* memory used by aways           */
-  size_t mem_ips_stored;        /* memory used by ip address hash */
-  size_t total_channel_memory = 0;
+  uint64_t away_memory = 0;       /* memory used by aways           */
+  uint64_t wwm = 0;               /* whowas array memory used       */
+  uint64_t conf_memory = 0;       /* memory used by conf lines      */
+  uint64_t mem_ips_stored;        /* memory used by ip address hash */
+
+  uint64_t total_channel_memory = 0;
+  uint64_t totww = 0;
 
   unsigned int local_client_count  = 0;
   unsigned int remote_client_count = 0;
 
-  unsigned int local_client_memory_used  = 0;
-  unsigned int remote_client_memory_used = 0;
+  uint64_t local_client_memory_used  = 0;
+  uint64_t remote_client_memory_used = 0;
 
-  size_t total_memory = 0;
+  uint64_t total_memory = 0;
   unsigned int topic_count = 0;
 
-  unsigned int wlh = 0;   /* watchlist headers     */
-  unsigned int wle = 0;   /* watchlist entries     */
-  size_t wlhm = 0; /* watchlist memory used */
+  unsigned int watch_list_headers = 0;   /* watchlist headers     */
+  unsigned int watch_list_entries = 0;   /* watchlist entries     */
+  uint64_t watch_list_memory = 0; /* watchlist memory used */
+
 
   DLINK_FOREACH(gptr, global_client_list.head)
   {
@@ -380,7 +428,8 @@ stats_memory(struct Client *source_p)
     if (MyConnect(target_p))
     {
       ++local_client_count;
-      wle += dlink_list_length(&target_p->localClient->watches);
+      local_client_conf_count += dlink_list_length(&target_p->localClient->confs);
+      watch_list_entries += dlink_list_length(&target_p->localClient->watches);
     }
     else
       ++remote_client_count;
@@ -402,55 +451,49 @@ stats_memory(struct Client *source_p)
                    sizeof(struct Channel);
   DLINK_FOREACH(gptr, global_channel_list.head)
   {
-    struct Ban *actualBan;
-    struct Channel *chptr = gptr->data;
+    const struct Ban *actualBan;
+    const struct Channel *chptr = gptr->data;
 
-    channel_users   += dlink_list_length(&chptr->members);
+    channel_members += dlink_list_length(&chptr->members);
     channel_invites += dlink_list_length(&chptr->invites);
 
     if (chptr->topic != NULL)
       ++topic_count;
 
-    if ((channel_bans = dlink_list_length(&chptr->banlist)))
+    channel_bans += dlink_list_length(&chptr->banlist);
+    channel_ban_memory += dlink_list_length(&chptr->banlist) * sizeof(struct Ban);
+
+    DLINK_FOREACH(dlink, chptr->banlist.head)
     {
-      channel_ban_memory = channel_bans * sizeof(struct Ban);
+      actualBan = dlink->data;
+      assert(actualBan->who);
 
-      DLINK_FOREACH(dlink, chptr->banlist.head)
-      {
-        actualBan = dlink->data;
-        assert(actualBan->who);
-
-        channel_ban_memory += actualBan->len + 3;
-        channel_ban_memory += strlen(actualBan->who) + 1;
-      }
+      channel_ban_memory += actualBan->len + 1;
+      channel_ban_memory += strlen(actualBan->who) + 1;
     }
 
-    if ((channel_except = dlink_list_length(&chptr->exceptlist)))
+    channel_except += dlink_list_length(&chptr->exceptlist);
+    channel_except_memory += dlink_list_length(&chptr->exceptlist) * sizeof(struct Ban);
+
+    DLINK_FOREACH(dlink, chptr->exceptlist.head)
     {
-      channel_except_memory = channel_except * sizeof(struct Ban);
+      actualBan = dlink->data;
+      assert(actualBan->who);
 
-      DLINK_FOREACH(dlink, chptr->exceptlist.head)
-      {
-        actualBan = dlink->data;
-        assert(actualBan->who);
-
-        channel_except_memory += actualBan->len + 3;
-        channel_except_memory += strlen(actualBan->who) + 1;
-      }
+      channel_except_memory += actualBan->len + 1;
+      channel_except_memory += strlen(actualBan->who) + 1;
     }
 
-    if ((channel_invex = dlink_list_length(&chptr->invexlist)))
+    channel_invex += dlink_list_length(&chptr->invexlist);
+    channel_invex_memory += dlink_list_length(&chptr->invexlist) * sizeof(struct Ban);
+
+    DLINK_FOREACH(dlink, chptr->invexlist.head)
     {
-      channel_invex_memory = channel_invex * sizeof(struct Ban);
+      actualBan = dlink->data;
+      assert(actualBan->who);
 
-      DLINK_FOREACH(dlink, chptr->invexlist.head)
-      {
-        actualBan = dlink->data;
-        assert(actualBan->who);
-
-        channel_invex_memory += actualBan->len + 3;
-        channel_invex_memory += strlen(actualBan->who) + 1;
-      }
+      channel_invex_memory += actualBan->len + 1;
+      channel_invex_memory += strlen(actualBan->who) + 1;
     }
   }
 
@@ -459,7 +502,7 @@ stats_memory(struct Client *source_p)
     safelist_memory = safelist_count * sizeof(struct ListTask);
     DLINK_FOREACH(gptr, listing_client_list.head)
     {
-      struct Client *acptr = gptr->data;
+      const struct Client *acptr = gptr->data;
 
       DLINK_FOREACH(dlink, acptr->localClient->list_task->show_mask.head)
         safelist_memory += strlen(dlink->data);
@@ -469,108 +512,547 @@ stats_memory(struct Client *source_p)
     }
   }
 
-  watch_count_memory(&wlh, &wlhm);
+#if 0
+  /* XXX THIS has to be fixed !!!! -db */
+  /* count up all config items */
+  DLINK_FOREACH(dlink, ConfigItemList.head)
+  {
+      aconf = dlink->data;
+      conf_memory += aconf->host ? strlen(aconf->host)+1 : 0;
+      conf_memory += aconf->passwd ? strlen(aconf->passwd)+1 : 0;
+      conf_memory += aconf->name ? strlen(aconf->name)+1 : 0;
+      conf_memory += sizeof(struct AccessItem);
+  }
+#endif
+  /* count up all classes */
+  class_count = dlink_list_length(&class_items);
+
+  count_whowas_memory(&wwu, &wwm);
+  watch_count_memory(&watch_list_headers, &watch_list_memory);
 
   sendto_one(source_p, ":%s %d %s z :WATCH headers %u(%u) entries %d(%d)",
-             me.name, RPL_STATSDEBUG, source_p->name, wlh, wlhm, wle,
-             wle * sizeof(dlink_node));
+             me.name, RPL_STATSDEBUG, source_p->name, watch_list_headers,
+             watch_list_memory, watch_list_entries,
+             watch_list_entries * sizeof(dlink_node) * 2);
 
-  /* count up all classes */
-  class_count = dlink_list_length(&class_list);
-
-  sendto_one(source_p, ":%s %d %s z :Clients %u(%lu)",
+  sendto_one(source_p, ":%s %d %s z :Clients %u(%u)",
              me.name, RPL_STATSDEBUG, source_p->name, users_counted,
-             (unsigned long)(users_counted * sizeof(struct Client)));
+             (users_counted * sizeof(struct Client)));
 
-  sendto_one(source_p, ":%s %d %s z :User aways %u(%u)",
+  sendto_one(source_p, ":%s %d %s z :User aways %u(%llu)",
              me.name, RPL_STATSDEBUG, source_p->name,
              aways_counted, away_memory);
 
-  sendto_one(source_p, ":%s %d %s z :Resv channels %u(%u) nicks %u(%u) hash %u(%u)",
+  sendto_one(source_p, ":%s %d %s z :Attached confs %u(%llu)",
              me.name, RPL_STATSDEBUG, source_p->name,
-             dlink_list_length(&cresv_confs),
-             dlink_list_length(&cresv_confs) * sizeof(struct ResvConf),
-             dlink_list_length(&nresv_confs),
-             dlink_list_length(&nresv_confs) * sizeof(struct ResvConf),
-             num_hashed_resvs, num_hashed_resvs * sizeof(struct ResvConf));
+             local_client_conf_count,
+             (unsigned long long)(local_client_conf_count * sizeof(dlink_node)));
 
-  sendto_one(source_p, ":%s %d %s z :Classes %u(%lu)",
+  sendto_one(source_p, ":%s %d %s z :Resv channels %lu(%lu) nicks %lu(%lu)",
              me.name, RPL_STATSDEBUG, source_p->name,
-             class_count, (unsigned long)(class_count * sizeof(struct Class)));
+             dlink_list_length(&resv_channel_list),
+             dlink_list_length(&resv_channel_list) * sizeof(struct ResvChannel),
+             dlink_list_length(&nresv_items),
+             dlink_list_length(&nresv_items) * sizeof(struct MatchItem));
 
-  sendto_one(source_p, ":%s %d %s z :Channels %lu(%u) Topics %u(%d)",
+  sendto_one(source_p, ":%s %d %s z :Classes %u(%llu)",
+             me.name, RPL_STATSDEBUG, source_p->name,
+             class_count, (unsigned long long)(class_count * sizeof(struct ClassItem)));
+
+  sendto_one(source_p, ":%s %d %s z :Channels %lu(%llu) Topics %u(%d)",
              me.name, RPL_STATSDEBUG, source_p->name,
              dlink_list_length(&global_channel_list),
              channel_memory, topic_count, topic_count *
              (TOPICLEN + 1 + USERHOST_REPLYLEN));
 
-  sendto_one(source_p, ":%s %d %s z :Bans %u(%u)",
+  sendto_one(source_p, ":%s %d %s z :Bans %u(%llu)",
              me.name, RPL_STATSDEBUG, source_p->name,
              channel_bans, channel_ban_memory);
 
-  sendto_one(source_p, ":%s %d %s z :Exceptions %u(%u)",
+  sendto_one(source_p, ":%s %d %s z :Exceptions %u(%llu)",
              me.name, RPL_STATSDEBUG, source_p->name,
              channel_except, channel_except_memory);
 
-  sendto_one(source_p, ":%s %d %s z :Invex %u(%u)",
+  sendto_one(source_p, ":%s %d %s z :Invex %u(%llu)",
              me.name, RPL_STATSDEBUG, source_p->name,
              channel_invex, channel_invex_memory);
 
-  sendto_one(source_p, ":%s %d %s z :Channel members %u(%lu) invites %u(%u)",
-             me.name, RPL_STATSDEBUG, source_p->name, channel_users,
-             (unsigned long)(channel_users * sizeof(struct Membership)),
-             channel_invites, channel_invites * sizeof(dlink_node) * 2);
+  sendto_one(source_p, ":%s %d %s z :Channel members %u(%llu) invites %u(%llu)",
+             me.name, RPL_STATSDEBUG, source_p->name, channel_members,
+             (unsigned long long)(channel_members * sizeof(struct Membership)),
+             channel_invites, (unsigned long long)channel_invites *
+             sizeof(dlink_node) * 2);
 
   total_channel_memory = channel_memory + channel_ban_memory +
-                         channel_users * sizeof(struct Membership) +
-                         channel_invites * sizeof(dlink_node);
+                         channel_members * sizeof(struct Membership) +
+                         (channel_invites * sizeof(dlink_node)*2);
 
-  sendto_one(source_p, ":%s %d %s z :Safelist %u(%u)",
+  sendto_one(source_p, ":%s %d %s z :Safelist %u(%llu)",
              me.name, RPL_STATSDEBUG, source_p->name,
              safelist_count, safelist_memory);
 
-  count_ip_hash(&number_ips_stored, &mem_ips_stored);
+  sendto_one(source_p, ":%s %d %s z :Whowas users %u(%llu)",
+             me.name, RPL_STATSDEBUG, source_p->name,
+             wwu, (unsigned long long)(wwu * sizeof(struct Client)));
 
-  sendto_one(source_p, ":%s %d %s z :iphash %u(%u)",
+  sendto_one(source_p, ":%s %d %s z :Whowas array %u(%llu)",
+             me.name, RPL_STATSDEBUG, source_p->name,
+             NICKNAMEHISTORYLENGTH, wwm);
+
+  totww = wwu * sizeof(struct Client) + wwm;
+
+  count_ip_hash(&number_ips_stored,&mem_ips_stored);
+  sendto_one(source_p, ":%s %d %s z :iphash %u(%llu)",
              me.name, RPL_STATSDEBUG, source_p->name,
              number_ips_stored, mem_ips_stored);
 
-  total_memory = total_channel_memory + class_count *
-                 sizeof(struct Class);
-
-  sendto_one(source_p, ":%s %d %s z :Total: channel %u",
-             me.name, RPL_STATSDEBUG, source_p->name,
-             total_channel_memory);
+  total_memory = totww + total_channel_memory + conf_memory + class_count *
+                 sizeof(struct ClassItem);
+  sendto_one(source_p, ":%s %d %s z :Total: whowas %llu channel %llu conf %llu",
+             me.name, RPL_STATSDEBUG, source_p->name, totww,
+             total_channel_memory, conf_memory);
 
   local_client_memory_used = local_client_count*(sizeof(struct Client) + sizeof(struct LocalUser));
   total_memory += local_client_memory_used;
-  sendto_one(source_p, ":%s %d %s z :Local client Memory in use: %d(%d)",
+  sendto_one(source_p, ":%s %d %s z :Local client Memory in use: %d(%llu)",
              me.name, RPL_STATSDEBUG, source_p->name, local_client_count,
              local_client_memory_used);
 
   remote_client_memory_used = remote_client_count * sizeof(struct Client);
   total_memory += remote_client_memory_used;
-  sendto_one(source_p, ":%s %d %s z :Remote client Memory in use: %d(%d)",
+  sendto_one(source_p, ":%s %d %s z :Remote client Memory in use: %d(%llu)",
              me.name, RPL_STATSDEBUG, source_p->name, remote_client_count,
              remote_client_memory_used);
 
-  DLINK_FOREACH(gptr, block_heap_get_heap_list()->head)
-  {
-    const struct BlockHeap *bh = gptr->data;
-    sendto_one(source_p,
-               ":%s %d %s z :%s mempool: used %u/%u free %u/%u (size %u/%u)",
-               me.name, RPL_STATSDEBUG, source_p->name, bh->name,
-               block_heap_get_used_elm(bh),
-               block_heap_get_used_mem(bh),
-               block_heap_get_free_elm(bh),
-               block_heap_get_free_mem(bh),
-               block_heap_get_size_elm(bh),
-               block_heap_get_size_mem(bh));
-  }
+  block_heap_report_stats(source_p);
 
-  sendto_one(source_p, ":%s %d %s z :TOTAL: %u",
+  sendto_one(source_p,
+             ":%s %d %s z :TOTAL: %llu",
              me.name, RPL_STATSDEBUG, source_p->name,
              total_memory);
+}
+
+static void
+stats_dns_servers(struct Client *source_p)
+{
+  report_dns_servers(source_p);
+}
+
+static void
+stats_connect(struct Client *source_p)
+{
+  report_confitem_types(source_p, SERVER_TYPE, 0);
+}
+
+/* stats_deny()
+ *
+ * input	- client to report to
+ * output	- none
+ * side effects - client is given dline list.
+ */
+static void
+stats_deny(struct Client *source_p)
+{
+  struct AddressRec *arec;
+  struct ConfItem *conf;
+  struct AccessItem *aconf;
+  int i;
+
+  for (i = 0; i < ATABLE_SIZE; i++)
+  {
+    for (arec = atable[i]; arec; arec=arec->next)
+    {
+      if (arec->type == CONF_DLINE)
+      {
+        aconf = arec->aconf;
+
+        /* dont report a tdline as a dline */
+        if (aconf->flags & CONF_FLAGS_TEMPORARY)
+          continue;
+
+	conf = unmap_conf_item(aconf);
+
+        sendto_one(source_p, form_str(RPL_STATSDLINE),
+                   from, to, 'D', aconf->host, aconf->reason,
+		   aconf->oper_reason);
+      }
+    }
+  }
+}
+
+/* stats_tdeny()
+ *
+ * input        - client to report to
+ * output       - none
+ * side effects - client is given dline list.
+ */
+static void
+stats_tdeny(struct Client *source_p)
+{
+  struct AddressRec *arec;
+  struct ConfItem *conf;
+  struct AccessItem *aconf;
+  int i;
+
+  for (i = 0; i < ATABLE_SIZE; i++)
+  {
+    for (arec = atable[i]; arec; arec=arec->next)
+    {
+      if (arec->type == CONF_DLINE)
+      {
+        aconf = arec->aconf;
+
+        /* dont report a permanent dline as a tdline */
+        if (!(aconf->flags & CONF_FLAGS_TEMPORARY))
+          continue;
+
+        conf = unmap_conf_item(aconf);
+
+        sendto_one(source_p, form_str(RPL_STATSDLINE),
+                   from, to, 'd', aconf->host, aconf->reason,
+		   aconf->oper_reason);
+      }
+    }
+  }
+}
+
+/* stats_exempt()
+ *
+ * input        - client to report to
+ * output       - none
+ * side effects - client is given list of exempt blocks
+ */
+static void
+stats_exempt(struct Client *source_p)
+{
+  struct AddressRec *arec;
+  struct ConfItem *conf;
+  struct AccessItem *aconf;
+  int i;
+
+  if (ConfigFileEntry.stats_e_disabled)
+  {
+    sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
+               from, to);
+    return;
+  }
+
+  for (i = 0; i < ATABLE_SIZE; i++)
+  {
+    for (arec = atable[i]; arec; arec=arec->next)
+    {
+      if (arec->type == CONF_EXEMPTDLINE)
+      {
+        aconf = arec->aconf;
+
+        conf = unmap_conf_item(aconf);
+
+        sendto_one(source_p, form_str(RPL_STATSDLINE),
+                   from, to, 'e', aconf->host, 
+		   aconf->reason, aconf->oper_reason);
+      }
+    }
+  }
+}
+
+static void
+stats_events(struct Client *source_p)
+{
+  show_events(source_p);
+}
+
+/* stats_pending_glines()
+ *
+ * input        - client pointer
+ * output       - none
+ * side effects - client is shown list of pending glines
+ */
+static void
+stats_pending_glines(struct Client *source_p)
+{
+  const dlink_node *dn_ptr = NULL;
+  const struct gline_pending *glp_ptr = NULL;
+  char timebuffer[MAX_DATE_STRING] = { '\0' };
+  struct tm *tmptr = NULL;
+
+  if (!ConfigFileEntry.glines)
+  {
+    sendto_one(source_p, ":%s NOTICE %s :This server does not support G-Lines",
+               from, to); 
+    return;
+  }
+
+  if (dlink_list_length(&pending_glines[GLINE_PENDING_ADD_TYPE]) > 0)
+    sendto_one(source_p, ":%s NOTICE %s :Pending G-lines",
+               from, to);
+
+  DLINK_FOREACH(dn_ptr, pending_glines[GLINE_PENDING_ADD_TYPE].head)
+  {
+    glp_ptr = dn_ptr->data;
+    tmptr   = localtime(&glp_ptr->vote_1.time_request);
+    strftime(timebuffer, MAX_DATE_STRING, "%Y/%m/%d %H:%M:%S", tmptr);
+
+    sendto_one(source_p,
+               ":%s NOTICE %s :1) %s!%s@%s on %s requested gline at %s for %s@%s [%s]",
+               from, to, glp_ptr->vote_1.oper_nick,
+               glp_ptr->vote_1.oper_user, glp_ptr->vote_1.oper_host,
+               glp_ptr->vote_1.oper_server, timebuffer,
+               glp_ptr->user, glp_ptr->host, glp_ptr->vote_1.reason);
+
+    if (glp_ptr->vote_2.oper_nick[0] != '\0')
+    {
+      tmptr = localtime(&glp_ptr->vote_2.time_request);
+      strftime(timebuffer, MAX_DATE_STRING, "%Y/%m/%d %H:%M:%S", tmptr);
+      sendto_one(source_p,
+      ":%s NOTICE %s :2) %s!%s@%s on %s requested gline at %s for %s@%s [%s]",
+               from, to, glp_ptr->vote_2.oper_nick,
+               glp_ptr->vote_2.oper_user, glp_ptr->vote_2.oper_host,
+               glp_ptr->vote_2.oper_server, timebuffer,
+               glp_ptr->user, glp_ptr->host, glp_ptr->vote_2.reason);
+    }
+  }
+
+  sendto_one(source_p, ":%s NOTICE %s :End of Pending G-lines",
+             from, to);
+
+  if (dlink_list_length(&pending_glines[GLINE_PENDING_DEL_TYPE]) > 0)
+    sendto_one(source_p, ":%s NOTICE %s :Pending UNG-lines",
+               from, to);
+
+  DLINK_FOREACH(dn_ptr, pending_glines[GLINE_PENDING_DEL_TYPE].head)
+  {
+    glp_ptr = dn_ptr->data;
+    tmptr   = localtime(&glp_ptr->vote_1.time_request);
+    strftime(timebuffer, MAX_DATE_STRING, "%Y/%m/%d %H:%M:%S", tmptr);
+
+    sendto_one(source_p,
+               ":%s NOTICE %s :1) %s!%s@%s on %s requested ungline at %s for %s@%s [%s]",
+               from, to, glp_ptr->vote_1.oper_nick,
+               glp_ptr->vote_1.oper_user, glp_ptr->vote_1.oper_host,
+               glp_ptr->vote_1.oper_server, timebuffer,
+               glp_ptr->user, glp_ptr->host, glp_ptr->vote_1.reason);
+
+    if (glp_ptr->vote_2.oper_nick[0] != '\0')
+    {
+      tmptr = localtime(&glp_ptr->vote_2.time_request);
+      strftime(timebuffer, MAX_DATE_STRING, "%Y/%m/%d %H:%M:%S", tmptr);
+      sendto_one(source_p,
+      ":%s NOTICE %s :2) %s!%s@%s on %s requested ungline at %s for %s@%s [%s]",
+               from, to, glp_ptr->vote_2.oper_nick,
+               glp_ptr->vote_2.oper_user, glp_ptr->vote_2.oper_host,
+               glp_ptr->vote_2.oper_server, timebuffer,
+               glp_ptr->user, glp_ptr->host, glp_ptr->vote_2.reason);
+
+    }
+  }
+
+  sendto_one(source_p, ":%s NOTICE %s :End of Pending UNG-lines",
+             from, to);
+}
+
+/* stats_glines()
+ *
+ * input        - client pointer
+ * output       - none
+ * side effects - client is shown list of glines
+ */
+static void
+stats_glines(struct Client *source_p)
+{
+  struct AddressRec *arec = NULL;
+  int i = 0;
+
+  if (!ConfigFileEntry.glines)
+  {
+    sendto_one(source_p, ":%s NOTICE %s :This server does not support G-Lines",
+               from, to);
+    return;
+  }
+
+  for (; i < ATABLE_SIZE; ++i)
+  {
+    for (arec = atable[i]; arec; arec = arec->next)
+    {
+      if (arec->type == CONF_GLINE)
+      {
+        const struct AccessItem *aconf = arec->aconf;
+
+        sendto_one(source_p, form_str(RPL_STATSKLINE),
+                   from, to, "G",
+                   aconf->host ? aconf->host : "*",
+                   aconf->user ? aconf->user : "*",
+                   aconf->reason ? aconf->reason : "No reason", "" );
+      }
+    }
+  }
+}
+
+/* stats_gdeny()
+ *
+ * input        - client pointer
+ * outputs      - none
+ * side effects - client is shown gline ACL
+ */
+static void
+stats_gdeny(struct Client *source_p)
+{
+  if (!ConfigFileEntry.glines)
+  {
+    sendto_one(source_p, ":%s NOTICE %s :This server does not support G-Lines",
+               from, to);
+    return;
+  }
+
+  report_confitem_types(source_p, GDENY_TYPE, 0);
+}
+
+static void
+stats_hubleaf(struct Client *source_p)
+{
+  report_confitem_types(source_p, HUB_TYPE, 0);
+  report_confitem_types(source_p, LEAF_TYPE, 0);
+}
+
+static void
+stats_auth(struct Client *source_p)
+{
+  /* Oper only, if unopered, return ERR_NOPRIVILEGES */
+  if ((ConfigFileEntry.stats_i_oper_only == 2) && !IsOper(source_p))
+    sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
+               from, to);
+
+  /* If unopered, Only return matching auth blocks */
+  else if ((ConfigFileEntry.stats_i_oper_only == 1) && !IsOper(source_p))
+  {
+    struct ConfItem *conf;
+    struct AccessItem *aconf;
+
+    if (MyConnect(source_p))
+      aconf = find_conf_by_address(source_p->host,
+                                   &source_p->localClient->ip,
+				   CONF_CLIENT,
+				   source_p->localClient->aftype,
+				   source_p->username,
+                                   source_p->localClient->passwd);
+    else
+      aconf = find_conf_by_address(source_p->host, NULL, CONF_CLIENT,
+                                   0, source_p->username, NULL);
+
+    if (aconf == NULL)
+      return;
+
+    conf = unmap_conf_item(aconf);
+
+    sendto_one(source_p, form_str(RPL_STATSILINE), from,
+               to, 'I',
+	       "*", show_iline_prefix(source_p, aconf, aconf->user), 
+	       aconf->host, aconf->port,
+	       aconf->class_ptr ? aconf->class_ptr->name : "<default>");
+  }
+  /* They are opered, or allowed to see all auth blocks */
+  else
+    report_auth(source_p);
+}
+
+static void
+stats_tklines(struct Client *source_p)
+{
+  struct ConfItem *conf;
+  /* Oper only, if unopered, return ERR_NOPRIVILEGES */
+  if ((ConfigFileEntry.stats_k_oper_only == 2) && !IsOper(source_p))
+    sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
+               from, to);
+
+  /* If unopered, Only return matching klines */
+  else if ((ConfigFileEntry.stats_k_oper_only == 1) && !IsOper(source_p))
+  {
+    struct AccessItem *aconf;
+
+    if (MyConnect(source_p))
+      aconf = find_conf_by_address(source_p->host,
+                                   &source_p->localClient->ip,
+				   CONF_KILL,
+				   source_p->localClient->aftype,
+				   source_p->username, NULL);
+    else
+      aconf = find_conf_by_address(source_p->host, NULL, CONF_KILL,
+                                   0, source_p->username, NULL);
+
+    if (aconf == NULL)
+      return;
+
+    /* dont report a permanent kline as a tkline */
+    if (!(aconf->flags & CONF_FLAGS_TEMPORARY))
+      return;
+
+    conf = unmap_conf_item(aconf);
+
+    sendto_one(source_p, form_str(RPL_STATSKLINE), from,
+               to, "k", aconf->host, aconf->user, aconf->reason, "");
+  }
+  /* Theyre opered, or allowed to see all klines */
+  else {
+    report_Klines(source_p, 1);
+    report_confitem_types(source_p, RKLINE_TYPE, 1);
+  }
+}
+
+static void
+stats_klines(struct Client *source_p)
+{
+  /* Oper only, if unopered, return ERR_NOPRIVILEGES */
+  if ((ConfigFileEntry.stats_k_oper_only == 2) && !IsOper(source_p))
+    sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
+               from, to);
+
+  /* If unopered, Only return matching klines */
+  else if ((ConfigFileEntry.stats_k_oper_only == 1) && !IsOper(source_p))
+  {
+    struct AccessItem *aconf;
+
+    /* search for a kline */
+    if (MyConnect(source_p))
+      aconf = find_conf_by_address(source_p->host,
+                                   &source_p->localClient->ip,
+				   CONF_KILL,
+				   source_p->localClient->aftype,
+				   source_p->username, NULL);
+    else
+      aconf = find_conf_by_address(source_p->host, NULL, CONF_KILL,
+                                   0, source_p->username, NULL);
+
+    if (aconf == NULL)
+      return;
+
+    /* dont report a tkline as a kline */
+    if (aconf->flags & CONF_FLAGS_TEMPORARY)
+      return;
+      
+    sendto_one(source_p, form_str(RPL_STATSKLINE), from,
+               to, "K", aconf->host, aconf->user, aconf->reason,
+	       aconf->oper_reason);
+  }
+  /* Theyre opered, or allowed to see all klines */
+  else {
+    report_Klines(source_p, 0);
+    report_confitem_types(source_p, RKLINE_TYPE, 0);
+  }
+}
+
+static void
+stats_messages(struct Client *source_p)
+{
+  report_messages(source_p);
+}
+
+static void
+stats_oper(struct Client *source_p)
+{
+  if (!IsOper(source_p) && ConfigFileEntry.stats_o_oper_only)
+    sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
+               from, to);
+  else
+    report_confitem_types(source_p, OPER_TYPE, 0);
 }
 
 /* stats_operedup()
@@ -612,45 +1094,10 @@ stats_operedup(struct Client *source_p)
              from, RPL_STATSDEBUG, to, dlink_list_length(&oper_list));
 }
 
-/* show_ports()
- *
- * inputs       - pointer to client to show ports to
- * output       - none
- * side effects - send port listing to a client
- */
-static void
-show_ports(struct Client *source_p)
-{
-  char buf[4];
-  char *p = NULL;
-  const dlink_node *ptr = NULL;
-
-  DLINK_FOREACH(ptr, listener_get_list()->head)
-  {
-    const struct Listener *listener = ptr->data;
-    p = buf;
-
-    if (listener->flags & LISTENER_HIDDEN) {
-      if (!IsAdmin(source_p))
-        continue;
-      *p++ = 'H';
-    }
-
-    if (listener->flags & LISTENER_SSL)
-      *p++ = 's';
-    *p = '\0';
-    sendto_one(source_p, form_str(RPL_STATSPLINE),
-               me.name, source_p->name, 'P', listener->port,
-               IsAdmin(source_p) ? listener->name : me.name,
-               listener->ref_count, buf,
-               listener->active ? "active" : "disabled");
-  }
-}
-
 static void
 stats_ports(struct Client *source_p)
 {
-  if (!IsOper(source_p) && General.stats_P_oper_only)
+  if (!IsOper(source_p) && ConfigFileEntry.stats_P_oper_only)
     sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
                from, to);
   else
@@ -658,72 +1105,86 @@ stats_ports(struct Client *source_p)
 }
 
 static void
+stats_resv(struct Client *source_p)
+{
+  report_resv(source_p);
+}
+
+static void
+stats_usage(struct Client *source_p)
+{
+  send_usage(source_p);
+}
+
+static void
 stats_tstats(struct Client *source_p)
 {
   const struct Client *target_p = NULL;
-  struct ServerStatistics sp;
-  dlink_node *ptr = NULL;
+  const dlink_node *ptr = NULL;
+  struct ServerStatistics *sp;
+  struct ServerStatistics tmp;
 
-  memcpy(&sp, &ServerStats, sizeof(sp));
+  sp = &tmp;
+  memcpy(sp, &ServerStats, sizeof(struct ServerStatistics));
 
   /*
    * must use the += operator. is_sv is not the number of currently
    * active server connections. Note the incrementation in
    * s_bsd.c:close_connection.
    */
-  sp.is_sv += dlink_list_length(&serv_list);
+  sp->is_sv += dlink_list_length(&serv_list);
 
   DLINK_FOREACH(ptr, serv_list.head)
   {
     target_p = ptr->data;
 
-    sp.is_sbs += target_p->localClient->send.bytes;
-    sp.is_sbr += target_p->localClient->recv.bytes;
-    sp.is_sti += CurrentTime - target_p->firsttime;
+    sp->is_sbs += target_p->localClient->send.bytes;
+    sp->is_sbr += target_p->localClient->recv.bytes;
+    sp->is_sti += CurrentTime - target_p->firsttime;
   }
 
-  sp.is_cl += dlink_list_length(&local_client_list);
+  sp->is_cl += dlink_list_length(&local_client_list);
 
   DLINK_FOREACH(ptr, local_client_list.head)
   {
     target_p = ptr->data;
 
-    sp.is_cbs += target_p->localClient->send.bytes;
-    sp.is_cbr += target_p->localClient->recv.bytes;
-    sp.is_cti += CurrentTime - target_p->firsttime;
+    sp->is_cbs += target_p->localClient->send.bytes;
+    sp->is_cbr += target_p->localClient->recv.bytes;
+    sp->is_cti += CurrentTime - target_p->firsttime;
   }
 
-  sp.is_ni += dlink_list_length(&unknown_list);
+  sp->is_ni += dlink_list_length(&unknown_list);
 
   sendto_one(source_p, ":%s %d %s T :accepts %u refused %u",
-             me.name, RPL_STATSDEBUG, source_p->name, sp.is_ac, sp.is_ref);
+             me.name, RPL_STATSDEBUG, source_p->name, sp->is_ac, sp->is_ref);
   sendto_one(source_p, ":%s %d %s T :unknown commands %u prefixes %u",
-             me.name, RPL_STATSDEBUG, source_p->name, sp.is_unco, sp.is_unpf);
+             me.name, RPL_STATSDEBUG, source_p->name, sp->is_unco, sp->is_unpf);
   sendto_one(source_p, ":%s %d %s T :nick collisions %u unknown closes %u",
-             me.name, RPL_STATSDEBUG, source_p->name, sp.is_kill, sp.is_ni);
+             me.name, RPL_STATSDEBUG, source_p->name, sp->is_kill, sp->is_ni);
   sendto_one(source_p, ":%s %d %s T :wrong direction %u empty %u",
-             me.name, RPL_STATSDEBUG, source_p->name, sp.is_wrdi, sp.is_empt);
+             me.name, RPL_STATSDEBUG, source_p->name, sp->is_wrdi, sp->is_empt);
   sendto_one(source_p, ":%s %d %s T :numerics seen %u",
-             me.name, RPL_STATSDEBUG, source_p->name, sp.is_num);
+             me.name, RPL_STATSDEBUG, source_p->name, sp->is_num);
   sendto_one(source_p, ":%s %d %s T :auth successes %u fails %u",
-             me.name, RPL_STATSDEBUG, source_p->name, sp.is_asuc, sp.is_abad);
+             me.name, RPL_STATSDEBUG, source_p->name, sp->is_asuc, sp->is_abad);
   sendto_one(source_p, ":%s %d %s T :Client Server",
              me.name, RPL_STATSDEBUG, source_p->name);
 
   sendto_one(source_p, ":%s %d %s T :connected %u %u",
              me.name, RPL_STATSDEBUG, source_p->name,
-             (unsigned int)sp.is_cl,
-             (unsigned int)sp.is_sv);
+             (unsigned int)sp->is_cl,
+             (unsigned int)sp->is_sv);
   sendto_one(source_p, ":%s %d %s T :bytes sent %llu %llu",
              me.name, RPL_STATSDEBUG, source_p->name,
-             sp.is_cbs, sp.is_sbs);
+             sp->is_cbs, sp->is_sbs);
   sendto_one(source_p, ":%s %d %s T :bytes recv %llu %llu",
              me.name, RPL_STATSDEBUG, source_p->name,
-             sp.is_cbr, sp.is_sbr);
+             sp->is_cbr, sp->is_sbr);
   sendto_one(source_p, ":%s %d %s T :time connected %u %u",
              me.name, RPL_STATSDEBUG, source_p->name,
-             (unsigned int)sp.is_cti,
-             (unsigned int)sp.is_sti);
+             (unsigned int)sp->is_cti,
+             (unsigned int)sp->is_sti);
 }
 
 static void
@@ -732,9 +1193,15 @@ stats_uptime(struct Client *source_p)
   time_t now = CurrentTime - me.since;
   sendto_one(source_p, form_str(RPL_STATSUPTIME), from, to,
              now/86400, (now/3600)%24, (now/60)%60, now%60);
-  if (!General.disable_remote_commands || IsOper(source_p))
+  if (!ConfigFileEntry.disable_remote || IsOper(source_p))
      sendto_one(source_p, form_str(RPL_STATSCONN), from, to,
                 MaxConnectionCount, MaxClientCount, Count.totalrestartcount);
+}
+
+static void
+stats_shared(struct Client *source_p)
+{
+  report_confitem_types(source_p, ULINE_TYPE, 0);
 }
 
 /* stats_servers()
@@ -746,11 +1213,15 @@ stats_uptime(struct Client *source_p)
 static void
 stats_servers(struct Client *source_p)
 {
-  dlink_node *ptr = NULL;
+  struct Client *target_p;
+  dlink_node *ptr;
+  int j = 0;
 
   DLINK_FOREACH(ptr, serv_list.head)
   {
-    const struct Client *target_p = ptr->data;
+    target_p = ptr->data;
+
+    j++;
 
     sendto_one(source_p, ":%s %d %s v :%s (%s!%s@%s) Idle: %d",
                from, RPL_STATSDEBUG, to,
@@ -759,35 +1230,52 @@ stats_servers(struct Client *source_p)
 	       "*", "*", (int)(CurrentTime - target_p->lasttime));
   }
 
-  sendto_one(source_p, ":%s %d %s v :%lu Server(s)",
-             from, RPL_STATSDEBUG, to,
-             dlink_list_length(&serv_list));
+  sendto_one(source_p, ":%s %d %s v :%d Server(s)",
+             from, RPL_STATSDEBUG, to, j);
+}
+
+static void
+stats_gecos(struct Client *source_p)
+{
+  report_confitem_types(source_p, XLINE_TYPE, 0);
+  report_confitem_types(source_p, RXLINE_TYPE, 0);
+}
+
+static void
+stats_class(struct Client *source_p)
+{
+  report_confitem_types(source_p, CLASS_TYPE, 0);
+}
+
+static void
+stats_memory(struct Client *source_p)
+{
+  count_memory(source_p);
 }
 
 static void
 stats_ziplinks(struct Client *source_p)
 {
-  dlink_node *ptr;
-  struct Client *target_p;
+  dlink_node *ptr = NULL;
   unsigned int sent_data = 0;
 
   DLINK_FOREACH(ptr, serv_list.head)
   {
-    target_p = ptr->data;
+    const struct Client *target_p = ptr->data;
 
     if (IsCapable(target_p, CAP_ZIP))
     {
-      /*
-       * we use memcpy(3) and a local copy of the structure to
+      /* we use memcpy(3) and a local copy of the structure to
        * work around a register use bug on GCC on the SPARC.
        * -jmallett, 04/27/2002
        */
       struct ZipStats zipstats;
-      memcpy(&zipstats, &target_p->localClient->zipstats, sizeof (struct ZipStats));
+
+      memcpy(&zipstats, &target_p->localClient->zipstats, sizeof(zipstats));
 
       sendto_one(source_p, ":%s %d %s Z :ZipLinks stats for %s send[%.2f%% "
-                 "compression (%lu bytes data/%lu bytes wire)] recv[%.2f%% "
-                 "compression (%lu bytes data/%lu bytes wire)]",
+                 "compression (%llu bytes data/%llu bytes wire)] recv[%.2f%% "
+                 "compression (%llu bytes data/%llu bytes wire)]",
                  from, RPL_STATSDEBUG, to, target_p->name,
                  zipstats.out_ratio, zipstats.out, zipstats.out_wire,
                  zipstats.in_ratio,  zipstats.in,  zipstats.in_wire);
@@ -806,7 +1294,7 @@ stats_servlinks(struct Client *source_p)
   time_t uptime = 0;
   dlink_node *ptr = NULL;
 
-  if (ServerHide.flatten_links && !IsOper(source_p))
+  if (ConfigServerHide.flatten_links && !IsOper(source_p))
   {
     sendto_one(source_p, form_str(ERR_NOPRIVILEGES),
                from, to);
@@ -815,7 +1303,7 @@ stats_servlinks(struct Client *source_p)
 
   DLINK_FOREACH(ptr, serv_list.head)
   {
-    const struct Client *target_p = ptr->data;
+    struct Client *target_p = ptr->data;
 
     sendB += target_p->localClient->send.bytes;
     recvB += target_p->localClient->recv.bytes;
@@ -837,8 +1325,6 @@ stats_servlinks(struct Client *source_p)
   sendB >>= 10;
   recvB >>= 10;
 
-  uptime = (CurrentTime - me.since);
-
   sendto_one(source_p, ":%s %d %s ? :%u total server(s)",
              from, RPL_STATSDEBUG, to, dlink_list_length(&serv_list));
   sendto_one(source_p, ":%s %d %s ? :Sent total : %7.2f %s",
@@ -848,17 +1334,19 @@ stats_servlinks(struct Client *source_p)
              from, RPL_STATSDEBUG, to,
              _GMKv(recvB), _GMKs(recvB));
 
+  uptime = (CurrentTime - me.since);
+
   sendto_one(source_p, ":%s %d %s ? :Server send: %7.2f %s (%4.1f K/s)",
              from, RPL_STATSDEBUG, to,
              _GMKv((me.localClient->send.bytes>>10)),
              _GMKs((me.localClient->send.bytes>>10)),
-             (float)((float)(me.localClient->send.bytes >> 10) /
+             (float)((float)((me.localClient->send.bytes) >> 10) /
              (float)uptime));
   sendto_one(source_p, ":%s %d %s ? :Server recv: %7.2f %s (%4.1f K/s)",
              from, RPL_STATSDEBUG, to,
              _GMKv((me.localClient->recv.bytes>>10)),
              _GMKs((me.localClient->recv.bytes>>10)),
-             (float)((float)(me.localClient->recv.bytes >> 10) /
+             (float)((float)((me.localClient->recv.bytes) >> 10) /
              (float)uptime));
 }
 
@@ -872,7 +1360,7 @@ stats_ltrace(struct Client *source_p, int parc, char *parv[])
 
   if ((name = parse_stats_args(parc, parv, &doall, &wilds)) != NULL)
   {
-    statchar = *parv[1];
+    statchar = parv[1][0];
 
     stats_L(source_p, name, doall, wilds, statchar);
   }
@@ -881,95 +1369,21 @@ stats_ltrace(struct Client *source_p, int parc, char *parv[])
                from, to, "STATS");
 }
 
+/*
+ * ms_stats - STATS message handler
+ *      parv[0] = sender prefix
+ *      parv[1] = statistics selector (defaults to Message frequency)
+ *      parv[2] = server name (current server defaulted, if omitted)
+ */
 static void
-stats_hooks(struct Client *source_p)
+ms_stats(struct Client *client_p, struct Client *source_p,
+         int parc, char *parv[])
 {
-  dlink_node *ptr;
-  struct Callback *cb;
-  char lastused[32];
+  if (hunt_server(client_p,source_p,":%s STATS %s :%s",2,parc,parv)!=HUNTED_ISME)
+    return;
 
-  sendto_one(source_p, ":%s %d %s : %-20s %-20s Used     Hooks", me.name,
-             RPL_STATSDEBUG, source_p->name, "Callback", "Last Execution");
-  sendto_one(source_p, ":%s %d %s : ------------------------------------"
-             "--------------------", me.name, RPL_STATSDEBUG, source_p->name);
-
-  DLINK_FOREACH(ptr, callback_list.head)
-  {
-    cb = ptr->data;
-
-    if (cb->last != 0)
-      snprintf(lastused, sizeof(lastused), "%d seconds ago",
-               (int) (CurrentTime - cb->last));
-    else
-      strcpy(lastused, "NEVER");
-
-    sendto_one(source_p, ":%s %d %s : %-20s %-20s %-8u %d", me.name,
-               RPL_STATSDEBUG, source_p->name, cb->name, lastused, cb->called,
-               dlink_list_length(&cb->chain));
-  }
-
-  sendto_one(source_p, ":%s %d %s : ", me.name, RPL_STATSDEBUG,
-             source_p->name);
-}
-
-static void
-stats_events(struct Client *source_p)
-{
-  int i;
-
-  if (last_event_ran)
-  {
-    sendto_one(source_p, ":%s %d %s :Last event to run: %s",
-               me.name, RPL_STATSDEBUG, source_p->name, last_event_ran);
-    sendto_one(source_p, ":%s %d %s : ",
-               me.name, RPL_STATSDEBUG, source_p->name);
-  }
-
-  sendto_one(source_p,
-    ":%s %d %s : Operation                    Next Execution",
-    me.name, RPL_STATSDEBUG, source_p->name);
-  sendto_one(source_p,
-    ":%s %d %s : -------------------------------------------",
-    me.name, RPL_STATSDEBUG, source_p->name);
-
-  for (i = 0; i < MAX_EVENTS; ++i)
-    if (event_table[i].active)
-      sendto_one(source_p, ":%s %d %s : %-28s %-4d seconds",
-                 me.name, RPL_STATSDEBUG, source_p->name,
-                 event_table[i].name,
-                 (int)(event_table[i].when - CurrentTime));
-
-  sendto_one(source_p, ":%s %d %s : ",
-             me.name, RPL_STATSDEBUG, source_p->name);
-}
-
-static void
-stats_dns_servers(struct Client *source_p)
-{
-  int i;
-  char ipaddr[HOSTIPLEN];
-
-  for (i = 0; i < irc_nscount; ++i)
-  {
-    irc_getnameinfo((struct sockaddr *)&(irc_nsaddr_list[i]),
-                    irc_nsaddr_list[i].ss_len, ipaddr, sizeof(ipaddr), NULL, 0,
-                    NI_NUMERICHOST);
-    sendto_one(source_p, form_str(RPL_STATSALINE),
-               me.name, source_p->name, ipaddr);
-  }
-}
-
-static void
-fd_dump(struct Client *source_p)
-{
-  int i;
-  fde_t *F;
-
-  for (i = 0; i < FD_HASH_SIZE; ++i)
-    for (F = fd_hash[i]; F != NULL; F = F->hnext)
-      sendto_one(source_p, ":%s %d %s :fd %-5d desc '%s'",
-                 me.name, RPL_STATSDEBUG, source_p->name,
-                 F->fd, F->desc);
+  if (IsClient(source_p))
+    mo_stats(client_p, source_p, parc, parv);
 }
 
 /*
@@ -991,10 +1405,11 @@ stats_L(struct Client *source_p,char *name,int doall,
 }
 
 static void
-stats_L_list(struct Client *source_p, char *name, int doall, int wilds,
-             dlink_list *list, char statchar)
+stats_L_list(struct Client *source_p,char *name, int doall, int wilds,
+             dlink_list *list,char statchar)
 {
-  dlink_node *ptr = NULL;
+  dlink_node *ptr;
+  struct Client *target_p;
 
   /*
    * send info about connections which match, or all if the
@@ -1004,36 +1419,69 @@ stats_L_list(struct Client *source_p, char *name, int doall, int wilds,
    */
   DLINK_FOREACH(ptr, list->head)
   {
-    int ip_action = 0;
-    const struct Client *target_p = ptr->data;
+    target_p = ptr->data;
 
     if (IsInvisible(target_p) && (doall || wilds) &&
-        !(MyConnect(source_p) && IsOper(source_p)) &&
-        !IsOper(target_p) && (target_p != source_p))
+	!(MyConnect(source_p) && IsOper(source_p)) &&
+	!IsOper(target_p) && (target_p != source_p))
       continue;
     if (!doall && wilds && !match(name, target_p->name))
       continue;
     if (!(doall || wilds) && irccmp(name, target_p->name))
       continue;
 
-    if (IsIPSpoof(target_p) || IsServer(target_p) || IsAdmin(target_p) ||
-        IsHandshake(target_p) || IsConnecting(target_p))
-      ip_action = MASK_IP;
-    else if (IsUpper(statchar))
-      ip_action = SHOW_IP;
+    /* This basically shows ips for our opers if its not a server/admin, or
+     * its one of our admins.  */
+    if(MyClient(source_p) && IsOper(source_p) && 
+       (IsAdmin(source_p) || 
+       (!IsServer(target_p) && !IsAdmin(target_p) && 
+       !IsHandshake(target_p) && !IsConnecting(target_p))))
+    {
+      sendto_one(source_p, form_str(RPL_STATSLINKINFO),
+		 from, to, 
+                 (IsUpper(statchar)) ?
+                 get_client_name(target_p, SHOW_IP) :
+                 get_client_name(target_p, HIDE_IP),
+                 dbuf_length(&target_p->localClient->buf_sendq),
+                 target_p->localClient->send.messages,
+                 target_p->localClient->send.bytes>>10,
+                 target_p->localClient->recv.messages,
+                 target_p->localClient->recv.bytes>>10,
+                 (unsigned)(CurrentTime - target_p->firsttime),
+                 (CurrentTime > target_p->since) ? (unsigned)(CurrentTime - target_p->since):0,
+                 IsServer(target_p) ? show_capabilities(target_p) : "-");
+    }
     else
-      ip_action = HIDE_IP;
-
-    sendto_one(source_p, form_str(RPL_STATSLINKINFO),
-               from, to, get_client_name(target_p, ip_action),
-               dbuf_length(&target_p->localClient->buf_sendq),
-               target_p->localClient->send.messages,
-               target_p->localClient->send.bytes>>10,
-               target_p->localClient->recv.messages,
-               target_p->localClient->recv.bytes>>10,
-               (unsigned)(CurrentTime - target_p->firsttime),
-               (CurrentTime > target_p->since) ? (unsigned)(CurrentTime - target_p->since):0,
-               IsServer(target_p) ? show_capabilities(target_p) : "-");
+    {
+      /* If its a hidden ip, an admin, or a server, mask the real IP */
+      if(IsIPSpoof(target_p) || IsServer(target_p) || IsAdmin(target_p)
+         || IsHandshake(target_p) || IsConnecting(target_p))
+        sendto_one(source_p, form_str(RPL_STATSLINKINFO),
+                   from, to,
+		   get_client_name(target_p, MASK_IP),
+		   dbuf_length(&target_p->localClient->buf_sendq),
+		   target_p->localClient->send.messages,
+		   target_p->localClient->send.bytes>>10,
+		   target_p->localClient->recv.messages,
+		   target_p->localClient->recv.bytes>>10,
+		   (unsigned)(CurrentTime - target_p->firsttime),
+		   (CurrentTime > target_p->since) ? (unsigned)(CurrentTime - target_p->since):0,
+		   IsServer(target_p) ? show_capabilities(target_p) : "-");
+      else /* show the real IP */
+        sendto_one(source_p, form_str(RPL_STATSLINKINFO),
+                   from, to,
+	           (IsUpper(statchar)) ?
+		   get_client_name(target_p, SHOW_IP) :
+		   get_client_name(target_p, HIDE_IP),
+		   dbuf_length(&target_p->localClient->buf_sendq),
+		   target_p->localClient->send.messages,
+		   target_p->localClient->send.bytes>>10,
+		   target_p->localClient->recv.messages,
+		   target_p->localClient->recv.bytes>>10,
+		   (unsigned)(CurrentTime - target_p->firsttime),
+		   (CurrentTime > target_p->since) ? (unsigned)(CurrentTime - target_p->since):0,
+		   IsServer(target_p) ? show_capabilities(target_p) : "-");
+    }
   }
 }
 
@@ -1051,7 +1499,7 @@ stats_L_list(struct Client *source_p, char *name, int doall, int wilds,
 static char *
 parse_stats_args(int parc, char *parv[], int *doall, int *wilds)
 {
-  char *name = NULL;
+  char *name;
 
   if (parc > 2)
   {
@@ -1062,10 +1510,12 @@ parse_stats_args(int parc, char *parv[], int *doall, int *wilds)
     else if (match(name, from))
       *doall = 1;
 
-    *wilds = has_wildcards(name, NO);
+    if (strchr(name, '*') ||
+        strchr(name, '?'))
+      *wilds = 1;
 
-    return name;
+    return(name);
   }
-
-  return NULL;
+  else
+    return(NULL);
 }

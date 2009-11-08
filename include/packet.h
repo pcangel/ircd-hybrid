@@ -25,6 +25,8 @@
 #ifndef INCLUDED_packet_h
 #define INCLUDED_packet_h
 
+#include "fdlist.h"
+
 /*
  * this hides in here rather than in defaults.h because it really shouldn't
  * be tweaked unless you *REALLY REALLY* know what you're doing!
@@ -41,22 +43,18 @@
  * just connected.  this allows clients to rejoin multiple channels
  * without being so heavily penalised they excess flood.
  */
-#define MAX_FLOOD  5
-#define MAX_FLOOD_BURST  MAX_FLOOD * 8
-
-#define READBUF_SIZE  16384
+#define MAX_FLOOD 5
+#define MAX_FLOOD_BURST MAX_FLOOD * 8
 
 struct Callback;
 
 void *iorecv_default(va_list);
-
-EXTERN struct Callback *iorecv_cb;
-EXTERN struct Callback *iorecvctrl_cb;
-EXTERN char readBuf[READBUF_SIZE];
+extern struct Callback *iorecv_cb;
+extern struct Callback *iorecvctrl_cb;
 
 PF read_ctrl_packet;
 PF read_packet;
 PF flood_recalc;
-EXTERN void flood_endgrace(struct Client *);
+void flood_endgrace(struct Client *);
 
 #endif /* INCLUDED_packet_h */

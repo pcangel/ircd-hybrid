@@ -23,14 +23,17 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
+#include "list.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
-#include "server.h"
+#include "irc_string.h"
+#include "s_serv.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
+#include "modules.h"
+#include "s_conf.h"
 
 static void m_quit(struct Client *, struct Client *, int, char *[]);
 static void ms_quit(struct Client *, struct Client *, int, char *[]);
@@ -40,15 +43,21 @@ struct Message quit_msgtab = {
   {m_quit, m_quit, ms_quit, m_ignore, m_quit, m_ignore}
 };
 
-INIT_MODULE(m_quit, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&quit_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&quit_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
 
 /*
 ** m_quit
@@ -63,7 +72,7 @@ m_quit(struct Client *client_p, struct Client *source_p,
   char reason[KICKLEN + 1] = "Quit: ";
 
   if (comment[0] && (IsOper(source_p) ||
-      (source_p->firsttime + General.anti_spam_exit_message_time)
+      (source_p->firsttime + ConfigFileEntry.anti_spam_exit_message_time)
       < CurrentTime))
     strlcpy(reason+6, comment, sizeof(reason)-6);
   else

@@ -23,7 +23,6 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
 #include "ircd.h"
@@ -31,10 +30,12 @@
 #include "msg.h"
 #include "numeric.h"
 #include "send.h"
+#include "s_conf.h"
+#include "s_log.h"
 #include "parse.h"
+#include "modules.h"
+#include "irc_string.h"
 
-#define HPATH  IRCD_PREFIX "/help/opers"
-#define UHPATH IRCD_PREFIX "/help/users"
 #define HELPLEN 400
 
 static void m_help(struct Client *, struct Client *, int, char *[]);
@@ -53,17 +54,23 @@ struct Message uhelp_msgtab = {
   {m_unregistered, m_help, m_ignore, m_ignore, mo_uhelp, m_ignore}
 };
 
-INIT_MODULE(m_help, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&help_msgtab);
   mod_add_cmd(&uhelp_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
-  mod_del_cmd(&uhelp_msgtab);
   mod_del_cmd(&help_msgtab);
+  mod_del_cmd(&uhelp_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
 
 /*
  * m_help - HELP message handler
@@ -76,7 +83,7 @@ m_help(struct Client *client_p, struct Client *source_p,
   static time_t last_used = 0;
 
   /* HELP is always local */
-  if ((last_used + General.pace_wait_simple) > CurrentTime)
+  if ((last_used + ConfigFileEntry.pace_wait_simple) > CurrentTime)
   {
     /* safe enough to give this on a local connect only */
     sendto_one(source_p,form_str(RPL_LOAD2HI),
@@ -115,6 +122,7 @@ mo_uhelp(struct Client *client_p, struct Client *source_p,
 static void
 dohelp(struct Client *source_p, const char *hpath, char *topic)
 {
+  char h_index[] = "index";
   char path[PATH_MAX + 1];
   struct stat sb;
   int i;
@@ -122,16 +130,16 @@ dohelp(struct Client *source_p, const char *hpath, char *topic)
   if (topic != NULL)
   {
     if (*topic == '\0')
-      topic = "index";
+      topic = h_index;
     else
     {
       /* convert to lower case */
-      for (i = 0; topic[i] != '\0'; i++)
+      for (i = 0; topic[i] != '\0'; ++i)
         topic[i] = ToLower(topic[i]);
     }
   }
   else
-    topic = "index"; /* list available help topics */
+    topic = h_index;    /* list available help topics */
 
   if (strpbrk(topic, "/\\"))
   {
@@ -157,7 +165,6 @@ dohelp(struct Client *source_p, const char *hpath, char *topic)
     return;
   }
 
-#ifndef _WIN32
   if (!S_ISREG(sb.st_mode))
   {
     ilog(L_NOTICE, "help file %s not found", path);
@@ -165,7 +172,6 @@ dohelp(struct Client *source_p, const char *hpath, char *topic)
                me.name, source_p->name, topic);
     return;
   }
-#endif
 
   sendhelpfile(source_p, path, topic);
 }

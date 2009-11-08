@@ -25,30 +25,40 @@
 #include "stdinc.h"
 #include "handlers.h"
 #include "client.h"
+#include "irc_string.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "user.h"
+#include "s_user.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
+#include "modules.h"
+#include "listener.h"
 
-static void mr_user(struct Client*, struct Client*, int, char *[]);
+
+static void mr_user(struct Client *, struct Client *, int, char *[]);
 
 struct Message user_msgtab = {
   "USER", 0, 0, 5, 0, MFLG_SLOW, 0L,
   { mr_user, m_registered, m_ignore, m_ignore, m_registered, m_ignore }
 };
 
-INIT_MODULE(m_user, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&user_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&user_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
+
 
 /*
 ** mr_user
@@ -62,46 +72,27 @@ static void
 mr_user(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
 {
-  char *p = NULL;
+  char *p;
 
-  assert(source_p == client_p);
+  if (source_p->localClient->listener->flags & LISTENER_SERVER)
+  {
+    exit_client(source_p, &me, "Use a different port");
+    return;
+  }
 
-  if ((p = strchr(parv[1],'@')) != NULL)
+  if ((p = strchr(parv[1], '@')) != NULL)
     *p = '\0'; 
 
-  if (*parv[4] == '\0')
+  if (EmptyString(parv[4]))
   {
-    sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
-               me.name, EmptyString(parv[0]) ? "*" : parv[0], "USER");
+    sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS), me.name,
+               source_p->name[0] ? source_p->name : "*", "USER");
     return;
   }
 
-  if (!IsUnknown(source_p))
-  {
-    sendto_one(source_p, form_str(ERR_ALREADYREGISTRED),
-               me.name, parv[0]);
-    return;
-  }
-
-  source_p->localClient->registration &= ~REG_NEED_USER;
-
-  /*
-   * don't take the clients word for it, ever
-   */
-  source_p->servptr = &me;
-
-  strlcpy(source_p->info, parv[4], sizeof(source_p->info));
-
-  if (!IsGotId(source_p))
-  {
-    /*
-     * save the username in the client
-     * If you move this you'll break ping cookies..you've been warned
-     */
-    strlcpy(source_p->username, parv[1], sizeof(source_p->username));
-  }
-
-  if (!source_p->localClient->registration)
-    /* NICK already received, now I have USER... */
-    register_local_user(source_p, parv[1]);
+  do_local_user(parv[0], client_p, source_p,
+                parv[1], /* username */
+                parv[2], /* host     */
+                parv[3], /* server   */
+                parv[4]	 /* users real name */ );
 }

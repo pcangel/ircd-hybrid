@@ -1,5 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
+ *  whowas.h: Header for the whowas functions.
  *
  *  Copyright (C) 2002 by the past and present ircd coders, and others.
  *
@@ -17,36 +18,68 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
- */
-
-/*! \file whowas.h
- * \brief Maintains a history of nick names
- * \version $Id$
+ *
+ *  $Id$
  */
 
 #ifndef INCLUDED_whowas_h
 #define INCLUDED_whowas_h
 
-/*! \brief Whowas structure */
+#include "ircd_defs.h"
+#include "client.h"
+#include "config.h"
+
 struct Whowas
 {
-  int hashv; /**< value of the hashed nick name */
-  time_t logoff; /**< When the logged off from irc */
-  char name[NICKLEN]; /**< Client's nick name */
-  char username[USERLEN + 1]; /**< Client's user name */
-  char hostname[HOSTLEN + 1]; /**< Client's host name */
-  char realname[REALLEN + 1]; /**< Client's real name (Gecos) */
-  char servername[HOSTLEN + 1]; /**< Name of the server the client is/was on */
-  struct Client *online; /**< Pointer to new nickname for chasing or NULL */
-  dlink_node tnode;  /**< for hash table... */
-  dlink_node cnode; /**< for client struct linked list */
+  int hashv;
+  time_t logoff;
+  char name[NICKLEN];
+  char username[USERLEN + 1]; 
+  char hostname[HOSTLEN + 1];
+  char realname[REALLEN + 1];
+  char servername[HOSTLEN + 1];
+  struct Client *online; /* Pointer to new nickname for chasing or NULL */
+  struct Whowas *next;  /* for hash table... */
+  struct Whowas *prev;  /* for hash table... */
+  struct Whowas *cnext; /* for client struct linked list */
+  struct Whowas *cprev; /* for client struct linked list */
 };
 
-EXTERN void whowas_init(void);
-EXTERN void whowas_add_history(struct Client *, int);
-EXTERN void whowas_off_history(struct Client *);
-EXTERN struct Client *whowas_get_history(const char *, time_t);
+/*
+** initwhowas
+*/
+extern void init_whowas(void);
+
+/*
+** add_history
+**      Add the currently defined name of the client to history.
+**      usually called before changing to a new name (nick).
+**      Client must be a fully registered user.
+*/
+extern void add_history(struct Client *, int);
+
+/*
+** off_history
+**      This must be called when the client structure is about to
+**      be released. History mechanism keeps pointers to client
+**      structures and it must know when they cease to exist. This
+**      also implicitly calls AddHistory.
+*/
+extern void off_history(struct Client *);
+
+/*
+** get_history
+**      Return the current client that was using the given
+**      nickname within the timelimit. Returns NULL, if no
+**      one found...
+*/
+extern struct Client *get_history(const char *, time_t);
+
+/*
+** for debugging...counts related structures stored in whowas array.
+*/
+extern void count_whowas_memory(unsigned int *, uint64_t *);
 
 /* XXX m_whowas.c in modules needs these */
-EXTERN dlink_list WHOWASHASH[];
-#endif
+extern struct Whowas *WHOWASHASH[];
+#endif /* INCLUDED_whowas_h */

@@ -21,8 +21,9 @@
  *
  *  $Id$
  */
+
 #include "stdinc.h"
-#include "conf/conf.h"
+#include "list.h"
 #include "common.h"   
 #include "handlers.h"
 #include "client.h"
@@ -31,35 +32,45 @@
 #include "hash.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "server.h"
+#include "s_serv.h"
 #include "send.h"
+#include "irc_string.h"
+#include "sprintf_irc.h"
+#include "s_conf.h"
 #include "msg.h"
 #include "parse.h"
+#include "modules.h"
 
 static time_t last_used = 0;
 
-static void m_who(struct Client *, struct Client *, int, char **);
+static void m_who(struct Client *, struct Client *, int, char *[]);
 
 struct Message who_msgtab = {
   "WHO", 0, 0, 2, 0, MFLG_SLOW, 0,
   {m_unregistered, m_who, m_ignore, m_ignore, m_who, m_ignore}
 };
 
-INIT_MODULE(m_who, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&who_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&who_msgtab);
 }
 
+const char *_version = "$Revision$";
+#endif
+
 static void who_global(struct Client *, char *, int);
 static void do_who(struct Client *, struct Client *,
                    const char *, const char *);
-static void do_who_on_channel(struct Client *, struct Channel *, const char *,
-                              int, int);
+static void do_who_on_channel(struct Client *, struct Channel *,
+                              const char *, int, int);
 
 /*
 ** m_who
@@ -76,25 +87,13 @@ m_who(struct Client *client_p, struct Client *source_p,
   dlink_node *lp;
   int server_oper = parc > 2 ? (*parv[2] == 'o') : 0; /* Show OPERS only */
   struct Channel *chptr;
-  const char *from, *to;
-
-  if (IsCapable(source_p->from, CAP_TS6) && HasID(source_p))
-  {
-    from = me.id;
-    to = source_p->id;
-  }
-  else
-  {
-    from = me.name;
-    to = source_p->name;
-  }
 
   /* See if mask is there, collapse it or return if not there */
-  if (mask == NULL || !*mask)
+  if (EmptyString(mask))
   {
     who_global(source_p, mask, server_oper);
     sendto_one(source_p, form_str(RPL_ENDOFWHO),
-               from, to, "*");
+               me.name, source_p->name, "*");
     return;
   }
 
@@ -111,7 +110,7 @@ m_who(struct Client *client_p, struct Client *source_p,
                         server_oper);
     }
 
-    sendto_one(source_p, form_str(RPL_ENDOFWHO), from, to, "*");
+    sendto_one(source_p, form_str(RPL_ENDOFWHO), me.name, source_p->name, "*");
     return;
   }
 
@@ -128,7 +127,7 @@ m_who(struct Client *client_p, struct Client *source_p,
     }
 
     sendto_one(source_p, form_str(RPL_ENDOFWHO),
-               from, to, mask);
+               me.name, source_p->name, mask);
     return;
   }
 
@@ -150,7 +149,7 @@ m_who(struct Client *client_p, struct Client *source_p,
       do_who(source_p, target_p, NULL, "");
 
     sendto_one(source_p, form_str(RPL_ENDOFWHO),
-               from, to, mask);
+               me.name, source_p->name, mask);
     return;
   }
 
@@ -162,7 +161,7 @@ m_who(struct Client *client_p, struct Client *source_p,
 
  /* Wasn't a nick, wasn't a channel, wasn't a '*' so ... */
   sendto_one(source_p, form_str(RPL_ENDOFWHO),
-             from, to, mask);
+             me.name, source_p->name, mask);
 }
 
 /* who_common_channel
@@ -200,7 +199,7 @@ who_common_channel(struct Client *source_p, struct Channel *chptr,
     if ((mask == NULL) ||
       match(mask, target_p->name) || match(mask, target_p->username) ||
       match(mask, target_p->host) || 
-      ((!ServerHide.hide_servers || IsOper(source_p)) &&
+      ((!ConfigServerHide.hide_servers || IsOper(source_p)) &&
        match(mask, target_p->servptr->name)) ||
       match(mask, target_p->info))
     {
@@ -237,15 +236,14 @@ who_global(struct Client *source_p, char *mask, int server_oper)
 
   if (!IsOper(source_p))
   {
-    if ((last_used + General.pace_wait) > CurrentTime)
+    if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
     {
       /* safe enough to give this on a local connect only */
-      sendto_one(source_p, form_str(RPL_LOAD2HI),
-        me.name, source_p->name);
+      sendto_one(source_p, form_str(RPL_LOAD2HI), me.name, source_p->name);
       return;
     }
-    else
-      last_used = CurrentTime;
+
+    last_used = CurrentTime;
   }
 
   /* first, list all matching invisible clients on common channels */
@@ -337,40 +335,26 @@ do_who(struct Client *source_p, struct Client *target_p,
        const char *chname, const char *op_flags)
 {
   char status[6];
-  const char *from, *to;
-
-  if (IsCapable(source_p->from, CAP_TS6) && HasID(source_p))
-  {
-    from = me.id;
-    to = source_p->id;
-  }
-  else
-  {
-    from = me.name;
-    to = source_p->name;
-  }
 
   if (IsOper(source_p))
-    ircsprintf(status, "%c%s%s%s", 
-	       target_p->away ? 'G' : 'H',
+    ircsprintf(status, "%c%s%s%s", target_p->away ? 'G' : 'H',
 	       IsOper(target_p) ? "*" : "", IsCaptured(target_p) ? "#" : "", op_flags);
   else
     ircsprintf(status, "%c%s%s", target_p->away ? 'G' : 'H',
 	       IsOper(target_p) ? "*" : "", op_flags);
 
-  if (ServerHide.hide_servers)
+  if (ConfigServerHide.hide_servers)
   {
-    sendto_one(source_p, form_str(RPL_WHOREPLY), from, to,
+    sendto_one(source_p, form_str(RPL_WHOREPLY), me.name, source_p->name,
 	       (chname) ? (chname) : "*",
-	       target_p->username, target_p->host,
+               target_p->username, target_p->host,
 	       IsOper(source_p) ? target_p->servptr->name : "*",
 	       target_p->name, status, 0, target_p->info);
   }
   else
   {
-    sendto_one(source_p, form_str(RPL_WHOREPLY), from, to,
-	       (chname) ? (chname) : "*",
-	       target_p->username,
+    sendto_one(source_p, form_str(RPL_WHOREPLY), me.name, source_p->name,
+	       (chname) ? (chname) : "*", target_p->username,
 	       target_p->host, target_p->servptr->name, target_p->name,
 	       status, target_p->hopcount, target_p->info);
   }

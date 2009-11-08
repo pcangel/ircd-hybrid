@@ -23,19 +23,24 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
+#include "list.h"
 #include "handlers.h"
 #include "client.h"
 #include "common.h"
+#include "irc_string.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "user.h"
+#include "s_bsd.h"
+#include "s_conf.h"
+#include "s_log.h"
+#include "s_user.h"
 #include "send.h"
 #include "msg.h"
-#include "motd.h"
 #include "parse.h"
+#include "modules.h"
 #include "packet.h"
 
+static struct ConfItem *find_password_conf(const char *, struct Client *);
 static void failed_oper_notice(struct Client *, const char *, const char *);
 static void m_oper(struct Client *, struct Client *, int, char *[]);
 static void mo_oper(struct Client *, struct Client *, int, char *[]);
@@ -45,15 +50,21 @@ struct Message oper_msgtab = {
   { m_unregistered, m_oper, m_ignore, m_ignore, mo_oper, m_ignore }
 };
 
-INIT_MODULE(m_oper, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&oper_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&oper_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
 
 /*
 ** m_oper
@@ -65,7 +76,8 @@ static void
 m_oper(struct Client *client_p, struct Client *source_p,
        int parc, char *parv[])
 {
-  struct OperatorConf *conf = NULL;
+  struct ConfItem *conf;
+  struct AccessItem *aconf=NULL;
   const char *name = parv[1];
   const char *password = parv[2];
 
@@ -80,21 +92,30 @@ m_oper(struct Client *client_p, struct Client *source_p,
   if (!IsFloodDone(source_p))
     flood_endgrace(source_p);
 
-  conf = find_operconf(name, source_p->username, source_p->host,
-                       &source_p->localClient->ip);
-  if (conf == NULL)
+  if ((conf = find_password_conf(name, source_p)) == NULL)
   {
     sendto_one(source_p, form_str(ERR_NOOPERHOST), me.name, source_p->name);
-    conf = find_operconf(name, NULL, NULL, NULL);
+    conf = find_exact_name_conf(OPER_TYPE, name, NULL, NULL);
     failed_oper_notice(source_p, name, (conf != NULL) ?
                        "host mismatch" : "no oper {} block");
     log_oper_action(LOG_FAILED_OPER_TYPE, source_p, "%s\n", name);
     return;
   }
 
-  if (match_password(conf->passwd, password, conf->flags & OPER_FLAG_ENCRYPTED))
+  aconf = (struct AccessItem *)map_to_conf(conf);
+
+  if (match_conf_password(password, aconf))
   {
-    oper_up(source_p, conf);
+    if (attach_conf(source_p, conf) != 0)
+    {
+      sendto_one(source_p, ":%s NOTICE %s :Can't attach conf!",
+                 me.name, source_p->name);
+      failed_oper_notice(source_p, name, "can't attach conf!");
+      log_oper_action(LOG_FAILED_OPER_TYPE, source_p, "%s\n", name);
+      return;
+    }
+
+    oper_up(source_p);
 
     ilog(L_TRACE, "OPER %s by %s!%s@%s",
          name, source_p->name, source_p->username, source_p->host);
@@ -119,7 +140,36 @@ mo_oper(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
 {
   sendto_one(source_p, form_str(RPL_YOUREOPER), me.name, source_p->name);
-  send_message_file(source_p, &opermotd);
+  send_message_file(source_p, &ConfigFileEntry.opermotd);
+}
+
+/* find_password_conf()
+ *
+ * inputs       - name
+ *		- pointer to source_p
+ * output       - pointer to oper conf or NULL
+ * side effects	- NONE
+ */
+static struct ConfItem *
+find_password_conf(const char *name, struct Client *source_p)
+{
+  struct ConfItem *conf = NULL;
+
+  if ((conf = find_exact_name_conf(OPER_TYPE,
+				   name, source_p->username, source_p->host
+				   )) != NULL)
+  {
+    return(conf);
+  }
+
+  if ((conf = find_exact_name_conf(OPER_TYPE,
+				   name, source_p->username,
+				   source_p->sockhost)) != NULL)
+  {
+    return(conf);
+  }
+
+  return(NULL);
 }
 
 /* failed_oper_notice()
@@ -134,7 +184,7 @@ static void
 failed_oper_notice(struct Client *source_p, const char *name,
                    const char *reason)
 {
-  if (General.failed_oper_notice)
+  if (ConfigFileEntry.failed_oper_notice)
     sendto_realops_flags(UMODE_ALL, L_ALL, "Failed OPER attempt as %s "
                          "by %s (%s@%s) - %s", name, source_p->name,
                          source_p->username, source_p->host, reason);

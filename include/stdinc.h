@@ -26,27 +26,13 @@
 #ifndef STDINC_H /* prevent multiple #includes */
 #define STDINC_H
  
-#ifndef IN_AUTOCONF
-#include "setup.h"
-#endif
+#include "config.h"
 
 #include "defaults.h"
 
-#ifdef HAVE_STDLIB_H
+#include <stddef.h>
 #include <stdlib.h>
-#endif
-#ifdef STRING_WITH_STRINGS
-# include <string.h>
-# include <strings.h>
-#else
-# ifdef HAVE_STRING_H
-#  include <string.h>
-# else
-#  ifdef HAVE_STRINGS_H
-#   include <strings.h>
-#  endif
-# endif 
-#endif  
+#include <string.h>
 
 #ifdef HAVE_STRTOK_R
 # define strtoken(x, y, z) strtok_r(y, z, x)
@@ -60,17 +46,6 @@
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 #endif
-#endif
-
-#ifdef HAVE_STDDEF_H
-# include <stddef.h>
-#else /* This is basically what stddef.h provides on most systems */
-# ifndef NULL
-#  define NULL ((void*)0)
-# endif
-# ifndef offsetof
-#  define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
-# endif
 #endif
 
 #ifdef HAVE_CRYPT_H
@@ -87,29 +62,18 @@
 #include <time.h>
 #include <fcntl.h>
 
-#ifdef HAVE_LIBGEN_H
-#include <libgen.h>
-#endif
-
 #include <stdarg.h>
 #include <signal.h>
 #include <ctype.h>
 
-#ifdef _WIN32
-#define PATH_MAX (MAX_PATH - 1)
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <winsock.h>
-#else
+#include <dirent.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <sys/file.h>
-#endif
 
-#include <dirent.h>
 #include <limits.h>
 
 #ifdef HAVE_UNISTD_H
@@ -135,20 +99,5 @@
 extern int errno;
 #endif
 
-#if defined(HAVE_DLINFO) && defined(HAVE_LINK_H)
-# include <link.h>
-#endif
-
-#include "irc_libio.h"
-
-#ifndef _WIN32
-# define EXTERN extern
-#else
-# ifdef IN_IRCD
-#  define EXTERN extern __declspec(dllexport)
-# else
-#  define EXTERN extern __declspec(dllimport)
-# endif
-#endif
-
+#include "inet_misc.h"
 #endif

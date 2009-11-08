@@ -33,15 +33,16 @@
 #include "hash.h"
 #include "ircd.h"
 #include "numeric.h"
-#include "user.h"
-#include "server.h"
+#include "s_conf.h"
+#include "s_user.h"
+#include "s_serv.h"
 #include "send.h"
-#include "channel.h"
 #include "msg.h"
 #include "parse.h"
-#include "conf/modules.h"
+#include "modules.h"
 #include "common.h"
 #include "packet.h"
+#include "irc_string.h"
 
 static void m_cap(struct Client *, struct Client *, int, char *[]);
 
@@ -50,15 +51,21 @@ struct Message cap_msgtab = {
   { m_cap, m_cap, m_ignore, m_ignore, m_cap, m_ignore }
 };
 
-INIT_MODULE(m_cap, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&cap_msgtab);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
   mod_del_cmd(&cap_msgtab);
 }
+
+const char *_version = "$Revision$";
+#endif
 
 #define CAPFL_HIDDEN    0x0001  /**< Do not advertize this capability */
 #define CAPFL_PROHIBIT  0x0002  /**< Client may not set this capability */
@@ -112,7 +119,7 @@ find_cap(const char **caplist_p, int *neg_p)
 {
   static int inited = 0;
   const char *caplist = *caplist_p;
-  struct capabilities *cap = 0;
+  struct capabilities *cap = NULL;
 
   *neg_p = 0;    /* clear negative flag... */
 
@@ -120,7 +127,7 @@ find_cap(const char **caplist_p, int *neg_p)
   {
     /* First, let's sort the array... */
     qsort(capab_list, CAPAB_LIST_LEN, sizeof(struct capabilities), (bqcmp)capab_sort);
-    inited = 1;
+    ++inited;
   }
 
   /* Next, find first non-whitespace character... */
@@ -128,13 +135,15 @@ find_cap(const char **caplist_p, int *neg_p)
     ++caplist;
 
   /* We are now at the beginning of an element of the list; is it negative? */
-  if (*caplist == '-') {
+  if (*caplist == '-')
+  {
     ++caplist;    /* yes; step past the flag... */
     *neg_p = 1;    /* remember that it is negative... */
   }
 
   /* OK, now see if we can look up the capability... */
-  if (*caplist) {
+  if (*caplist)
+  {
     if (!(cap = bsearch(caplist, capab_list, CAPAB_LIST_LEN,
                         sizeof(struct capabilities),
                         (bqcmp)capab_search)))
@@ -158,10 +167,10 @@ find_cap(const char **caplist_p, int *neg_p)
 /** Send a CAP \a subcmd list of capability changes to \a sptr.
  * If more than one line is necessary, each line before the last has
  * an added "*" parameter before that line's capability list.
- * \param sptr   Client receiving capability list.
- * \param set    Capabilities to show as set (with ack and sticky modifiers).
- * \param rem    Capabalities to show as removed (with no other modifier).
- * \param subcmd Name of capability subcommand.
+ * @param[in] sptr Client receiving capability list.
+ * @param[in] set Capabilities to show as set (with ack and sticky modifiers).
+ * @param[in] rem Capabalities to show as removed (with no other modifier).
+ * @param[in] subcmd Name of capability subcommand.
  */
 static int
 send_caplist(struct Client *sptr, unsigned int set,
@@ -169,13 +178,13 @@ send_caplist(struct Client *sptr, unsigned int set,
 {
   char capbuf[IRCD_BUFSIZE] = "", pfx[16];
   char cmdbuf[IRCD_BUFSIZE] = "";
-  unsigned int i = 0, loc = 0, len, flags, pfx_len, clen;
+  unsigned int i, loc, len, flags, pfx_len, clen;
 
   /* set up the buffer for the final LS message... */
-  clen = snprintf(cmdbuf, sizeof(cmdbuf), ":%s CAP %s %s ", me.name,
+  clen = snprintf(cmdbuf, sizeof(capbuf), ":%s CAP %s %s ", me.name,
                   sptr->name[0] ? sptr->name : "*", subcmd);
 
-  for (; i < CAPAB_LIST_LEN; ++i)
+  for (i = 0, loc = 0; i < CAPAB_LIST_LEN; ++i)
   {
     flags = capab_list[i].flags;
 
@@ -228,8 +237,7 @@ send_caplist(struct Client *sptr, unsigned int set,
 static int
 cap_ls(struct Client *sptr, const char *caplist)
 {
-  if (IsUnknown(sptr))
-    /* registration hasn't completed; suspend it... */
+  if (IsUnknown(sptr)) /* registration hasn't completed; suspend it... */
     sptr->localClient->registration |= REG_NEED_CAP;
 
   return send_caplist(sptr, 0, 0, "LS"); /* send list of capabilities */
@@ -239,22 +247,19 @@ static int
 cap_req(struct Client *sptr, const char *caplist)
 {
   const char *cl = caplist;
-  struct capabilities *cap;
+  struct capabilities *cap = NULL;
   unsigned int set = 0, rem = 0;
   unsigned int cs = sptr->localClient->cap_client; /* capability set */
   unsigned int as = sptr->localClient->cap_active; /* active set */
-  int neg;
+  int neg = 0;
 
   if (IsUnknown(sptr)) /* registration hasn't completed; suspend it... */
     sptr->localClient->registration |= REG_NEED_CAP;
 
-  while (cl)
-  {
-    /* walk through the capabilities list... */
+  while (cl) { /* walk through the capabilities list... */
     if (!(cap = find_cap(&cl, &neg)) /* look up capability... */
-	|| (!neg && (cap->flags & CAPFL_PROHIBIT))    /* is it prohibited? */
-        || (neg && (cap->flags & CAPFL_STICKY)))    /* is it sticky? */
-    {
+	|| (!neg && (cap->flags & CAPFL_PROHIBIT)) /* is it prohibited? */
+        || (neg && (cap->flags & CAPFL_STICKY))) { /* is it sticky? */
       sendto_one(sptr, ":%s CAP %s NAK :%s", me.name,
                  sptr->name[0] ? sptr->name : "*", caplist);
       return 0; /* can't complete requested op... */
@@ -295,7 +300,7 @@ cap_ack(struct Client *sptr, const char *caplist)
 {
   const char *cl = caplist;
   struct capabilities *cap = NULL;
-  int neg;
+  int neg = 0;
 
   /*
    * Coming from the client, this generally indicates that the client
@@ -322,7 +327,7 @@ cap_ack(struct Client *sptr, const char *caplist)
 static int
 cap_clear(struct Client *sptr, const char *caplist)
 {
-  struct capabilities *cap;
+  struct capabilities *cap = NULL;
   unsigned int ii;
   unsigned int cleared = 0;
 
@@ -359,7 +364,7 @@ cap_end(struct Client *sptr, const char *caplist)
     char buf[USERLEN + 1];
 
     strlcpy(buf, sptr->username, sizeof(buf));
-    register_local_user(sptr, buf);
+    register_local_user(sptr, sptr, sptr->name, buf);
     return 0;
   }
 
@@ -375,7 +380,7 @@ cap_list(struct Client *sptr, const char *caplist)
 
 static struct subcmd
 {
-  char *cmd;
+  const char *cmd;
   int (*proc)(struct Client *sptr, const char *caplist);
 } cmdlist[] = {
   { "ACK",   cap_ack   },
@@ -383,7 +388,7 @@ static struct subcmd
   { "END",   cap_end   },
   { "LIST",  cap_list  },
   { "LS",    cap_ls    },
-  { "NAK",   0         },
+  { "NAK",   NULL      },
   { "REQ",   cap_req   }
 };
 
@@ -402,10 +407,10 @@ subcmd_search(const char *cmd, const struct subcmd *elem)
 static void
 m_cap(struct Client *cptr, struct Client *sptr, int parc, char *parv[])
 {
-  char *subcmd, *caplist = 0;
+  char *subcmd = NULL, *caplist = NULL;
   struct subcmd *cmd = NULL;
 
-  if (parc < 2)    /* a subcommand is required */
+  if (parc < 2 || EmptyString(parv[1]))    /* a subcommand is required */
     return;
 
   subcmd = parv[1];

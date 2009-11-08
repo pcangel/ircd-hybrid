@@ -24,13 +24,15 @@
 
 #ifndef INCLUDED_motd_h
 #define INCLUDED_motd_h
+#include "ircd_defs.h"   
+
 
 #define MESSAGELINELEN 256
 
 struct MessageFileLine
 {
-  char line[MESSAGELINELEN + 1];
   struct MessageFileLine *next;
+  char line[MESSAGELINELEN + 1];
 };
 
 typedef struct MessageFileLine MessageFileLine;
@@ -44,28 +46,21 @@ typedef enum {
   
 struct MessageFile
 {
-  MotdType motdType;
   MessageFileLine *contentsOfFile;
+  MotdType motdType;
   char fileName[PATH_MAX + 1];
   char lastChangedDate[MAX_DATE_STRING + 1];
 };
 
 typedef struct MessageFile MessageFile;
 
-EXTERN MessageFile motd;
-EXTERN MessageFile opermotd;
-EXTERN MessageFile linksfile;
-EXTERN MessageFile *isupportFile;
-
 struct Client;
 
-void init_motd(void);
-
-EXTERN void init_message_file(MotdType, const char *, struct MessageFile *);
-EXTERN int send_message_file(struct Client *, struct MessageFile *);
-EXTERN int read_message_file(MessageFile *);
-EXTERN MessageFile *init_MessageLine(void);
-EXTERN void addto_MessageLine(MessageFile *, const char *);
-EXTERN void destroy_MessageLine(MessageFile *);
+extern void init_message_file(MotdType, const char *, struct MessageFile *);
+extern int send_message_file(struct Client *, struct MessageFile *);
+extern int read_message_file(MessageFile *);
+extern MessageFile *init_MessageLine(void);
+extern void addto_MessageLine(MessageFile *, const char *);
+extern void destroy_MessageLine(MessageFile *);
 
 #endif /* INCLUDED_motd_h */

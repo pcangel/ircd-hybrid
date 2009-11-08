@@ -23,17 +23,19 @@
  */
 
 #include "stdinc.h"
-#include "conf/conf.h"
 #include "handlers.h"
 #include "client.h"
+#include "irc_string.h"
 #include "ircd.h"
 #include "numeric.h"
 #include "send.h"
 #include "msg.h"
 #include "parse.h"
-#include "server.h"
+#include "modules.h"
+#include "s_conf.h"
+#include "s_serv.h"
 #include "packet.h"
-#include "user.h"
+#include "s_user.h"
 
 static void m_away(struct Client *, struct Client *, int, char *[]);
 static void mo_away(struct Client *, struct Client *, int, char *[]);
@@ -41,33 +43,42 @@ static void ms_away(struct Client *, struct Client *, int, char *[]);
 
 struct Message away_msgtab = {
   "AWAY", 0, 0, 0, 0, MFLG_SLOW, 0,
-  { m_unregistered, m_away, ms_away, m_ignore, mo_away, m_ignore }
+  {m_unregistered, m_away, ms_away, m_ignore, mo_away, m_ignore}
 };
 
-INIT_MODULE(m_away, "$Revision$")
+#ifndef STATIC_MODULES
+void
+_modinit(void)
 {
   mod_add_cmd(&away_msgtab);
   add_isupport("AWAYLEN", NULL, AWAYLEN);
 }
 
-CLEANUP_MODULE
+void
+_moddeinit(void)
 {
-  delete_isupport("AWAYLEN");
   mod_del_cmd(&away_msgtab);
+  delete_isupport("AWAYLEN");
 }
 
-/*! \brief AWAY command handler (called for local clients only)
+const char *_version = "$Revision$";
+#endif
+
+/***********************************************************************
+ * m_away() - Added 14 Dec 1988 by jto. 
+ *            Not currently really working, I don't like this
+ *            call at all...
  *
- * \param client_p Pointer to allocated Client struct with physical connection
- *                 to this server, i.e. with an open socket connected.
- * \param source_p Pointer to allocated Client struct from which the message
- *                 originally comes from.  This can be a local or remote client.
- * \param parc     Integer holding the number of supplied arguments.
- * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
- *                 pointers.
- * \note Valid arguments for this command are:
- *      - parv[0] = sender prefix
- *      - parv[1] = away text (optional)
+ *            ...trying to make it work. I don't like it either,
+ *            but perhaps it's worth the load it causes to net.
+ *            This requires flooding of the whole net like NICK,
+ *            USER, MODE, etc messages...  --msa
+ ***********************************************************************/
+
+/*
+ * m_away
+ *  parv[0] = sender prefix
+ *  parv[1] = away message
  */
 static void
 m_away(struct Client *client_p, struct Client *source_p,
@@ -86,9 +97,9 @@ m_away(struct Client *client_p, struct Client *source_p,
     if (cur_away_msg)
     {
       /* we now send this only if they were away before --is */
-      sendto_server(client_p, source_p, NULL, CAP_TS6, NOCAPS,
+      sendto_server(client_p, NULL, CAP_TS6, NOCAPS,
                     ":%s AWAY", ID(source_p));
-      sendto_server(client_p, source_p, NULL, NOCAPS, CAP_TS6,
+      sendto_server(client_p, NULL, NOCAPS, CAP_TS6,
                     ":%s AWAY", source_p->name);
 
       MyFree(cur_away_msg);
@@ -101,7 +112,7 @@ m_away(struct Client *client_p, struct Client *source_p,
   }
 
   /* Marking as away */
-  if ((CurrentTime - source_p->localClient->last_away) < General.pace_wait)
+  if ((CurrentTime - source_p->localClient->last_away) < ConfigFileEntry.pace_wait)
   {
     sendto_one(source_p, form_str(RPL_LOAD2HI),
                me.name, source_p->name);
@@ -121,9 +132,9 @@ m_away(struct Client *client_p, struct Client *source_p,
    * weren't away already --is */
   if (!cur_away_msg)
   {
-    sendto_server(client_p, source_p, NULL, CAP_TS6, NOCAPS,
+    sendto_server(client_p, NULL, CAP_TS6, NOCAPS,
                   ":%s AWAY :%s", ID(source_p), new_away_msg);
-    sendto_server(client_p, source_p, NULL, NOCAPS, CAP_TS6,
+    sendto_server(client_p, NULL, NOCAPS, CAP_TS6,
                   ":%s AWAY :%s", source_p->name, new_away_msg);
   }
   else
@@ -136,19 +147,6 @@ m_away(struct Client *client_p, struct Client *source_p,
   sendto_one(source_p, form_str(RPL_NOWAWAY), me.name, source_p->name);
 }
 
-/*! \brief AWAY command handler (called for operators only)
- *
- * \param client_p Pointer to allocated Client struct with physical connection
- *                 to this server, i.e. with an open socket connected.
- * \param source_p Pointer to allocated Client struct from which the message
- *                 originally comes from.  This can be a local or remote client.
- * \param parc     Integer holding the number of supplied arguments.
- * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
- *                 pointers.
- * \note Valid arguments for this command are:
- *      - parv[0] = sender prefix
- *      - parv[1] = away text (optional)
- */
 static void
 mo_away(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
@@ -166,9 +164,9 @@ mo_away(struct Client *client_p, struct Client *source_p,
     if (cur_away_msg)
     {
       /* we now send this only if they were away before --is */
-      sendto_server(client_p, source_p, NULL, CAP_TS6, NOCAPS,
+      sendto_server(client_p, NULL, CAP_TS6, NOCAPS,
                     ":%s AWAY", ID(source_p));
-      sendto_server(client_p, source_p, NULL, NOCAPS, CAP_TS6,
+      sendto_server(client_p, NULL, NOCAPS, CAP_TS6,
                     ":%s AWAY", source_p->name);
 
       MyFree(cur_away_msg);
@@ -192,9 +190,9 @@ mo_away(struct Client *client_p, struct Client *source_p,
    * weren't away already --is */
   if (!cur_away_msg)
   {
-    sendto_server(client_p, source_p, NULL, CAP_TS6, NOCAPS,
+    sendto_server(client_p, NULL, CAP_TS6, NOCAPS,
                   ":%s AWAY :%s", ID(source_p), new_away_msg);
-    sendto_server(client_p, source_p, NULL, NOCAPS, CAP_TS6,
+    sendto_server(client_p, NULL, NOCAPS, CAP_TS6,
                   ":%s AWAY :%s", source_p->name, new_away_msg);
   }
   else
@@ -207,19 +205,6 @@ mo_away(struct Client *client_p, struct Client *source_p,
   sendto_one(source_p, form_str(RPL_NOWAWAY), me.name, source_p->name);
 }
 
-/*! \brief AWAY command handler (called for remote clients)
- *
- * \param client_p Pointer to allocated Client struct with physical connection
- *                 to this server, i.e. with an open socket connected.
- * \param source_p Pointer to allocated Client struct from which the message
- *                 originally comes from.  This can be a local or remote client.
- * \param parc     Integer holding the number of supplied arguments.
- * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
- *                 pointers.
- * \note Valid arguments for this command are:
- *      - parv[0] = sender prefix
- *      - parv[1] = away text (optional)
- */
 static void
 ms_away(struct Client *client_p, struct Client *source_p,
         int parc, char *parv[])
@@ -239,9 +224,9 @@ ms_away(struct Client *client_p, struct Client *source_p,
     if (cur_away_msg)
     {
       /* we now send this only if they were away before --is */
-      sendto_server(client_p, source_p, NULL, CAP_TS6, NOCAPS,
+      sendto_server(client_p, NULL, CAP_TS6, NOCAPS,
                     ":%s AWAY", ID(source_p));
-      sendto_server(client_p, source_p, NULL, NOCAPS, CAP_TS6,
+      sendto_server(client_p, NULL, NOCAPS, CAP_TS6,
                     ":%s AWAY", source_p->name);
 
       MyFree(cur_away_msg);
@@ -263,9 +248,9 @@ ms_away(struct Client *client_p, struct Client *source_p,
    * weren't away already --is */
   if (!cur_away_msg)
   {
-    sendto_server(client_p, source_p, NULL, CAP_TS6, NOCAPS,
+    sendto_server(client_p, NULL, CAP_TS6, NOCAPS,
                   ":%s AWAY :%s", ID(source_p), new_away_msg);
-    sendto_server(client_p, source_p, NULL, NOCAPS, CAP_TS6,
+    sendto_server(client_p, NULL, NOCAPS, CAP_TS6,
                   ":%s AWAY :%s", source_p->name, new_away_msg);
   }
   else

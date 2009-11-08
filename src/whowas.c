@@ -1,5 +1,6 @@
 /*
  *  ircd-hybrid: an advanced Internet Relay Chat Daemon(ircd).
+ *  whowas.c: WHOWAS user cache.
  *
  *  Copyright (C) 2005 by the past and present ircd coders, and others.
  *
@@ -17,60 +18,57 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  *  USA
- */
-
-/*! \file whowas.c
- * \brief Maintains a history of nick names
- * \version $Id$
+ *
+ *  $Id$
  */
 
 #include "stdinc.h"
-#include "client.h"
 #include "whowas.h"
+#include "client.h"
+#include "common.h"
 #include "hash.h"
+#include "irc_string.h"
 #include "ircd.h"
 #include "ircd_defs.h"
 #include "numeric.h"
+#include "s_serv.h"
+#include "s_user.h"
+#include "send.h"
+#include "s_conf.h"
+#include "memory.h"
 
-static struct Whowas WHOWAS[NICKNAMEHISTORYLENGTH];
-dlink_list WHOWASHASH[HASHSIZE];
+/* internally defined function */
+static void add_whowas_to_clist(struct Whowas **, struct Whowas *);
+static void del_whowas_from_clist(struct Whowas **, struct Whowas *);
+static void add_whowas_to_list(struct Whowas **, struct Whowas *);
+static void del_whowas_from_list(struct Whowas **, struct Whowas *);
 
+struct Whowas WHOWAS[NICKNAMEHISTORYLENGTH];
+struct Whowas *WHOWASHASH[HASHSIZE];
 
-/*! \brief Adds the currently defined name of the client to history.
- *         Usually called before changing to a new name (nick).
- *         Client must be a fully registered user.
- * \param client_p pointer to Client struct to add
- * \param online   either 1 if it's a nick change or 0 on client exit
- */
+static unsigned int whowas_next = 0;
+
 void
-whowas_add_history(struct Client *client_p, int online)
+add_history(struct Client *client_p, int online)
 {
-  static unsigned int whowas_next = 0;
   struct Whowas *who = &WHOWAS[whowas_next];
-
-  assert(IsClient(client_p));
-
-  if (++whowas_next == NICKNAMEHISTORYLENGTH)
-    whowas_next = 0;
 
   assert(client_p && client_p->servptr);
 
   if (who->hashv != -1)
   {
     if (who->online)
-      dlinkDelete(&who->cnode, &who->online->whowas);
-
-    dlinkDelete(&who->tnode, &WHOWASHASH[who->hashv]);
+      del_whowas_from_clist(&(who->online->whowas),who);
+    del_whowas_from_list(&WHOWASHASH[who->hashv], who);
   }
 
   who->hashv = strhash(client_p->name);
   who->logoff = CurrentTime;
 
-  /*
-   * NOTE: strcpy ok here, the sizes in the client struct MUST
+  /* NOTE: strcpy ok here, the sizes in the client struct MUST
    * match the sizes in the whowas struct
    */
-  strcpy(who->name, client_p->name);
+  strlcpy(who->name, client_p->name, sizeof(who->name));
   strcpy(who->username, client_p->username);
   strcpy(who->hostname, client_p->host);
   strcpy(who->realname, client_p->info);
@@ -80,75 +78,127 @@ whowas_add_history(struct Client *client_p, int online)
   if (online)
   {
     who->online = client_p;
-    dlinkAdd(who, &who->cnode, &client_p->whowas);
+    add_whowas_to_clist(&(client_p->whowas), who);
   }
   else
     who->online = NULL;
 
-  dlinkAdd(who, &who->tnode, &WHOWASHASH[who->hashv]);
+  add_whowas_to_list(&WHOWASHASH[who->hashv], who);
+  whowas_next++;
+
+  if (whowas_next == NICKNAMEHISTORYLENGTH)
+    whowas_next = 0;
 }
 
-/*! \brief This must be called when the client structure is about to
- *         be released. History mechanism keeps pointers to client
- *         structures and it must know when they cease to exist.
- * \param client_p pointer to Client struct
- */
 void
-whowas_off_history(struct Client *client_p)
+off_history(struct Client *client_p)
 {
-  dlink_node *ptr = NULL, *ptr_next = NULL;
+  struct Whowas *temp, *next;
 
-  DLINK_FOREACH_SAFE(ptr, ptr_next, client_p->whowas.head)
+  for (temp = client_p->whowas; temp; temp=next)
   {
-    struct Whowas *temp = ptr->data;
+    next = temp->cnext;
     temp->online = NULL;
-    dlinkDelete(&temp->cnode, &client_p->whowas);
+    del_whowas_from_clist(&(client_p->whowas), temp);
   }
 }
 
-/*! \brief Returns the current client that was using the given
- *         nickname within the timelimit. Returns NULL, if no
- *         one found...
- * \param nick      name of the nick
- * \param timelimit maximum age for a client since log-off
- */
 struct Client *
-whowas_get_history(const char *nick, time_t timelimit)
+get_history(const char *nick, time_t timelimit)
 {
-  dlink_node *ptr = NULL;
+  struct Whowas *temp;
 
   timelimit = CurrentTime - timelimit;
+  temp = WHOWASHASH[strhash(nick)];
 
-  DLINK_FOREACH(ptr, WHOWASHASH[strhash(nick)].head)
+  for (; temp; temp = temp->next)
   {
-    struct Whowas *temp = ptr->data;
-
     if (irccmp(nick, temp->name))
       continue;
     if (temp->logoff < timelimit)
       continue;
-    return temp->online;
+    return(temp->online);
   }
 
-  return NULL;
+  return(NULL);
 }
 
-/*! \brief Initializes required whowas tables
- */
 void
-whowas_init(void)
+count_whowas_memory(unsigned int *wwu, uint64_t *wwum)
 {
-  unsigned int i;
+  const struct Whowas *tmp;
+  int i;
+  unsigned int u = 0;
+  uint64_t um = 0;
 
-  for (i = 0; i < NICKNAMEHISTORYLENGTH; ++i)
+  /* count the number of used whowas structs in 'u'   */
+  /* count up the memory used of whowas structs in um */
+  for (i = 0, tmp = &WHOWAS[0]; i < NICKNAMEHISTORYLENGTH; ++i, ++tmp)
+  {
+    if (tmp->hashv != -1)
+    {
+      ++u;
+      um += sizeof(struct Whowas);
+    }
+  }
+
+  *wwu = u;
+  *wwum = um;
+}
+
+void
+init_whowas(void)
+{
+  int i;
+
+  for (i = 0; i < NICKNAMEHISTORYLENGTH; i++)
   {
     memset(&WHOWAS[i], 0, sizeof(struct Whowas));
     WHOWAS[i].hashv = -1;
   }
 
-  /*
-   * Global variables are always 0 initialized,
-   * but we do this anyway.
-   */
-  memset(WHOWASHASH, 0, sizeof(WHOWASHASH));
+  for (i = 0; i < HASHSIZE; ++i)
+    WHOWASHASH[i] = NULL;        
+}
+
+static void
+add_whowas_to_clist(struct Whowas **bucket, struct Whowas *whowas)
+{
+  whowas->cprev = NULL;
+
+  if ((whowas->cnext = *bucket) != NULL)
+    whowas->cnext->cprev = whowas;
+  *bucket = whowas;
+}
+ 
+static void
+del_whowas_from_clist(struct Whowas **bucket, struct Whowas *whowas)
+{
+  if (whowas->cprev)
+    whowas->cprev->cnext = whowas->cnext;
+  else
+    *bucket = whowas->cnext;
+  if (whowas->cnext)
+    whowas->cnext->cprev = whowas->cprev;
+}
+
+static void
+add_whowas_to_list(struct Whowas **bucket, struct Whowas *whowas)
+{
+  whowas->prev = NULL;
+
+  if ((whowas->next = *bucket) != NULL)
+    whowas->next->prev = whowas;
+  *bucket = whowas;
+}
+ 
+static void
+del_whowas_from_list(struct Whowas **bucket, struct Whowas *whowas)
+{
+  if (whowas->prev)
+    whowas->prev->next = whowas->next;
+  else
+    *bucket = whowas->next;
+  if (whowas->next)
+    whowas->next->prev = whowas->prev;
 }

@@ -94,7 +94,7 @@ io_loop(int nfds)
     else if (ret > 0)
     {
       /* call any callbacks */
-      for (i = 4; i >= 0; i--)
+      for (i = 0; i < 5; i++)
       {
         if (FD_ISSET(fds[i].fd, &rfds) && fds[i].read_cb)
           (*fds[i].read_cb)();
