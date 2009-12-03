@@ -115,9 +115,9 @@
           * --disable-zlib - Build the ircd without ziplinks support.
 
 
-   3.  Run 'gmake'; this should build the ircd.
+   3.  Run 'make'; this should build the ircd.
 
-   4.  Run 'gmake install'; this will install the server, modules(1), and tools
+   4.  Run 'make install'; this will install the server, modules(1), and tools
        in the path with the prefix specified when configure was ran.
 
            (1) Unless the server was compiled without module support.
