@@ -83,14 +83,10 @@ do_links(struct Client *source_p, int parc, char **parv)
 {
   if (IsOper(source_p) || !ConfigServerHide.flatten_links)
   {
-    char *mask = (parc > 2 ? parv[2] : parv[1]);
+    const char *mask = (parc > 2 ? parv[2] : parv[1]);
     const char *me_name, *nick, *p;
     struct Client *target_p;
-    char clean_mask[2 * HOSTLEN + 4];
     dlink_node *ptr;
-
-    if (!EmptyString(mask))    /* only necessary if there is a mask */
-      mask = collapse(clean_string(clean_mask, (const unsigned char*) mask, 2 * HOSTLEN));
 
     me_name = ID_or_name(&me, source_p->from);
     nick = ID_or_name(source_p, source_p->from);
@@ -125,7 +121,8 @@ do_links(struct Client *source_p, int parc, char **parv)
                me_name, nick,
                EmptyString(mask) ? "*" : mask);
   }
-  else {
+  else
+  {
     /*
      * Print our own info so at least it looks like a normal links
      * then print out the file (which may or may not be empty)
@@ -162,8 +159,8 @@ m_links(struct Client *client_p, struct Client *source_p,
                me.name, source_p->name);
     return;
   }
-  else
-    last_used = CurrentTime;
+
+  last_used = CurrentTime;
 
   if (!ConfigServerHide.flatten_links)
   {
