@@ -30,6 +30,7 @@ ircd_SOURCES = balloc.c          \
                irc_string.c      \
                ircd.c            \
                ircd_signal.c     \
+               ircd_snprintf.c   \
                list.c            \
                listener.c        \
                match.c           \

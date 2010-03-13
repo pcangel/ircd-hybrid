@@ -31,6 +31,13 @@ AX_CHECK_LIB_IPV6
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_BIGENDIAN
 
+AC_CHECK_SIZEOF(short)
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(void *)
+AC_CHECK_SIZEOF(int64_t)
+AC_CHECK_SIZEOF(long long)
+
 # Checks for library functions.
 AC_CHECK_FUNCS_ONCE(mmap     \
                     strtok_r \

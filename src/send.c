@@ -31,6 +31,7 @@
 #include "dbuf.h"
 #include "irc_string.h"
 #include "ircd.h"
+#include "ircd_snprintf.h"
 #include "handlers.h"
 #include "numeric.h"
 #include "fdlist.h"
@@ -76,9 +77,9 @@ send_format(char *lsendbuf, int bufsize, const char *pattern, va_list args)
    * continuation message lines.  See section 7 for more details about
    * current implementations.
    */
-  len = vsnprintf(lsendbuf, bufsize - 1, pattern, args);
+  len = ircd_vsnprintf(NULL, lsendbuf, bufsize - 1, pattern, args);
   if (len > bufsize - 2)
-    len = bufsize - 2;  /* required by some versions of vsnprintf */
+    len = bufsize - 2;  /* for C99 compatible snprintfs */
 
   lsendbuf[len++] = '\r';
   lsendbuf[len++] = '\n';
@@ -885,7 +886,7 @@ sendto_match_servs(struct Client *source_p, const char *mask, int cap,
   int found = 0;
 
   va_start(args, pattern);
-  vsnprintf(buffer, sizeof(buffer), pattern, args);
+  ircd_vsnprintf(NULL, buffer, sizeof(buffer), pattern, args);
   va_end(args);
 
   ++current_serial;
@@ -1072,7 +1073,7 @@ ts_warn(const char *pattern, ...)
   }
 
   va_start(args, pattern);
-  vsprintf_irc(buffer, pattern, args);
+  ircd_vsnprintf(NULL, buffer, sizeof(buffer), pattern, args);
   va_end(args);
 
   sendto_realops_flags(UMODE_ALL, L_ALL, "%s", buffer);
