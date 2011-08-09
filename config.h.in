@@ -172,6 +172,9 @@
 /* Define if you have the shl_load function. */
 #undef HAVE_SHL_LOAD
 
+/* Define to 1 if you have the `socketpair' function. */
+#undef HAVE_SOCKETPAIR
+
 /* Define to 1 if you have the <socket.h> header file. */
 #undef HAVE_SOCKET_H
 
@@ -201,9 +204,6 @@
 
 /* Define to 1 if the system has the type `struct sockaddr_in'. */
 #undef HAVE_STRUCT_SOCKADDR_IN
-
-/* Define to 1 if the system has the type `struct sockaddr_in6'. */
-#undef HAVE_STRUCT_SOCKADDR_IN6
 
 /* Define to 1 if `sin_len' is a member of `struct sockaddr_in'. */
 #undef HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
@@ -277,6 +277,9 @@
 /* The archive extension */
 #undef LT_LIBEXT
 
+/* The archive prefix */
+#undef LT_LIBPREFIX
+
 /* Define to the extension used for runtime loadable modules, say, ".so". */
 #undef LT_MODULE_EXT
 
@@ -327,24 +330,6 @@
 /* Set to prefix. */
 #undef PREFIX
 
-/* The size of `int', as computed by sizeof. */
-#undef SIZEOF_INT
-
-/* The size of `int64_t', as computed by sizeof. */
-#undef SIZEOF_INT64_T
-
-/* The size of `long', as computed by sizeof. */
-#undef SIZEOF_LONG
-
-/* The size of `long long', as computed by sizeof. */
-#undef SIZEOF_LONG_LONG
-
-/* The size of `short', as computed by sizeof. */
-#undef SIZEOF_SHORT
-
-/* The size of `void *', as computed by sizeof. */
-#undef SIZEOF_VOID_P
-
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
@@ -362,9 +347,6 @@
 
 /* Size of the topic heap. */
 #undef TOPIC_HEAP_SIZE
-
-/* If Defined to 1 server links to your network must have a minimum of TS5. */
-#undef TS5_ONLY
 
 /* use this iopoll mechanism */
 #undef USE_IOPOLL_MECHANISM

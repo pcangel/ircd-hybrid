@@ -45,14 +45,12 @@
 #include "s_conf.h"
 
 static void mo_jupe(struct Client *, struct Client *, int, char *[]);
-static int bogus_host(char *);
 
 struct Message jupe_msgtab = {
   "JUPE", 0, 0, 3, 0, MFLG_SLOW, 0,
   {m_unregistered, m_not_oper, mo_jupe, m_ignore, mo_jupe, m_ignore}
 };
 
-#ifndef STATIC_MODULES
 void
 _modinit(void)
 {
@@ -66,7 +64,6 @@ _moddeinit(void)
 }
 
 const char *_version = "$Revision$";
-#endif
 
 /*
  * mo_jupe()
@@ -90,7 +87,7 @@ mo_jupe(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if (*parv[2] == '\0')
+  if (EmptyString(parv[2]))
   {
     sendto_one(source_p, form_str(ERR_NEEDMOREPARAMS),
                me.name, source_p->name, "JUPE");
@@ -104,14 +101,14 @@ mo_jupe(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  if (bogus_host(parv[1]))
+  if (!valid_servname(parv[1]))
   {
     sendto_one(source_p, ":%s NOTICE %s :Invalid servername: %s",
                me.name, source_p->name, parv[1]);
     return;
   }
 
-  if (match(parv[1], me.name))
+  if (!irccmp(parv[1], me.name))
   {
     sendto_one(source_p, ":%s NOTICE %s :I can't jupe myself!",
                me.name, source_p->name);
@@ -172,32 +169,4 @@ mo_jupe(struct Client *client_p, struct Client *source_p,
    * for now, 'cause of the way squit works
    */
   dlinkAdd(ajupe, &ajupe->node, &global_client_list);
-}
-
-/* bogus_host()
- *
- * inputs       - hostname
- * output       - 1 if a bogus hostname input,
- *              - 0 if its valid
- * side effects - none
- */
-static int
-bogus_host(char *host)
-{
-  unsigned int length = 0;
-  unsigned int dots   = 0;
-  char *s = host;
-
-  for (; *s; s++)
-  {
-    if (!IsServChar(*s))  
-      return 1;
-
-    ++length;
-
-    if ('.' == *s)
-      ++dots;
-  }
-
-  return !dots || length > HOSTLEN;
 }

@@ -59,7 +59,6 @@ struct Message join_msgtab = {
   { m_unregistered, m_join, ms_join, m_ignore, m_join, m_ignore }
 };
 
-#ifndef STATIC_MODULES
 void
 _modinit(void)
 {
@@ -73,7 +72,6 @@ _moddeinit(void)
 }
 
 const char *_version = "$Revision$";
-#endif
 
 /* last0() stolen from ircu */
 static char *
@@ -507,6 +505,8 @@ static const struct mode_letter
   { MODE_MODERATED,  'm' },
   { MODE_INVITEONLY, 'i' },
   { MODE_PRIVATE,    'p' },
+  { MODE_OPERONLY,   'O' },
+  { MODE_SSLONLY,    'S' },
   { 0, '\0' }
 };
 

@@ -58,17 +58,16 @@ struct Capability
 #define CAP_EOB		0x00000020 /* Can do EOB message                  */
 #define CAP_KLN		0x00000040 /* Can do KLINE message                */
 #define CAP_GLN		0x00000080 /* Can do GLINE message                */
-#define CAP_HUB		0x00000100 /* This server is a HUB                */
-#define CAP_TS6		0x00000200 /* Can do TS6                          */
-#define CAP_ZIP		0x00000400 /* Can do ZIPlinks                     */
-#define CAP_ENC		0x00000800 /* Can do ENCrypted links              */
-#define CAP_KNOCK	0x00001000 /* supports KNOCK                      */
-#define CAP_TB	        0x00002000 /* supports TB                         */
-#define CAP_UNKLN	0x00004000 /* Can do UNKLINE message		  */
-#define CAP_CLUSTER	0x00008000 /* supports server clustering	  */
-#define CAP_ENCAP	0x00010000 /* supports ENCAP message		  */
-#define CAP_HOPS	0x00020000 /* supports HALFOPS			  */
-#define CAP_TBURST      0x00040000 /* supports TBURST                     */
+#define CAP_TS6		0x00000100 /* Can do TS6                          */
+#define CAP_ZIP		0x00000200 /* Can do ZIPlinks                     */
+#define CAP_ENC		0x00000400 /* Can do ENCrypted links              */
+#define CAP_KNOCK	0x00000800 /* supports KNOCK                      */
+#define CAP_TB	        0x00001000 /* supports TB                         */
+#define CAP_UNKLN	0x00002000 /* Can do UNKLINE message		  */
+#define CAP_CLUSTER	0x00004000 /* supports server clustering	  */
+#define CAP_ENCAP	0x00008000 /* supports ENCAP message		  */
+#define CAP_HOPS	0x00010000 /* supports HALFOPS			  */
+#define CAP_TBURST      0x00020000 /* supports TBURST                     */
 
 #ifdef HAVE_LIBZ
 #define CAP_ZIP_SUPPORTED CAP_ZIP
@@ -233,10 +232,10 @@ extern struct EncCapability CipherTable[];
 #define HUNTED_ISME     0       /* if this server should execute the command */
 #define HUNTED_PASS     1       /* if message passed onwards successfully */
 
+extern int valid_servname(const char *);
 extern int check_server(const char *, struct Client *, int);
 extern int hunt_server(struct Client *, struct Client *,
                        const char *, int, int, char **);
-extern const char *my_name_for_link(struct ConfItem *);
 extern void add_capability(const char *, int, int);
 extern int delete_capability(const char *);
 extern int find_capability(const char *);

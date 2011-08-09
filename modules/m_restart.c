@@ -27,7 +27,6 @@
 #include "client.h"
 #include "common.h"
 #include "irc_string.h"
-#include "sprintf_irc.h"
 #include "ircd.h"
 #include "numeric.h"
 #include "s_conf.h"
@@ -44,7 +43,6 @@ struct Message restart_msgtab = {
   { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_restart, m_ignore }
 };
 
-#ifndef STATIC_MODULES
 void
 _modinit(void)
 {
@@ -58,7 +56,6 @@ _moddeinit(void)
 }
 
 const char *_version = "$Revision$";
-#endif
 
 /*
  * mo_restart
@@ -91,7 +88,7 @@ mo_restart(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-  ircsprintf(buf, "received RESTART command from %s",
-             get_oper_name(source_p));
-  server_die(buf, YES);
+  snprintf(buf, sizeof(buf), "received RESTART command from %s",
+           get_oper_name(source_p));
+  server_die(buf, 1);
 }

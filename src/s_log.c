@@ -41,7 +41,6 @@
 #include "irc_string.h"
 #include "sprintf_irc.h"
 #include "ircd.h"
-#include "ircd_snprintf.h"
 #include "s_misc.h"
 #include "event.h"	/* Needed for EVH etc. */
 #include "s_conf.h"
@@ -113,8 +112,8 @@ write_log(const char *message)
   if (logFile == NULL)
     return;
 
-  nbytes = ircd_snprintf(NULL, buf, sizeof(buf), "[%s] %s\n",
-                         smalldate(CurrentTime), message);
+  nbytes = snprintf(buf, sizeof(buf), "[%s] %s\n",
+                    smalldate(CurrentTime), message);
 
   fbputs(buf, logFile, nbytes);
 }
@@ -134,7 +133,7 @@ ilog(const int priority, const char *fmt, ...)
     return;
 
   va_start(args, fmt);
-  ircd_vsnprintf(NULL, buf, sizeof(buf), fmt, args);
+  vsnprintf(buf, sizeof(buf), fmt, args);
   va_end(args);
 
 #ifdef USE_SYSLOG  

@@ -132,7 +132,6 @@ struct AccessItem
   char *	   reason;
   char *	   oper_reason;
   char *           user;     /* user part of user@host */
-  char *           fakename;   /* Mask name */
   time_t           hold;     /* Hold action until this time (calendar time) */
   struct ConfItem *class_ptr;  /* Class of connection */
   int              aftype;
@@ -564,7 +563,7 @@ extern int valid_comment(struct Client *, char *, int);
 
 #define TK_SECONDS 0
 #define TK_MINUTES 1
-extern time_t valid_tkline(char *, int);
+extern time_t valid_tkline(const char *, int);
 extern int match_conf_password(const char *, const struct AccessItem *);
 
 #define NOT_AUTHORIZED    (-1)

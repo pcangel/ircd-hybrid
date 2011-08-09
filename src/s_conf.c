@@ -38,7 +38,6 @@
 #include "irc_string.h"
 #include "sprintf_irc.h"
 #include "s_bsd.h"
-#include "irc_getaddrinfo.h"
 #include "ircd.h"
 #include "listener.h"
 #include "hostmask.h"
@@ -383,7 +382,6 @@ delete_conf_item(struct ConfItem *conf)
     MyFree(aconf->oper_reason);
     MyFree(aconf->user);
     MyFree(aconf->host);
-    MyFree(aconf->fakename);
 #ifdef HAVE_LIBCRYPTO
     if (aconf->rsa_public_key)
       RSA_free(aconf->rsa_public_key);
@@ -733,8 +731,6 @@ report_confitem_types(struct Client *source_p, ConfType type, int temp)
 	*p++ = 'A';
       if (IsConfCryptLink(aconf))
 	*p++ = 'C';
-      if (aconf->fakename)
-	*p++ = 'M';
       if (IsConfTopicBurst(aconf))
         *p++ = 'T';
       if (IsConfCompressed(aconf))
@@ -1762,9 +1758,7 @@ rehash(int sig)
   if (ServerInfo.description != NULL)
     strlcpy(me.info, ServerInfo.description, sizeof(me.info));
 
-#ifndef STATIC_MODULES
   load_conf_modules();
-#endif
 
   flush_deleted_I_P();
 
@@ -1812,7 +1806,6 @@ set_default_conf(void)
   ServerInfo.max_clients = MAXCLIENTS_MAX;
 
   ServerInfo.hub = 0;
-  delete_capability("HUB");
   ServerInfo.dns_host.sin_addr.s_addr = 0;
   ServerInfo.dns_host.sin_port = 0;
   AdminInfo.name = NULL;
@@ -1868,22 +1861,22 @@ set_default_conf(void)
   ConfigFileEntry.disable_auth = NO;
   ConfigFileEntry.disable_remote = NO;
   ConfigFileEntry.kill_chase_time_limit = 90;
-  ConfigFileEntry.default_floodcount = 8; /* XXX */
+  ConfigFileEntry.default_floodcount = 8;
   ConfigFileEntry.failed_oper_notice = YES;
-  ConfigFileEntry.dots_in_ident = 0;      /* XXX */
+  ConfigFileEntry.dots_in_ident = 0;
   ConfigFileEntry.min_nonwildcard = 4;
   ConfigFileEntry.min_nonwildcard_simple = 3;
   ConfigFileEntry.max_accept = 20;
-  ConfigFileEntry.anti_nick_flood = NO;   /* XXX */
+  ConfigFileEntry.anti_nick_flood = NO;
   ConfigFileEntry.max_nick_time = 20;
   ConfigFileEntry.max_nick_changes = 5;
-  ConfigFileEntry.anti_spam_exit_message_time = 0;  /* XXX */
+  ConfigFileEntry.anti_spam_exit_message_time = 0;
   ConfigFileEntry.ts_warn_delta = TS_WARN_DELTA_DEFAULT;
-  ConfigFileEntry.ts_max_delta = TS_MAX_DELTA_DEFAULT;  /* XXX */
+  ConfigFileEntry.ts_max_delta = TS_MAX_DELTA_DEFAULT;
   ConfigFileEntry.kline_with_reason = YES;
   ConfigFileEntry.kline_reason = NULL;
   ConfigFileEntry.warn_no_nline = YES;
-  ConfigFileEntry.stats_o_oper_only = NO; /* XXX */
+  ConfigFileEntry.stats_o_oper_only = NO;
   ConfigFileEntry.stats_k_oper_only = 1;  /* masked */
   ConfigFileEntry.stats_i_oper_only = 1;  /* masked */
   ConfigFileEntry.stats_P_oper_only = NO;
@@ -1893,17 +1886,17 @@ set_default_conf(void)
   ConfigFileEntry.pace_wait_simple = 1;
   ConfigFileEntry.short_motd = NO;
   ConfigFileEntry.ping_cookie = NO;
-  ConfigFileEntry.no_oper_flood = NO;     /* XXX */
-  ConfigFileEntry.true_no_oper_flood = NO;  /* XXX */
+  ConfigFileEntry.no_oper_flood = NO;
+  ConfigFileEntry.true_no_oper_flood = NO;
   ConfigFileEntry.oper_pass_resv = YES;
-  ConfigFileEntry.glines = NO;            /* XXX */
-  ConfigFileEntry.gline_time = 12 * 3600; /* XXX */
+  ConfigFileEntry.glines = NO;
+  ConfigFileEntry.gline_time = 12 * 3600;
   ConfigFileEntry.idletime = 0;
   ConfigFileEntry.max_targets = MAX_TARGETS_DEFAULT;
   ConfigFileEntry.client_flood = CLIENT_FLOOD_DEFAULT;
-  ConfigFileEntry.oper_only_umodes = UMODE_DEBUG;  /* XXX */
+  ConfigFileEntry.oper_only_umodes = UMODE_DEBUG;
   ConfigFileEntry.oper_umodes = UMODE_BOTS | UMODE_LOCOPS | UMODE_SERVNOTICE |
-    UMODE_OPERWALL | UMODE_WALLOP;        /* XXX */
+    UMODE_OPERWALL | UMODE_WALLOP;
   DupString(ConfigFileEntry.servlink_path, SLPATH);
 #ifdef HAVE_LIBCRYPTO
   /* jdc -- This is our default value for a cipher.  According to the
@@ -2009,7 +2002,7 @@ lookup_confhost(struct ConfItem *conf)
   /* Get us ready for a bind() and don't bother doing dns lookup */
   hints.ai_flags = AI_PASSIVE | AI_NUMERICHOST;
 
-  if (irc_getaddrinfo(aconf->host, NULL, &hints, &res))
+  if (getaddrinfo(aconf->host, NULL, &hints, &res))
   {
     conf_dns_lookup(aconf);
     return;
@@ -2020,7 +2013,7 @@ lookup_confhost(struct ConfItem *conf)
   memcpy(&aconf->ipnum, res->ai_addr, res->ai_addrlen);
   aconf->ipnum.ss_len = res->ai_addrlen;
   aconf->ipnum.ss.ss_family = res->ai_family;
-  irc_freeaddrinfo(res);
+  freeaddrinfo(res);
 }
 
 /* conf_connect_allowed()
@@ -2372,7 +2365,7 @@ get_oper_name(const struct Client *client_p)
   struct AccessItem *aconf;
 
   /* +5 for !,@,{,} and null */
-  static char buffer[NICKLEN+USERLEN+HOSTLEN+HOSTLEN+5];
+  static char buffer[NICKLEN + USERLEN + HOSTLEN + HOSTLEN + 5];
 
   if (MyConnect(client_p))
   {
@@ -2383,9 +2376,8 @@ get_oper_name(const struct Client *client_p)
 
       if (IsConfOperator(aconf))
       {
-	ircsprintf(buffer, "%s!%s@%s{%s}", client_p->name,
-		   client_p->username, client_p->host,
-		   conf->name);
+	snprintf(buffer, sizeof(buffer), "%s!%s@%s{%s}", client_p->name,
+                 client_p->username, client_p->host, conf->name);
 	return buffer;
       }
     }
@@ -2396,8 +2388,8 @@ get_oper_name(const struct Client *client_p)
     assert(0); /* Oper without oper conf! */
   }
 
-  ircsprintf(buffer, "%s!%s@%s{%s}", client_p->name,
-	     client_p->username, client_p->host, client_p->servptr->name);
+  snprintf(buffer, sizeof(buffer), "%s!%s@%s{%s}", client_p->name,
+	   client_p->username, client_p->host, client_p->servptr->name);
   return buffer;
 }
 
@@ -2449,20 +2441,26 @@ read_conf_files(int cold)
   fbclose(conf_parser_ctx.conf_file);
 
   add_isupport("NETWORK", ServerInfo.network_name, -1);
-  ircsprintf(chanmodes, "b%s%s:%d", ConfigChannel.use_except ? "e" : "",
-             ConfigChannel.use_invex ? "I" : "", ConfigChannel.max_bans);
+  snprintf(chanmodes, sizeof(chanmodes), "b%s%s:%d",
+           ConfigChannel.use_except ? "e" : "",
+           ConfigChannel.use_invex ? "I" : "", ConfigChannel.max_bans);
   add_isupport("MAXLIST", chanmodes, -1);
   add_isupport("MAXTARGETS", NULL, ConfigFileEntry.max_targets);
+
   if (ConfigChannel.disable_local_channels)
     add_isupport("CHANTYPES", "#", -1);
   else
     add_isupport("CHANTYPES", "#&", -1);
-  ircsprintf(chanlimit, "%s:%d", ConfigChannel.disable_local_channels ? "#" : "#&",
-	     ConfigChannel.max_chans_per_user);
+
+  snprintf(chanlimit, sizeof(chanlimit), "%s:%d",
+           ConfigChannel.disable_local_channels ? "#" : "#&",
+	   ConfigChannel.max_chans_per_user);
   add_isupport("CHANLIMIT", chanlimit, -1);
-  ircsprintf(chanmodes, "%s%s%s", ConfigChannel.use_except ? "e" : "",
-	     ConfigChannel.use_invex ? "I" : "", "b,k,l,imnpst");
+  snprintf(chanmodes, sizeof(chanmodes), "%s%s%s",
+           ConfigChannel.use_except ? "e" : "",
+	   ConfigChannel.use_invex ? "I" : "", "b,k,l,imnpstOS");
   add_isupport("CHANNELLEN", NULL, LOCAL_CHANNELLEN);
+
   if (ConfigChannel.use_except)
     add_isupport("EXCEPTS", "e", -1);
   if (ConfigChannel.use_invex)
@@ -2633,9 +2631,7 @@ clear_out_old_conf(void)
   clear_out_address_conf();
 
   /* clean out module paths */
-#ifndef STATIC_MODULES
   mod_clear_paths();
-#endif
 
   /* clean out ServerInfo */
   MyFree(ServerInfo.description);
@@ -3118,27 +3114,24 @@ conf_yy_fatal_error(const char *msg)
  * Originally written by Dianora (Diane, db@db.net)
  */
 time_t
-valid_tkline(char *p, int minutes)
+valid_tkline(const char *p, int minutes)
 {
   time_t result = 0;
 
-  while (*p)
+  for (; *p; ++p)
   {
-    if (IsDigit(*p))
-    {
-      result *= 10;
-      result += ((*p) & 0xF);
-      p++;
-    }
-    else
+    if (!IsDigit(*p))
       return 0;
+
+    result *= 10;
+    result += ((*p) & 0xF);
   }
 
-  /* in the degenerate case where oper does a /quote kline 0 user@host :reason 
+  /*
+   * In the degenerate case where oper does a /quote kline 0 user@host :reason 
    * i.e. they specifically use 0, I am going to return 1 instead
    * as a return value of non-zero is used to flag it as a temporary kline
    */
-
   if (result == 0)
     result = 1;
 

@@ -163,8 +163,6 @@ extern const char *get_locale(void);
 #define RPL_LOCALUSERS       265
 #define RPL_GLOBALUSERS      266
 
-#define RPL_WHOISSSL         275
-
 #define RPL_ACCEPTLIST	     281
 #define RPL_ENDOFACCEPT      282
 
@@ -371,6 +369,7 @@ extern const char *get_locale(void);
 /*	ERR_LINKSET	     469	unreal */
 /*	ERR_LINKCHANNEL	     470	unreal */
 /*      ERR_KICKEDFROMCHAN   470         aircd */
+#define ERR_OPERONLYCHAN     470
 #define ERR_CHANNELISFULL    471
 #define ERR_UNKNOWNMODE      472
 #define ERR_INVITEONLYCHAN   473
@@ -380,8 +379,7 @@ extern const char *get_locale(void);
 #define ERR_BANLISTFULL      478        /* I stole the numeric from ircu -db */
 #define ERR_BADCHANNAME      479
 /* 	ERR_LINKFAIL	     479	unreal */
-/*	ERR_CANNOTKNOCK	     480	unreal */
-/*	ERR_NOULINE	     480	austnet */
+#define ERR_SSLONLYCHAN      480
 #define ERR_NOPRIVILEGES     481
 #define ERR_CHANOPRIVSNEEDED 482
 #define ERR_CANTKILLSERVER   483
@@ -452,12 +450,16 @@ extern const char *get_locale(void);
 	RPL_EODUMP	     642	unreal
 */
 
+#define RPL_WHOISSECURE      671
 #define RPL_MODLIST          702
 #define RPL_ENDOFMODLIST     703
 
 #define RPL_HELPSTART        704
 #define RPL_HELPTXT          705
 #define RPL_ENDOFHELP        706
+
+#define RPL_ETRACE_FULL      708
+#define RPL_ETRACE           709
 
 #define RPL_KNOCK	     710
 #define RPL_KNOCKDLVR	     711

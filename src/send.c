@@ -31,7 +31,6 @@
 #include "dbuf.h"
 #include "irc_string.h"
 #include "ircd.h"
-#include "ircd_snprintf.h"
 #include "handlers.h"
 #include "numeric.h"
 #include "fdlist.h"
@@ -42,7 +41,6 @@
 #include "s_log.h"
 #include "memory.h"
 #include "hook.h"
-#include "irc_getnameinfo.h"
 #include "packet.h"
 
 
@@ -77,9 +75,9 @@ send_format(char *lsendbuf, int bufsize, const char *pattern, va_list args)
    * continuation message lines.  See section 7 for more details about
    * current implementations.
    */
-  len = ircd_vsnprintf(NULL, lsendbuf, bufsize - 1, pattern, args);
+  len = vsnprintf(lsendbuf, bufsize - 1, pattern, args);
   if (len > bufsize - 2)
-    len = bufsize - 2;  /* for C99 compatible snprintfs */
+    len = bufsize - 2;  /* required by some versions of vsnprintf */
 
   lsendbuf[len++] = '\r';
   lsendbuf[len++] = '\n';
@@ -886,7 +884,7 @@ sendto_match_servs(struct Client *source_p, const char *mask, int cap,
   int found = 0;
 
   va_start(args, pattern);
-  ircd_vsnprintf(NULL, buffer, sizeof(buffer), pattern, args);
+  vsnprintf(buffer, sizeof(buffer), pattern, args);
   va_end(args);
 
   ++current_serial;
@@ -1073,7 +1071,7 @@ ts_warn(const char *pattern, ...)
   }
 
   va_start(args, pattern);
-  ircd_vsnprintf(NULL, buffer, sizeof(buffer), pattern, args);
+  vsnprintf(buffer, sizeof(buffer), pattern, args);
   va_end(args);
 
   sendto_realops_flags(UMODE_ALL, L_ALL, "%s", buffer);
@@ -1131,7 +1129,7 @@ kill_client_ll_serv_butone(struct Client *one, struct Client *source_p,
   char buf_uid[IRCD_BUFSIZE], buf_nick[IRCD_BUFSIZE];
   int len_uid = 0, len_nick = 0;
 
-  if (HasID(source_p) && (me.id[0] != '\0'))
+  if (HasID(source_p))
   {
     have_uid = 1;
     va_start(args, pattern);

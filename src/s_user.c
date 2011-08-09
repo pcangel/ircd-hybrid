@@ -54,8 +54,7 @@
 #include "msg.h"
 #include "watch.h"
 
-unsigned int MaxClientCount     = 1;
-unsigned int MaxConnectionCount = 1;
+
 struct Callback *entering_umode_cb = NULL;
 struct Callback *umode_cb = NULL;
 
@@ -234,13 +233,13 @@ show_lusers(struct Client *source_p)
 
   if (!ConfigServerHide.hide_servers || IsOper(source_p))
     sendto_one(source_p, form_str(RPL_STATSCONN), from, to,
-               MaxConnectionCount, MaxClientCount, Count.totalrestartcount);
+               Count.max_loc_con, Count.max_loc_cli, Count.totalrestartcount);
 
-  if (Count.local > MaxClientCount)
-    MaxClientCount = Count.local;
+  if (Count.local > Count.max_loc_cli)
+    Count.max_loc_cli = Count.local;
 
-  if ((Count.local + Count.myserver) > MaxConnectionCount)
-    MaxConnectionCount = Count.local + Count.myserver; 
+  if ((Count.local + Count.myserver) > Count.max_loc_con)
+    Count.max_loc_con = Count.local + Count.myserver; 
 }
 
 /* show_isupport()
@@ -281,9 +280,9 @@ show_isupport(struct Client *source_p)
 void
 register_local_user(struct Client *source_p)
 {
+  const char *id = NULL;
   const struct AccessItem *aconf = NULL;
   dlink_node *ptr = NULL;
-  dlink_node *m = NULL;
 
   assert(source_p != NULL);
   assert(source_p == source_p->from);
@@ -408,7 +407,8 @@ register_local_user(struct Client *source_p)
     sendto_realops_flags(UMODE_REJ, L_ALL, "Invalid username: %s (%s@%s)",
                          source_p->name, source_p->username, source_p->host);
     ++ServerStats.is_ref;
-    ircsprintf(tmpstr2, "Invalid username [%s]", source_p->username);
+    snprintf(tmpstr2, sizeof(tmpstr2), "Invalid username [%s]",
+             source_p->username);
     exit_client(source_p, &me, tmpstr2);
     return;
   }
@@ -416,24 +416,19 @@ register_local_user(struct Client *source_p)
   if (check_xline(source_p))
     return;
 
-  if (me.id[0])
-  {
-    const char *id = NULL;
+  while (hash_find_id((id = uid_get())) != NULL)
+    ;
 
-    while (hash_find_id((id = uid_get())) != NULL)
-      ;
-
-    strlcpy(source_p->id, id, sizeof(source_p->id));
-    hash_add_id(source_p);
-  }
+  strlcpy(source_p->id, id, sizeof(source_p->id));
+  hash_add_id(source_p);
 
   sendto_realops_flags(UMODE_CCONN, L_ALL,
-                       "Client connecting: %s (%s@%s) [%s] {%s} [%s]",
+                       "Client connecting: %s (%s@%s) [%s] {%s} [%s] <%s>",
                        source_p->name, source_p->username, source_p->host,
                        ConfigFileEntry.hide_spoof_ips && IsIPSpoof(source_p) ?
                        "255.255.255.255" : source_p->sockhost,
                        get_client_class(source_p),
-                       source_p->info);
+                       source_p->info, source_p->id);
 
   sendto_realops_flags(UMODE_CCONN_FULL, L_ALL,
                        "CLICONN %s %s %s %s %s %s %s 0 %s",
@@ -442,9 +437,9 @@ register_local_user(struct Client *source_p)
                        "255.255.255.255" : source_p->sockhost,
 		       get_client_class(source_p),
 		       ConfigFileEntry.hide_spoof_ips && IsIPSpoof(source_p) ?
-                           "<hidden>" : source_p->client_host,
+                           "<hidden>" : source_p->localClient->client_host,
 		       ConfigFileEntry.hide_spoof_ips && IsIPSpoof(source_p) ?
-                           "<hidden>" : source_p->client_server,
+                           "<hidden>" : source_p->localClient->client_server,
                        source_p->info);
 
 
@@ -474,13 +469,10 @@ register_local_user(struct Client *source_p)
 
   source_p->localClient->allow_read = MAX_FLOOD_BURST;
 
-  assert(dlinkFindDelete(&unknown_list, source_p));
+  assert(dlinkFind(&unknown_list, source_p));
 
-  if ((m = dlinkFindDelete(&unknown_list, source_p)) != NULL)
-  {
-    free_dlink_node(m);
-    dlinkAdd(source_p, &source_p->localClient->lclient_node, &local_client_list);
-  }
+  dlink_move_node(&source_p->localClient->lclient_node,
+                  &unknown_list, &local_client_list);
 
   user_welcome(source_p);
   add_user_host(source_p->username, source_p->host, 0);
@@ -815,7 +807,7 @@ set_user_mode(struct Client *client_p, struct Client *source_p,
      return;
   }
 
-  if (source_p != target_p || target_p->from != source_p->from)
+  if (source_p != target_p)
   {
      sendto_one(source_p, form_str(ERR_USERSDONTMATCH),
                 me.name, source_p->name);
@@ -873,7 +865,6 @@ set_user_mode(struct Client *client_p, struct Client *source_p,
               break;
 
             ClearOper(source_p);
-            source_p->umodes &= ~ConfigFileEntry.oper_only_umodes;
             Count.oper--;
 
             if (MyConnect(source_p))
@@ -882,6 +873,7 @@ set_user_mode(struct Client *client_p, struct Client *source_p,
 
               detach_conf(source_p, OPER_TYPE);
               ClearOperFlags(source_p);
+              source_p->umodes &= ~ConfigFileEntry.oper_only_umodes;
 
               if ((dm = dlinkFindDelete(&oper_list, source_p)) != NULL)
                 free_dlink_node(dm);
@@ -1090,11 +1082,11 @@ user_welcome(struct Client *source_p)
 
   if (ConfigFileEntry.short_motd)
   {
-    sendto_one(source_p, "NOTICE %s :*** Notice -- motd was last changed at %s",
-               source_p->name, ConfigFileEntry.motd.lastChangedDate);
+    sendto_one(source_p, ":%s NOTICE %s :*** Notice -- motd was last changed at %s",
+               me.name, source_p->name, ConfigFileEntry.motd.lastChangedDate);
     sendto_one(source_p,
-               "NOTICE %s :*** Notice -- Please read the motd if you haven't "
-               "read it", source_p->name);
+               ":%s NOTICE %s :*** Notice -- Please read the motd if you haven't "
+               "read it", me.name, source_p->name);
     sendto_one(source_p, form_str(RPL_MOTDSTART),
                me.name, source_p->name, me.name);
     sendto_one(source_p, form_str(RPL_MOTD),
@@ -1213,7 +1205,6 @@ static char new_uid[TOTALSIDUID + 1];     /* allow for \0 */
 int
 valid_sid(const char *sid)
 {
-
   if (strlen(sid) == IRC_MAXSID)
     if (IsDigit(*sid))
       if (IsAlNum(*(sid + 1)) && IsAlNum(*(sid + 2)))
@@ -1238,15 +1229,10 @@ init_uid(void)
 
   memset(new_uid, 0, sizeof(new_uid));
 
-  if (ServerInfo.sid != NULL)
-  {
+  if (!EmptyString(ServerInfo.sid))
     strlcpy(new_uid, ServerInfo.sid, sizeof(new_uid));
-    strlcpy(me.id, ServerInfo.sid, sizeof(me.id));
 
-    hash_add_id(&me);
-  }
-
-  for (i = 0; i < IRC_MAXSID; i++)
+  for (i = 0; i < IRC_MAXSID; ++i)
     if (new_uid[i] == '\0') 
       new_uid[i] = 'A';
 

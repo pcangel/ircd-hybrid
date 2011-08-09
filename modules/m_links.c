@@ -35,37 +35,22 @@
 #include "motd.h"
 #include "parse.h"
 #include "modules.h"
-#include "hook.h"
 
-static void do_links(struct Client *, int, char **);
-static void m_links(struct Client*, struct Client*, int, char**);
-static void mo_links(struct Client*, struct Client*, int, char**);
-static void ms_links(struct Client*, struct Client*, int, char**);
+static void do_links(struct Client *, int, char *[]);
+static void m_links(struct Client *, struct Client *, int, char *[]);
+static void mo_links(struct Client *, struct Client *, int, char *[]);
+static void ms_links(struct Client *, struct Client *, int, char *[]);
 
 struct Message links_msgtab = {
   "LINKS", 0, 0, 0, 0, MFLG_SLOW, 0,
   {m_unregistered, m_links, ms_links, m_ignore, mo_links, m_ignore}
 };
 
-#ifndef STATIC_MODULES
 const char *_version = "$Revision$";
-static struct Callback *links_cb;
-
-static void *
-va_links(va_list args)
-{
-  struct Client *source_p = va_arg(args, struct Client *);
-  int parc = va_arg(args, int);
-  char **parv = va_arg(args, char **);
-
-  do_links(source_p, parc, parv);
-  return NULL;
-}
 
 void
 _modinit(void)
 {
-  links_cb = register_callback("doing_links", va_links);
   mod_add_cmd(&links_msgtab);
 }
 
@@ -73,14 +58,17 @@ void
 _moddeinit(void)
 {
   mod_del_cmd(&links_msgtab);
-  uninstall_hook(links_cb, va_links);
 }
 
-#endif
-
 static void
-do_links(struct Client *source_p, int parc, char **parv)
+do_links(struct Client *source_p, int parc, char *parv[])
 {
+  sendto_realops_flags(UMODE_SPY, L_ALL,
+                       "LINKS requested by %s (%s@%s) [%s]",
+                       source_p->name,
+                       source_p->username, source_p->host,
+                       source_p->servptr->name);
+
   if (IsOper(source_p) || !ConfigServerHide.flatten_links)
   {
     const char *mask = (parc > 2 ? parv[2] : parv[1]);
@@ -168,11 +156,7 @@ m_links(struct Client *client_p, struct Client *source_p,
     return;
   }
 
-#ifdef STATIC_MODULES
   do_links(source_p, parc, parv);
-#else
-  execute_callback(links_cb, source_p, parc, parv);
-#endif
 }
 
 static void
@@ -181,17 +165,11 @@ mo_links(struct Client *client_p, struct Client *source_p,
 {
   if (parc > 2) 
     if (!ConfigFileEntry.disable_remote || IsOper(source_p))
-    {
-        if (hunt_server(client_p, source_p, ":%s LINKS %s :%s", 1, parc, parv)
-            != HUNTED_ISME)
+      if (hunt_server(client_p, source_p, ":%s LINKS %s :%s", 1,
+                      parc, parv) != HUNTED_ISME)
         return;
-    }
 
-#ifdef STATIC_MODULES
   do_links(source_p, parc, parv);
-#else
-  execute_callback(links_cb, source_p, parc, parv);
-#endif
 }
 
 /*
@@ -207,8 +185,8 @@ static void
 ms_links(struct Client *client_p, struct Client *source_p,
          int parc, char *parv[])
 {
-  if (hunt_server(client_p, source_p, ":%s LINKS %s :%s", 1, parc, parv)
-      != HUNTED_ISME)
+  if (hunt_server(client_p, source_p, ":%s LINKS %s :%s", 1,
+                  parc, parv) != HUNTED_ISME)
     return;
 
   if (IsClient(source_p))

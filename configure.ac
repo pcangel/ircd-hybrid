@@ -3,8 +3,8 @@
 
 AC_REVISION([$Id$])
 
-AC_PREREQ(2.67)
-AC_INIT([ircd-hybrid], [7.4], [bugs@ircd-hybrid.org])
+AC_PREREQ(2.68)
+AC_INIT([ircd-hybrid], [7.3.0], [bugs@ircd-hybrid.org])
 AM_INIT_AUTOMAKE(1.11.1)
 AM_MAINTAINER_MODE
 AC_CONFIG_HEADER(config.h)
@@ -31,19 +31,13 @@ AX_CHECK_LIB_IPV6
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_BIGENDIAN
 
-AC_CHECK_SIZEOF(short)
-AC_CHECK_SIZEOF(int)
-AC_CHECK_SIZEOF(long)
-AC_CHECK_SIZEOF(void *)
-AC_CHECK_SIZEOF(int64_t)
-AC_CHECK_SIZEOF(long long)
-
 # Checks for library functions.
 AC_CHECK_FUNCS_ONCE(mmap     \
                     strtok_r \
                     usleep   \
                     strlcat  \
-                    strlcpy)
+                    strlcpy  \
+                    socketpair)
 
 # Checks for header files.
 AC_CHECK_HEADERS_ONCE(crypt.h        \
@@ -171,18 +165,18 @@ fi
 
 AS_IF([test "$cf_enable_openssl" != "no"],
  [AC_MSG_CHECKING(for OpenSSL 0.9.7 or above)
-  AC_RUN_IFELSE(
+  AC_RUN_IFELSE([
     AC_LANG_PROGRAM([
     #include <openssl/opensslv.h>
     #include <stdlib.h>],
-    [[exit(!(OPENSSL_VERSION_NUMBER >= 0x00907000));]]),
+    [[ exit(!(OPENSSL_VERSION_NUMBER >= 0x00907000)); ]])],
   [cf_openssl_version_ok=yes],
   [cf_openssl_version_ok=no],
   [cf_openssl_version_ok=no])
 
   AS_IF([test "$cf_openssl_version_ok" = "yes"],
     [AC_MSG_RESULT(found)
-   
+
     AC_CHECK_LIB(crypto, RSA_free)
     AS_IF([test "$ac_cv_lib_crypto_RSA_free" = "yes"],
       [AC_CHECK_FUNCS(EVP_bf_cfb           \

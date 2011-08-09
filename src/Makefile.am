@@ -23,14 +23,11 @@ ircd_SOURCES = balloc.c          \
                hash.c            \
                hook.c            \
                hostmask.c        \
-               irc_getaddrinfo.c \
-               irc_getnameinfo.c \
                irc_res.c         \
                irc_reslib.c      \
                irc_string.c      \
                ircd.c            \
                ircd_signal.c     \
-               ircd_snprintf.c   \
                list.c            \
                listener.c        \
                match.c           \

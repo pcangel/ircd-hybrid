@@ -37,7 +37,6 @@
 #include "s_log.h"
 #include "client.h"	/* for UMODE_ALL only */
 #include "irc_string.h"
-#include "irc_getaddrinfo.h"
 #include "sprintf_irc.h"
 #include "memory.h"
 #include "modules.h"
@@ -180,7 +179,6 @@ unhook_hub_leaf_confs(void)
 %token  EXCEED_LIMIT
 %token  EXEMPT
 %token  FAILED_OPER_NOTICE
-%token  FAKENAME
 %token  IRCD_FLAGS
 %token  FLATTEN_LINKS
 %token  FFAILED_OPERLOG
@@ -468,18 +466,14 @@ modules_item:   modules_module | modules_path | error ';' ;
 
 modules_module: MODULE '=' QSTRING ';'
 {
-#ifndef STATIC_MODULES /* NOOP in the static case */
   if (conf_parser_ctx.pass == 2)
     add_conf_module(libio_basename(yylval.string));
-#endif
 };
 
 modules_path: PATH '=' QSTRING ';'
 {
-#ifndef STATIC_MODULES
   if (conf_parser_ctx.pass == 2)
     mod_add_path(yylval.string);
-#endif
 };
 
 
@@ -627,13 +621,14 @@ serverinfo_rsa_private_key_file: RSA_PRIVATE_KEY_FILE '=' QSTRING ';'
 serverinfo_name: NAME '=' QSTRING ';' 
 {
   /* this isn't rehashable */
-  if (conf_parser_ctx.pass == 2)
+  if (conf_parser_ctx.pass == 2 && !ServerInfo.name)
   {
-    if (ServerInfo.name == NULL)
+    if (valid_servname(yylval.string))
+      DupString(ServerInfo.name, yylval.string);
+    else
     {
-      /* the ircd will exit() in main() if we dont set one */
-      if (strlen(yylval.string) <= HOSTLEN)
-        DupString(ServerInfo.name, yylval.string);
+      ilog(L_ERROR, "Ignoring serverinfo::name -- invalid name. Aborting.");
+      exit(0);
     }
   }
 };
@@ -647,7 +642,7 @@ serverinfo_sid: IRCD_SID '=' QSTRING ';'
       DupString(ServerInfo.sid, yylval.string);
     else
     {
-      ilog(L_ERROR, "Ignoring config file entry SID -- invalid SID. Aborting.");
+      ilog(L_ERROR, "Ignoring serverinfo::sid -- invalid SID. Aborting.");
       exit(0);
     }
   }
@@ -697,7 +692,7 @@ serverinfo_vhost: VHOST '=' QSTRING ';'
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags    = AI_PASSIVE | AI_NUMERICHOST;
 
-    if (irc_getaddrinfo(yylval.string, NULL, &hints, &res))
+    if (getaddrinfo(yylval.string, NULL, &hints, &res))
       ilog(L_ERROR, "Invalid netmask for server vhost(%s)", yylval.string);
     else
     {
@@ -706,7 +701,7 @@ serverinfo_vhost: VHOST '=' QSTRING ';'
       memcpy(&ServerInfo.ip, res->ai_addr, res->ai_addrlen);
       ServerInfo.ip.ss.ss_family = res->ai_family;
       ServerInfo.ip.ss_len = res->ai_addrlen;
-      irc_freeaddrinfo(res);
+      freeaddrinfo(res);
 
       ServerInfo.specific_ipv4_vhost = 1;
     }
@@ -726,7 +721,7 @@ serverinfo_vhost6: VHOST6 '=' QSTRING ';'
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags    = AI_PASSIVE | AI_NUMERICHOST;
 
-    if (irc_getaddrinfo(yylval.string, NULL, &hints, &res))
+    if (getaddrinfo(yylval.string, NULL, &hints, &res))
       ilog(L_ERROR, "Invalid netmask for server vhost6(%s)", yylval.string);
     else
     {
@@ -735,7 +730,7 @@ serverinfo_vhost6: VHOST6 '=' QSTRING ';'
       memcpy(&ServerInfo.ip6, res->ai_addr, res->ai_addrlen);
       ServerInfo.ip6.ss.ss_family = res->ai_family;
       ServerInfo.ip6.ss_len = res->ai_addrlen;
-      irc_freeaddrinfo(res);
+      freeaddrinfo(res);
 
       ServerInfo.specific_ipv6_vhost = 1;
     }
@@ -769,20 +764,7 @@ serverinfo_max_clients: T_MAX_CLIENTS '=' NUMBER ';'
 serverinfo_hub: HUB '=' TBOOL ';' 
 {
   if (conf_parser_ctx.pass == 2)
-  {
-    if (yylval.number)
-    {
-      ServerInfo.hub = 1;
-      delete_capability("HUB");
-      add_capability("HUB", CAP_HUB, 1);
-    }
-    else if (ServerInfo.hub)
-    {
-
-      ServerInfo.hub = 0;
-      delete_capability("HUB");
-    }
-  }
+    ServerInfo.hub = yylval.number;
 };
 
 /***************************************************************************
@@ -2306,7 +2288,7 @@ connect_name_b: | connect_name_t;
 connect_items:  connect_items connect_item | connect_item;
 connect_item:   connect_name | connect_host | connect_vhost |
 		connect_send_password | connect_accept_password |
-		connect_aftype | connect_port | connect_fakename |
+		connect_aftype | connect_port |
 		connect_flags | connect_hub_mask | connect_leaf_mask |
 		connect_class | connect_encrypted |
 		connect_rsa_public_key_file | connect_cipher_preference |
@@ -2357,7 +2339,7 @@ connect_vhost: VHOST '=' QSTRING ';'
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags    = AI_PASSIVE | AI_NUMERICHOST;
 
-    if (irc_getaddrinfo(yylval.string, NULL, &hints, &res))
+    if (getaddrinfo(yylval.string, NULL, &hints, &res))
       ilog(L_ERROR, "Invalid netmask for server vhost(%s)", yylval.string);
     else
     {
@@ -2366,7 +2348,7 @@ connect_vhost: VHOST '=' QSTRING ';'
       memcpy(&yy_aconf->my_ipnum, res->ai_addr, res->ai_addrlen);
       yy_aconf->my_ipnum.ss.ss_family = res->ai_family;
       yy_aconf->my_ipnum.ss_len = res->ai_addrlen;
-      irc_freeaddrinfo(res);
+      freeaddrinfo(res);
     }
   }
 };
@@ -2423,15 +2405,6 @@ connect_aftype: AFTYPE '=' T_IPV4 ';'
   if (conf_parser_ctx.pass == 2)
     yy_aconf->aftype = AF_INET6;
 #endif
-};
-
-connect_fakename: FAKENAME '=' QSTRING ';'
-{
-  if (conf_parser_ctx.pass == 2)
-  {
-    MyFree(yy_aconf->fakename);
-    DupString(yy_aconf->fakename, yylval.string);
-  }
 };
 
 connect_flags: IRCD_FLAGS

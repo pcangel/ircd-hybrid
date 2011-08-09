@@ -45,7 +45,6 @@
 #include "s_gline.h"
 #include "parse.h"
 #include "modules.h"
-#include "irc_getnameinfo.h"
 
 
 static void me_kline(struct Client *, struct Client *, int, char **);
@@ -72,7 +71,6 @@ struct Message unkline_msgtab = {
    {m_unregistered, m_not_oper, ms_unkline, me_unkline, mo_unkline, m_ignore}
 };
 
-#ifndef STATIC_MODULES
 void
 _modinit(void)
 {
@@ -92,7 +90,6 @@ _moddeinit(void)
 }
 
 const char *_version = "$Revision$";
-#endif
 
 /* mo_kline()
  *
