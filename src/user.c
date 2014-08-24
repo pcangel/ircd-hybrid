@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  *  USA
  */
 
@@ -877,7 +877,7 @@ user_set_hostmask(struct Client *target_p, const char *hostname, const int what)
 
   if (MyClient(target_p))
   {
-    sendto_one_numeric(target_p, &me, RPL_NEWHOSTIS, target_p->host);
+    sendto_one_numeric(target_p, &me, RPL_VISIBLEHOST, target_p->host);
     clear_ban_cache_client(target_p);
   }
 

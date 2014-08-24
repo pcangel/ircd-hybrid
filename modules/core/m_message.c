@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  *  USA
  */
 
@@ -748,13 +748,13 @@ m_notice(struct Client *source_p, int parc, char *parv[])
 
 static struct Message privmsg_msgtab =
 {
-  "PRIVMSG", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
+  "PRIVMSG", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
   { m_unregistered, m_privmsg, m_privmsg, m_ignore, m_privmsg, m_ignore }
 };
 
 static struct Message notice_msgtab =
 {
-  "NOTICE", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
+  "NOTICE", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
   { m_unregistered, m_notice, m_notice, m_ignore, m_notice, m_ignore }
 };
 

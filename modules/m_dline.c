@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  *  USA
  */
 
@@ -367,7 +367,7 @@ ms_dline(struct Client *source_p, int parc, char *parv[])
 
 static struct Message dline_msgtab =
 {
-  "DLINE", 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
+  "DLINE", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
   { m_unregistered, m_not_oper, ms_dline, m_ignore, mo_dline, m_ignore }
 };
 

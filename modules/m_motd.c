@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  *  USA
  */
 
@@ -110,7 +110,7 @@ ms_motd(struct Client *source_p, int parc, char *parv[])
 
 static struct Message motd_msgtab =
 {
-  "MOTD", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
+  "MOTD", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
   { m_unregistered, m_motd, ms_motd, m_ignore, ms_motd, m_ignore }
 };
 

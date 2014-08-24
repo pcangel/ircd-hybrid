@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  *  USA
  */
 
@@ -54,19 +54,19 @@ mr_dumb_proxy(struct Client *source_p, int parc, char *parv[])
 
 static struct Message post_msgtab =
 {
-  "POST", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
+  "POST", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
   { mr_dumb_proxy, m_ignore, m_ignore, m_ignore, m_ignore, m_ignore }
 };
 
 static struct Message get_msgtab =
 {
-  "GET", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
+  "GET", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
   { mr_dumb_proxy, m_ignore, m_ignore, m_ignore, m_ignore, m_ignore }
 };
 
 static struct Message put_msgtab =
 {
-  "PUT", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
+  "PUT", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
   { mr_dumb_proxy, m_ignore, m_ignore, m_ignore, m_ignore, m_ignore }
 };
 

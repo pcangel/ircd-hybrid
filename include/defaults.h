@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  *  USA
  */
 
@@ -108,7 +108,6 @@
 /* ConfigServerInfo default values */
 #define NETWORK_NAME_DEFAULT "EFnet"             /* default for network_name */
 #define NETWORK_DESC_DEFAULT "Eris Free Network" /* default for network_desc */
-#define SERVICE_NAME_DEFAULT "service.someserver"
 
 #define GLINE_REQUEST_EXPIRE_DEFAULT 600
 

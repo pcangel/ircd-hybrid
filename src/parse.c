@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  *  USA
  */
 
@@ -102,7 +102,7 @@ static struct MessageTree
  * side effects -
  */
 static void
-parse_remove_unknown(struct Client *client_p, char *lsender, char *lbuffer)
+parse_remove_unknown(struct Client *client_p, const char *lsender, char *lbuffer)
 {
   /*
    * Do kill if it came from a server because it means there is a ghost
@@ -297,7 +297,7 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
      * Copy the prefix to 'sender' assuming it terminates
      * with SPACE (or NULL, which is an error, though).
      */
-    char *sender = ++ch;
+    const char *sender = ++ch;
 
     if ((s = strchr(ch, ' ')))
     {
@@ -307,8 +307,8 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
 
     if (*sender && IsServer(client_p))
     {
-      if ((from = find_person(client_p, sender)) == NULL)
-        from = hash_find_server(sender);
+      if ((from = hash_find_id(sender)) == NULL)
+        from = hash_find_client(sender);
 
       /*
        * Hmm! If the client corresponding to the prefix is not found--what is
@@ -403,6 +403,14 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
   /* Note initially true: s == NULL || *(s - 1) == '\0' !! */
 
   para[parc] = ch;
+
+  if (msg_ptr && (msg_ptr->flags & MFLG_EXTRA))
+  {
+    /*
+     * XXX: This will have to go away after the command handler rewrite
+     */
+    para[++parc] = msg_ptr->extra;
+  }
 
   if (s)
   {

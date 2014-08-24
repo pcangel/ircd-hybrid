@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  *  USA
  */
 
@@ -145,7 +145,7 @@ ms_bmask(struct Client *source_p, int parc, char *parv[])
 
 static struct Message bmask_msgtab =
 {
-  "BMASK", 0, 0, 5, MAXPARA, MFLG_SLOW, 0,
+  "BMASK", NULL, 0, 0, 5, MAXPARA, MFLG_SLOW, 0,
   { m_ignore, m_ignore, ms_bmask, m_ignore, m_ignore, m_ignore }
 };
 

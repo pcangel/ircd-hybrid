@@ -16,7 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  *  USA
  */
 
@@ -171,7 +171,7 @@ ms_svsmode(struct Client *source_p, int parc, char *parv[])
 
 static struct Message svsmode_msgtab =
 {
-  "SVSMODE", 0, 0, 4, MAXPARA, MFLG_SLOW, 0,
+  "SVSMODE", NULL, 0, 0, 4, MAXPARA, MFLG_SLOW, 0,
   { m_ignore, m_ignore, ms_svsmode, m_ignore, m_ignore, m_ignore }
 };
 

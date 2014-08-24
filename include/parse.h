@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  *  USA
  */
 
@@ -74,6 +74,7 @@ typedef int (*MessageHandler)(struct Client *, int, char *[]);
 struct Message
 {
   const char *cmd;
+  void *extra;
   unsigned int count;      /* number of times command used */
   unsigned int rcount;     /* number of times command used by server */
   unsigned int args_min; /* at least this many args must be passed
@@ -99,6 +100,7 @@ struct Message
 #define   MFLG_SLOW             0x001   /* Command can be executed roughly
                                          * once per 2 seconds.
                                          */
+#define MFLG_EXTRA 0x002
 #define MAXPARA    15
 
 extern void parse(struct Client *, char *, char *);

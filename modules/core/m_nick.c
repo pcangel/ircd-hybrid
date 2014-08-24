@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  *  USA
  */
 
@@ -842,13 +842,13 @@ ms_uid(struct Client *source_p, int parc, char *parv[])
 
 static struct Message nick_msgtab =
 {
-  "NICK", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
+  "NICK", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
   { mr_nick, m_nick, ms_nick, m_ignore, m_nick, m_ignore }
 };
 
 static struct Message uid_msgtab =
 {
-  "UID", 0, 0, 10, MAXPARA, MFLG_SLOW, 0,
+  "UID", NULL, 0, 0, 10, MAXPARA, MFLG_SLOW, 0,
   { m_ignore, m_ignore, ms_uid, m_ignore, m_ignore, m_ignore }
 };
 

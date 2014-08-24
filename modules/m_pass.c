@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  *  USA
  */
 
@@ -95,7 +95,7 @@ mr_pass(struct Client *source_p, int parc, char *parv[])
 
 static struct Message pass_msgtab =
 {
-  "PASS", 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
+  "PASS", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
   { mr_pass, m_registered, m_ignore, m_ignore, m_registered, mr_pass }
 };
 

@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  *  USA
  */
 
@@ -315,7 +315,7 @@ static const char *const replies[] =
 /* 282 RPL_ENDOFACCEPT */ ":End of /ACCEPT list.",
 /* 283 */ NULL,
 /* 284 */ NULL,
-/* 285 RPL_NEWHOSTIS */ ":Your new host is %s",
+/* 285 */ NULL,
 /* 286 */ NULL,
 /* 287 */ NULL,
 /* 288 */ NULL,
@@ -426,7 +426,7 @@ static const char *const replies[] =
 /* 393 */ NULL,
 /* 394 */ NULL,
 /* 395 */ NULL,
-/* 396 */ NULL,
+/* 396 RPL_VISIBLEHOST */ "%s :is now your visible host",
 /* 397 */ NULL,
 /* 398 */ NULL,
 /* 399 */ NULL,
@@ -494,7 +494,7 @@ static const char *const replies[] =
 /* 461 ERR_NEEDMOREPARAMS */ "%s :Not enough parameters",
 /* 462 ERR_ALREADYREGISTRED */ ":You may not reregister",
 /* 463 */ NULL,
-/* 464 ERR_PASSWDMISMATCH */ ":Password Incorrect",
+/* 464 ERR_PASSWDMISMATCH */ ":Password incorrect",
 /* 465 ERR_YOUREBANNEDCREEP */ ":You are banned from this server- %s",
 /* 466 */ NULL,
 /* 467 */ NULL,

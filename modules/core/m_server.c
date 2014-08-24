@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  *  USA
  */
 
@@ -829,13 +829,13 @@ ms_sid(struct Client *source_p, int parc, char *parv[])
 
 static struct Message server_msgtab =
 {
-  "SERVER", 0, 0, 4, MAXPARA, MFLG_SLOW, 0,
+  "SERVER", NULL, 0, 0, 4, MAXPARA, MFLG_SLOW, 0,
   { mr_server, m_registered, m_ignore, m_ignore, m_registered, m_ignore }
 };
 
 static struct Message sid_msgtab =
 {
-  "SID", 0, 0, 5, MAXPARA, MFLG_SLOW, 0,
+  "SID", NULL, 0, 0, 5, MAXPARA, MFLG_SLOW, 0,
   { m_ignore, m_ignore, ms_sid, m_ignore, m_ignore, m_ignore }
 };
 

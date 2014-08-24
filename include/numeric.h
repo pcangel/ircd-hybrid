@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
  *  USA
  */
 
@@ -106,7 +106,6 @@ enum irc_numerics
   RPL_WHOISCERTFP          = 276,
   RPL_ACCEPTLIST           = 281,
   RPL_ENDOFACCEPT          = 282,
-  RPL_NEWHOSTIS            = 285,
   RPL_AWAY                 = 301,
   RPL_USERHOST             = 302,
   RPL_ISON                 = 303,
@@ -161,6 +160,7 @@ enum irc_numerics
   RPL_REHASHING            = 382,
   RPL_RSACHALLENGE         = 386,
   RPL_TIME                 = 391,
+  RPL_VISIBLEHOST          = 396,
 
   /*
    * Errors are in the range from 400-599 currently and are grouped by what
