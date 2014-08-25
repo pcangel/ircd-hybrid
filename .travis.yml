@@ -23,6 +23,7 @@ addons:
     branch_pattern: coverity_scan
 
 script:
+ - ./configure --enable-assert
  - make
  - sudo make install
 
