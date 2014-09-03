@@ -254,18 +254,11 @@ server_estab(struct Client *client_p)
   MyFree(client_p->connection->password);
   client_p->connection->password = NULL;
 
-  /* If there is something in the serv_list, it might be this
-   * connecting server..
-   */
-  if (!ConfigServerInfo.hub && local_server_list.head)
+  if (!ConfigServerInfo.hub && dlink_list_length(&local_server_list))
   {
-    if (client_p != local_server_list.head->data || local_server_list.head->next)
-    {
-      ++ServerStats.is_ref;
-      sendto_one(client_p, "ERROR :I'm a leaf not a hub");
-      exit_client(client_p, "I'm a leaf");
-      return;
-    }
+    ++ServerStats.is_ref;
+    exit_client(client_p, "I'm a leaf not a hub");
+    return;
   }
 
   if (IsUnknown(client_p))
@@ -458,8 +451,7 @@ mr_server(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(parv[3]))
   {
-    sendto_one(source_p, "ERROR :No servername");
-    exit_client(source_p, "Wrong number of args");
+    exit_client(source_p, "No server description supplied");
     return 0;
   }
 
@@ -500,7 +492,6 @@ mr_server(struct Client *source_p, int parc, char *parv[])
     sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
                          "Link %s introduced server with bogus server ID %s",
                          get_client_name(source_p, MASK_IP), source_p->id);
-    sendto_one(source_p, "ERROR :Bogus server ID introduced");
     exit_client(source_p, "Bogus server ID introduced");
     return 0;
   }
@@ -522,7 +513,7 @@ mr_server(struct Client *source_p, int parc, char *parv[])
            "servername %s", get_client_name(source_p, MASK_IP), name);
       }
 
-      exit_client(source_p, "No connect{} block.");
+      exit_client(source_p, "No connect {} block.");
       return 0;
       /* NOT REACHED */
       break;
@@ -585,7 +576,6 @@ mr_server(struct Client *source_p, int parc, char *parv[])
     sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
                          "Attempt to re-introduce server %s from %s",
                          name, get_client_name(source_p, MASK_IP));
-    sendto_one(source_p, "ERROR :Server already exists.");
     exit_client(source_p, "Server already exists");
     return 0;
   }
@@ -600,7 +590,6 @@ mr_server(struct Client *source_p, int parc, char *parv[])
                          "Attempt to re-introduce server %s SID %s from %s",
                          name, source_p->id,
                          get_client_name(source_p, MASK_IP));
-    sendto_one(source_p, "ERROR :Server ID already exists.");
     exit_client(source_p, "Server ID already exists");
     return 0;
   }
@@ -646,7 +635,7 @@ ms_sid(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(parv[4]))
   {
-    sendto_one(client_p, "ERROR :No servername");
+    exit_client(client_p, "No server description supplied");
     return 0;
   }
 
@@ -658,7 +647,6 @@ ms_sid(struct Client *source_p, int parc, char *parv[])
     sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
                          "Link %s introduced server with bogus server name %s",
                          get_client_name(client_p, MASK_IP), parv[1]);
-    sendto_one(client_p, "ERROR :Bogus server name introduced");
     exit_client(client_p, "Bogus server name introduced");
     return 0;
   }
@@ -671,7 +659,6 @@ ms_sid(struct Client *source_p, int parc, char *parv[])
     sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
                          "Link %s introduced server with bogus server ID %s",
                          get_client_name(client_p, MASK_IP), parv[3]);
-    sendto_one(client_p, "ERROR :Bogus server ID introduced");
     exit_client(client_p, "Bogus server ID introduced");
     return 0;
   }
@@ -679,28 +666,26 @@ ms_sid(struct Client *source_p, int parc, char *parv[])
   /* collision on SID? */
   if ((target_p = hash_find_id(parv[3])))
   {
-    sendto_one(client_p, "ERROR :SID %s already exists", parv[3]);
     sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
-                         "Link %s cancelled, SID %s already exists",
+                         "Link %s cancelled, server ID %s already exists",
                          get_client_name(client_p, SHOW_IP), parv[3]);
     sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
-                         "Link %s cancelled, SID %s already exists",
+                         "Link %s cancelled, server ID %s already exists",
                          client_p->name, parv[3]);
-    exit_client(client_p, "SID Exists");
+    exit_client(client_p, "Link cancelled, server ID already exists");
     return 0;
   }
 
   /* collision on name? */
   if ((target_p = hash_find_server(parv[1])))
   {
-    sendto_one(client_p, "ERROR :Server %s already exists", parv[1]);
     sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
                          "Link %s cancelled, server %s already exists",
                          get_client_name(client_p, SHOW_IP), parv[1]);
     sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
                          "Link %s cancelled, server %s already exists",
                          client_p->name, parv[1]);
-    exit_client(client_p, "Server Exists");
+    exit_client(client_p, "Server exists");
     return 0;
   }
 
@@ -782,7 +767,7 @@ ms_sid(struct Client *source_p, int parc, char *parv[])
     sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
                          "Link %s introduced leafed server %s.",
                          get_client_name(client_p, MASK_IP), parv[1]);
-    exit_client(client_p, "Leafed Server.");
+    exit_client(client_p, "Leafed server.");
     return 0;
   }
 
