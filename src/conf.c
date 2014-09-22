@@ -1143,6 +1143,9 @@ get_oper_name(const struct Client *client_p)
   /* +5 for !,@,{,} and null */
   static char buffer[NICKLEN + USERLEN + HOSTLEN + HOSTLEN + 5];
 
+  if (IsServer(client_p))
+    return client_p->name;
+
   if (MyConnect(client_p))
   {
     if ((cnode = client_p->connection->confs.head))
@@ -1754,7 +1757,7 @@ find_user_host(struct Client *source_p, char *user_host_or_nick,
 
     if (IsExemptKline(target_p))
     {
-      if (!IsServer(source_p))
+      if (IsClient(source_p))
         sendto_one_notice(source_p, &me, ":%s is E-lined", target_p->name);
       return 0;
     }
