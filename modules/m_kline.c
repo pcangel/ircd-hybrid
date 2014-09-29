@@ -136,7 +136,6 @@ m_kline_add_kline(struct Client *source_p, struct MaskItem *conf,
 static int
 already_placed_kline(struct Client *source_p, const char *luser, const char *lhost, int warn)
 {
-  const char *reason;
   struct irc_ssaddr iphost, *piphost;
   struct MaskItem *conf = NULL;
   int t = 0;
@@ -156,12 +155,8 @@ already_placed_kline(struct Client *source_p, const char *luser, const char *lho
   if ((conf = find_conf_by_address(lhost, piphost, CONF_KLINE, aftype, luser, NULL, 0)))
   {
     if (IsClient(source_p) && warn)
-    {
-      reason = conf->reason ? conf->reason : CONF_NOREASON;
       sendto_one_notice(source_p, &me, ":[%s@%s] already K-Lined by [%s@%s] - %s",
-                        luser, lhost, conf->user, conf->host, reason);
-    }
-
+                        luser, lhost, conf->user, conf->host, conf->reason);
     return 1;
   }
 
@@ -223,10 +218,10 @@ mo_kline(struct Client *source_p, int parc, char *parv[])
   conf->user = xstrdup(user);
 
   if (tkline_time)
-    snprintf(buffer, sizeof(buffer), "Temporary K-line %d min. - %s (%s)",
-             (int)(tkline_time/60), reason, current_date);
+    snprintf(buffer, sizeof(buffer), "Temporary K-line %d min. - %.*s (%s)",
+             (int)(tkline_time/60), REASONLEN, reason, current_date);
   else
-    snprintf(buffer, sizeof(buffer), "%s (%s)", reason, current_date);
+    snprintf(buffer, sizeof(buffer), "%.*s (%s)", REASONLEN, reason, current_date);
 
   conf->reason = xstrdup(buffer);
   m_kline_add_kline(source_p, conf, tkline_time);
@@ -269,10 +264,10 @@ me_kline(struct Client *source_p, int parc, char *parv[])
     conf->user = xstrdup(kuser);
 
     if (tkline_time)
-      snprintf(buffer, sizeof(buffer), "Temporary K-line %u min. - %s (%s)",
-               (unsigned int)(tkline_time/60), kreason, current_date);
+      snprintf(buffer, sizeof(buffer), "Temporary K-line %u min. - %.*s (%s)",
+               (unsigned int)(tkline_time/60), REASONLEN, kreason, current_date);
     else
-      snprintf(buffer, sizeof(buffer), "%s (%s)", kreason, current_date);
+      snprintf(buffer, sizeof(buffer), "%.*s (%s)", REASONLEN, kreason, current_date);
 
     conf->reason = xstrdup(buffer);
     m_kline_add_kline(source_p, conf, tkline_time);
