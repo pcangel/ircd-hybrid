@@ -34,3 +34,5 @@ notifications:
   channels:
   - "irc.ircd-hybrid.org#ircd-coders"
   skip_join: true
+
+after_failure: "cat config.log"
