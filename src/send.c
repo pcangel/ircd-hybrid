@@ -88,6 +88,7 @@ send_message(struct Client *to, struct dbuf_block *buf)
 {
   assert(!IsMe(to));
   assert(to != &me);
+  assert(MyConnect(to));
 
   if (dbuf_length(&to->connection->buf_sendq) + buf->size > get_sendq(&to->connection->confs))
   {
@@ -130,15 +131,7 @@ send_message(struct Client *to, struct dbuf_block *buf)
 static void
 send_message_remote(struct Client *to, struct Client *from, struct dbuf_block *buf)
 {
-  to = to->from;
-
-  if (!MyConnect(to))
-  {
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
-                         "Server send message to %s [%s] dropped from %s(Not local server)",
-                         to->name, to->from->name, from->name);
-    return;
-  }
+  assert(MyConnect(to));
 
   /* Optimize by checking if (from && to) before everything */
   /* we set to->from up there.. */
@@ -353,6 +346,7 @@ sendto_one_numeric(struct Client *to, struct Client *from, enum irc_numerics num
     numstr = va_arg(args, const char *);
   else
     numstr = numeric_form(numeric);
+
   send_format(buffer, numstr, args);
   va_end(args);
 
@@ -571,7 +565,6 @@ sendto_common_channels_local(struct Client *user, int touser, unsigned int cap,
 /* sendto_channel_local()
  *
  * inputs	- member status mask, e.g. CHFL_CHANOP | CHFL_VOICE
- *              - whether to ignore +D clients (YES/NO)
  *              - pointer to channel to send to
  *              - var args pattern
  * output	- NONE
@@ -579,7 +572,7 @@ sendto_common_channels_local(struct Client *user, int touser, unsigned int cap,
  *		  locally connected to this server.
  */
 void
-sendto_channel_local(unsigned int type, int nodeaf, struct Channel *chptr,
+sendto_channel_local(unsigned int type, struct Channel *chptr,
                      const char *pattern, ...)
 {
   va_list args;
@@ -600,8 +593,7 @@ sendto_channel_local(unsigned int type, int nodeaf, struct Channel *chptr,
     if (type && (ms->flags & type) == 0)
       continue;
 
-    if (IsDefunct(target_p) ||
-        (nodeaf && HasUMode(target_p, UMODE_DEAF)))
+    if (IsDefunct(target_p))
       continue;
 
     send_message(target_p, buffer);
@@ -623,14 +615,12 @@ sendto_channel_local(unsigned int type, int nodeaf, struct Channel *chptr,
  * WARNING - +D clients are omitted
  */
 void
-sendto_channel_local_butone(struct Client *one, unsigned int type, unsigned int cap,
+sendto_channel_local_butone(struct Client *one, unsigned int poscap, unsigned int negcap,
                             struct Channel *chptr, const char *pattern, ...)
 {
   va_list args;
   dlink_node *ptr = NULL;
-  struct dbuf_block *buffer;
-
-  buffer = dbuf_alloc();
+  struct dbuf_block *buffer = dbuf_alloc();
 
   va_start(args, pattern);
   send_format(buffer, pattern, args);
@@ -641,16 +631,16 @@ sendto_channel_local_butone(struct Client *one, unsigned int type, unsigned int 
     struct Membership *ms = ptr->data;
     struct Client *target_p = ms->client_p;
 
-    if (type && (ms->flags & type) == 0)
-      continue;
-
     if (one && target_p == one->from)
       continue;
 
-    if (IsDefunct(target_p) || HasUMode(target_p, UMODE_DEAF))
+    if (IsDefunct(target_p))
       continue;
 
-    if (HasCap(target_p, cap) != cap)
+    if (poscap && HasCap(target_p, poscap) != poscap)
+      continue;
+
+    if (negcap && HasCap(target_p, negcap))
       continue;
 
     send_message(target_p, buffer);
@@ -774,9 +764,7 @@ sendto_match_servs(struct Client *source_p, const char *mask, unsigned int cap,
 {
   va_list args;
   dlink_node *ptr = NULL, *ptr_next = NULL;
-  struct dbuf_block *buffer;
-
-  buffer = dbuf_alloc();
+  struct dbuf_block *buffer = dbuf_alloc();
 
   dbuf_put_fmt(buffer, ":%s ", source_p->id);
   va_start(args, pattern);
@@ -796,19 +784,19 @@ sendto_match_servs(struct Client *source_p, const char *mask, unsigned int cap,
     if (target_p->from->connection->serial == current_serial)
       continue;
 
-    if (!match(mask, target_p->name))
-    {
-      /*
-       * if we set the serial here, then we'll never do a
-       * match() again, if !IsCapable()
-       */
-      target_p->from->connection->serial = current_serial;
+    if (match(mask, target_p->name))
+      continue;
 
-      if (!IsCapable(target_p->from, cap))
-        continue;
+    /*
+     * If we set the serial here, then we'll never do a
+     * match() again, if !IsCapable()
+     */
+    target_p->from->connection->serial = current_serial;
 
-      send_message_remote(target_p->from, source_p, buffer);
-    }
+    if (!IsCapable(target_p->from, cap))
+      continue;
+
+    send_message_remote(target_p->from, source_p, buffer);
   }
 
   dbuf_ref_free(buffer);
@@ -847,10 +835,10 @@ sendto_anywhere(struct Client *to, struct Client *from,
   send_format(buffer, pattern, args);
   va_end(args);
 
-  if (MyClient(to))
+  if (MyConnect(to))
     send_message(to, buffer);
   else
-    send_message_remote(to, from, buffer);
+    send_message_remote(to->from, from, buffer);
 
   dbuf_ref_free(buffer);
 }

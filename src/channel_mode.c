@@ -112,7 +112,7 @@ int
 add_id(struct Client *client_p, struct Channel *chptr, char *banid, unsigned int type)
 {
   dlink_list *list = NULL;
-  dlink_node *ptr = NULL;
+  dlink_node *node = NULL;
   struct Ban *banptr = NULL;
   size_t len = 0;
   char name[NICKLEN + 1] = "";
@@ -171,9 +171,9 @@ add_id(struct Client *client_p, struct Channel *chptr, char *banid, unsigned int
       return 0;
   }
 
-  DLINK_FOREACH(ptr, list->head)
+  DLINK_FOREACH(node, list->head)
   {
-    banptr = ptr->data;
+    banptr = node->data;
 
     if (!irccmp(banptr->name, name) &&
         !irccmp(banptr->user, user) &&
@@ -218,7 +218,7 @@ static int
 del_id(struct Channel *chptr, char *banid, unsigned int type)
 {
   dlink_list *list = NULL;
-  dlink_node *ptr = NULL;
+  dlink_node *node = NULL;
   char name[NICKLEN + 1] = "";
   char user[USERLEN + 1] = "";
   char host[HOSTLEN + 1] = "";
@@ -261,9 +261,9 @@ del_id(struct Channel *chptr, char *banid, unsigned int type)
       return 0;
   }
 
-  DLINK_FOREACH(ptr, list->head)
+  DLINK_FOREACH(node, list->head)
   {
-    struct Ban *banptr = ptr->data;
+    struct Ban *banptr = node->data;
 
     if (!irccmp(name, banptr->name) &&
         !irccmp(user, banptr->user) &&
@@ -349,11 +349,11 @@ fix_key(char *arg)
 void
 clear_ban_cache(struct Channel *chptr)
 {
-  dlink_node *ptr = NULL;
+  dlink_node *node = NULL;
 
-  DLINK_FOREACH(ptr, chptr->locmembers.head)
+  DLINK_FOREACH(node, chptr->locmembers.head)
   {
-    struct Membership *ms = ptr->data;
+    struct Membership *ms = node->data;
     ms->flags &= ~(CHFL_BAN_SILENCED|CHFL_BAN_CHECKED);
   }
 }
@@ -361,11 +361,11 @@ clear_ban_cache(struct Channel *chptr)
 void
 clear_ban_cache_client(struct Client *client_p)
 {
-  dlink_node *ptr = NULL;
+  dlink_node *node = NULL;
 
-  DLINK_FOREACH(ptr, client_p->channel.head)
+  DLINK_FOREACH(node, client_p->channel.head)
   {
-    struct Membership *ms = ptr->data;
+    struct Membership *ms = node->data;
     ms->flags &= ~(CHFL_BAN_SILENCED|CHFL_BAN_CHECKED);
   }
 }
@@ -433,8 +433,7 @@ chm_simple(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
     mode_changes[mode_count].letter = c;
     mode_changes[mode_count].arg = NULL;
     mode_changes[mode_count].id = NULL;
-    mode_changes[mode_count].dir = dir;
-    mode_changes[mode_count++].mems = ALL_MEMBERS;
+    mode_changes[mode_count++].dir = dir;
   }
   else if (dir == MODE_DEL) /* && (chptr->mode.mode & d)) */
   {
@@ -445,8 +444,7 @@ chm_simple(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
     mode_changes[mode_count].letter = c;
     mode_changes[mode_count].arg = NULL;
     mode_changes[mode_count].id = NULL;
-    mode_changes[mode_count].dir = dir;
-    mode_changes[mode_count++].mems = ALL_MEMBERS;
+    mode_changes[mode_count++].dir = dir;
   }
 }
 
@@ -485,8 +483,7 @@ chm_registered(struct Client *source_p, struct Channel *chptr, int parc, int *pa
     mode_changes[mode_count].letter = c;
     mode_changes[mode_count].arg = NULL;
     mode_changes[mode_count].id = NULL;
-    mode_changes[mode_count].dir = dir;
-    mode_changes[mode_count++].mems = ALL_MEMBERS;
+    mode_changes[mode_count++].dir = dir;
   }
   else if (dir == MODE_DEL) /* && (chptr->mode.mode & d)) */
   {
@@ -497,8 +494,7 @@ chm_registered(struct Client *source_p, struct Channel *chptr, int parc, int *pa
     mode_changes[mode_count].letter = c;
     mode_changes[mode_count].arg = NULL;
     mode_changes[mode_count].id = NULL;
-    mode_changes[mode_count].dir = dir;
-    mode_changes[mode_count++].mems = ALL_MEMBERS;
+    mode_changes[mode_count++].dir = dir;
   }
 }
 
@@ -539,8 +535,7 @@ chm_operonly(struct Client *source_p, struct Channel *chptr, int parc, int *parn
     mode_changes[mode_count].letter = c;
     mode_changes[mode_count].arg = NULL;
     mode_changes[mode_count].id = NULL;
-    mode_changes[mode_count].dir = dir;
-    mode_changes[mode_count++].mems = ALL_MEMBERS;
+    mode_changes[mode_count++].dir = dir;
   }
   else if (dir == MODE_DEL) /* && (chptr->mode.mode & d)) */
   {
@@ -551,8 +546,7 @@ chm_operonly(struct Client *source_p, struct Channel *chptr, int parc, int *parn
     mode_changes[mode_count].letter = c;
     mode_changes[mode_count].arg = NULL;
     mode_changes[mode_count].id = NULL;
-    mode_changes[mode_count].dir = dir;
-    mode_changes[mode_count++].mems = ALL_MEMBERS;
+    mode_changes[mode_count++].dir = dir;
   }
 }
 
@@ -564,16 +558,16 @@ chm_ban(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
 
   if (dir == MODE_QUERY || parc <= *parn)
   {
-    dlink_node *ptr = NULL;
+    dlink_node *node = NULL;
 
     if (*errors & SM_ERR_RPL_B)
       return;
 
     *errors |= SM_ERR_RPL_B;
 
-    DLINK_FOREACH(ptr, chptr->banlist.head)
+    DLINK_FOREACH(node, chptr->banlist.head)
     {
-      const struct Ban *banptr = ptr->data;
+      const struct Ban *banptr = node->data;
       sendto_one_numeric(source_p, &me, RPL_BANLIST, chptr->name,
                          banptr->name, banptr->user, banptr->host,
                          banptr->who, banptr->when);
@@ -598,7 +592,7 @@ chm_ban(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
 
   mask = nuh_mask[*parn];
   memcpy(mask, parv[*parn], sizeof(nuh_mask[*parn]));
-  ++*parn;
+  ++(*parn);
 
   if (!MyConnect(source_p))
     if (strchr(mask, ' '))
@@ -621,8 +615,7 @@ chm_ban(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
   mode_changes[mode_count].letter = c;
   mode_changes[mode_count].arg = mask;
   mode_changes[mode_count].id = NULL;
-  mode_changes[mode_count].dir = dir;
-  mode_changes[mode_count++].mems = ALL_MEMBERS;
+  mode_changes[mode_count++].dir = dir;
 }
 
 static void
@@ -633,16 +626,16 @@ chm_except(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
 
   if (dir == MODE_QUERY || parc <= *parn)
   {
-    dlink_node *ptr = NULL;
+    dlink_node *node = NULL;
 
     if (*errors & SM_ERR_RPL_E)
       return;
 
     *errors |= SM_ERR_RPL_E;
 
-    DLINK_FOREACH(ptr, chptr->exceptlist.head)
+    DLINK_FOREACH(node, chptr->exceptlist.head)
     {
-      const struct Ban *banptr = ptr->data;
+      const struct Ban *banptr = node->data;
 
       sendto_one_numeric(source_p, &me, RPL_EXCEPTLIST, chptr->name,
                          banptr->name, banptr->user, banptr->host,
@@ -668,7 +661,7 @@ chm_except(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
 
   mask = nuh_mask[*parn];
   memcpy(mask, parv[*parn], sizeof(nuh_mask[*parn]));
-  ++*parn;
+  ++(*parn);
 
   if (!MyConnect(source_p))
     if (strchr(mask, ' '))
@@ -691,8 +684,7 @@ chm_except(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
   mode_changes[mode_count].letter = c;
   mode_changes[mode_count].arg = mask;
   mode_changes[mode_count].id = NULL;
-  mode_changes[mode_count].dir = dir;
-  mode_changes[mode_count++].mems = ALL_MEMBERS;
+  mode_changes[mode_count++].dir = dir;
 }
 
 static void
@@ -703,16 +695,16 @@ chm_invex(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
 
   if (dir == MODE_QUERY || parc <= *parn)
   {
-    dlink_node *ptr = NULL;
+    dlink_node *node = NULL;
 
     if (*errors & SM_ERR_RPL_I)
       return;
 
     *errors |= SM_ERR_RPL_I;
 
-    DLINK_FOREACH(ptr, chptr->invexlist.head)
+    DLINK_FOREACH(node, chptr->invexlist.head)
     {
-      const struct Ban *banptr = ptr->data;
+      const struct Ban *banptr = node->data;
 
       sendto_one_numeric(source_p, &me, RPL_INVEXLIST, chptr->name,
                          banptr->name, banptr->user, banptr->host,
@@ -738,7 +730,7 @@ chm_invex(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
 
   mask = nuh_mask[*parn];
   memcpy(mask, parv[*parn], sizeof(nuh_mask[*parn]));
-  ++*parn;
+  ++(*parn);
 
   if (!MyConnect(source_p))
     if (strchr(mask, ' '))
@@ -761,8 +753,7 @@ chm_invex(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
   mode_changes[mode_count].letter = c;
   mode_changes[mode_count].arg = mask;
   mode_changes[mode_count].id = NULL;
-  mode_changes[mode_count].dir = dir;
-  mode_changes[mode_count++].mems = ALL_MEMBERS;
+  mode_changes[mode_count++].dir = dir;
 }
 
 static void
@@ -808,8 +799,7 @@ chm_voice(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
   mode_changes[mode_count].letter = c;
   mode_changes[mode_count].arg = target_p->name;
   mode_changes[mode_count].id = target_p->id;
-  mode_changes[mode_count].dir = dir;
-  mode_changes[mode_count++].mems = ALL_MEMBERS;
+  mode_changes[mode_count++].dir = dir;
 
   if (dir == MODE_ADD)
     AddMemberFlag(member, CHFL_VOICE);
@@ -860,8 +850,7 @@ chm_hop(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
   mode_changes[mode_count].letter = c;
   mode_changes[mode_count].arg = target_p->name;
   mode_changes[mode_count].id = target_p->id;
-  mode_changes[mode_count].dir = dir;
-  mode_changes[mode_count++].mems = ALL_MEMBERS;
+  mode_changes[mode_count++].dir = dir;
 
   if (dir == MODE_ADD)
     AddMemberFlag(member, CHFL_HALFOP);
@@ -912,8 +901,7 @@ chm_op(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
   mode_changes[mode_count].letter = c;
   mode_changes[mode_count].arg = target_p->name;
   mode_changes[mode_count].id = target_p->id;
-  mode_changes[mode_count].dir = dir;
-  mode_changes[mode_count++].mems = ALL_MEMBERS;
+  mode_changes[mode_count++].dir = dir;
 
   if (dir == MODE_ADD)
     AddMemberFlag(member, CHFL_CHANOP);
@@ -957,8 +945,7 @@ chm_limit(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
     mode_changes[mode_count].letter = c;
     mode_changes[mode_count].arg = lstr;
     mode_changes[mode_count].id = NULL;
-    mode_changes[mode_count].dir = dir;
-    mode_changes[mode_count++].mems = ALL_MEMBERS;
+    mode_changes[mode_count++].dir = dir;
 
     chptr->mode.limit = limit;
   }
@@ -972,8 +959,7 @@ chm_limit(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
     mode_changes[mode_count].letter = c;
     mode_changes[mode_count].arg = NULL;
     mode_changes[mode_count].id = NULL;
-    mode_changes[mode_count].dir = dir;
-    mode_changes[mode_count++].mems = ALL_MEMBERS;
+    mode_changes[mode_count++].dir = dir;
   }
 }
 
@@ -1012,13 +998,12 @@ chm_key(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
     mode_changes[mode_count].letter = c;
     mode_changes[mode_count].arg = chptr->mode.key;
     mode_changes[mode_count].id = NULL;
-    mode_changes[mode_count].dir = dir;
-    mode_changes[mode_count++].mems = ALL_MEMBERS;
+    mode_changes[mode_count++].dir = dir;
   }
   else if (dir == MODE_DEL)
   {
     if (parc > *parn)
-      (*parn)++;
+      ++(*parn);
 
     if (chptr->mode.key[0] == '\0')
       return;
@@ -1028,8 +1013,7 @@ chm_key(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
     mode_changes[mode_count].letter = c;
     mode_changes[mode_count].arg = "*";
     mode_changes[mode_count].id = NULL;
-    mode_changes[mode_count].dir = dir;
-    mode_changes[mode_count++].mems = ALL_MEMBERS;
+    mode_changes[mode_count++].dir = dir;
   }
 }
 
@@ -1393,14 +1377,14 @@ send_mode_changes_server(struct Client *source_p, struct Channel *chptr)
 
     modebuf[mbl++] = mode_changes[i].letter;
     modebuf[mbl] = '\0';
-    nc++;
+    ++nc;
 
     if (arg)
     {
       len = sprintf(parptr, "%s ", arg);
       pbl += len;
       parptr += len;
-      mc++;
+      ++mc;
     }
   }
 
@@ -1448,8 +1432,7 @@ send_mode_changes(struct Client *source_p, struct Channel *chptr)
 
   for (unsigned int i = 0; i < mode_count; ++i)
   {
-    if (mode_changes[i].letter == 0 ||
-        mode_changes[i].mems == ONLY_SERVERS)
+    if (mode_changes[i].letter == 0)
       continue;
 
     arg = mode_changes[i].arg;
@@ -1458,7 +1441,7 @@ send_mode_changes(struct Client *source_p, struct Channel *chptr)
     else
       arglen = 0;
 
-    if ((mc == MAXMODEPARAMS)  ||
+    if ((mc == MAXMODEPARAMS) ||
         ((arglen + mbl + pbl + 2) > IRCD_BUFSIZE) ||
         ((arglen + pbl + BAN_FUDGE) >= MODEBUFLEN))
     {
@@ -1466,7 +1449,7 @@ send_mode_changes(struct Client *source_p, struct Channel *chptr)
         modebuf[mbl - 1] = '\0';
 
       if (nc)
-        sendto_channel_local(ALL_MEMBERS, 0, chptr, "%s %s", modebuf, parabuf);
+        sendto_channel_local(0, chptr, "%s %s", modebuf, parabuf);
 
       nc = 0;
       mc = 0;
@@ -1493,14 +1476,14 @@ send_mode_changes(struct Client *source_p, struct Channel *chptr)
 
     modebuf[mbl++] = mode_changes[i].letter;
     modebuf[mbl] = '\0';
-    nc++;
+    ++nc;
 
     if (arg)
     {
       len = sprintf(parptr, "%s ", arg);
       pbl += len;
       parptr += len;
-      mc++;
+      ++mc;
     }
   }
 
@@ -1508,7 +1491,7 @@ send_mode_changes(struct Client *source_p, struct Channel *chptr)
     parabuf[pbl - 1] = '\0';
 
   if (nc)
-    sendto_channel_local(ALL_MEMBERS, 0, chptr, "%s %s", modebuf, parabuf);
+    sendto_channel_local(0, chptr, "%s %s", modebuf, parabuf);
 
   send_mode_changes_server(source_p, chptr);
 }

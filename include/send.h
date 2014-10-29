@@ -34,12 +34,6 @@ enum { NOCAPS = 0 };
 
 enum
 {
-  ALL_MEMBERS  = 0,
-  ONLY_SERVERS = 1
-};
-
-enum
-{
   L_ALL   = 0,
   L_OPER  = 1,
   L_ADMIN = 2
@@ -77,8 +71,8 @@ extern void sendto_channel_butone(struct Client *, struct Client *,
                                   const char *, ...) AFP(5,6);
 extern void sendto_common_channels_local(struct Client *, int, unsigned int,
                                          const char *, ...) AFP(4,5);
-extern void sendto_channel_local(unsigned int, int, struct Channel *,
-                                 const char *, ...) AFP(4,5);
+extern void sendto_channel_local(unsigned int, struct Channel *,
+                                 const char *, ...) AFP(3,4);
 extern void sendto_channel_local_butone(struct Client *, unsigned int, unsigned int, struct Channel *,
                                         const char *, ...) AFP(5,6);
 extern void sendto_server(struct Client *,
