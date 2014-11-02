@@ -58,15 +58,15 @@ m_invite(struct Client *source_p, int parc, char *parv[])
 {
   struct Client *target_p = NULL;
   struct Channel *chptr = NULL;
-  struct Membership *ms = NULL;
+  struct Membership *member = NULL;
 
   if (parc < 2)
   {
-    const dlink_node *ptr = NULL;
+    const dlink_node *node = NULL;
 
-    DLINK_FOREACH(ptr, source_p->connection->invited.head)
+    DLINK_FOREACH(node, source_p->connection->invited.head)
       sendto_one_numeric(source_p, &me, RPL_INVITELIST,
-                         ((struct Channel *)ptr->data)->name);
+                         ((struct Channel *)node->data)->name);
     sendto_one_numeric(source_p, &me, RPL_ENDOFINVITELIST);
     return 0;
   }
@@ -92,13 +92,13 @@ m_invite(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if ((ms = find_channel_link(source_p, chptr)) == NULL)
+  if ((member = find_channel_link(source_p, chptr)) == NULL)
   {
     sendto_one_numeric(source_p, &me, ERR_NOTONCHANNEL, chptr->name);
     return 0;
   }
 
-  if (!has_member_flags(ms, CHFL_CHANOP))
+  if (!has_member_flags(member, CHFL_CHANOP | CHFL_HALFOP))
   {
     sendto_one_numeric(source_p, &me, ERR_CHANOPRIVSNEEDED, chptr->name);
     return 0;
@@ -148,7 +148,7 @@ m_invite(struct Client *source_p, int parc, char *parv[])
   else if (target_p->from != source_p->from)
     sendto_one(target_p, ":%s INVITE %s %s %lu",
                source_p->id, target_p->id,
-               chptr->name, (unsigned long)chptr->channelts);
+               chptr->name, (unsigned long)chptr->creationtime);
   return 0;
 }
 
@@ -184,7 +184,7 @@ ms_invite(struct Client *source_p, int parc, char *parv[])
     return 0;
 
   if (parc > 3 && IsDigit(*parv[3]))
-    if (atoi(parv[3]) > chptr->channelts)
+    if (atoi(parv[3]) > chptr->creationtime)
       return 0;
 
   if (MyConnect(target_p))
@@ -208,7 +208,7 @@ ms_invite(struct Client *source_p, int parc, char *parv[])
   else if (target_p->from != source_p->from)
     sendto_one(target_p, ":%s INVITE %s %s %lu",
                source_p->id, target_p->id,
-               chptr->name, (unsigned long)chptr->channelts);
+               chptr->name, (unsigned long)chptr->creationtime);
   return 0;
 }
 

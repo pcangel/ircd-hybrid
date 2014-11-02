@@ -119,14 +119,14 @@ set_user_mode(struct Client *source_p, const int parc, char *parv[])
 
             if (MyConnect(source_p))
             {
-              dlink_node *ptr = NULL;
+              dlink_node *node = NULL;
 
               detach_conf(source_p, CONF_OPER);
               ClrOFlag(source_p);
               DelUMode(source_p, ConfigGeneral.oper_only_umodes);
 
-              if ((ptr = dlinkFindDelete(&oper_list, source_p)))
-                free_dlink_node(ptr);
+              if ((node = dlinkFindDelete(&oper_list, source_p)))
+                free_dlink_node(node);
             }
           }
 
@@ -220,7 +220,7 @@ m_mode(struct Client *source_p, int parc, char *parv[])
 
     channel_modes(chptr, source_p, modebuf, parabuf);
     sendto_one_numeric(source_p, &me, RPL_CHANNELMODEIS, chptr->name, modebuf, parabuf);
-    sendto_one_numeric(source_p, &me, RPL_CREATIONTIME, chptr->name, chptr->channelts);
+    sendto_one_numeric(source_p, &me, RPL_CREATIONTIME, chptr->name, chptr->creationtime);
     return 0;
   }
 

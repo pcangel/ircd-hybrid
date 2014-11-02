@@ -50,7 +50,7 @@
  *      - parv[1] = nickname
  *      - parv[2] = TS
  *      - parv[3] = mode
- *      - parv[4] = optional argument (services id, vhost)
+ *      - parv[4] = optional argument (services account, vhost)
  */
 static int
 ms_svsmode(struct Client *source_p, int parc, char *parv[])
@@ -89,7 +89,7 @@ ms_svsmode(struct Client *source_p, int parc, char *parv[])
 
       case 'd':
         if (!EmptyString(extarg))
-          strlcpy(target_p->svid, extarg, sizeof(target_p->svid));
+          strlcpy(target_p->account, extarg, sizeof(target_p->account));
         break;
 
       case 'x':
@@ -105,14 +105,14 @@ ms_svsmode(struct Client *source_p, int parc, char *parv[])
 
           if (MyConnect(target_p))
           {
-            dlink_node *dm = NULL;
+            dlink_node *node = NULL;
 
             detach_conf(target_p, CONF_OPER);
             ClrOFlag(target_p);
             DelUMode(target_p, ConfigGeneral.oper_only_umodes);
 
-            if ((dm = dlinkFindDelete(&oper_list, target_p)))
-              free_dlink_node(dm);
+            if ((node = dlinkFindDelete(&oper_list, target_p)))
+              free_dlink_node(node);
           }
         }
 

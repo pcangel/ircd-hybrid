@@ -104,7 +104,7 @@ make_client(struct Client *from)
   client_p->hnext  = client_p;
   SetUnknown(client_p);
   strcpy(client_p->username, "unknown");
-  strcpy(client_p->svid, "0");
+  strcpy(client_p->account, "0");
 
   return client_p;
 }
@@ -303,8 +303,7 @@ check_conf_klines(void)
   {
     struct Client *client_p = node->data;
 
-    /* If a client is already being exited
-     */
+    /* If a client is already being exited */
     if (IsDead(client_p))
       continue;
 

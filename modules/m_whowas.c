@@ -46,15 +46,15 @@ do_whowas(struct Client *source_p, const int parc, char *parv[])
 {
   int cur = 0;
   int max = -1;
-  const dlink_node *ptr = NULL;
+  const dlink_node *node = NULL;
 
   if (parc > 2 && !EmptyString(parv[2]))
     if ((max = atoi(parv[2])) > 20 && !MyConnect(source_p))
       max = 20;
 
-  DLINK_FOREACH(ptr, WHOWASHASH[strhash(parv[1])].head)
+  DLINK_FOREACH(node, WHOWASHASH[strhash(parv[1])].head)
   {
-    const struct Whowas *temp = ptr->data;
+    const struct Whowas *temp = node->data;
 
     if (!irccmp(parv[1], temp->name))
     {
@@ -62,8 +62,8 @@ do_whowas(struct Client *source_p, const int parc, char *parv[])
                          temp->username, temp->hostname,
                          temp->realname);
 
-      if (!IsDigit(temp->svid[0]) && temp->svid[0] != '*')
-        sendto_one_numeric(source_p, &me, RPL_WHOISACCOUNT, temp->name, temp->svid, "was");
+      if (!IsDigit(temp->account[0]) && temp->account[0] != '*')
+        sendto_one_numeric(source_p, &me, RPL_WHOISACCOUNT, temp->name, temp->account, "was");
 
       if ((temp->shide || ConfigServerHide.hide_servers) && !HasUMode(source_p, UMODE_OPER))
         sendto_one_numeric(source_p, &me, RPL_WHOISSERVER, temp->name,

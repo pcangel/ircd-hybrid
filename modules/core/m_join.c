@@ -131,7 +131,7 @@ ms_join(struct Client *source_p, int parc, char *parv[])
   }
 
   newts   = atol(parv[1]);
-  oldts   = chptr->channelts;
+  oldts   = chptr->creationtime;
   oldmode = &chptr->mode;
 
   if (ConfigGeneral.ignore_bogus_ts)
@@ -160,15 +160,15 @@ ms_join(struct Client *source_p, int parc, char *parv[])
   }
 
   if (isnew)
-    chptr->channelts = newts;
+    chptr->creationtime = newts;
   else if (newts == 0 || oldts == 0)
-    chptr->channelts = 0;
+    chptr->creationtime = 0;
   else if (newts == oldts)
     ;
   else if (newts < oldts)
   {
     keep_our_modes = 0;
-    chptr->channelts = newts;
+    chptr->creationtime = newts;
   }
   else
     keep_new_modes = 0;
@@ -226,7 +226,7 @@ ms_join(struct Client *source_p, int parc, char *parv[])
     sendto_channel_local_butone(NULL, CAP_EXTENDED_JOIN, 0, chptr, ":%s!%s@%s JOIN %s %s :%s",
                                 source_p->name, source_p->username,
                                 source_p->host, chptr->name,
-                                (!IsDigit(source_p->svid[0]) && source_p->svid[0] != '*') ? source_p->svid : "*",
+                                (!IsDigit(source_p->account[0]) && source_p->account[0] != '*') ? source_p->account : "*",
                                 source_p->info);
     sendto_channel_local_butone(NULL, 0, CAP_EXTENDED_JOIN, chptr, ":%s!%s@%s JOIN :%s",
                                 source_p->name, source_p->username,
@@ -240,7 +240,7 @@ ms_join(struct Client *source_p, int parc, char *parv[])
   }
 
   sendto_server(source_p, NOCAPS, NOCAPS, ":%s JOIN %lu %s +",
-                source_p->id, (unsigned long)chptr->channelts, chptr->name);
+                source_p->id, (unsigned long)chptr->creationtime, chptr->name);
   return 0;
 }
 
@@ -383,14 +383,14 @@ remove_a_mode(struct Channel *chptr, struct Client *source_p, int mask, const ch
 
   DLINK_FOREACH(ptr, chptr->members.head)
   {
-    struct Membership *ms = ptr->data;
+    struct Membership *member = ptr->data;
 
-    if ((ms->flags & mask) == 0)
+    if ((member->flags & mask) == 0)
       continue;
 
-    ms->flags &= ~mask;
+    member->flags &= ~mask;
 
-    lpara[count++] = ms->client_p->name;
+    lpara[count++] = member->client_p->name;
 
     *mbuf++ = flag;
 

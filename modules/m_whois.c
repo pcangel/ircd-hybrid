@@ -87,12 +87,12 @@ whois_person(struct Client *source_p, struct Client *target_p)
 
   DLINK_FOREACH(lp, target_p->channel.head)
   {
-    const struct Membership *ms = lp->data;
-    int show = whois_can_see_channels(ms->chptr, source_p, target_p);
+    const struct Membership *member = lp->data;
+    int show = whois_can_see_channels(member->chptr, source_p, target_p);
 
     if (show)
     {
-      if ((cur_len + 4 + strlen(ms->chptr->name) + 1) > (IRCD_BUFSIZE - 2))
+      if ((cur_len + 4 + strlen(member->chptr->name) + 1) > (IRCD_BUFSIZE - 2))
       {
         *(t - 1) = '\0';
         sendto_one(source_p, "%s", buf);
@@ -100,8 +100,8 @@ whois_person(struct Client *source_p, struct Client *target_p)
         t = buf + mlen;
       }
 
-      tlen = sprintf(t, "%s%s%s ", show == 2 ? "~" : "", get_member_status(ms, 1),
-                     ms->chptr->name);
+      tlen = sprintf(t, "%s%s%s ", show == 2 ? "~" : "", get_member_status(member, 1),
+                     member->chptr->name);
       t += tlen;
       cur_len += tlen;
       reply_to_send = 1;
@@ -126,9 +126,9 @@ whois_person(struct Client *source_p, struct Client *target_p)
   if (HasUMode(target_p, UMODE_REGISTERED))
     sendto_one_numeric(source_p, &me, RPL_WHOISREGNICK, target_p->name);
 
-  if (!IsDigit(target_p->svid[0]) && target_p->svid[0] != '*')
+  if (!IsDigit(target_p->account[0]) && target_p->account[0] != '*')
     sendto_one_numeric(source_p, &me, RPL_WHOISACCOUNT, target_p->name,
-                       target_p->svid, "is");
+                       target_p->account, "is");
 
   if (target_p->away[0])
     sendto_one_numeric(source_p, &me, RPL_AWAY, target_p->name,
