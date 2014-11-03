@@ -83,7 +83,7 @@ const struct mode_letter chan_modes[] =
 static char *
 check_string(char *s)
 {
-  char *str = s;
+  char *const str = s;
   static char star[] = "*";
 
   if (EmptyString(str))
@@ -151,17 +151,17 @@ add_id(struct Client *client_p, struct Channel *chptr, char *banid, unsigned int
    * Re-assemble a new n!u@h and print it back to banid for sending
    * the mode to the channel.
    */
-  len = sprintf(banid, "%s!%s@%s", name, user, host);
+  len = snprintf(banid, IRCD_BUFSIZE, "%s!%s@%s", name, user, host);
 
   switch (type)
   {
     case CHFL_BAN:
       list = &chptr->banlist;
-      clear_ban_cache(chptr);
+      clear_ban_cache_channel(chptr);
       break;
     case CHFL_EXCEPTION:
       list = &chptr->exceptlist;
-      clear_ban_cache(chptr);
+      clear_ban_cache_channel(chptr);
       break;
     case CHFL_INVEX:
       list = &chptr->invexlist;
@@ -241,17 +241,17 @@ del_id(struct Channel *chptr, char *banid, unsigned int type)
    * Re-assemble a new n!u@h and print it back to banid for sending
    * the mode to the channel.
    */
-  sprintf(banid, "%s!%s@%s", name, user, host);
+  snprintf(banid, IRCD_BUFSIZE, "%s!%s@%s", name, user, host);
 
   switch (type)
   {
     case CHFL_BAN:
       list = &chptr->banlist;
-      clear_ban_cache(chptr);
+      clear_ban_cache_channel(chptr);
       break;
     case CHFL_EXCEPTION:
       list = &chptr->exceptlist;
-      clear_ban_cache(chptr);
+      clear_ban_cache_channel(chptr);
       break;
     case CHFL_INVEX:
       list = &chptr->invexlist;
@@ -347,7 +347,7 @@ fix_key(char *arg)
  * side effects - clear ban cache
  */
 void
-clear_ban_cache(struct Channel *chptr)
+clear_ban_cache_channel(struct Channel *chptr)
 {
   dlink_node *node = NULL;
 
@@ -930,7 +930,7 @@ chm_limit(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
 
   if (dir == MODE_ADD && parc > *parn)
   {
-    char *lstr = parv[(*parn)++];
+    char *const lstr = parv[(*parn)++];
 
     if (EmptyString(lstr) || (limit = atoi(lstr)) <= 0)
       return;
@@ -982,7 +982,7 @@ chm_key(struct Client *source_p, struct Channel *chptr, int parc, int *parn,
 
   if (dir == MODE_ADD && parc > *parn)
   {
-    char *key = fix_key(parv[(*parn)++]);
+    char *const key = fix_key(parv[(*parn)++]);
 
     if (EmptyString(key))
       return;
