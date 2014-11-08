@@ -703,7 +703,7 @@ exceeding_sendq(const struct Client *to)
 void
 free_list_task(struct Client *source_p)
 {
-  struct ListTask *lt = source_p->connection->list_task;
+  struct ListTask *const lt = source_p->connection->list_task;
   dlink_node *node = NULL, *node_next = NULL;
 
   if ((node = dlinkFindDelete(&listing_client_list, source_p)))
@@ -722,9 +722,7 @@ free_list_task(struct Client *source_p)
   }
 
   MyFree(lt);
-
-  if (MyConnect(source_p))
-    source_p->connection->list_task = NULL;
+  source_p->connection->list_task = NULL;
 }
 
 /* list_allow_channel()
@@ -762,7 +760,7 @@ list_allow_channel(const char *name, const struct ListTask *lt)
 static void
 list_one_channel(struct Client *source_p, struct Channel *chptr)
 {
-  const struct ListTask *lt = source_p->connection->list_task;
+  const struct ListTask *const lt = source_p->connection->list_task;
   char listbuf[MODEBUFLEN] = "";
   char modebuf[MODEBUFLEN] = "";
   char parabuf[MODEBUFLEN] = "";
@@ -812,7 +810,7 @@ list_one_channel(struct Client *source_p, struct Channel *chptr)
 void
 safe_list_channels(struct Client *source_p, int only_unmasked_channels)
 {
-  struct ListTask *lt = source_p->connection->list_task;
+  struct ListTask *const lt = source_p->connection->list_task;
   struct Channel *chptr = NULL;
 
   if (!only_unmasked_channels)

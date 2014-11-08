@@ -151,13 +151,10 @@ auth_dns_callback(void *vptr, const struct irc_ssaddr *addr, const char *name, s
 
   if (!EmptyString(name))
   {
-    const struct sockaddr_in *v4, *v4dns;
-    const struct sockaddr_in6 *v6, *v6dns;
-
     if (auth->client->connection->ip.ss.ss_family == AF_INET6)
     {
-      v6 = (const struct sockaddr_in6 *)&auth->client->connection->ip;
-      v6dns = (const struct sockaddr_in6 *)addr;
+      const struct sockaddr_in6 *const v6 = (const struct sockaddr_in6 *)&auth->client->connection->ip;
+      const struct sockaddr_in6 *const v6dns = (const struct sockaddr_in6 *)addr;
 
       if (memcmp(&v6->sin6_addr, &v6dns->sin6_addr, sizeof(struct in6_addr)) != 0)
       {
@@ -168,8 +165,8 @@ auth_dns_callback(void *vptr, const struct irc_ssaddr *addr, const char *name, s
     }
     else
     {
-      v4 = (const struct sockaddr_in *)&auth->client->connection->ip;
-      v4dns = (const struct sockaddr_in *)addr;
+      const struct sockaddr_in *const v4 = (const struct sockaddr_in *)&auth->client->connection->ip;
+      const struct sockaddr_in *const v4dns = (const struct sockaddr_in *)addr;
 
       if (v4->sin_addr.s_addr != v4dns->sin_addr.s_addr)
       {
@@ -238,11 +235,8 @@ start_auth_query(struct AuthRequest *auth)
   sendheader(auth->client, REPORT_DO_ID);
 
   /*
-   * get the local address of the client and bind to that to
-   * make the auth request.  This used to be done only for
-   * ifdef VIRTUAL_HOST, but needs to be done for all clients
-   * since the ident request must originate from that same address--
-   * and machines with multiple IP addresses are common now
+   * Get the local address of the client and bind to that to
+   * make the auth request.
    */
   memset(&localaddr, 0, locallen);
   getsockname(auth->client->connection->fd.fd, (struct sockaddr*)&localaddr,
@@ -337,10 +331,10 @@ timeout_auth_queries_event(void *notused)
 static void
 auth_connect_callback(fde_t *fd, int error, void *data)
 {
-  struct AuthRequest *auth = data;
+  struct AuthRequest *const auth = data;
   struct irc_ssaddr us;
   struct irc_ssaddr them;
-  char authbuf[32];
+  char authbuf[16];
   socklen_t ulen = sizeof(struct irc_ssaddr);
   socklen_t tlen = sizeof(struct irc_ssaddr);
   uint16_t uport, tport;
@@ -355,8 +349,8 @@ auth_connect_callback(fde_t *fd, int error, void *data)
   if (getsockname(auth->client->connection->fd.fd, (struct sockaddr *)&us, &ulen) ||
       getpeername(auth->client->connection->fd.fd, (struct sockaddr *)&them, &tlen))
   {
-    ilog(LOG_TYPE_IRCD, "auth get{sock,peer}name error for %s",
-         get_client_name(auth->client, SHOW_IP));
+    report_error(L_ALL, "auth get{sock,peer}name error %s:%s",
+                 get_client_name(auth->client, SHOW_IP), errno);
     auth_error(auth);
     return;
   }
@@ -394,11 +388,11 @@ enum IdentReplyFields
  * \return The userid, or NULL on parse failure.
  */
 static const char *
-check_ident_reply(char *reply)
+check_ident_reply(char *const reply)
 {
   char *token = NULL, *end = NULL;
   char *vector[USERID_TOKEN_COUNT];
-  int count = token_vector(reply, ':', vector, USERID_TOKEN_COUNT);
+  const int count = token_vector(reply, ':', vector, USERID_TOKEN_COUNT);
 
   if (USERID_TOKEN_COUNT != count)
     return NULL;
