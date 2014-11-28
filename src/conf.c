@@ -1134,7 +1134,7 @@ oper_privs_as_string(const unsigned int port)
 const char *
 get_oper_name(const struct Client *client_p)
 {
-  const dlink_node *cnode = NULL;
+  const dlink_node *node = NULL;
   /* +5 for !,@,{,} and null */
   static char buffer[NICKLEN + USERLEN + HOSTLEN + HOSTLEN + 5];
 
@@ -1143,11 +1143,11 @@ get_oper_name(const struct Client *client_p)
 
   if (MyConnect(client_p))
   {
-    if ((cnode = client_p->connection->confs.head))
+    if ((node = client_p->connection->confs.head))
     {
-      const struct MaskItem *conf = cnode->data;
+      const struct MaskItem *const conf = node->data;
 
-      if (IsConfOperator(conf))
+      if (conf->type == CONF_OPER)
       {
         snprintf(buffer, sizeof(buffer), "%s!%s@%s{%s}", client_p->name,
                  client_p->username, client_p->host, conf->name);
@@ -1344,7 +1344,7 @@ conf_add_class_to_conf(struct MaskItem *conf, const char *class_name)
   {
     conf->class = class_default;
 
-    if (conf->type == CONF_CLIENT)
+    if (conf->type == CONF_CLIENT || conf->type == CONF_OPER)
       sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                            "Warning *** Defaulting to default class for %s@%s",
                            conf->user, conf->host);
@@ -1358,7 +1358,7 @@ conf_add_class_to_conf(struct MaskItem *conf, const char *class_name)
 
   if (conf->class == NULL)
   {
-    if (conf->type == CONF_CLIENT)
+    if (conf->type == CONF_CLIENT || conf->type == CONF_OPER)
       sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                            "Warning *** Defaulting to default class for %s@%s",
                            conf->user, conf->host);

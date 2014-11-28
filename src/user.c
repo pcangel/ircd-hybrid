@@ -375,20 +375,13 @@ static int
 check_xline(struct Client *source_p)
 {
   struct MaskItem *conf = NULL;
-  const char *reason = NULL;
 
   if ((conf = find_matching_name_conf(CONF_XLINE, source_p->info, NULL, NULL, 0)))
   {
     ++conf->count;
-
-    if (conf->reason)
-      reason = conf->reason;
-    else
-      reason = CONF_NOREASON;
-
     sendto_realops_flags(UMODE_REJ, L_ALL, SEND_NOTICE,
                          "X-line Rejecting [%s] [%s], user %s [%s]",
-                         source_p->info, reason,
+                         source_p->info, conf->reason,
                          get_client_name(source_p, HIDE_IP),
                          source_p->sockhost);
 
@@ -906,12 +899,12 @@ user_set_hostmask(struct Client *target_p, const char *hostname, const int what)
     *p = '\0';
 
 
-    sendto_channel_local_butone(NULL, CAP_EXTENDED_JOIN, 0, member->chptr, ":%s!%s@%s JOIN %s %s :%s",
+    sendto_channel_local_butone(target_p, CAP_EXTENDED_JOIN, 0, member->chptr, ":%s!%s@%s JOIN %s %s :%s",
                                 target_p->name, target_p->username,
                                 target_p->host, member->chptr->name,
                                 (!IsDigit(target_p->account[0]) && target_p->account[0] != '*') ? target_p->account : "*",
                                 target_p->info);
-    sendto_channel_local_butone(NULL, 0, CAP_EXTENDED_JOIN, member->chptr, ":%s!%s@%s JOIN :%s",
+    sendto_channel_local_butone(target_p, 0, CAP_EXTENDED_JOIN, member->chptr, ":%s!%s@%s JOIN :%s",
                                 target_p->name, target_p->username,
                                 target_p->host, member->chptr->name);
 
