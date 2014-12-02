@@ -537,10 +537,6 @@ get_client_name(const struct Client *client_p, enum addr_mask_type type)
       type = MASK_IP;
   }
 
-  if (ConfigGeneral.hide_spoof_ips)
-    if (IsIPSpoof(client_p) && type == SHOW_IP)
-      type = MASK_IP;
-
   /* And finally, let's get the host information, ip or name */
   switch (type)
   {
@@ -752,8 +748,7 @@ exit_client(struct Client *source_p, const char *comment)
       sendto_realops_flags(UMODE_CCONN, L_ALL, SEND_NOTICE,
                            "Client exiting: %s (%s@%s) [%s] [%s]",
                            source_p->name, source_p->username, source_p->host, comment,
-                           ConfigGeneral.hide_spoof_ips && IsIPSpoof(source_p) ?
-                           "255.255.255.255" : source_p->sockhost);
+                           source_p->sockhost);
 
       ilog(LOG_TYPE_USER, "%s (%3u:%02u:%02u): %s!%s@%s %llu/%llu",
            myctime(source_p->connection->firsttime), (unsigned int)(on_for / 3600),
@@ -814,7 +809,7 @@ exit_client(struct Client *source_p, const char *comment)
 
     /* Send SQUIT for source_p in every direction. source_p is already off of local_server_list here */
     if (!HasFlag(source_p, FLAGS_SQUIT))
-      sendto_server(NULL, NOCAPS, NOCAPS, "SQUIT %s :%s", source_p->id, comment);
+      sendto_server(NULL, 0, 0, "SQUIT %s :%s", source_p->id, comment);
 
     /* Now exit the clients internally */
     recurse_remove_clients(source_p, splitstr);
@@ -836,7 +831,7 @@ exit_client(struct Client *source_p, const char *comment)
     }
   }
   else if (IsClient(source_p) && !HasFlag(source_p, FLAGS_KILLED))
-    sendto_server(source_p->from, NOCAPS, NOCAPS, ":%s QUIT :%s",
+    sendto_server(source_p->from, 0, 0, ":%s QUIT :%s",
                   source_p->id, comment);
 
   /* The client *better* be off all of the lists */
@@ -981,14 +976,14 @@ exit_aborted_clients(void)
  */
 
 void
-del_accept(struct split_nuh_item *accept, struct Client *client_p)
+del_accept(struct split_nuh_item *accept_p, struct Client *client_p)
 {
-  dlinkDelete(&accept->node, &client_p->connection->acceptlist);
+  dlinkDelete(&accept_p->node, &client_p->connection->acceptlist);
 
-  MyFree(accept->nickptr);
-  MyFree(accept->userptr);
-  MyFree(accept->hostptr);
-  MyFree(accept);
+  MyFree(accept_p->nickptr);
+  MyFree(accept_p->userptr);
+  MyFree(accept_p->hostptr);
+  MyFree(accept_p);
 }
 
 struct split_nuh_item *
@@ -1000,12 +995,12 @@ find_accept(const char *nick, const char *user,
 
   DLINK_FOREACH(node, client_p->connection->acceptlist.head)
   {
-    struct split_nuh_item *accept = node->data;
+    struct split_nuh_item *accept_p = node->data;
 
-    if (!cmpfunc(accept->nickptr, nick) &&
-        !cmpfunc(accept->userptr, user) &&
-        !cmpfunc(accept->hostptr, host))
-      return accept;
+    if (!cmpfunc(accept_p->nickptr, nick) &&
+        !cmpfunc(accept_p->userptr, user) &&
+        !cmpfunc(accept_p->hostptr, host))
+      return accept_p;
   }
 
   return NULL;

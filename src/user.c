@@ -310,8 +310,7 @@ introduce_client(struct Client *source_p)
                  source_p->name, source_p->hopcount+1,
                  (unsigned long)source_p->tsinfo,
                  ubuf, source_p->username, source_p->host,
-                 (MyClient(source_p) && IsIPSpoof(source_p)) ?
-                 "0" : source_p->sockhost, source_p->id,
+                 source_p->sockhost, source_p->id,
                  source_p->account,
                  source_p->info);
     else
@@ -320,8 +319,7 @@ introduce_client(struct Client *source_p)
                  source_p->name, source_p->hopcount+1,
                  (unsigned long)source_p->tsinfo,
                  ubuf, source_p->username, source_p->host,
-                 (MyClient(source_p) && IsIPSpoof(source_p)) ?
-                 "0" : source_p->sockhost, source_p->id, source_p->info);
+                 source_p->sockhost, source_p->id, source_p->info);
 
     if (!EmptyString(source_p->certfp))
       sendto_one(server, ":%s CERTFP %s", source_p->id, source_p->certfp);
@@ -540,8 +538,7 @@ register_local_user(struct Client *source_p)
   sendto_realops_flags(UMODE_CCONN, L_ALL, SEND_NOTICE,
                        "Client connecting: %s (%s@%s) [%s] {%s} [%s] <%s>",
                        source_p->name, source_p->username, source_p->host,
-                       ConfigGeneral.hide_spoof_ips && IsIPSpoof(source_p) ?
-                       "255.255.255.255" : source_p->sockhost,
+                       source_p->sockhost,
                        get_client_class(&source_p->connection->confs),
                        source_p->info, source_p->id);
 
@@ -605,12 +602,12 @@ register_remote_user(struct Client *source_p)
                          source_p->host, source_p->servptr->name,
                          target_p->name, target_p->from->name);
     sendto_one(source_p->from,
-               ":%s KILL %s :%s (NICK from wrong direction (%s != %s))",
+               ":%s KILL %s :%s (UID from wrong direction (%s != %s))",
                me.id, source_p->id, me.name, source_p->servptr->name,
                target_p->from->name);
 
     AddFlag(source_p, FLAGS_KILLED);
-    exit_client(source_p, "USER server wrong direction");
+    exit_client(source_p, "UID server wrong direction");
     return;
   }
 
@@ -823,7 +820,7 @@ send_umode_out(struct Client *source_p, unsigned int old)
   send_umode(MyClient(source_p) ? source_p : NULL, source_p, old, buf);
 
   if (buf[0])
-    sendto_server(source_p, NOCAPS, NOCAPS, ":%s MODE %s :%s",
+    sendto_server(source_p, 0, 0, ":%s MODE %s :%s",
                   source_p->id, source_p->id, buf);
 }
 
@@ -839,13 +836,9 @@ user_set_hostmask(struct Client *target_p, const char *hostname, const int what)
   {
     case MODE_ADD:
       AddUMode(target_p, UMODE_HIDDENHOST);
-      AddFlag(target_p, FLAGS_IP_SPOOFING);
       break;
     case MODE_DEL:
       DelUMode(target_p, UMODE_HIDDENHOST);
-
-      if (!HasFlag(target_p, FLAGS_AUTH_SPOOF))
-        DelFlag(target_p, FLAGS_IP_SPOOFING);
       break;
     default: return;
   }
@@ -957,7 +950,7 @@ oper_up(struct Client *source_p)
 
   sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE, "%s is now an operator",
                        get_oper_name(source_p));
-  sendto_server(NULL, NOCAPS, NOCAPS, ":%s GLOBOPS :%s is now an operator",
+  sendto_server(NULL, 0, 0, ":%s GLOBOPS :%s is now an operator",
                 me.id, get_oper_name(source_p));
   send_umode_out(source_p, old);
   sendto_one_numeric(source_p, &me, RPL_YOUREOPER);

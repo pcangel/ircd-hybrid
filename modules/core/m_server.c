@@ -105,8 +105,7 @@ sendnick_TS(struct Client *client_p, struct Client *target_p)
                target_p->name, target_p->hopcount + 1,
                (unsigned long) target_p->tsinfo,
                ubuf, target_p->username, target_p->host,
-               (MyClient(target_p) && IsIPSpoof(target_p)) ?
-               "0" : target_p->sockhost, target_p->id,
+               target_p->sockhost, target_p->id,
                target_p->account, target_p->info);
   else
     sendto_one(client_p, ":%s UID %s %d %lu %s %s %s %s %s :%s",
@@ -114,8 +113,7 @@ sendnick_TS(struct Client *client_p, struct Client *target_p)
                target_p->name, target_p->hopcount + 1,
                (unsigned long) target_p->tsinfo,
                ubuf, target_p->username, target_p->host,
-               (MyClient(target_p) && IsIPSpoof(target_p)) ?
-               "0" : target_p->sockhost, target_p->id, target_p->info);
+               target_p->sockhost, target_p->id, target_p->info);
 
   if (!EmptyString(target_p->certfp))
     sendto_one(client_p, ":%s CERTFP %s", target_p->id, target_p->certfp);
@@ -371,7 +369,7 @@ server_estab(struct Client *client_p)
 
   fd_note(&client_p->connection->fd, "Server: %s", client_p->name);
 
-  sendto_server(client_p, NOCAPS, NOCAPS, ":%s SID %s 2 %s :%s%s",
+  sendto_server(client_p, 0, 0, ":%s SID %s 2 %s :%s%s",
                 me.id, client_p->name, client_p->id,
                 IsHidden(client_p) ? "(H) " : "", client_p->info);
 
@@ -801,7 +799,7 @@ ms_sid(struct Client *source_p, int parc, char *parv[])
   hash_add_client(target_p);
   hash_add_id(target_p);
 
-  sendto_server(client_p, NOCAPS, NOCAPS, ":%s SID %s %d %s :%s%s",
+  sendto_server(client_p, 0, 0, ":%s SID %s %d %s :%s%s",
                 source_p->id, target_p->name, target_p->hopcount + 1,
                 target_p->id, IsHidden(target_p) ? "(H) " : "", target_p->info);
   sendto_realops_flags(UMODE_EXTERNAL, L_ALL, SEND_NOTICE,
