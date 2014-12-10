@@ -58,8 +58,6 @@ make_listener(const int port, const struct irc_ssaddr *addr)
 void
 free_listener(struct Listener *listener)
 {
-  assert(listener);
-
   dlinkDelete(&listener->node, &listener_list);
   MyFree(listener);
 }
@@ -300,11 +298,6 @@ find_listener(int port, struct irc_ssaddr *addr)
 static void
 close_listener(struct Listener *listener)
 {
-  assert(listener != NULL);
-
-  if (listener == NULL)
-    return;
-
   if (listener->fd.flags.open)
     fd_close(&listener->fd);
 
@@ -374,7 +367,8 @@ add_listener(int port, const char *vhost_ip, unsigned int flags)
   snprintf(portname, sizeof(portname), "%d", port);
   getaddrinfo("::", portname, &hints, &res);
   vaddr.ss.ss_family = AF_INET6;
-  assert(res != NULL);
+
+  assert(res);
 
   memcpy((struct sockaddr*)&vaddr, res->ai_addr, res->ai_addrlen);
   vaddr.ss_port = port;
